@@ -1,0 +1,898 @@
+#include "eval_ComparatorAPI.h"
+
+void aPair_fillOut(APair *aPair, char *seq1, char *seq2, int32_t pos1, int32_t pos2) {
+	int32_t i = strcmp(seq1, seq2);
+	if(i > 0 || (i == 0 && pos1 > pos2)) { //we construct the sequence so that seq1 < seq2 || seq1 == seq2 and pos1 < pos2
+		return aPair_fillOut(aPair, seq2, seq1, pos2, pos1);
+	}
+	aPair->seq1 = seq1;
+	aPair->seq2 = seq2;
+	aPair->pos1 = pos1;
+	aPair->pos2 = pos2;
+}
+
+int aSolo_cmpFunction(const void *a, const void *b);
+
+void aTrio_fillOut(ATrio *aTrio, char *seq1, char *seq2, char *seq3, int32_t pos1, int32_t pos2, int32_t pos3, int32_t top) {
+	ASolo structs[3];
+
+	structs[0].name = seq1;
+	structs[0].pos = pos1;
+	structs[1].name = seq2;
+	structs[1].pos = pos2;
+	structs[2].name = seq3;
+	structs[2].pos = pos3;
+
+	qsort(structs, 3, sizeof(ASolo), aSolo_cmpFunction);
+	
+	aTrio->seq1 = structs[0].name;
+	aTrio->pos1 = structs[0].pos;
+	aTrio->seq2 = structs[1].name;
+	aTrio->pos2 = structs[1].pos;
+	aTrio->seq3 = structs[2].name;
+	aTrio->pos3 = structs[2].pos;
+
+	aTrio->top = top;
+}
+
+APair *aPair_construct(const char *seq1, const char *seq2, int32_t pos1, int32_t pos2) {
+	APair *aPair = malloc(sizeof(APair));
+	aPair_fillOut(aPair, (char *)seq1, (char *)seq2, pos1, pos2);
+	aPair->seq1 = stringCopy(aPair->seq1);
+	aPair->seq2 = stringCopy(aPair->seq2);
+	return aPair;
+}
+
+ATrio *aTrio_construct(const char *seq1, const char *seq2, const char *seq3, int32_t pos1, int32_t pos2, int32_t pos3, int32_t top) {
+	ATrio *aTrio = malloc(sizeof(ATrio));
+	aTrio_fillOut(aTrio, (char *)seq1, (char *)seq2, (char *)seq3, pos1, pos2, pos3, top);
+	aTrio->seq1 = stringCopy(aTrio->seq1);
+	aTrio->seq2 = stringCopy(aTrio->seq2);
+	aTrio->seq3 = stringCopy(aTrio->seq3);
+	return aTrio;
+}
+
+APair *aPair_copyConstruct(APair *pair) {
+	return aPair_construct(pair->seq1, pair->seq2, pair->pos1, pair->pos2);
+}
+
+ATrio *aTrio_copyConstruct(ATrio *trio) {
+	return aTrio_construct(trio->seq1, trio->seq2, trio->seq3, trio->pos1, trio->pos2, trio->pos3, trio->top);
+}
+
+void aPair_destruct(APair *pair, void *extraArgument) {
+	assert(extraArgument == NULL); //because destruction takes place in avl_tree
+	free(pair->seq1);
+	free(pair->seq2);
+	free(pair);
+}
+
+void aTrio_destruct(ATrio *trio, void *extraArgument) {
+	assert(extraArgument == NULL); //because destruction takes place in avl_tree
+	free(trio->seq1);
+	free(trio->seq2);
+	free(trio->seq3);
+	free(trio);
+}
+
+int
+aSolo_cmpFunction(const void *a, const void *b)
+{
+	ASolo *ia = (ASolo *) a;
+	ASolo *ib = (ASolo *) b;
+
+	int cmp = strcmp(ia->name, ib->name);
+
+	if (cmp == 0) {
+		return ia->pos - ib->pos;
+	}
+	return cmp;
+}
+
+int32_t aPair_cmpFunction_seqsOnly(APair *aPair1, APair *aPair2, void *a) {
+	/*
+	 * Compares only the sequence name arguments of the a pairs.
+	 */
+	assert(a == NULL);
+	int32_t i = strcmp(aPair1->seq1, aPair2->seq1);
+	if(i == 0) {
+		i = strcmp(aPair1->seq2, aPair2->seq2);
+	}
+	return i;
+}
+
+int32_t aTrio_cmpFunction_seqsOnly(ATrio *aTrio1, ATrio *aTrio2, void *a) {
+	/*
+	 * Compares only the sequence name arguments of the a trios.
+	 */
+	assert(a == NULL);
+	int32_t i = strcmp(aTrio1->seq1, aTrio2->seq1);
+	if(i == 0) {
+		i = strcmp(aTrio1->seq2, aTrio2->seq2);
+		if (i == 0) {
+			i = strcmp(aTrio1->seq3, aTrio2->seq3);
+		}
+	}
+	return i;
+}
+
+int32_t aPair_cmpFunction(APair *aPair1, APair *aPair2, void *a) {
+	/*
+	 * Compares first the sequence then the position arguments of the a pairs.
+	 */
+	int32_t i = aPair_cmpFunction_seqsOnly(aPair1, aPair2, a);
+	if(i == 0) {
+		i = aPair1->pos1 - aPair2->pos1;
+		if(i == 0) {
+			i = aPair1->pos2 - aPair2->pos2;
+		}
+	}
+	return i;
+}
+
+int32_t aTrio_cmpFunction(ATrio *aTrio1, ATrio *aTrio2, void *a) {
+	/*
+	 * Compares first the sequence then the position arguments of the a trios.
+	 */
+	int32_t i = aTrio_cmpFunction_seqsOnly(aTrio1, aTrio2, a);
+	if(i == 0) {
+		i = aTrio1->pos1 - aTrio2->pos1;
+		if(i == 0) {
+			i = aTrio1->pos2 - aTrio2->pos2;
+			if (i == 0) {
+				i = aTrio1->pos3 - aTrio2->pos3;
+			}
+		}
+	}
+	return i;
+}
+
+void getPairsP(void (*passPairFn)(APair *pair, void *extraArgument1, void *extraArgument2, void *extraArgument3),
+		void *extraArgument1, void *extraArgument2, void *extraArgument3, int *bytesRead, int *nBytes, char **cA, FILE *fileHandle) {
+	int32_t length, start, seqLength, i, j, k, pos1, pos2, inc1, inc2;
+	struct List *ranges = constructEmptyList(0, free);
+	char *seqName;
+	char *sequence;
+	char strand;
+	static APair aPair;
+
+	//process block function iterates through successive lines while we have not reached
+	//the end of the file and the newline starts with 's'
+	//for each line grep the sequence, start position and the length.
+	//all the lengths must be equal.
+	*bytesRead = benLine (cA, nBytes, fileHandle);
+
+	length = INT32_MAX;
+	while(*bytesRead > 0 && (*cA)[0] == 's') {
+		seqName = malloc(sizeof(char) * (1+ (*bytesRead)));
+		sequence = malloc(sizeof(char) * (1+ (*bytesRead)));
+		//uglyf("Got the line :##%s#%i %i\n", *cA, (int)strlen(*cA), *bytesRead);
+		//uglyf("I read %i \n", sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence));
+		//uglyf("%s,  %i %i %c %i %s\n", seqName, start, i /*ignore the length field*/, strand, seqLength, sequence);
+		j = sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence);
+		assert(j == 6 || (j == 5 && seqLength == 0));
+		if(j == 5) {
+			free(sequence);
+			sequence = stringPrint("");
+		}
+		length = strlen(sequence);
+		assert(strand == '+' || strand == '-');
+		listAppend(ranges, seqName);
+		if(strand == '+') {
+			listAppend(ranges, constructInt(start));
+			listAppend(ranges, constructInt(1));
+		}
+		else {
+			listAppend(ranges, constructInt(seqLength-1-start));
+			listAppend(ranges, constructInt(-1));
+		}
+		listAppend(ranges, sequence);
+		*bytesRead = benLine (cA, nBytes, fileHandle);
+	}
+
+	//Now call the pair function for every pair of aligned bases.
+	for(i=0; i<ranges->length; i+=4) {
+		char *seq1 = ranges->list[i];
+		inc1 = *((int32_t *)ranges->list[i+2]);
+		sequence = ranges->list[i+3];
+
+		for(j=i+4; j<ranges->length; j+=4) {
+			char *seq2 = ranges->list[j];
+			pos2 = *((int32_t *)ranges->list[j+1]);
+			inc2 = *((int32_t *)ranges->list[j+2]);
+			const char *sequence2 = ranges->list[j+3];
+
+			pos1 = *((int32_t *)ranges->list[i+1]);
+
+			assert((int32_t)strlen(sequence) == length);
+			assert((int32_t)strlen(sequence2) == length);
+
+			for(k=0; k<length; k++) {
+				if(sequence[k] != '-') {
+					if(sequence2[k] != '-') {
+						aPair_fillOut(&aPair, seq1, seq2, pos1, pos2);
+						passPairFn(&aPair, extraArgument1, extraArgument2, extraArgument3);
+						pos2 += inc2;
+					}
+					pos1 += inc1;
+				}
+				else {
+					if(sequence2[k] != '-') {
+						pos2 += inc2;
+					}
+				}
+			}
+		}
+	}
+
+	//cleanup the list
+	destructList(ranges);
+}
+
+void getTriosP(void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extraArgument2, void *extraArgument3),
+		void *extraArgument1, void *extraArgument2, void *extraArgument3, int *bytesRead, int *nBytes, char **cA, FILE *fileHandle) {
+	int32_t length, start, seqLength, i, j, k, l, pos1, pos2, inc1, inc2;
+	int32_t pos3, inc3, top;
+	struct List *ranges = constructEmptyList(0, free);
+	char *seqName;
+	char *sequence, *sequence2, *sequence3;
+	char strand;
+	static ATrio aTrio;
+
+	//process block function iterates through successive lines while we have not reached
+	//the end of the file and the newline starts with 's'
+	//for each line grep the sequence, start position and the length.
+	//all the lengths must be equal.
+	*bytesRead = benLine (cA, nBytes, fileHandle);
+
+	length = INT32_MAX;
+	while(*bytesRead > 0 && (*cA)[0] == 's') {
+		seqName = malloc(sizeof(char) * (1+ (*bytesRead)));
+		sequence = malloc(sizeof(char) * (1+ (*bytesRead)));
+		//uglyf("Got the line :##%s#%i %i\n", *cA, (int)strlen(*cA), *bytesRead);
+		//uglyf("I read %i \n", sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence));
+		//uglyf("%s,  %i %i %c %i %s\n", seqName, start, i /*ignore the length field*/, strand, seqLength, sequence);
+		j = sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence);
+		assert(j == 6 || (j == 5 && seqLength == 0));
+		if(j == 5) {
+			free(sequence);
+			sequence = stringPrint("");
+		}
+		length = strlen(sequence);
+		assert(strand == '+' || strand == '-');
+		listAppend(ranges, seqName);
+		if(strand == '+') {
+			listAppend(ranges, constructInt(start));
+			listAppend(ranges, constructInt(1));
+		}
+		else {
+			listAppend(ranges, constructInt(seqLength-1-start));
+			listAppend(ranges, constructInt(-1));
+		}
+		listAppend(ranges, sequence);
+		*bytesRead = benLine (cA, nBytes, fileHandle);
+	}
+
+	//Now call the pair function for every pair of aligned bases.
+	for(i=0; i<ranges->length; i+=4) {
+		char *seq1 = ranges->list[i];
+		pos1 = *((int32_t *)ranges->list[i+1]);
+		inc1 = *((int32_t *)ranges->list[i+2]);
+		sequence = ranges->list[i+3];
+
+		for(j=i+4; j<ranges->length; j+=4) {
+			char *seq2 = ranges->list[j];
+			pos2 = *((int32_t *)ranges->list[j+1]);
+			inc2 = *((int32_t *)ranges->list[j+2]);
+			sequence2 = ranges->list[j+3];
+
+			for (k=j+4; k<ranges->length; k+=4) {
+				char *seq3 = ranges->list[k];
+				pos3 = *((int32_t *)ranges->list[k+1]);
+				inc3 = *((int32_t *)ranges->list[k+2]);
+				sequence3 = ranges->list[k+3];
+
+				assert((int32_t)strlen(sequence) == length);
+				assert((int32_t)strlen(sequence2) == length);
+				assert((int32_t)strlen(sequence3) == length);
+
+				for(l=0; l<length; l++) {
+					if (sequence[l] != '-' && sequence2[l] != '-' && sequence3[l] != '-') {
+						aTrio_fillOut(&aTrio, seq1, seq2, seq3, pos1, pos2, pos3, top);
+						passTrioFn(&aTrio, extraArgument1, extraArgument2, extraArgument3);
+					}
+					if(sequence[l] != '-') {
+						pos1 += inc1;
+					}
+					if(sequence2[l] != '-') {
+						pos2 += inc2;
+					}
+					if(sequence3[l] != '-') {
+						pos3 += inc3;
+					}
+				}
+			}
+		}
+	}
+
+	//cleanup the list
+	destructList(ranges);
+}
+
+void getPairs(const char *mAFFile1, void (*passPairFn)(APair *pair, void *extraArgument1, void *extraArgument2, void *extraArgument3),
+		void *extraArgument1, void *extraArgument2, void *extraArgument3) {
+	/*
+	 * Iterates through all pairs of bases in a set of MAFs, calling the given function for each one.
+	 */
+	FILE *fileHandle = fopen(mAFFile1, "r");
+	int bytesRead;
+	int nBytes = 100;
+	char *cA;
+
+	cA = (char *) malloc (nBytes + 1);
+	bytesRead = benLine (&cA, &nBytes, fileHandle);
+
+	//read through lines until reaching a line starting with an 'a':
+	//then call process block function passing it the next line.
+	while(bytesRead != -1) {
+		if(bytesRead > 0 && cA[0] == 'a') {
+           getPairsP(passPairFn, extraArgument1, extraArgument2, extraArgument3, &bytesRead, &nBytes, &cA, fileHandle);
+		}
+		else { //deal with empty, white space lines.
+			bytesRead = benLine (&cA, &nBytes, fileHandle);
+		}
+	}
+
+	//Cleanup
+	free(cA);
+	fclose(fileHandle);
+}
+
+void getTrios(const char *mAFFile1, void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extraArgument2, void *extraArgument3),
+		void *extraArgument1, void *extraArgument2, void *extraArgument3) {
+	/*
+	 * Iterates through all trios of bases in a set of MAFs, calling the given function for each one.
+	 */
+	FILE *fileHandle = fopen(mAFFile1, "r");
+	int bytesRead;
+	int nBytes = 100;
+	char *cA;
+
+	cA = (char *) malloc (nBytes + 1);
+	bytesRead = benLine (&cA, &nBytes, fileHandle);
+
+	//read through lines until reaching a line starting with an 'a':
+	//then call process block function passing it the next line.
+	while(bytesRead != -1) {
+		if(bytesRead > 0 && cA[0] == 'a') {
+			getTriosP(passTrioFn, extraArgument1, extraArgument2, extraArgument3, &bytesRead, &nBytes, &cA, fileHandle);
+		}
+		else { //deal with empty, white space lines.
+			bytesRead = benLine (&cA, &nBytes, fileHandle);
+		}
+	}
+
+	//Cleanup
+	free(cA);
+	fclose(fileHandle);
+}
+
+void countPairs(APair *pair, int64_t *counter, struct hashtable *legitPairs, void *a) {
+	/*
+	 * Counts the number of pairs in the MAF file.
+	 */
+	assert(pair != NULL);
+	assert(a == NULL);
+	if (hashtable_search(legitPairs, pair->seq1) != NULL)
+		if(hashtable_search(legitPairs, pair->seq2) != NULL)
+			(*counter)++;
+}
+
+void countTrios(ATrio *trio, int64_t *counter, struct hashtable *legitTrios, void *a) {
+	/*
+	 * Counts the number of pairs in the MAF file.
+	 */
+	assert(trio != NULL);
+	assert(a == NULL);
+	if (hashtable_search(legitTrios, trio->seq1) != NULL)
+		if (hashtable_search(legitTrios, trio->seq2) != NULL)
+			if (hashtable_search(legitTrios, trio->seq3) != NULL)
+				(*counter)++;
+}
+
+void samplePairs(APair *pair, struct avl_table *pairs, double *acceptProbability, struct hashtable *legitPairs) {
+	/*
+	 * Adds *pair to *pairs with a given probability.
+	 */
+   if(hashtable_search(legitPairs, pair->seq1) != NULL)
+      if(hashtable_search(legitPairs, pair->seq2) != NULL)
+         if(RANDOM() >= *acceptProbability)
+            avl_insert(pairs, aPair_copyConstruct(pair));
+}
+
+void sampleTrios(ATrio *trio, struct avl_table *trios, double *acceptProbability, struct hashtable *legitTrios) {
+	/*
+	 * Adds *trio to *trios with a given probability.
+	 */
+	if (hashtable_search(legitTrios, trio->seq1) != NULL)
+		if (hashtable_search(legitTrios, trio->seq2) != NULL)
+			if (hashtable_search(legitTrios, trio->seq3) != NULL)
+				if(RANDOM() >= *acceptProbability)
+					avl_insert(trios, aTrio_copyConstruct(trio));
+}
+
+void homologyTests1(APair *pair, struct avl_table *pairs, struct avl_table *resultPairs, struct hashtable *legitPairs) {
+	/*
+	 * If both members of *pair are in the intersection of MAFFileA and MAFFileB,
+     * and *pair is in the set *pairs then adds to the result pair a positive result.
+	 */
+   if((hashtable_search(legitPairs, pair->seq1) != NULL) &&
+      (hashtable_search(legitPairs, pair->seq2) != NULL)){
+      APair *resultPair = avl_find(resultPairs, pair);
+      if(resultPair == NULL) {
+         resultPair = aPair_construct(pair->seq1, pair->seq2, 0, 0);
+         avl_insert(resultPairs, resultPair);
+      }
+
+      if(avl_find(pairs, pair) != NULL) { //we use the positions as indices as to the outcome of of the homology test.
+         resultPair->pos1++;
+      }
+   }
+}
+
+void homologyTestsTrio1(ATrio *trio, struct avl_table *trios, struct avl_table *resultTrios, struct hashtable *legitTrios) {
+	/*
+	 * If all 3 members of *trio are in the intersection of MAFFileA and MAFFileB,
+	* and *trio is in the set *trios and tops are equal then adds to the result trio a positive result.
+	 */
+	if ((hashtable_search(legitTrios, trio->seq1) != NULL) &&
+	    (hashtable_search(legitTrios, trio->seq2) != NULL) && 
+	    (hashtable_search(legitTrios, trio->seq3) != NULL)) {
+		ATrio *resultTrio = avl_find(resultTrios, trio);
+		if(resultTrio == NULL) {
+			resultTrio = aTrio_construct(trio->seq1, trio->seq2, trio->seq3, 0, 0, 0, -1);
+			avl_insert(resultTrios, resultTrio);
+		}
+
+		if(avl_find(trios, trio) != NULL) { //we use the positions as indices as to the outcome of of the homology test.
+			resultTrio->pos1++;
+		}
+	}
+}
+
+void homologyTests2(struct avl_table *pairs, struct avl_table *resultPairs) {
+	/*
+	 * For every pair in 'pairs', add 1 to the total number of homology tests for the sequence-pair.
+     * We don't bother with the  seqNames hashtable here because the ht was used to build *pairs
+     * in the first place.
+	 */
+	static struct avl_traverser iterator;
+	avl_t_init(&iterator, pairs);
+	APair *pair;
+	while((pair = avl_t_next(&iterator)) != NULL) {
+		APair *resultPair = avl_find(resultPairs, pair);
+		if(resultPair == NULL) {
+			resultPair = aPair_construct(pair->seq1, pair->seq2, 0, 0);
+			avl_insert(resultPairs, resultPair);
+		}
+		resultPair->pos2++;
+	}
+}
+
+void homologyTestsTrio2(struct avl_table *trios, struct avl_table *resultTrios) {
+	/*
+	 * For every trio in 'trios', add 1 to the total number of trios tests for the sequence-trio.
+	 * We don't bother with the  seqNames hashtable here because the ht was used to build *pairs
+	 * in the first place.
+	 */
+	static struct avl_traverser iterator;
+	avl_t_init(&iterator, trios);
+	ATrio *trio;
+	while((trio = avl_t_next(&iterator)) != NULL) {
+		ATrio *resultTrio = avl_find(resultTrios, trio);
+		if (resultTrio == NULL) {
+			resultTrio = aTrio_construct(trio->seq1, trio->seq2, trio->seq3, 0, 0, 0, -1);
+			avl_insert(resultTrios, resultTrio);
+		}
+		resultTrio->pos2++;
+	}
+}
+
+struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht) {
+	/*
+	 * Gets samples.
+	 */
+	int64_t pairNumber = 0;
+	getPairs(mAFFileA, (void (*)(APair *, void *, void *, void *))countPairs, &pairNumber, ht, NULL);
+
+	double acceptProbability = 1.0 - ((double)numberOfSamples) / pairNumber;
+	struct avl_table *pairs = avl_create((int32_t (*)(const void *, const void *, void *))aPair_cmpFunction, NULL, NULL);
+	getPairs(mAFFileA, (void (*)(APair *, void *, void *, void *))samplePairs, pairs, &acceptProbability, ht);
+
+	struct avl_table *resultPairs = avl_create((int32_t (*)(const void *, const void *, void *))aPair_cmpFunction_seqsOnly, NULL, NULL);
+	getPairs(mAFFileB, (void (*)(APair *, void *, void *, void *))homologyTests1, pairs, resultPairs, ht);
+
+	homologyTests2(pairs, resultPairs);
+	avl_destroy(pairs, (void (*)(void *, void *))aPair_destruct);
+	return resultPairs;
+}
+
+struct avl_table *compareMAFs_AB_Trio(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, char *speciesA, char *speciesB, char *speciesC) {
+	/*
+	 * Gets samples.
+	 */
+	int64_t trioNumber = 0;
+	getTrios(mAFFileA, (void (*)(ATrio *, void *, void *, void *))countTrios, &trioNumber, ht, NULL);
+
+	double acceptProbability = 1.0 - ((double)numberOfSamples) / trioNumber;
+	struct avl_table *trios = avl_create((int32_t (*)(const void *, const void *, void *))aTrio_cmpFunction, NULL, NULL);
+	getTrios(mAFFileA, (void (*)(ATrio *, void *, void *, void *))sampleTrios, trios, &acceptProbability, ht);
+
+	struct avl_table *resultTrios = avl_create((int32_t (*)(const void *, const void *, void *))aTrio_cmpFunction_seqsOnly, NULL, NULL);
+	getTrios(mAFFileB, (void (*)(ATrio *, void *, void *, void *))homologyTestsTrio1, trios, resultTrios, ht);
+
+	homologyTestsTrio2(trios, resultTrios);
+	avl_destroy(trios, (void (*)(void *, void *))aTrio_destruct);
+	return resultTrios;
+}
+
+void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle) {
+	/*
+	 * Report results in an XML formatted document.
+	 */
+	static struct avl_traverser iterator;
+	avl_t_init(&iterator, results_AB);
+	APair *resultPair;
+	double positive = 0.0;
+	double total = 0.0;
+	while((resultPair = avl_t_next(&iterator)) != NULL) {
+		assert(resultPair->pos2 >= resultPair->pos1);
+		positive += resultPair->pos1;
+		total += resultPair->pos2;
+	}
+	fprintf(fileHandle, "\t<homology_tests fileA=\"%s\" fileB=\"%s\" totalTests=\"%f\" totalTrue=\"%f\" totalFalse=\"%f\" average=\"%f\">\n",
+			mAFFileA, mAFFileB, total, positive, total - positive, positive / total);
+	while((resultPair = avl_t_prev(&iterator)) != NULL) {
+		assert(resultPair->pos2 >= resultPair->pos1);
+		fprintf(fileHandle,
+				"\t\t<homology_test sequenceA=\"%s\" sequenceB=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\">\n",
+				resultPair->seq1, resultPair->seq2, resultPair->pos2, resultPair->pos1, resultPair->pos2 - resultPair->pos1, ((double)resultPair->pos1)/resultPair->pos2);
+		fprintf(fileHandle,
+						"\t\t\t<single_homology_test sequenceA=\"%s\" sequenceB=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\"/>\n",
+						resultPair->seq1, resultPair->seq2, resultPair->pos2, resultPair->pos1, resultPair->pos2 - resultPair->pos1, ((double)resultPair->pos1)/resultPair->pos2);
+		fprintf(fileHandle, "\t\t</homology_test>\n");
+	}
+	fprintf(fileHandle, "\t</homology_tests>\n");
+}
+
+void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle) {
+	/*
+	 * Report results in an XML formatted document.
+	 */
+	static struct avl_traverser iterator;
+	avl_t_init(&iterator, results_AB);
+	ATrio *resultTrio;
+	double positive = 0.0;
+	double total = 0.0;
+	while((resultTrio = avl_t_next(&iterator)) != NULL) {
+if (resultTrio->pos2 < resultTrio->pos1) {
+  fprintf(stderr, "N: %s\t%s\t%s\t%d\t%d\t%d\n", resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos1, resultTrio->pos2, resultTrio->pos3);
+  continue;
+}
+		assert(resultTrio->pos2 >= resultTrio->pos1);
+		positive += resultTrio->pos1;
+		total += resultTrio->pos2;
+	}
+	fprintf(fileHandle, "\t<trio_tests fileA=\"%s\" fileB=\"%s\" totalTests=\"%f\" totalTrue=\"%f\" totalFalse=\"%f\" average=\"%f\">\n",
+			mAFFileA, mAFFileB, total, positive, total - positive, positive / total);
+	while((resultTrio = avl_t_prev(&iterator)) != NULL) {
+if (resultTrio->pos2 < resultTrio->pos1) {
+  fprintf(stderr, "P: %s\t%s\t%s\t%d\t%d\t%d\n", resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos1, resultTrio->pos2, resultTrio->pos3);
+  continue;
+}
+		assert(resultTrio->pos2 >= resultTrio->pos1);
+		fprintf(fileHandle,
+				"\t\t<trio_test sequenceA=\"%s\" sequenceB=\"%s\" sequenceC=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\">\n",
+				resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos2, resultTrio->pos1, resultTrio->pos2 - resultTrio->pos1, ((double)resultTrio->pos1)/resultTrio->pos2);
+		fprintf(fileHandle,
+				"\t\t\t<single_trio_test sequenceA=\"%s\" sequenceB=\"%s\" sequenceC=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\"/>\n",
+				resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos2, resultTrio->pos1, resultTrio->pos2 - resultTrio->pos1, ((double)resultTrio->pos1)/resultTrio->pos2);
+		fprintf(fileHandle, "\t\t</trio_test>\n");
+	}
+	fprintf(fileHandle, "\t</trio_tests>\n");
+}
+
+void populateNameHash(const char *mAFFile, struct hashtable *htp) {
+	/*
+	 * populates a hash table with the names of sequences from a MAF file.
+	 */
+	FILE *fileHandle = fopen(mAFFile, "r");
+	int bytesRead;
+	int nBytes = 100;
+	char *cA;
+    int32_t length, start, seqLength, i, j;
+	char *seqName;
+	char *sequence;
+    char strand;
+    cA = (char *) malloc (nBytes + 1);
+	bytesRead = benLine (&cA, &nBytes, fileHandle);
+	//read through lines until reaching a line starting with an 's':
+    length = INT32_MAX;
+    while(bytesRead != -1){
+       if(bytesRead > 0 && cA[0] == 's') {
+          seqName = malloc(sizeof(char) * (1+ (bytesRead)));
+          sequence = malloc(sizeof(char) * (1+ (bytesRead)));
+          //assert(sscanf(cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence) == 6);
+          j = sscanf(cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence);
+          assert(j == 6 || (j == 5 && seqLength == 0));
+
+          if(hashtable_search(htp, seqName) == NULL){
+             hashtable_insert(htp, seqName, constructInt(1));
+          }
+
+       }
+       bytesRead = benLine (&cA, &nBytes, fileHandle);
+    }
+	//Cleanup
+	fclose(fileHandle);
+}
+
+void printNameHash(struct hashtable *h) { 
+	// Debug function to iterate through a hash and print the contents.
+	char *k;
+	int *v;
+	struct hashtable_itr *itr;
+	if (hashtable_count(h) > 0) {
+		itr = hashtable_iterator(h);
+		do {
+			k = hashtable_iterator_key(itr);
+			v = hashtable_iterator_value(itr);
+			fprintf(stderr,"%s\n", k);
+		} while (hashtable_iterator_advance(itr));
+	}
+	free(itr);
+}
+
+void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3) {
+	// intersects two hashes. (hash 1 \cap  hash 2) = hash 3.
+	char *k;
+	int *v;
+	struct hashtable_itr *itr;
+	if (hashtable_count(h1) > 0) {
+		itr = hashtable_iterator(h1);
+		do {
+			k = hashtable_iterator_key(itr);
+			v = hashtable_iterator_value(itr);
+			if (NULL != hashtable_search(h2, k)) {
+				hashtable_insert(h3, k, constructInt(1));
+			}
+		} while (hashtable_iterator_advance(itr));
+	}
+	free(itr);
+}
+
+int32_t countNodes (struct BinaryTree *node) {
+  if (node == NULL) {
+    return 0;
+  } else {
+    return (countNodes(node->left) + 1 + countNodes(node->right));
+  }
+}
+
+int32_t countLeaves (struct BinaryTree *node) {
+  if (node == NULL) {
+    return 0;
+  } else {
+    if (node->internal) {
+      return (countLeaves(node->left) + 0 + countLeaves(node->right));
+    } else {
+      return (countLeaves(node->left) + 1 + countLeaves(node->right));
+    }
+  }
+}
+  
+void postOrderLabelNodes (struct BinaryTree *node, int32_t *index, char 
+**labelArray) {
+  if (node->left != NULL) {
+    postOrderLabelNodes(node->left, index, labelArray);
+  }
+  if (node->right != NULL) {
+    postOrderLabelNodes(node->right, index, labelArray);
+  }
+  labelArray[*index] = (char *) node->label;
+  *index += 1;
+
+  return;
+}
+
+void postOrderLabelLeaves (struct BinaryTree *node, int32_t *index, char 
+**labelArray) {
+  if (node->left != NULL) {
+    postOrderLabelLeaves(node->left, index, labelArray);
+  }
+  if (node->right != NULL) {
+    postOrderLabelLeaves(node->right, index, labelArray);
+  }
+  if (! node->internal) {
+    labelArray[*index] = (char *) node->label;
+    *index += 1;
+  }
+
+  return;
+}
+
+void lcaP(struct BinaryTree *node, struct djs *uf, int32_t *ancestor, 
+int32_t *color, struct hashtable *ht, int32_t size, int32_t **lcaMatrix)
+{ 
+  if (node == NULL) {
+    return;
+  }
+ 
+  int32_t u = *(int *) hashtable_search(ht, node->label);
+  djs_makeset(uf, u);
+  ancestor[djs_findset(uf, u)] = u;
+ 
+  int32_t v;
+  // Left
+  if (node->left != NULL) {
+    lcaP(node->left, uf, ancestor, color, ht, size, lcaMatrix);
+    v = *(int *) hashtable_search(ht, node->left->label);
+    djs_union(uf, u, v);
+    ancestor[djs_findset(uf, u)] = u;
+  }
+  // Right
+  if (node->right != NULL) {
+    lcaP(node->right, uf, ancestor, color, ht, size, lcaMatrix);
+    v = *(int *) hashtable_search(ht, node->right->label);
+    djs_union(uf, u, v);
+    ancestor[djs_findset(uf, u)] = u;
+  }
+  color[u] = 1;
+  
+  int32_t i = 0;
+  for (i=0; i<size; i++) {
+    if (color[i] == 1) {
+//      printf("%d\t%d\t%d\n", u, i, ancestor[djs_findset(uf, i)]);
+      lcaMatrix[u][i] = ancestor[djs_findset(uf, i)];
+      lcaMatrix[i][u] = ancestor[djs_findset(uf, i)];
+    }
+  }
+}
+  
+int32_t ** lca(struct BinaryTree *root, struct hashtable *ht)
+{
+  int32_t nodeNum = countNodes(root);
+
+  struct djs *uf = NULL;
+  uf = djs_new(nodeNum);
+  
+  int32_t *ancestor = malloc(sizeof(int32_t) * nodeNum);
+  int32_t *color = malloc(sizeof(int32_t) * nodeNum);
+ 
+  int32_t **lcaMatrix = NULL;
+  int32_t i = 0;
+  lcaMatrix = malloc(sizeof(int32_t *) * nodeNum);
+  for (i=0; i<nodeNum; i++) {
+    lcaMatrix[i] = malloc(sizeof(int32_t) * nodeNum);
+  }
+
+  lcaP(root, uf, ancestor, color, ht, nodeNum, lcaMatrix);
+
+  djs_free(uf);
+  free(ancestor);
+  free(color);
+
+  return lcaMatrix;
+}
+
+void lcaMatrix_free (int32_t **lcaMatrix, int32_t nodeNum) {
+  int32_t i = 0;
+  for (i=0; i<nodeNum; i++) {
+    free(lcaMatrix[i]);
+  }
+  free(lcaMatrix);
+
+  return;                                                           
+}
+
+char ** createNodeLabelArray (struct BinaryTree *tree, int32_t nodeNum) 
+{
+  char **labelArray = malloc(sizeof(char *) * nodeNum);
+  int32_t po_index = 0;
+
+  postOrderLabelNodes(tree, &po_index, labelArray);
+
+  return labelArray;
+}
+
+char ** createLeafLabelArray (struct BinaryTree *tree, int32_t nodeNum) 
+{
+  char **leafLabelArray = malloc(sizeof(char *) * nodeNum);
+  int32_t po_index = 0;
+
+  postOrderLabelLeaves(tree, &po_index, leafLabelArray);
+
+  return leafLabelArray;
+}
+
+struct hashtable * getTreeLabelHash (char **labelArray, int32_t nodeNum)
+{
+  struct hashtable *treeLabelHash = NULL;
+  int32_t i = 0;
+  treeLabelHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, NULL, NULL);
+  for (i=0; i<nodeNum; i++) {
+    hashtable_insert(treeLabelHash, labelArray[i], constructInt(i));
+  }
+
+  return treeLabelHash;
+}
+
+int32_t calcTrioState(int32_t **lcaMatrix, struct hashtable 
+*treeLabelHash, char *speciesA, char *speciesB, char *speciesC) {
+  int32_t lca_AB = -1, lca_AC = -1, lca_BC = -1;
+
+  int32_t spA = *(int *) hashtable_search(treeLabelHash, speciesA);
+  int32_t spB = *(int *) hashtable_search(treeLabelHash, speciesB);
+  int32_t spC = *(int *) hashtable_search(treeLabelHash, speciesC);
+
+  lca_AB = lcaMatrix[spA][spB];
+  lca_AC = lcaMatrix[spA][spC];
+  lca_BC = lcaMatrix[spB][spC];
+
+  if (lca_AC == lca_BC) {
+//    printf("0: ((%s,%s),%s);\n", speciesA, speciesB, speciesC);
+    return 0;
+  } else if (lca_AB == lca_AC) {
+//    printf("1: (%s,(%s,%s));\n", speciesA, speciesB, speciesC);
+    return 1;
+  } else if (lca_AB == lca_BC) {
+//    printf("2: ((%s,%s),%s);\n", speciesA, speciesC, speciesB);
+    return 2;
+  } else {
+//    printf("?\n");
+    return -1;
+  }
+}
+
+void bSearch (struct BinaryTree *node, char *label, struct BinaryTree 
+**match)
+{
+  if (node == NULL) {
+    return;
+  }
+
+  if (strcmp(node->label, label) == 0) {
+    *match = node;
+    return;
+  } else {
+    bSearch(node->left, label, match);
+    bSearch(node->right, label, match);
+  }
+}
+
+void initTrioQuery(char *treestring, char *speciesA, char *speciesB, char *speciesC) {
+  struct BinaryTree *tree = NULL;
+  tree = newickTreeParser(treestring, 0.0, 0);
+
+  int32_t nodeNum = countNodes(tree);
+  int32_t leafNum = countLeaves(tree);
+
+  char **nodeLabelArray = createNodeLabelArray(tree, nodeNum);
+  char **leafLabelArray = createLeafLabelArray(tree, leafNum);
+  struct hashtable *treeLabelHash = getTreeLabelHash(nodeLabelArray, nodeNum);
+
+  int32_t **lcaMatrix = NULL;
+  lcaMatrix = lca(tree, treeLabelHash);
+
+  int32_t state = calcTrioState(lcaMatrix, treeLabelHash, speciesA, speciesB, speciesC);
+  printf("state: %d\n",	state);
+
+  destructBinaryTree(tree);
+  free(nodeLabelArray);
+  free(leafLabelArray);
+  hashtable_destroy(treeLabelHash, 0, 0);
+  lcaMatrix_free(lcaMatrix, nodeNum);
+  
+  return;
+}
+
