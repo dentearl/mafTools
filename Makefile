@@ -2,7 +2,7 @@ include ../../../include.mk
 libPath = ../../../lib
 binPath = ../../../bin
 
-all: eval_PhyloComparator eval_MAFComparator
+all: eval_PhyloComparator eval_MAFComparator ${binPath}/eval_mergeMAFComparatorResults.py
 
 eval_MAFComparator : eval_MAFComparator.c eval_ComparatorAPI.c ${libPath}/sonLib.a 
 	${cxx} ${cflags} -I ${libPath} -o ${binPath}/eval_MAFComparator eval_MAFComparator.c  eval_ComparatorAPI.c disjointset.o ${libPath}/sonLib.a
@@ -16,6 +16,11 @@ disjointset.o : disjointset.c
 eval_ComparatorAPI.o : eval_ComparatorAPI.c ${libPath}/sonLib.a
 	${cxx} ${cflags} -I ${libPath} -c -o eval_ComparatorAPI.o eval_ComparatorAPI.c
 
+
+${binPath}/eval_mergeMAFComparatorResults.py : eval_mergeMAFComparatorResults.py
+	cp eval_mergeMAFComparatorResults.py ${binPath}/eval_mergeMAFComparatorResults.py
+	chmod +x ${binPath}/eval_mergeMAFComparatorResults.py
+	
 clean :
 	rm -f *.o
 	rm -f ${binPath}/eval_MAFComparator
