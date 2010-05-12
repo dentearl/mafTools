@@ -2,20 +2,13 @@ include ../../../include.mk
 libPath = ../../../lib
 binPath = ../../../bin
 
-all: eval_PhyloComparator eval_MAFComparator ${binPath}/eval_mergeMAFComparatorResults.py
+all: ${binPath}/eval_PhyloComparator ${binPath}/eval_MAFComparator ${binPath}/eval_mergeMAFComparatorResults.py
 
-eval_MAFComparator : eval_MAFComparator.c eval_ComparatorAPI.c ${libPath}/sonLib.a 
-	${cxx} ${cflags} -I ${libPath} -o ${binPath}/eval_MAFComparator eval_MAFComparator.c  eval_ComparatorAPI.c disjointset.o ${libPath}/sonLib.a
+${binPath}/eval_MAFComparator : eval_MAFComparator.c eval_ComparatorAPI.c disjointset.c ${libPath}/sonLib.a 
+	${cxx} ${cflags} -I ${libPath} -o ${binPath}/eval_MAFComparator eval_MAFComparator.c eval_ComparatorAPI.c disjointset.c ${libPath}/sonLib.a
 
-eval_PhyloComparator : eval_PhyloComparator.c eval_ComparatorAPI.o disjointset.o ${libPath}/sonLib.a 
-	${cxx} ${cflags} -I ${libPath} -o ${binPath}/eval_PhyloComparator eval_PhyloComparator.c disjointset.o eval_ComparatorAPI.o ${libPath}/sonLib.a
-
-disjointset.o : disjointset.c
-	${cxx} ${cflags} -I ${libPath} disjointset.c -c -o disjointset.o
-
-eval_ComparatorAPI.o : eval_ComparatorAPI.c ${libPath}/sonLib.a
-	${cxx} ${cflags} -I ${libPath} -c -o eval_ComparatorAPI.o eval_ComparatorAPI.c
-
+${binPath}/eval_PhyloComparator : eval_PhyloComparator.c eval_ComparatorAPI.c disjointset.c ${libPath}/sonLib.a 
+	${cxx} ${cflags} -I ${libPath} -o ${binPath}/eval_PhyloComparator eval_PhyloComparator.c disjointset.c eval_ComparatorAPI.c ${libPath}/sonLib.a
 
 ${binPath}/eval_mergeMAFComparatorResults.py : eval_mergeMAFComparatorResults.py
 	cp eval_mergeMAFComparatorResults.py ${binPath}/eval_mergeMAFComparatorResults.py
