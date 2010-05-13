@@ -36,7 +36,7 @@ void aTrio_fillOut(ATrio *aTrio, char *seq1, char *seq2, char *seq3, int32_t pos
 }
 
 APair *aPair_construct(const char *seq1, const char *seq2, int32_t pos1, int32_t pos2) {
-	APair *aPair = malloc(sizeof(APair));
+	APair *aPair = mallocLocal(sizeof(APair));
 	aPair_fillOut(aPair, (char *)seq1, (char *)seq2, pos1, pos2);
 	aPair->seq1 = stringCopy(aPair->seq1);
 	aPair->seq2 = stringCopy(aPair->seq2);
@@ -44,7 +44,7 @@ APair *aPair_construct(const char *seq1, const char *seq2, int32_t pos1, int32_t
 }
 
 ATrio *aTrio_construct(const char *seq1, const char *seq2, const char *seq3, int32_t pos1, int32_t pos2, int32_t pos3, int32_t top) {
-	ATrio *aTrio = malloc(sizeof(ATrio));
+	ATrio *aTrio = mallocLocal(sizeof(ATrio));
 	aTrio_fillOut(aTrio, (char *)seq1, (char *)seq2, (char *)seq3, pos1, pos2, pos3, top);
 	aTrio->seq1 = stringCopy(aTrio->seq1);
 	aTrio->seq2 = stringCopy(aTrio->seq2);
@@ -164,8 +164,8 @@ void getPairsP(void (*passPairFn)(APair *pair, void *extraArgument1, void *extra
 
 	length = INT32_MAX;
 	while(*bytesRead > 0 && (*cA)[0] == 's') {
-		seqName = malloc(sizeof(char) * (1+ (*bytesRead)));
-		sequence = malloc(sizeof(char) * (1+ (*bytesRead)));
+		seqName = mallocLocal(sizeof(char) * (1+ (*bytesRead)));
+		sequence = mallocLocal(sizeof(char) * (1+ (*bytesRead)));
 		//uglyf("Got the line :##%s#%i %i\n", *cA, (int)strlen(*cA), *bytesRead);
 		//uglyf("I read %i \n", sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence));
 		//uglyf("%s,  %i %i %c %i %s\n", seqName, start, i /*ignore the length field*/, strand, seqLength, sequence);
@@ -247,8 +247,8 @@ void getTriosP(void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extra
 
 	length = INT32_MAX;
 	while(*bytesRead > 0 && (*cA)[0] == 's') {
-		seqName = malloc(sizeof(char) * (1+ (*bytesRead)));
-		sequence = malloc(sizeof(char) * (1+ (*bytesRead)));
+		seqName = mallocLocal(sizeof(char) * (1+ (*bytesRead)));
+		sequence = mallocLocal(sizeof(char) * (1+ (*bytesRead)));
 		//uglyf("Got the line :##%s#%i %i\n", *cA, (int)strlen(*cA), *bytesRead);
 		//uglyf("I read %i \n", sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence));
 		//uglyf("%s,  %i %i %c %i %s\n", seqName, start, i /*ignore the length field*/, strand, seqLength, sequence);
@@ -620,8 +620,8 @@ void populateNameHash(const char *mAFFile, struct hashtable *htp) {
     length = INT32_MAX;
     while(bytesRead != -1){
        if(bytesRead > 0 && cA[0] == 's') {
-          seqName = malloc(sizeof(char) * (1+ (bytesRead)));
-          sequence = malloc(sizeof(char) * (1+ (bytesRead)));
+          seqName = mallocLocal(sizeof(char) * (1+ (bytesRead)));
+          sequence = mallocLocal(sizeof(char) * (1+ (bytesRead)));
           //assert(sscanf(cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence) == 6);
           j = sscanf(cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence);
           assert(j == 6 || (j == 5 && seqLength == 0));
@@ -766,14 +766,14 @@ int32_t ** lca(struct BinaryTree *root, struct hashtable *ht)
   struct djs *uf = NULL;
   uf = djs_new(nodeNum);
   
-  int32_t *ancestor = malloc(sizeof(int32_t) * nodeNum);
-  int32_t *color = malloc(sizeof(int32_t) * nodeNum);
+  int32_t *ancestor = mallocLocal(sizeof(int32_t) * nodeNum);
+  int32_t *color = mallocLocal(sizeof(int32_t) * nodeNum);
  
   int32_t **lcaMatrix = NULL;
   int32_t i = 0;
-  lcaMatrix = malloc(sizeof(int32_t *) * nodeNum);
+  lcaMatrix = mallocLocal(sizeof(int32_t *) * nodeNum);
   for (i=0; i<nodeNum; i++) {
-    lcaMatrix[i] = malloc(sizeof(int32_t) * nodeNum);
+    lcaMatrix[i] = mallocLocal(sizeof(int32_t) * nodeNum);
   }
 
   lcaP(root, uf, ancestor, color, ht, nodeNum, lcaMatrix);
@@ -797,7 +797,7 @@ void lcaMatrix_free (int32_t **lcaMatrix, int32_t nodeNum) {
 
 char ** createNodeLabelArray (struct BinaryTree *tree, int32_t nodeNum) 
 {
-  char **labelArray = malloc(sizeof(char *) * nodeNum);
+  char **labelArray = mallocLocal(sizeof(char *) * nodeNum);
   int32_t po_index = 0;
 
   postOrderLabelNodes(tree, &po_index, labelArray);
@@ -807,7 +807,7 @@ char ** createNodeLabelArray (struct BinaryTree *tree, int32_t nodeNum)
 
 char ** createLeafLabelArray (struct BinaryTree *tree, int32_t nodeNum) 
 {
-  char **leafLabelArray = malloc(sizeof(char *) * nodeNum);
+  char **leafLabelArray = mallocLocal(sizeof(char *) * nodeNum);
   int32_t po_index = 0;
 
   postOrderLabelLeaves(tree, &po_index, leafLabelArray);
