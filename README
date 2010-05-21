@@ -1,0 +1,32 @@
+
+Joins two MAFs files based on a tree and one common reference genome shared
+between the two MAFs.  Allows for duplications in the MAF.
+
+
+Algorithm:
+  - Input is two MAFs, A and B, and a single common reference organism c in
+    both MAFs.
+
+  - Construct a map mA that maps each base position in the reference
+    organism c to all columns containing it MAF A.  The contents of each
+    column is a list of the (conceptual) tuple:
+
+     (organism seqId position strand base)
+
+  - Construct a map mB for MAF B for reference organism c.
+
+  - Construct a join mA and mB to produce a map mAB that maps each base
+    position in the reference organism c to the combined contents of the
+    mafA and mafB for that position.
+
+  - convert map mAB back to a new MAF N:
+     - for each position pc in reference organism c:
+        - if column associated with pc has not been written:
+            - if the contents associated with pc can be used to extend
+              the current MAF N block:
+                - extend current MAF N
+              else:
+                - output current MAF N block
+                - start a new MAF N block using current column
+            - mark column in mAB as being written
+
