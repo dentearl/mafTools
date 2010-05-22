@@ -1,4 +1,9 @@
 #include "eval_ComparatorAPI.h"
+#include "cstring.h"
+
+int aSolo_cmpFunction(const void *a, const void *b);
+void trioDecoder_destruct(TrioDecoder *decoder);
+int32_t calcTrioState(TrioDecoder *decoder, int32_t spA, int32_t spB, int32_t spC);
 
 void aPair_fillOut(APair *aPair, char *seq1, char *seq2, int32_t pos1, int32_t pos2) {
 	int32_t i = strcmp(seq1, seq2);
@@ -10,8 +15,6 @@ void aPair_fillOut(APair *aPair, char *seq1, char *seq2, int32_t pos1, int32_t p
 	aPair->pos1 = pos1;
 	aPair->pos2 = pos2;
 }
-
-int aSolo_cmpFunction(const void *a, const void *b);
 
 void aTrio_fillOut(ATrio *aTrio, char *seq1, char *seq2, char *seq3, int32_t pos1, int32_t pos2, int32_t pos3, int32_t top) {
 	ASolo structs[3];
@@ -75,9 +78,7 @@ void aTrio_destruct(ATrio *trio, void *extraArgument) {
 	free(trio);
 }
 
-int
-aSolo_cmpFunction(const void *a, const void *b)
-{
+int aSolo_cmpFunction(const void *a, const void *b) {
 	ASolo *ia = (ASolo *) a;
 	ASolo *ib = (ASolo *) b;
 
@@ -229,8 +230,21 @@ void getPairsP(void (*passPairFn)(APair *pair, void *extraArgument1, void *extra
 	destructList(ranges);
 }
 
+struct stringSortIdx {
+	char *name;
+	int32_t index;
+};
+
+int stringSortIdx_cmp(const void *a, const void *b) {
+        struct stringSortIdx *ia = (struct stringSortIdx *) a;
+        struct stringSortIdx *ib = (struct stringSortIdx *) b;
+        return strcmp(ia->name, ib->name);
+}
+
+
 void getTriosP(void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extraArgument2, void *extraArgument3),
-		void *extraArgument1, void *extraArgument2, void *extraArgument3, int *bytesRead, int *nBytes, char **cA, FILE *fileHandle) {
+		void *extraArgument1, void *extraArgument2, void *extraArgument3, int *bytesRead, int *nBytes, char **cA, FILE *fileHandle, 
+		struct List *speciesList, char *treeString) {
 	int32_t length, start, seqLength, i, j, k, l, pos1, pos2, inc1, inc2;
 	int32_t pos3, inc3, top;
 	struct List *ranges = constructEmptyList(0, free);
@@ -238,6 +252,8 @@ void getTriosP(void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extra
 	char *sequence, *sequence2, *sequence3;
 	char strand;
 	static ATrio aTrio;
+
+	TrioDecoder *decoder = trioDecoder_construct(treeString);
 
 	//process block function iterates through successive lines while we have not reached
 	//the end of the file and the newline starts with 's'
@@ -258,20 +274,32 @@ void getTriosP(void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extra
 			free(sequence);
 			sequence = stringPrint("");
 		}
+
 		length = strlen(sequence);
-		assert(strand == '+' || strand == '-');
+
 		listAppend(ranges, seqName);
+
+		assert(strand == '+' || strand == '-');
 		if(strand == '+') {
 			listAppend(ranges, constructInt(start));
 			listAppend(ranges, constructInt(1));
-		}
-		else {
+		} else {
 			listAppend(ranges, constructInt(seqLength-1-start));
 			listAppend(ranges, constructInt(-1));
 		}
 		listAppend(ranges, sequence);
-		*bytesRead = benLine (cA, nBytes, fileHandle);
+
+		*bytesRead = benLine(cA, nBytes, fileHandle);
 	}
+
+	struct stringSortIdx tmpNameArray[3];
+	TrioNames *trio = NULL;
+	int32_t index = 0;
+	int32_t flag = 0;
+
+	int32_t seq1_rowIndex = 0;
+	int32_t seq2_rowIndex = 0;
+	int32_t seq3_rowIndex = 0;
 
 	//Now call the pair function for every pair of aligned bases.
 	for(i=0; i<ranges->length; i+=4) {
@@ -296,6 +324,40 @@ void getTriosP(void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extra
 				assert((int32_t)strlen(sequence2) == length);
 				assert((int32_t)strlen(sequence3) == length);
 
+				flag = 0;
+
+				seq1_rowIndex = i / 4;
+				seq2_rowIndex = j / 4;
+				seq3_rowIndex = k / 4;
+
+				tmpNameArray[0].name = seq1;
+				tmpNameArray[1].name = seq2;
+				tmpNameArray[2].name = seq3;
+				tmpNameArray[0].index = seq1_rowIndex;
+				tmpNameArray[1].index = seq2_rowIndex;
+				tmpNameArray[2].index = seq3_rowIndex;
+
+				qsort(tmpNameArray, 3, sizeof(struct stringSortIdx), stringSortIdx_cmp);
+				for (index=0; index<speciesList->length; index++) {
+					trio = speciesList->list[index];
+					if (startswith(tmpNameArray[0].name, trio->speciesA, 1) == 1 &&
+					    startswith(tmpNameArray[1].name, trio->speciesB, 1) == 1 &&
+					    startswith(tmpNameArray[2].name, trio->speciesC, 1) == 1) {
+						flag = 1;
+						break;
+					}
+				}
+
+				if (! flag) {
+					continue;
+				}
+
+				//printf("GOOD: %s\t%s\t%s\n", tmpNameArray[0].name, tmpNameArray[1].name, tmpNameArray[2].name);
+				top = calcTrioState(decoder, tmpNameArray[0].index, tmpNameArray[1].index, tmpNameArray[2].index);
+				assert(top != -1);
+				
+				printf("\t%d\t%d\t%d\t%d\n", tmpNameArray[0].index, tmpNameArray[1].index, tmpNameArray[2].index, top);
+
 				for(l=0; l<length; l++) {
 					if (sequence[l] != '-' && sequence2[l] != '-' && sequence3[l] != '-') {
 						aTrio_fillOut(&aTrio, seq1, seq2, seq3, pos1, pos2, pos3, top);
@@ -317,6 +379,7 @@ void getTriosP(void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extra
 
 	//cleanup the list
 	destructList(ranges);
+	trioDecoder_destruct(decoder);
 }
 
 void getPairs(const char *mAFFile1, void (*passPairFn)(APair *pair, void *extraArgument1, void *extraArgument2, void *extraArgument3),
@@ -329,14 +392,14 @@ void getPairs(const char *mAFFile1, void (*passPairFn)(APair *pair, void *extraA
 	int nBytes = 100;
 	char *cA;
 
-	cA = (char *) malloc (nBytes + 1);
+	cA = mallocLocal(nBytes + 1);
 	bytesRead = benLine (&cA, &nBytes, fileHandle);
 
 	//read through lines until reaching a line starting with an 'a':
 	//then call process block function passing it the next line.
 	while(bytesRead != -1) {
 		if(bytesRead > 0 && cA[0] == 'a') {
-           getPairsP(passPairFn, extraArgument1, extraArgument2, extraArgument3, &bytesRead, &nBytes, &cA, fileHandle);
+			getPairsP(passPairFn, extraArgument1, extraArgument2, extraArgument3, &bytesRead, &nBytes, &cA, fileHandle);
 		}
 		else { //deal with empty, white space lines.
 			bytesRead = benLine (&cA, &nBytes, fileHandle);
@@ -349,7 +412,7 @@ void getPairs(const char *mAFFile1, void (*passPairFn)(APair *pair, void *extraA
 }
 
 void getTrios(const char *mAFFile1, void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extraArgument2, void *extraArgument3),
-		void *extraArgument1, void *extraArgument2, void *extraArgument3) {
+		void *extraArgument1, void *extraArgument2, void *extraArgument3, struct List *speciesList) {
 	/*
 	 * Iterates through all trios of bases in a set of MAFs, calling the given function for each one.
 	 */
@@ -358,22 +421,35 @@ void getTrios(const char *mAFFile1, void (*passTrioFn)(ATrio *trio, void *extraA
 	int nBytes = 100;
 	char *cA;
 
-	cA = (char *) malloc (nBytes + 1);
+	char *treeString = NULL;
+	char *match = NULL;
+	int sscanfResultCnt = 0;
+
+	cA = mallocLocal(nBytes + 1);
 	bytesRead = benLine (&cA, &nBytes, fileHandle);
 
 	//read through lines until reaching a line starting with an 'a':
 	//then call process block function passing it the next line.
 	while(bytesRead != -1) {
 		if(bytesRead > 0 && cA[0] == 'a') {
-			getTriosP(passTrioFn, extraArgument1, extraArgument2, extraArgument3, &bytesRead, &nBytes, &cA, fileHandle);
-		}
-		else { //deal with empty, white space lines.
+			// Parse out the newick tree from the alignment block line
+			// Sample line:
+			//   a score=5 tree="(A,B)R;"
+			match = strstr(cA, "tree");
+			assert(match != NULL);
+			treeString = mallocLocal(sizeof(char) * (bytesRead+1));
+			sscanfResultCnt = sscanf(match, "tree=%*[\'\"]%[^\'\"]", treeString);
+			assert(sscanfResultCnt != 0);
+			fprintf(stderr, "The tree is %s\n", treeString);
+			getTriosP(passTrioFn, extraArgument1, extraArgument2, extraArgument3, &bytesRead, &nBytes, &cA, fileHandle, speciesList, treeString);
+		} else { //deal with empty, white space lines.
 			bytesRead = benLine (&cA, &nBytes, fileHandle);
 		}
 	}
 
 	//Cleanup
 	free(cA);
+	free(treeString);
 	fclose(fileHandle);
 }
 
@@ -463,8 +539,8 @@ void homologyTestsTrio1(ATrio *trio, struct avl_table *trios, struct avl_table *
 void homologyTests2(struct avl_table *pairs, struct avl_table *resultPairs) {
 	/*
 	 * For every pair in 'pairs', add 1 to the total number of homology tests for the sequence-pair.
-     * We don't bother with the  seqNames hashtable here because the ht was used to build *pairs
-     * in the first place.
+	 * We don't bother with the  seqNames hashtable here because the ht was used to build *pairs
+	 * in the first place.
 	 */
 	static struct avl_traverser iterator;
 	avl_t_init(&iterator, pairs);
@@ -517,20 +593,24 @@ struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int
 	return resultPairs;
 }
 
-struct avl_table *compareMAFs_AB_Trio(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, char *speciesA, char *speciesB, char *speciesC) {
+struct avl_table *compareMAFs_AB_Trio(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, struct List *speciesList) {
 	/*
 	 * Gets samples.
 	 */
+fprintf(stderr, "*) Get trioNumber\n");
 	int64_t trioNumber = 0;
-	getTrios(mAFFileA, (void (*)(ATrio *, void *, void *, void *))countTrios, &trioNumber, ht, NULL);
+	getTrios(mAFFileA, (void (*)(ATrio *, void *, void *, void *))countTrios, &trioNumber, ht, NULL, speciesList);
 
+fprintf(stderr, "*) First pass\n");
 	double acceptProbability = 1.0 - ((double)numberOfSamples) / trioNumber;
 	struct avl_table *trios = avl_create((int32_t (*)(const void *, const void *, void *))aTrio_cmpFunction, NULL, NULL);
-	getTrios(mAFFileA, (void (*)(ATrio *, void *, void *, void *))sampleTrios, trios, &acceptProbability, ht);
+	getTrios(mAFFileA, (void (*)(ATrio *, void *, void *, void *))sampleTrios, trios, &acceptProbability, ht, speciesList);
 
+fprintf(stderr, "*) Second pass\n");
 	struct avl_table *resultTrios = avl_create((int32_t (*)(const void *, const void *, void *))aTrio_cmpFunction_seqsOnly, NULL, NULL);
-	getTrios(mAFFileB, (void (*)(ATrio *, void *, void *, void *))homologyTestsTrio1, trios, resultTrios, ht);
+	getTrios(mAFFileB, (void (*)(ATrio *, void *, void *, void *))homologyTestsTrio1, trios, resultTrios, ht, speciesList);
 
+fprintf(stderr, "*) Final pass\n");
 	homologyTestsTrio2(trios, resultTrios);
 	avl_destroy(trios, (void (*)(void *, void *))aTrio_destruct);
 	return resultTrios;
@@ -575,21 +655,13 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA, const
 	double positive = 0.0;
 	double total = 0.0;
 	while((resultTrio = avl_t_next(&iterator)) != NULL) {
-if (resultTrio->pos2 < resultTrio->pos1) {
-  fprintf(stderr, "N: %s\t%s\t%s\t%d\t%d\t%d\n", resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos1, resultTrio->pos2, resultTrio->pos3);
-  continue;
-}
 		assert(resultTrio->pos2 >= resultTrio->pos1);
 		positive += resultTrio->pos1;
 		total += resultTrio->pos2;
 	}
-	fprintf(fileHandle, "\t<trio_tests fileA=\"%s\" fileB=\"%s\" totalTests=\"%f\" totalTrue=\"%f\" totalFalse=\"%f\" average=\"%f\">\n",
+	fprintf(fileHandle, "\t<trio_tests fileA=\"%s\" fileB=\"%s\" totalTests=\"%.0f\" totalTrue=\"%.0f\" totalFalse=\"%.0f\" average=\"%f\">\n",
 			mAFFileA, mAFFileB, total, positive, total - positive, positive / total);
 	while((resultTrio = avl_t_prev(&iterator)) != NULL) {
-if (resultTrio->pos2 < resultTrio->pos1) {
-  fprintf(stderr, "P: %s\t%s\t%s\t%d\t%d\t%d\n", resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos1, resultTrio->pos2, resultTrio->pos3);
-  continue;
-}
 		assert(resultTrio->pos2 >= resultTrio->pos1);
 		fprintf(fileHandle,
 				"\t\t<trio_test sequenceA=\"%s\" sequenceB=\"%s\" sequenceC=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\">\n",
@@ -610,31 +682,34 @@ void populateNameHash(const char *mAFFile, struct hashtable *htp) {
 	int bytesRead;
 	int nBytes = 100;
 	char *cA;
-    int32_t length, start, seqLength, i, j;
+	int32_t length, start, seqLength, i, j;
 	char *seqName;
 	char *sequence;
-    char strand;
-    cA = (char *) malloc (nBytes + 1);
+	char strand;
+	cA = mallocLocal(nBytes + 1);
 	bytesRead = benLine (&cA, &nBytes, fileHandle);
+
 	//read through lines until reaching a line starting with an 's':
-    length = INT32_MAX;
-    while(bytesRead != -1){
-       if(bytesRead > 0 && cA[0] == 's') {
-          seqName = mallocLocal(sizeof(char) * (1+ (bytesRead)));
-          sequence = mallocLocal(sizeof(char) * (1+ (bytesRead)));
-          //assert(sscanf(cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence) == 6);
-          j = sscanf(cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence);
-          assert(j == 6 || (j == 5 && seqLength == 0));
+	length = INT32_MAX;
+	while(bytesRead != -1) {
+		if (bytesRead > 0 && cA[0] == 's') {
+			seqName = mallocLocal(sizeof(char) * (1+ (bytesRead)));
+			sequence = mallocLocal(sizeof(char) * (1+ (bytesRead)));
+			//assert(sscanf(cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence) == 6);
+			j = sscanf(cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence);
+			assert(j == 6 || (j == 5 && seqLength == 0));
 
-          if(hashtable_search(htp, seqName) == NULL){
-             hashtable_insert(htp, seqName, constructInt(1));
-          }
+			if (hashtable_search(htp, seqName) == NULL){
+				hashtable_insert(htp, seqName, constructInt(1));
+			}
+			free(sequence);
+		}
+		bytesRead = benLine (&cA, &nBytes, fileHandle);
+	}
 
-       }
-       bytesRead = benLine (&cA, &nBytes, fileHandle);
-    }
 	//Cleanup
 	fclose(fileHandle);
+	free(cA);
 }
 
 void printNameHash(struct hashtable *h) { 
@@ -691,22 +766,21 @@ int32_t countLeaves (struct BinaryTree *node) {
   }
 }
   
-void postOrderLabelNodes (struct BinaryTree *node, int32_t *index, char 
-**labelArray) {
+void postOrderLabelNodes (struct BinaryTree *node, int32_t *index, char **labelArray) {
   if (node->left != NULL) {
     postOrderLabelNodes(node->left, index, labelArray);
   }
   if (node->right != NULL) {
     postOrderLabelNodes(node->right, index, labelArray);
   }
-  labelArray[*index] = (char *) node->label;
+  labelArray[*index] = mallocLocal(strlen(node->label) + 1);
+  strcpy(labelArray[*index], node->label);
   *index += 1;
 
   return;
 }
 
-void postOrderLabelLeaves (struct BinaryTree *node, int32_t *index, char 
-**labelArray) {
+void postOrderLabelLeaves (struct BinaryTree *node, int32_t *index, char **labelArray) {
   if (node->left != NULL) {
     postOrderLabelLeaves(node->left, index, labelArray);
   }
@@ -714,15 +788,15 @@ void postOrderLabelLeaves (struct BinaryTree *node, int32_t *index, char
     postOrderLabelLeaves(node->right, index, labelArray);
   }
   if (! node->internal) {
-    labelArray[*index] = (char *) node->label;
+    labelArray[*index] = mallocLocal(strlen(node->label) + 1);
+    strcpy(labelArray[*index], node->label);
     *index += 1;
   }
 
   return;
 }
 
-void lcaP(struct BinaryTree *node, struct djs *uf, int32_t *ancestor, 
-int32_t *color, struct hashtable *ht, int32_t size, int32_t **lcaMatrix)
+void lcaP(struct BinaryTree *node, struct djs *uf, int32_t *ancestor, int32_t *color, struct hashtable *ht, int32_t size, int32_t **lcaMatrix)
 { 
   if (node == NULL) {
     return;
@@ -730,21 +804,27 @@ int32_t *color, struct hashtable *ht, int32_t size, int32_t **lcaMatrix)
  
   int32_t u = *(int *) hashtable_search(ht, node->label);
   djs_makeset(uf, u);
+  fprintf(stderr, "HERE\t%d\n", u);
   ancestor[djs_findset(uf, u)] = u;
+  fprintf(stderr, "\tHERESTOP\n");
  
   int32_t v;
   // Left
   if (node->left != NULL) {
     lcaP(node->left, uf, ancestor, color, ht, size, lcaMatrix);
     v = *(int *) hashtable_search(ht, node->left->label);
+    fprintf(stderr, "LUNION\t%d\t%d\n", u, v);
     djs_union(uf, u, v);
+    fprintf(stderr, "LHERE2\t%d\n", u);
     ancestor[djs_findset(uf, u)] = u;
   }
   // Right
   if (node->right != NULL) {
     lcaP(node->right, uf, ancestor, color, ht, size, lcaMatrix);
     v = *(int *) hashtable_search(ht, node->right->label);
+    fprintf(stderr, "RUNION\t%d\t%d\n", u, v);
     djs_union(uf, u, v);
+    fprintf(stderr, "RHERE2\t%d\n", u);
     ancestor[djs_findset(uf, u)] = u;
   }
   color[u] = 1;
@@ -795,7 +875,7 @@ void lcaMatrix_free (int32_t **lcaMatrix, int32_t nodeNum) {
   return;                                                           
 }
 
-char ** createNodeLabelArray (struct BinaryTree *tree, int32_t nodeNum) 
+char **createNodeLabelArray (struct BinaryTree *tree, int32_t nodeNum) 
 {
   char **labelArray = mallocLocal(sizeof(char *) * nodeNum);
   int32_t po_index = 0;
@@ -805,7 +885,7 @@ char ** createNodeLabelArray (struct BinaryTree *tree, int32_t nodeNum)
   return labelArray;
 }
 
-char ** createLeafLabelArray (struct BinaryTree *tree, int32_t nodeNum) 
+char **createLeafLabelArray (struct BinaryTree *tree, int32_t nodeNum) 
 {
   char **leafLabelArray = mallocLocal(sizeof(char *) * nodeNum);
   int32_t po_index = 0;
@@ -815,11 +895,20 @@ char ** createLeafLabelArray (struct BinaryTree *tree, int32_t nodeNum)
   return leafLabelArray;
 }
 
+void labelArray_destruct(char **labelArray, int32_t num) {
+	int32_t i = 0;
+	for (i=0; i<num; i++) {
+		free(labelArray[i]);
+	}
+	free(labelArray);
+	return;
+}
+
 struct hashtable * getTreeLabelHash (char **labelArray, int32_t nodeNum)
 {
   struct hashtable *treeLabelHash = NULL;
   int32_t i = 0;
-  treeLabelHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, NULL, NULL);
+  treeLabelHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, free, free);
   for (i=0; i<nodeNum; i++) {
     hashtable_insert(treeLabelHash, labelArray[i], constructInt(i));
   }
@@ -827,35 +916,33 @@ struct hashtable * getTreeLabelHash (char **labelArray, int32_t nodeNum)
   return treeLabelHash;
 }
 
-int32_t calcTrioState(int32_t **lcaMatrix, struct hashtable 
-*treeLabelHash, char *speciesA, char *speciesB, char *speciesC) {
+int32_t calcTrioState(TrioDecoder *decoder, int32_t spAIdx, int32_t spBIdx, int32_t spCIdx) {
   int32_t lca_AB = -1, lca_AC = -1, lca_BC = -1;
 
-  int32_t spA = *(int *) hashtable_search(treeLabelHash, speciesA);
-  int32_t spB = *(int *) hashtable_search(treeLabelHash, speciesB);
-  int32_t spC = *(int *) hashtable_search(treeLabelHash, speciesC);
+  lca_AB = decoder->lcaMatrix[spAIdx][spBIdx];
+  lca_AC = decoder->lcaMatrix[spAIdx][spCIdx];
+  lca_BC = decoder->lcaMatrix[spBIdx][spCIdx];
 
-  lca_AB = lcaMatrix[spA][spB];
-  lca_AC = lcaMatrix[spA][spC];
-  lca_BC = lcaMatrix[spB][spC];
-
-  if (lca_AC == lca_BC) {
-//    printf("0: ((%s,%s),%s);\n", speciesA, speciesB, speciesC);
+  if (lca_AB == lca_AC && lca_AC == lca_BC) {
+    /* Handle the case with multi-furcations */
+    printf("3: (%d,%d,%d);\n", spAIdx, spBIdx, spCIdx);
+    return 3;
+  } else if (lca_AC == lca_BC) {
+    printf("0: ((%d,%d),%d);\n", spAIdx, spBIdx, spCIdx);
     return 0;
   } else if (lca_AB == lca_AC) {
-//    printf("1: (%s,(%s,%s));\n", speciesA, speciesB, speciesC);
+    printf("1: (%d,(%d,%d));\n", spAIdx, spBIdx, spCIdx);
     return 1;
   } else if (lca_AB == lca_BC) {
-//    printf("2: ((%s,%s),%s);\n", speciesA, speciesC, speciesB);
+    printf("2: ((%d,%d),%d);\n", spAIdx, spCIdx, spBIdx);
     return 2;
   } else {
-//    printf("?\n");
+    printf("?\n");
     return -1;
   }
 }
 
-void bSearch (struct BinaryTree *node, char *label, struct BinaryTree 
-**match)
+void bSearch (struct BinaryTree *node, char *label, struct BinaryTree **match)
 {
   if (node == NULL) {
     return;
@@ -870,29 +957,39 @@ void bSearch (struct BinaryTree *node, char *label, struct BinaryTree
   }
 }
 
-void initTrioQuery(char *treestring, char *speciesA, char *speciesB, char *speciesC) {
-  struct BinaryTree *tree = NULL;
-  tree = newickTreeParser(treestring, 0.0, 0);
+TrioDecoder *trioDecoder_construct(char *treestring) {
+	struct BinaryTree *tree = NULL;
+	tree = newickTreeParser(treestring, 0.0, 0);
 
-  int32_t nodeNum = countNodes(tree);
-  int32_t leafNum = countLeaves(tree);
+	int32_t nodeNum = countNodes(tree);
+	int32_t leafNum = countLeaves(tree);
 
-  char **nodeLabelArray = createNodeLabelArray(tree, nodeNum);
-  char **leafLabelArray = createLeafLabelArray(tree, leafNum);
-  struct hashtable *treeLabelHash = getTreeLabelHash(nodeLabelArray, nodeNum);
+	char **nodeLabelArray = createNodeLabelArray(tree, nodeNum);
+	char **leafLabelArray = createLeafLabelArray(tree, leafNum);
+	struct hashtable *treeLabelHash = getTreeLabelHash(nodeLabelArray, nodeNum);
 
-  int32_t **lcaMatrix = NULL;
-  lcaMatrix = lca(tree, treeLabelHash);
+	int32_t **lcaMatrix = NULL;
+	lcaMatrix = lca(tree, treeLabelHash);
 
-  int32_t state = calcTrioState(lcaMatrix, treeLabelHash, speciesA, speciesB, speciesC);
-  printf("state: %d\n",	state);
+	TrioDecoder *decoder = mallocLocal(sizeof(TrioDecoder));
+	decoder->nodeLabelArray = nodeLabelArray;
+	decoder->leafLabelArray = leafLabelArray;
+	decoder->treeLabelHash = treeLabelHash;
+	decoder->lcaMatrix = lcaMatrix;
+	decoder->nodeNum = nodeNum;
+	decoder->leafNum = leafNum;
 
-  destructBinaryTree(tree);
-  free(nodeLabelArray);
-  free(leafLabelArray);
-  hashtable_destroy(treeLabelHash, 0, 0);
-  lcaMatrix_free(lcaMatrix, nodeNum);
-  
-  return;
+	destructBinaryTree(tree);
+	return decoder;
+}
+
+void trioDecoder_destruct(TrioDecoder *decoder) {
+	labelArray_destruct(decoder->nodeLabelArray, decoder->nodeNum);
+	labelArray_destruct(decoder->leafLabelArray, decoder->leafNum);
+	hashtable_destroy(decoder->treeLabelHash, 1, 1);
+	lcaMatrix_free(decoder->lcaMatrix, decoder->nodeNum);
+	free(decoder);
+
+	return;
 }
 

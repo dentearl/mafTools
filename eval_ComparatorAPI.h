@@ -40,22 +40,31 @@ typedef struct _trio {
 	int32_t top; // tree topology
 } ATrio;
 
+typedef struct _trioNames {
+        char *speciesA;
+        char *speciesB;
+        char *speciesC;
+} TrioNames;
+
 typedef struct _trioDecoder {
-	char **labelArray;
+	char **nodeLabelArray;
+	char **leafLabelArray;
 	struct hashtable *treeLabelHash;
 	int32_t **lcaMatrix;
+	int32_t nodeNum;
+	int32_t leafNum;
 } TrioDecoder;
 
 void populateNameHash(const char *mAFFile, struct hashtable *htp);
 void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3);
 void printNameHash(struct hashtable *h);
 struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht);
-struct avl_table *compareMAFs_AB_Trio(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, char *speciesA, char *speciesB, char *speciesC);
+struct avl_table *compareMAFs_AB_Trio(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, struct List *speciesList);
 void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle);
 void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle);
 void aPair_destruct(APair *pair, void *extraArgument);
 void aTrio_destruct(ATrio *trio, void *extraArgument);
 
-void initTrioQuery(char *treestring, char *speciesA, char *speciesB, char *speciesC);
+TrioDecoder *trioDecoder_construct(char *treestring);
 
 #endif /* _EVAL_COMPARATOR_API_H_ */
