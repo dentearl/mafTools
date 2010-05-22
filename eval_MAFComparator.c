@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
 	//////////////////////////////////////////////
 
     struct hashtable *seqNameHash;
-    seqNameHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, NULL, NULL);
+    seqNameHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, free, free);
     populateNameHash(mAFFile1, seqNameHash);
 
 
@@ -171,6 +171,13 @@ int main(int argc, char *argv[]) {
 
 	avl_destroy(results_12, (void (*)(void *, void *))aPair_destruct);
 	avl_destroy(results_21, (void (*)(void *, void *))aPair_destruct);
+
+	free(mAFFile1);
+	free(mAFFile2);
+	free(outputFile);
+	free(logLevelString);
+
+	hashtable_destroy(seqNameHash, 1, 1);
 
 	return 0;
 }
