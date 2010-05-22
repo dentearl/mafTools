@@ -14,23 +14,21 @@
 #include "bioioC.h"
 
 #include "eval_ComparatorAPI.h"
+#include "cstring.h"
 
 /*
- * The script takes two MAF files and for each ordered pair of sequences in the MAFS calculates
- * a predefined number of sample homology tests (see below), then reports the statistics in an XML formatted file.
+ * The script takes two MAF files and for each ordered trio in the MAFS calculates
+ * a predefined number of sample phylogeny trio tests, then reports the statistics in an XML formatted file.
  * It is suitable for running over very large numbers of alignments, because it does not attempt to hold
  * everything in memory, and instead takes a sampling approach.
- *
- * For two sets of pairwise alignments, A and B, a homology test is defined as follows.
- * Pick a pair of aligned positions in A, called a homology pair - the AB homology test returns true if the
- * pair is in B, otherwise it returns false. The set of possible homology tests for the ordered pair (A, B)
- * is not necessarily equivalent to the set of possible (B, A) homology tests.
- * We call the proportion of true tests as a percentage of the total of a set of homology tests C from (A, B)  A~B.
- *
- * If A is the set of true pairwise alignments and B the predicted set of alignments then A~B (over large enough
- * C), is a proxy to sensitivity of B in predicted the set of correctly aligned pairs in A. Conversely B~A (over large enough C)
- * is a proxy to the specificity of the aligned pairs in B with respect to the set of correctly aligned pairs in A.
  */
+
+void freeTrioNames(void *trio) {
+	free(((TrioNames *)trio)->speciesA);
+	free(((TrioNames *)trio)->speciesB);
+	free(((TrioNames *)trio)->speciesC);
+	free(trio);
+}
 
 void usage() {
 	fprintf(stderr, "eval_PhyloComparator, version 0.1\n");
@@ -39,10 +37,55 @@ void usage() {
 	fprintf(stderr, "-c --mAFFile2 : The location of the second MAF file\n");
 	fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
 	fprintf(stderr, "-e --sampleNumber : The number of sample phylotrio tests to perform (total).\n");
-	fprintf(stderr, "-x --speciesA: The first species to be compared\n");
-	fprintf(stderr, "-y --speciesB: The second species to be compared\n");
-	fprintf(stderr, "-z --speciesC: The third species to be compared\n");
+	fprintf(stderr, "-f --trioFile: The location of the trio species file\n");
 	fprintf(stderr, "-h --help : Print this help screen\n");
+}
+
+struct List *parseTrioFile(char *trioFile) {
+	FILE *fileHandle = fopen(trioFile, "r");
+	int bytesRead;
+	int nBytes = 100;
+	char *cA;
+	int j;
+
+	char *species[3];
+
+	struct List *speciesList = NULL;
+	speciesList = constructEmptyList(0, freeTrioNames);
+
+	cA = mallocLocal(nBytes + 1);
+	bytesRead = benLine(&cA, &nBytes, fileHandle);
+
+	while(bytesRead != -1) {
+		if (bytesRead > 0) {
+			species[0] = mallocLocal(sizeof(char) * (1 + (bytesRead)));
+			species[1] = mallocLocal(sizeof(char) * (1 + (bytesRead)));
+			species[2] = mallocLocal(sizeof(char) * (1 + (bytesRead)));
+			j = sscanf(cA, "%s\t%s\t%s", species[0], species[1], species[2]);
+			if (j != 3) {
+				fprintf(stderr, "Invalid triple line '%s' in '%s'\n", cA, trioFile);
+				exit(1);
+			}
+
+			lowerCase(species[0]);
+			lowerCase(species[1]);
+			lowerCase(species[2]);
+			qsort(species, 3, sizeof(char *), cstring_cmp);
+
+			TrioNames *trio = mallocLocal(sizeof(TrioNames));
+			trio->speciesA = species[0];
+			trio->speciesB = species[1];
+			trio->speciesC = species[2];
+			
+			listAppend(speciesList, trio);
+		}
+		bytesRead = benLine(&cA, &nBytes, fileHandle);
+	}
+	fclose(fileHandle);
+
+	free(cA);
+
+	return speciesList;
 }
 
 int main(int argc, char *argv[]) {
@@ -54,9 +97,7 @@ int main(int argc, char *argv[]) {
 	char * mAFFile2 = NULL;
 	char * outputFile = NULL;
 	int32_t sampleNumber = 1000000; // by default do a million samples per pair.
-	char * speciesA = NULL;
-	char * speciesB = NULL;
-	char * speciesC = NULL;
+	char * trioFile = NULL;
 
 	///////////////////////////////////////////////////////////////////////////
 	// (0) Parse the inputs handed by genomeCactus.py / setup stuff.
@@ -69,19 +110,14 @@ int main(int argc, char *argv[]) {
 			{ "mAFFile2", required_argument, 0, 'c' },
 			{ "outputFile", required_argument, 0, 'd' },
 			{ "sampleNumber", required_argument, 0, 'e' },
-//			{ "speciesA", required_argument, 0, 'x' },
-//			{ "speciesB", required_argument, 0, 'y' },
-//			{ "speciesC", required_argument, 0, 'z' },
-			{ "speciesA", optional_argument, 0, 'x' },
-			{ "speciesB", optional_argument, 0, 'y' },
-			{ "speciesC", optional_argument, 0, 'z' },
+			{ "trioFile", required_argument, 0, 'f' },
 			{ "help", no_argument, 0, 'h' },
 			{ 0, 0, 0, 0 }
 		};
 
 		int option_index = 0;
 
-		int key = getopt_long(argc, argv, "a:b:c:d:e:hx:y:z:", long_options, &option_index);
+		int key = getopt_long(argc, argv, "a:b:c:d:e:f:h", long_options, &option_index);
 
 		if(key == -1) {
 			break;
@@ -103,18 +139,12 @@ int main(int argc, char *argv[]) {
 			case 'e':
 				assert(sscanf(optarg, "%i", &sampleNumber) == 1);
 				break;
+			case 'f':
+				trioFile = stringCopy(optarg);
+				break;
 			case 'h':
 				usage();
 				return 0;
-			case 'x':
-				speciesA = stringCopy(optarg);
-				break;
-			case 'y':
-				speciesB = stringCopy(optarg);
-				break;
-			case 'z':
-				speciesC = stringCopy(optarg);
-				break;
 			default:
 				usage();
 				return 1;
@@ -128,9 +158,7 @@ int main(int argc, char *argv[]) {
 	assert(mAFFile1 != NULL);
 	assert(mAFFile2 != NULL);
 	assert(outputFile != NULL);
-//	assert(speciesA != NULL);
-//	assert(speciesB != NULL);
-//	assert(speciesC != NULL);
+	assert(trioFile != NULL);
 
 	FILE *fileHandle = fopen(mAFFile1, "r");
 	if (fileHandle == NULL) {
@@ -144,6 +172,11 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	fclose(fileHandle);
+	fileHandle = fopen(trioFile, "r");
+	if (fileHandle == NULL) {
+		fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", trioFile);
+		exit(1);
+	}
 
 	//////////////////////////////////////////////
 	//Set up logging
@@ -162,15 +195,18 @@ int main(int argc, char *argv[]) {
 
 	logInfo("MAF file 1 name : %s\n", mAFFile1);
 	logInfo("MAF file 2 name : %s\n", mAFFile2);
+	logInfo("Trio species name : %s\n", trioFile);
 	logInfo("Output stats file : %s\n", outputFile);
-	logInfo("Species to be checked: %s, %s, %s\n", speciesA, speciesB, speciesC);
 
-	 //////////////////////////////////////////////
+	/* Parse the trioFile triples into a list */
+	struct List *speciesList = parseTrioFile(trioFile);
+
+	//////////////////////////////////////////////
 	// Create hashtable for the first MAF file.
 	//////////////////////////////////////////////
 
 	struct hashtable *seqNameHash;
-	seqNameHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, NULL, NULL);
+	seqNameHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, free, free);
 	populateNameHash(mAFFile1, seqNameHash);
 
 	// TODO: Check if query species are in maf file
@@ -179,8 +215,11 @@ int main(int argc, char *argv[]) {
 	//Do comparisons.
 	//////////////////////////////////////////////
 
-	struct avl_table *results_12 = compareMAFs_AB_Trio(mAFFile1, mAFFile2, sampleNumber, seqNameHash, speciesA, speciesB, speciesC);
-	struct avl_table *results_21 = compareMAFs_AB_Trio(mAFFile2, mAFFile1, sampleNumber, seqNameHash, speciesA, speciesB, speciesC);
+	fprintf(stderr, "Left VS Right\n");
+	struct avl_table *results_12 = compareMAFs_AB_Trio(mAFFile1, mAFFile2, sampleNumber, seqNameHash, speciesList);
+	fprintf(stderr, "Right VS Left\n");
+//	struct avl_table *results_21 = compareMAFs_AB_Trio(mAFFile2, mAFFile1, sampleNumber, seqNameHash, speciesList);
+	fprintf(stderr, "...done\n");
 
 	fileHandle = fopen(outputFile, "w");
 	if (fileHandle == NULL) {
@@ -190,7 +229,7 @@ int main(int argc, char *argv[]) {
 
 	fprintf(fileHandle, "<trio_comparisons sampleNumber=\"%i\">\n", sampleNumber);
 	reportResultsTrio(results_12, mAFFile1, mAFFile2, fileHandle);
-	reportResultsTrio(results_21, mAFFile2, mAFFile1, fileHandle);
+//	reportResultsTrio(results_21, mAFFile2, mAFFile1, fileHandle);
 	fprintf(fileHandle, "</trio_comparisons>\n");
 	fclose(fileHandle);
 
@@ -198,8 +237,18 @@ int main(int argc, char *argv[]) {
 	// Clean up.
 	///////////////////////////////////////////////////////////////////////////
 
-	avl_destroy(results_12, (void (*)(void *, void *))aPair_destruct);
-	avl_destroy(results_21, (void (*)(void *, void *))aPair_destruct);
+	free(mAFFile1);
+	free(mAFFile2);
+	free(outputFile);
+	free(trioFile);
+	free(logLevelString);
+
+	hashtable_destroy(seqNameHash, 1, 1);
+
+	avl_destroy(results_12, (void (*)(void *, void *))aTrio_destruct);
+//	avl_destroy(results_21, (void (*)(void *, void *))aTrio_destruct);
+
+	destructList(speciesList);
 
 	return 0;
 }
