@@ -201,6 +201,13 @@ int main(int argc, char *argv[]) {
 	/* Parse the trioFile triples into a list */
 	struct List *speciesList = parseTrioFile(trioFile);
 
+	ETree *tree = NULL;
+//	char string[] = "(A,(B,C)BC)R;";
+//	tree = eTree_parseNewickString(string);
+//	printf("%d\n", countNodes(tree));
+//	printf("%d\n", countLeaves(tree));
+//	exit(-1);
+
 	//////////////////////////////////////////////
 	// Create hashtable for the first MAF file.
 	//////////////////////////////////////////////
@@ -218,7 +225,7 @@ int main(int argc, char *argv[]) {
 	fprintf(stderr, "Left VS Right\n");
 	struct avl_table *results_12 = compareMAFs_AB_Trio(mAFFile1, mAFFile2, sampleNumber, seqNameHash, speciesList);
 	fprintf(stderr, "Right VS Left\n");
-//	struct avl_table *results_21 = compareMAFs_AB_Trio(mAFFile2, mAFFile1, sampleNumber, seqNameHash, speciesList);
+	struct avl_table *results_21 = compareMAFs_AB_Trio(mAFFile2, mAFFile1, sampleNumber, seqNameHash, speciesList);
 	fprintf(stderr, "...done\n");
 
 	fileHandle = fopen(outputFile, "w");
@@ -229,7 +236,7 @@ int main(int argc, char *argv[]) {
 
 	fprintf(fileHandle, "<trio_comparisons sampleNumber=\"%i\">\n", sampleNumber);
 	reportResultsTrio(results_12, mAFFile1, mAFFile2, fileHandle);
-//	reportResultsTrio(results_21, mAFFile2, mAFFile1, fileHandle);
+	reportResultsTrio(results_21, mAFFile2, mAFFile1, fileHandle);
 	fprintf(fileHandle, "</trio_comparisons>\n");
 	fclose(fileHandle);
 
@@ -246,7 +253,7 @@ int main(int argc, char *argv[]) {
 	hashtable_destroy(seqNameHash, 1, 1);
 
 	avl_destroy(results_12, (void (*)(void *, void *))aTrio_destruct);
-//	avl_destroy(results_21, (void (*)(void *, void *))aTrio_destruct);
+	avl_destroy(results_21, (void (*)(void *, void *))aTrio_destruct);
 
 	destructList(speciesList);
 
