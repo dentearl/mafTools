@@ -9,12 +9,13 @@
 #include <time.h>
 #include <getopt.h>
 
-#include "cactus.h"
 #include "avl.h"
+#include "bioioC.h"
+#include "cactus.h"
 #include "commonC.h"
 #include "hashTableC.h"
 #include "hashTableC_itr.h"
-#include "bioioC.h"
+#include "sonLib.h"
 
 #include "disjointset.h"
 
