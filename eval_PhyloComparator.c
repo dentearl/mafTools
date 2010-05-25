@@ -182,6 +182,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", trioFile);
 		exit(1);
 	}
+	fclose(fileHandle);
 
 	//////////////////////////////////////////////
 	//Set up logging
