@@ -32,13 +32,13 @@ void freeTrioNames(void *trio) {
 
 void usage() {
 	fprintf(stderr, "eval_PhyloComparator, version 0.1\n");
-	fprintf(stderr, "-a --logLevel : Set the log level\n");
-	fprintf(stderr, "-b --mAFFile1 : The location of the first MAF file\n");
-	fprintf(stderr, "-c --mAFFile2 : The location of the second MAF file\n");
-	fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
-	fprintf(stderr, "-e --sampleNumber : The number of sample phylotrio tests to perform (total).\n");
-	fprintf(stderr, "-f --trioFile: The location of the trio species file\n");
-	fprintf(stderr, "-h --help : Print this help screen\n");
+	fprintf(stderr, "\t-a --logLevel : Set the log level\n");
+	fprintf(stderr, "\t-b --mAFFile1 : The location of the first MAF file\n");
+	fprintf(stderr, "\t-c --mAFFile2 : The location of the second MAF file\n");
+	fprintf(stderr, "\t-d --outputFile : The output XML formatted results file.\n");
+	fprintf(stderr, "\t-e --sampleNumber : The number of sample phylotrio tests to perform (total).\n");
+	fprintf(stderr, "\t-f --trioFile: The location of the trio species file\n");
+	fprintf(stderr, "\t-h --help : Print this help screen\n");
 }
 
 struct List *parseTrioFile(char *trioFile) {
@@ -154,6 +154,11 @@ int main(int argc, char *argv[]) {
 	///////////////////////////////////////////////////////////////////////////
 	// (0) Check the inputs.
 	///////////////////////////////////////////////////////////////////////////
+
+	if (argc == 1) {
+		usage();
+		return 1;
+	}
 
 	assert(mAFFile1 != NULL);
 	assert(mAFFile2 != NULL);
