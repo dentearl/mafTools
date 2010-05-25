@@ -1,9 +1,9 @@
 /* convert a mafInvert object back to a MAF file */
 #include "common.h"
-#include "mafRevert.h"
+#include "mafInvertWrite.h"
 #include "mafInvert.h"
 #include "genome.h"
-#include "maf.h"
+#include "jkmaf.h"
 #include "dystring.h"
 
 /* a current component in the block being built */

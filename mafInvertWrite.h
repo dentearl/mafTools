@@ -1,6 +1,6 @@
 /* convert a mafInvert object back to a MAF file */
-#ifndef mafRevert_h
-#define mafRevert_h
+#ifndef mafInvertWrite_h
+#define mafInvertWrite_h
 struct MafInvert;
 
 /* convert a MafInvert to a MAF */

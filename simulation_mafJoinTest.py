@@ -37,7 +37,7 @@ unique shared species), and (2) x is the root of either or both of T(A) and T(B)
 Theorem 1:  For two compatible tree normal MAF files there exists a (unique) 
 complete join of A and B for which all joins are simple.
 
-mafJoiner performs a complete join on two compatible tree normal MAF files.
+mafJoin performs a complete join on two compatible tree normal MAF files.
 """
 
 import os,sys

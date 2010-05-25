@@ -3,8 +3,9 @@ include ../../../include.mk
 binPath = ../../../bin
 libPath = ../../../lib
 
+cflags += -I../../sonLib
 ifneq ($(wildcard ${kentLibWeb}),)
-objs = genome.o mafInvert.o mafInvertJoin.o mafRevert.o mafJoin.o
+objs = jkmaf.o genome.o mafInvert.o mafInvertJoin.o mafInvertWrite.o mafJoin.o
 cflags += -I ${kentInc}
 progs = ${binPath}/mafJoin
 endif

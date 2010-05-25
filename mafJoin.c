@@ -3,7 +3,7 @@
 #include "genome.h"
 #include "mafInvert.h"
 #include "mafInvertJoin.h"
-#include "mafRevert.h"
+#include "mafInvertWrite.h"
 
 /*
  * Notes: 

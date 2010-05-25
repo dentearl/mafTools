@@ -2,7 +2,7 @@
 #include "common.h"
 #include "genome.h"
 #include "hash.h"
-#include "maf.h"
+#include "jkmaf.h"
 
 /* make db.seq name */
 char *seqMkName(struct Seq *seq) {

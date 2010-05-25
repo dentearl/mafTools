@@ -2,7 +2,7 @@
 #include "common.h"
 #include "mafInvert.h"
 #include "hash.h"
-#include "maf.h"
+#include "jkmaf.h"
 #include "obscure.h"
 
 /* print a cell for debugging purposes */
