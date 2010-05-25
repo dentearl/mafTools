@@ -746,153 +746,150 @@ void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtabl
 	free(itr);
 }
 
-int32_t countNodes (struct BinaryTree *node) {
-  if (node == NULL) {
-    return 0;
-  } else {
-    return (countNodes(node->left) + 1 + countNodes(node->right));
-  }
+int32_t countNodes(ETree *node) {
+	int32_t i = 0;
+	int32_t count = 0;
+	if (node == NULL) {
+		return 0;
+	} else {
+		count = 1;
+		for (i=0; i<eTree_getChildNumber(node); i++) {
+			count += countNodes(eTree_getChild(node, i));
+		}
+		return count;
+	}
 }
 
-int32_t countLeaves (struct BinaryTree *node) {
-  if (node == NULL) {
-    return 0;
-  } else {
-    if (node->internal) {
-      return (countLeaves(node->left) + 0 + countLeaves(node->right));
-    } else {
-      return (countLeaves(node->left) + 1 + countLeaves(node->right));
-    }
-  }
+int32_t countLeaves(ETree *node) {
+	int32_t i = 0;
+	int32_t count = 0;
+	if (node == NULL) {
+		return 0;
+	} else {
+		if (eTree_getChildNumber(node) == 0) {
+			return 1;
+		} else {
+			for (i=0; i<eTree_getChildNumber(node); i++) {
+				count += countLeaves(eTree_getChild(node, i));
+			}
+			return count;
+		}
+	}
 }
   
-void postOrderLabelNodes (struct BinaryTree *node, int32_t *index, char **labelArray) {
-  if (node->left != NULL) {
-    postOrderLabelNodes(node->left, index, labelArray);
-  }
-  if (node->right != NULL) {
-    postOrderLabelNodes(node->right, index, labelArray);
-  }
-  labelArray[*index] = mallocLocal(strlen(node->label) + 1);
-  strcpy(labelArray[*index], node->label);
-  *index += 1;
+void postOrderLabelNodes(ETree *node, int32_t *index, char **labelArray) {
+	int32_t i = 0;
+	for (i=0; i<eTree_getChildNumber(node); i++) {
+		postOrderLabelNodes(eTree_getChild(node, i), index, labelArray);
+	}
+	labelArray[*index] = stringCopy(eTree_getLabel(node));
+	*index += 1;
 
-  return;
+	return;
 }
 
-void postOrderLabelLeaves (struct BinaryTree *node, int32_t *index, char **labelArray) {
-  if (node->left != NULL) {
-    postOrderLabelLeaves(node->left, index, labelArray);
-  }
-  if (node->right != NULL) {
-    postOrderLabelLeaves(node->right, index, labelArray);
-  }
-  if (! node->internal) {
-    labelArray[*index] = mallocLocal(strlen(node->label) + 1);
-    strcpy(labelArray[*index], node->label);
-    *index += 1;
-  }
+void postOrderLabelLeaves(ETree *node, int32_t *index, char **labelArray) {
+	int32_t i = 0;
+	for (i=0; i<eTree_getChildNumber(node); i++) {
+		postOrderLabelLeaves(eTree_getChild(node, i), index, labelArray);
+	}
+	if (eTree_getChildNumber(node) == 0) {
+		labelArray[*index] = stringCopy(eTree_getLabel(node));
+		*index += 1;
+	}
 
-  return;
+	return;
 }
 
-void lcaP(struct BinaryTree *node, struct djs *uf, int32_t *ancestor, int32_t *color, struct hashtable *ht, int32_t size, int32_t **lcaMatrix)
-{ 
-  if (node == NULL) {
-    return;
-  }
+void lcaP(ETree *node, struct djs *uf, int32_t *ancestor, int32_t *color, struct hashtable *ht, int32_t size, int32_t **lcaMatrix) { 
+	if (node == NULL) {
+		return;
+	}
  
-  int32_t u = *(int *) hashtable_search(ht, node->label);
-  djs_makeset(uf, u);
-  fprintf(stderr, "HERE\t%d\n", u);
-  ancestor[djs_findset(uf, u)] = u;
-  fprintf(stderr, "\tHERESTOP\n");
+	int32_t u = *(int *) hashtable_search(ht, (void *) eTree_getLabel(node));
+	djs_makeset(uf, u);
+	fprintf(stderr, "HERE\t%d\n", u);
+	ancestor[djs_findset(uf, u)] = u;
+	fprintf(stderr, "\tHERESTOP\n");
  
-  int32_t v;
-  // Left
-  if (node->left != NULL) {
-    lcaP(node->left, uf, ancestor, color, ht, size, lcaMatrix);
-    v = *(int *) hashtable_search(ht, node->left->label);
-    fprintf(stderr, "LUNION\t%d\t%d\n", u, v);
-    djs_union(uf, u, v);
-    fprintf(stderr, "LHERE2\t%d\n", u);
-    ancestor[djs_findset(uf, u)] = u;
-  }
-  // Right
-  if (node->right != NULL) {
-    lcaP(node->right, uf, ancestor, color, ht, size, lcaMatrix);
-    v = *(int *) hashtable_search(ht, node->right->label);
-    fprintf(stderr, "RUNION\t%d\t%d\n", u, v);
-    djs_union(uf, u, v);
-    fprintf(stderr, "RHERE2\t%d\n", u);
-    ancestor[djs_findset(uf, u)] = u;
-  }
-  color[u] = 1;
+	int32_t v;
+
+	int32_t i = 0;
+	for (i=0; i<eTree_getChildNumber(node); i++) {
+		lcaP(eTree_getChild(node, i), uf, ancestor, color, ht, size, lcaMatrix);
+		v = *((int *) hashtable_search(ht, (void *) eTree_getLabel(node)));
+		fprintf(stderr, "UNION\t%d\t%d\n", u, v);
+		djs_union(uf, u, v);
+		fprintf(stderr, "HERE\t%d\n", u);
+		ancestor[djs_findset(uf, u)] = u;
+	}
+	color[u] = 1;
   
-  int32_t i = 0;
-  for (i=0; i<size; i++) {
-    if (color[i] == 1) {
-//      printf("%d\t%d\t%d\n", u, i, ancestor[djs_findset(uf, i)]);
-      lcaMatrix[u][i] = ancestor[djs_findset(uf, i)];
-      lcaMatrix[i][u] = ancestor[djs_findset(uf, i)];
-    }
-  }
+	for (i=0; i<size; i++) {
+		if (color[i] == 1) {
+//			printf("%d\t%d\t%d\n", u, i, ancestor[djs_findset(uf, i)]);
+			lcaMatrix[u][i] = ancestor[djs_findset(uf, i)];
+			lcaMatrix[i][u] = ancestor[djs_findset(uf, i)];
+		}
+	}
+
+	return;
 }
   
-int32_t ** lca(struct BinaryTree *root, struct hashtable *ht)
-{
-  int32_t nodeNum = countNodes(root);
+int32_t **lca(ETree *root, struct hashtable *ht) {
+	int32_t nodeNum = countNodes(root);
 
-  struct djs *uf = NULL;
-  uf = djs_new(nodeNum);
+	struct djs *uf = NULL;
+	uf = djs_new(nodeNum);
   
-  int32_t *ancestor = mallocLocal(sizeof(int32_t) * nodeNum);
-  int32_t *color = mallocLocal(sizeof(int32_t) * nodeNum);
+	int32_t *ancestor = mallocLocal(sizeof(int32_t) * nodeNum);
+	int32_t *color = mallocLocal(sizeof(int32_t) * nodeNum);
  
-  int32_t **lcaMatrix = NULL;
-  int32_t i = 0;
-  lcaMatrix = mallocLocal(sizeof(int32_t *) * nodeNum);
-  for (i=0; i<nodeNum; i++) {
-    lcaMatrix[i] = mallocLocal(sizeof(int32_t) * nodeNum);
-  }
+	int32_t i = 0;
+	int32_t **lcaMatrix = NULL;
+	lcaMatrix = mallocLocal(sizeof(int32_t *) * nodeNum);
+	for (i=0; i<nodeNum; i++) {
+		lcaMatrix[i] = mallocLocal(sizeof(int32_t) * nodeNum);
+	}
 
-  lcaP(root, uf, ancestor, color, ht, nodeNum, lcaMatrix);
+	fprintf(stderr, "\tPRE-LCAP\n");
+	lcaP(root, uf, ancestor, color, ht, nodeNum, lcaMatrix);
+	fprintf(stderr, "\tPOST-LCAP\n");
 
-  djs_free(uf);
-  free(ancestor);
-  free(color);
+	djs_free(uf);
+	free(ancestor);
+	free(color);
 
-  return lcaMatrix;
+	return lcaMatrix;
 }
 
 void lcaMatrix_free (int32_t **lcaMatrix, int32_t nodeNum) {
-  int32_t i = 0;
-  for (i=0; i<nodeNum; i++) {
-    free(lcaMatrix[i]);
-  }
-  free(lcaMatrix);
+	int32_t i = 0;
 
-  return;                                                           
+	for (i=0; i<nodeNum; i++) {
+		free(lcaMatrix[i]);
+	}
+	free(lcaMatrix);
+
+	return;                                                           
 }
 
-char **createNodeLabelArray (struct BinaryTree *tree, int32_t nodeNum) 
-{
-  char **labelArray = mallocLocal(sizeof(char *) * nodeNum);
-  int32_t po_index = 0;
+char **createNodeLabelArray(ETree *tree, int32_t nodeNum) {
+	char **labelArray = mallocLocal(sizeof(char *) * nodeNum);
+	int32_t po_index = 0;
 
-  postOrderLabelNodes(tree, &po_index, labelArray);
+	postOrderLabelNodes(tree, &po_index, labelArray);
 
-  return labelArray;
+	return labelArray;
 }
 
-char **createLeafLabelArray (struct BinaryTree *tree, int32_t nodeNum) 
-{
-  char **leafLabelArray = mallocLocal(sizeof(char *) * nodeNum);
-  int32_t po_index = 0;
+char **createLeafLabelArray(ETree *tree, int32_t nodeNum) {
+	char **leafLabelArray = mallocLocal(sizeof(char *) * nodeNum);
+	int32_t po_index = 0;
 
-  postOrderLabelLeaves(tree, &po_index, leafLabelArray);
+	postOrderLabelLeaves(tree, &po_index, leafLabelArray);
 
-  return leafLabelArray;
+	return leafLabelArray;
 }
 
 void labelArray_destruct(char **labelArray, int32_t num) {
@@ -904,62 +901,50 @@ void labelArray_destruct(char **labelArray, int32_t num) {
 	return;
 }
 
-struct hashtable * getTreeLabelHash (char **labelArray, int32_t nodeNum)
-{
-  struct hashtable *treeLabelHash = NULL;
-  int32_t i = 0;
-  treeLabelHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, free, free);
-  for (i=0; i<nodeNum; i++) {
-    hashtable_insert(treeLabelHash, labelArray[i], constructInt(i));
-  }
+struct hashtable * getTreeLabelHash(char **labelArray, int32_t nodeNum) {
+	struct hashtable *treeLabelHash = NULL;
+	int32_t i = 0;
+	treeLabelHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, free, free);
+	for (i=0; i<nodeNum; i++) {
+		hashtable_insert(treeLabelHash, stringCopy(labelArray[i]), constructInt(i));
+	}
 
-  return treeLabelHash;
+	return treeLabelHash;
 }
 
 int32_t calcTrioState(TrioDecoder *decoder, int32_t spAIdx, int32_t spBIdx, int32_t spCIdx) {
-  int32_t lca_AB = -1, lca_AC = -1, lca_BC = -1;
+	int32_t lca_AB = -1, lca_AC = -1, lca_BC = -1;
 
-  lca_AB = decoder->lcaMatrix[spAIdx][spBIdx];
-  lca_AC = decoder->lcaMatrix[spAIdx][spCIdx];
-  lca_BC = decoder->lcaMatrix[spBIdx][spCIdx];
+//	char *spA = decoder->leafLabelArray[spAIdx];
+//	char *spB = decoder->leafLabelArray[spBIdx];
+//	char *spC = decoder->leafLabelArray[spCIdx];
 
-  if (lca_AB == lca_AC && lca_AC == lca_BC) {
-    /* Handle the case with multi-furcations */
-    printf("3: (%d,%d,%d);\n", spAIdx, spBIdx, spCIdx);
-    return 3;
-  } else if (lca_AC == lca_BC) {
-    printf("0: ((%d,%d),%d);\n", spAIdx, spBIdx, spCIdx);
-    return 0;
-  } else if (lca_AB == lca_AC) {
-    printf("1: (%d,(%d,%d));\n", spAIdx, spBIdx, spCIdx);
-    return 1;
-  } else if (lca_AB == lca_BC) {
-    printf("2: ((%d,%d),%d);\n", spAIdx, spCIdx, spBIdx);
-    return 2;
-  } else {
-    printf("?\n");
-    return -1;
-  }
-}
+	lca_AB = decoder->lcaMatrix[spAIdx][spBIdx];
+	lca_AC = decoder->lcaMatrix[spAIdx][spCIdx];
+	lca_BC = decoder->lcaMatrix[spBIdx][spCIdx];
 
-void bSearch (struct BinaryTree *node, char *label, struct BinaryTree **match)
-{
-  if (node == NULL) {
-    return;
-  }
-
-  if (strcmp(node->label, label) == 0) {
-    *match = node;
-    return;
-  } else {
-    bSearch(node->left, label, match);
-    bSearch(node->right, label, match);
-  }
+	if (lca_AB == lca_AC && lca_AC == lca_BC) {
+		/* Handle the case with multi-furcations */
+		printf("3: (%d,%d,%d);\n", spAIdx, spBIdx, spCIdx);
+		return 3;
+	} else if (lca_AC == lca_BC) {
+		printf("0: ((%d,%d),%d);\n", spAIdx, spBIdx, spCIdx);
+		return 0;
+	} else if (lca_AB == lca_AC) {
+		printf("1: (%d,(%d,%d));\n", spAIdx, spBIdx, spCIdx);
+		return 1;
+	} else if (lca_AB == lca_BC) {
+		printf("2: ((%d,%d),%d);\n", spAIdx, spCIdx, spBIdx);
+		return 2;
+	} else {
+		printf("?\n");
+		return -1;
+	}
 }
 
 TrioDecoder *trioDecoder_construct(char *treestring) {
-	struct BinaryTree *tree = NULL;
-	tree = newickTreeParser(treestring, 0.0, 0);
+	ETree *tree = NULL;
+	tree = eTree_parseNewickString(treestring);
 
 	int32_t nodeNum = countNodes(tree);
 	int32_t leafNum = countLeaves(tree);
@@ -967,6 +952,14 @@ TrioDecoder *trioDecoder_construct(char *treestring) {
 	char **nodeLabelArray = createNodeLabelArray(tree, nodeNum);
 	char **leafLabelArray = createLeafLabelArray(tree, leafNum);
 	struct hashtable *treeLabelHash = getTreeLabelHash(nodeLabelArray, nodeNum);
+
+	int32_t i;
+	for (i=0; i<leafNum; i++) {
+		printf("leaf: %d\t%s\n", i, leafLabelArray[i]);
+	}
+	for (i=0; i<nodeNum; i++) {
+		printf("node: %d\t%s\n", i, nodeLabelArray[i]);
+	}
 
 	int32_t **lcaMatrix = NULL;
 	lcaMatrix = lca(tree, treeLabelHash);
@@ -979,7 +972,7 @@ TrioDecoder *trioDecoder_construct(char *treestring) {
 	decoder->nodeNum = nodeNum;
 	decoder->leafNum = leafNum;
 
-	destructBinaryTree(tree);
+	eTree_destruct(tree);
 	return decoder;
 }
 
