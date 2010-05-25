@@ -352,12 +352,9 @@ void getTriosP(void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extra
 					continue;
 				}
 
-				//printf("GOOD: %s\t%s\t%s\n", tmpNameArray[0].name, tmpNameArray[1].name, tmpNameArray[2].name);
 				top = calcTrioState(decoder, tmpNameArray[0].index, tmpNameArray[1].index, tmpNameArray[2].index);
 				assert(top != -1);
 				
-				printf("\t%d\t%d\t%d\t%d\n", tmpNameArray[0].index, tmpNameArray[1].index, tmpNameArray[2].index, top);
-
 				for(l=0; l<length; l++) {
 					if (sequence[l] != '-' && sequence2[l] != '-' && sequence3[l] != '-') {
 						aTrio_fillOut(&aTrio, seq1, seq2, seq3, pos1, pos2, pos3, top);
@@ -440,7 +437,6 @@ void getTrios(const char *mAFFile1, void (*passTrioFn)(ATrio *trio, void *extraA
 			treeString = mallocLocal(sizeof(char) * (bytesRead+1));
 			sscanfResultCnt = sscanf(match, "tree=%*[\'\"]%[^\'\"]", treeString);
 			assert(sscanfResultCnt != 0);
-			fprintf(stderr, "The tree is %s\n", treeString);
 			getTriosP(passTrioFn, extraArgument1, extraArgument2, extraArgument3, &bytesRead, &nBytes, &cA, fileHandle, speciesList, treeString);
 		} else { //deal with empty, white space lines.
 			bytesRead = benLine (&cA, &nBytes, fileHandle);
@@ -597,20 +593,16 @@ struct avl_table *compareMAFs_AB_Trio(const char *mAFFileA, const char *mAFFileB
 	/*
 	 * Gets samples.
 	 */
-fprintf(stderr, "*) Get trioNumber\n");
 	int64_t trioNumber = 0;
 	getTrios(mAFFileA, (void (*)(ATrio *, void *, void *, void *))countTrios, &trioNumber, ht, NULL, speciesList);
 
-fprintf(stderr, "*) First pass\n");
 	double acceptProbability = 1.0 - ((double)numberOfSamples) / trioNumber;
 	struct avl_table *trios = avl_create((int32_t (*)(const void *, const void *, void *))aTrio_cmpFunction, NULL, NULL);
 	getTrios(mAFFileA, (void (*)(ATrio *, void *, void *, void *))sampleTrios, trios, &acceptProbability, ht, speciesList);
 
-fprintf(stderr, "*) Second pass\n");
 	struct avl_table *resultTrios = avl_create((int32_t (*)(const void *, const void *, void *))aTrio_cmpFunction_seqsOnly, NULL, NULL);
 	getTrios(mAFFileB, (void (*)(ATrio *, void *, void *, void *))homologyTestsTrio1, trios, resultTrios, ht, speciesList);
 
-fprintf(stderr, "*) Final pass\n");
 	homologyTestsTrio2(trios, resultTrios);
 	avl_destroy(trios, (void (*)(void *, void *))aTrio_destruct);
 	return resultTrios;
@@ -806,28 +798,23 @@ void lcaP(ETree *node, struct djs *uf, int32_t *ancestor, int32_t *color, struct
 		return;
 	}
  
-	int32_t u = *(int *) hashtable_search(ht, (void *) eTree_getLabel(node));
+	int32_t u = *((int *) hashtable_search(ht, (void *) eTree_getLabel(node)));
 	djs_makeset(uf, u);
-	fprintf(stderr, "HERE\t%d\n", u);
 	ancestor[djs_findset(uf, u)] = u;
-	fprintf(stderr, "\tHERESTOP\n");
- 
+
 	int32_t v;
 
 	int32_t i = 0;
 	for (i=0; i<eTree_getChildNumber(node); i++) {
 		lcaP(eTree_getChild(node, i), uf, ancestor, color, ht, size, lcaMatrix);
-		v = *((int *) hashtable_search(ht, (void *) eTree_getLabel(node)));
-		fprintf(stderr, "UNION\t%d\t%d\n", u, v);
+		v = *((int *) hashtable_search(ht, (void *) eTree_getLabel(eTree_getChild(node, i))));
 		djs_union(uf, u, v);
-		fprintf(stderr, "HERE\t%d\n", u);
 		ancestor[djs_findset(uf, u)] = u;
 	}
 	color[u] = 1;
   
 	for (i=0; i<size; i++) {
 		if (color[i] == 1) {
-//			printf("%d\t%d\t%d\n", u, i, ancestor[djs_findset(uf, i)]);
 			lcaMatrix[u][i] = ancestor[djs_findset(uf, i)];
 			lcaMatrix[i][u] = ancestor[djs_findset(uf, i)];
 		}
@@ -842,19 +829,27 @@ int32_t **lca(ETree *root, struct hashtable *ht) {
 	struct djs *uf = NULL;
 	uf = djs_new(nodeNum);
   
-	int32_t *ancestor = mallocLocal(sizeof(int32_t) * nodeNum);
-	int32_t *color = mallocLocal(sizeof(int32_t) * nodeNum);
- 
 	int32_t i = 0;
+
+	int32_t *ancestor = NULL;
+	ancestor = mallocLocal(sizeof(int32_t) * nodeNum);
+	for (i=0; i<nodeNum; i++) {
+		ancestor[i] = 0;
+	}
+
+	int32_t *color = NULL;
+	color = mallocLocal(sizeof(int32_t) * nodeNum);
+	for (i=0; i<nodeNum; i++) {
+		color[i] = 0;
+	}
+ 
 	int32_t **lcaMatrix = NULL;
 	lcaMatrix = mallocLocal(sizeof(int32_t *) * nodeNum);
 	for (i=0; i<nodeNum; i++) {
 		lcaMatrix[i] = mallocLocal(sizeof(int32_t) * nodeNum);
 	}
 
-	fprintf(stderr, "\tPRE-LCAP\n");
 	lcaP(root, uf, ancestor, color, ht, nodeNum, lcaMatrix);
-	fprintf(stderr, "\tPOST-LCAP\n");
 
 	djs_free(uf);
 	free(ancestor);
@@ -915,29 +910,33 @@ struct hashtable * getTreeLabelHash(char **labelArray, int32_t nodeNum) {
 int32_t calcTrioState(TrioDecoder *decoder, int32_t spAIdx, int32_t spBIdx, int32_t spCIdx) {
 	int32_t lca_AB = -1, lca_AC = -1, lca_BC = -1;
 
-//	char *spA = decoder->leafLabelArray[spAIdx];
-//	char *spB = decoder->leafLabelArray[spBIdx];
-//	char *spC = decoder->leafLabelArray[spCIdx];
+	char *spA = decoder->leafLabelArray[spAIdx];
+	char *spB = decoder->leafLabelArray[spBIdx];
+	char *spC = decoder->leafLabelArray[spCIdx];
 
-	lca_AB = decoder->lcaMatrix[spAIdx][spBIdx];
-	lca_AC = decoder->lcaMatrix[spAIdx][spCIdx];
-	lca_BC = decoder->lcaMatrix[spBIdx][spCIdx];
+	int32_t aIdx = *(int *) hashtable_search(decoder->treeLabelHash, (void *) spA);
+	int32_t bIdx = *(int *) hashtable_search(decoder->treeLabelHash, (void *) spB);
+	int32_t cIdx = *(int *) hashtable_search(decoder->treeLabelHash, (void *) spC);
+
+	lca_AB = decoder->lcaMatrix[aIdx][bIdx];
+	lca_AC = decoder->lcaMatrix[aIdx][cIdx];
+	lca_BC = decoder->lcaMatrix[bIdx][cIdx];
 
 	if (lca_AB == lca_AC && lca_AC == lca_BC) {
 		/* Handle the case with multi-furcations */
-		printf("3: (%d,%d,%d);\n", spAIdx, spBIdx, spCIdx);
+		//printf("3: (%d,%d,%d);\n", spAIdx, spBIdx, spCIdx);
 		return 3;
 	} else if (lca_AC == lca_BC) {
-		printf("0: ((%d,%d),%d);\n", spAIdx, spBIdx, spCIdx);
+		//printf("0: ((%d,%d),%d);\n", spAIdx, spBIdx, spCIdx);
 		return 0;
 	} else if (lca_AB == lca_AC) {
-		printf("1: (%d,(%d,%d));\n", spAIdx, spBIdx, spCIdx);
+		//printf("1: (%d,(%d,%d));\n", spAIdx, spBIdx, spCIdx);
 		return 1;
 	} else if (lca_AB == lca_BC) {
-		printf("2: ((%d,%d),%d);\n", spAIdx, spCIdx, spBIdx);
+		//printf("2: ((%d,%d),%d);\n", spAIdx, spCIdx, spBIdx);
 		return 2;
 	} else {
-		printf("?\n");
+		//printf("?\n");
 		return -1;
 	}
 }
@@ -952,14 +951,6 @@ TrioDecoder *trioDecoder_construct(char *treestring) {
 	char **nodeLabelArray = createNodeLabelArray(tree, nodeNum);
 	char **leafLabelArray = createLeafLabelArray(tree, leafNum);
 	struct hashtable *treeLabelHash = getTreeLabelHash(nodeLabelArray, nodeNum);
-
-	int32_t i;
-	for (i=0; i<leafNum; i++) {
-		printf("leaf: %d\t%s\n", i, leafLabelArray[i]);
-	}
-	for (i=0; i<nodeNum; i++) {
-		printf("node: %d\t%s\n", i, nodeLabelArray[i]);
-	}
 
 	int32_t **lcaMatrix = NULL;
 	lcaMatrix = lca(tree, treeLabelHash);
