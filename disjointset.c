@@ -3,10 +3,10 @@
 struct djs * djs_new (int32_t size)
 {
   struct djs *unionFind = NULL;
-  unionFind = mallocLocal(sizeof(struct djs));
+  unionFind = st_malloc(sizeof(struct djs));
 
-  unionFind->p = mallocLocal(sizeof(int32_t) * size);
-  unionFind->rank = mallocLocal(sizeof(int32_t) * size);
+  unionFind->p = st_malloc(sizeof(int32_t) * size);
+  unionFind->rank = st_malloc(sizeof(int32_t) * size);
 
   return unionFind;
 }

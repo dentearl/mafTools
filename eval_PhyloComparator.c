@@ -53,14 +53,14 @@ struct List *parseTrioFile(char *trioFile) {
 	struct List *speciesList = NULL;
 	speciesList = constructEmptyList(0, freeTrioNames);
 
-	cA = mallocLocal(nBytes + 1);
+	cA = st_malloc(nBytes + 1);
 	bytesRead = benLine(&cA, &nBytes, fileHandle);
 
 	while(bytesRead != -1) {
 		if (bytesRead > 0) {
-			species[0] = mallocLocal(sizeof(char) * (1 + (bytesRead)));
-			species[1] = mallocLocal(sizeof(char) * (1 + (bytesRead)));
-			species[2] = mallocLocal(sizeof(char) * (1 + (bytesRead)));
+			species[0] = st_malloc(sizeof(char) * (1 + (bytesRead)));
+			species[1] = st_malloc(sizeof(char) * (1 + (bytesRead)));
+			species[2] = st_malloc(sizeof(char) * (1 + (bytesRead)));
 			j = sscanf(cA, "%s\t%s\t%s", species[0], species[1], species[2]);
 			if (j != 3) {
 				fprintf(stderr, "Invalid triple line '%s' in '%s'\n", cA, trioFile);
@@ -72,7 +72,7 @@ struct List *parseTrioFile(char *trioFile) {
 			lowerCase(species[2]);
 			qsort(species, 3, sizeof(char *), cstring_cmp);
 
-			TrioNames *trio = mallocLocal(sizeof(TrioNames));
+			TrioNames *trio = st_malloc(sizeof(TrioNames));
 			trio->speciesA = species[0];
 			trio->speciesB = species[1];
 			trio->speciesC = species[2];
@@ -125,22 +125,22 @@ int main(int argc, char *argv[]) {
 
 		switch(key) {
 			case 'a':
-				logLevelString = stringCopy(optarg);
+				logLevelString = st_string_copy(optarg);
 				break;
 			case 'b':
-				mAFFile1 = stringCopy(optarg);
+				mAFFile1 = st_string_copy(optarg);
 				break;
 			case 'c':
-				mAFFile2 = stringCopy(optarg);
+				mAFFile2 = st_string_copy(optarg);
 				break;
 			case 'd':
-				outputFile = stringCopy(optarg);
+				outputFile = st_string_copy(optarg);
 				break;
 			case 'e':
 				assert(sscanf(optarg, "%i", &sampleNumber) == 1);
 				break;
 			case 'f':
-				trioFile = stringCopy(optarg);
+				trioFile = st_string_copy(optarg);
 				break;
 			case 'h':
 				usage();
@@ -189,20 +189,20 @@ int main(int argc, char *argv[]) {
 	//////////////////////////////////////////////
 
 	if (logLevelString != NULL && strcmp(logLevelString, "INFO") == 0) {
-		setLogLevel(LOGGING_INFO);
+		st_setLogLevel(ST_LOGGING_INFO);
 	}
 	if (logLevelString != NULL && strcmp(logLevelString, "DEBUG") == 0) {
-		setLogLevel(LOGGING_DEBUG);
+		st_setLogLevel(ST_LOGGING_DEBUG);
 	}
 
 	//////////////////////////////////////////////
 	//Log (some of) the inputs
 	//////////////////////////////////////////////
 
-	logInfo("MAF file 1 name : %s\n", mAFFile1);
-	logInfo("MAF file 2 name : %s\n", mAFFile2);
-	logInfo("Trio species name : %s\n", trioFile);
-	logInfo("Output stats file : %s\n", outputFile);
+	st_logInfo("MAF file 1 name : %s\n", mAFFile1);
+	st_logInfo("MAF file 2 name : %s\n", mAFFile2);
+	st_logInfo("Trio species name : %s\n", trioFile);
+	st_logInfo("Output stats file : %s\n", outputFile);
 
 	/* Parse the trioFile triples into a list */
 	struct List *speciesList = parseTrioFile(trioFile);

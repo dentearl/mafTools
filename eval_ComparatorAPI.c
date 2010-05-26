@@ -39,19 +39,19 @@ void aTrio_fillOut(ATrio *aTrio, char *seq1, char *seq2, char *seq3, int32_t pos
 }
 
 APair *aPair_construct(const char *seq1, const char *seq2, int32_t pos1, int32_t pos2) {
-	APair *aPair = mallocLocal(sizeof(APair));
+	APair *aPair = st_malloc(sizeof(APair));
 	aPair_fillOut(aPair, (char *)seq1, (char *)seq2, pos1, pos2);
-	aPair->seq1 = stringCopy(aPair->seq1);
-	aPair->seq2 = stringCopy(aPair->seq2);
+	aPair->seq1 = st_string_copy(aPair->seq1);
+	aPair->seq2 = st_string_copy(aPair->seq2);
 	return aPair;
 }
 
 ATrio *aTrio_construct(const char *seq1, const char *seq2, const char *seq3, int32_t pos1, int32_t pos2, int32_t pos3, int32_t top) {
-	ATrio *aTrio = mallocLocal(sizeof(ATrio));
+	ATrio *aTrio = st_malloc(sizeof(ATrio));
 	aTrio_fillOut(aTrio, (char *)seq1, (char *)seq2, (char *)seq3, pos1, pos2, pos3, top);
-	aTrio->seq1 = stringCopy(aTrio->seq1);
-	aTrio->seq2 = stringCopy(aTrio->seq2);
-	aTrio->seq3 = stringCopy(aTrio->seq3);
+	aTrio->seq1 = st_string_copy(aTrio->seq1);
+	aTrio->seq2 = st_string_copy(aTrio->seq2);
+	aTrio->seq3 = st_string_copy(aTrio->seq3);
 	return aTrio;
 }
 
@@ -165,8 +165,8 @@ void getPairsP(void (*passPairFn)(APair *pair, void *extraArgument1, void *extra
 
 	length = INT32_MAX;
 	while(*bytesRead > 0 && (*cA)[0] == 's') {
-		seqName = mallocLocal(sizeof(char) * (1+ (*bytesRead)));
-		sequence = mallocLocal(sizeof(char) * (1+ (*bytesRead)));
+		seqName = st_malloc(sizeof(char) * (1+ (*bytesRead)));
+		sequence = st_malloc(sizeof(char) * (1+ (*bytesRead)));
 		//uglyf("Got the line :##%s#%i %i\n", *cA, (int)strlen(*cA), *bytesRead);
 		//uglyf("I read %i \n", sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence));
 		//uglyf("%s,  %i %i %c %i %s\n", seqName, start, i /*ignore the length field*/, strand, seqLength, sequence);
@@ -174,7 +174,7 @@ void getPairsP(void (*passPairFn)(APair *pair, void *extraArgument1, void *extra
 		assert(j == 6 || (j == 5 && seqLength == 0));
 		if(j == 5) {
 			free(sequence);
-			sequence = stringPrint("");
+			sequence = st_string_print("");
 		}
 		length = strlen(sequence);
 		assert(strand == '+' || strand == '-');
@@ -263,8 +263,8 @@ void getTriosP(void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extra
 
 	length = INT32_MAX;
 	while(*bytesRead > 0 && (*cA)[0] == 's') {
-		seqName = mallocLocal(sizeof(char) * (1+ (*bytesRead)));
-		sequence = mallocLocal(sizeof(char) * (1+ (*bytesRead)));
+		seqName = st_malloc(sizeof(char) * (1+ (*bytesRead)));
+		sequence = st_malloc(sizeof(char) * (1+ (*bytesRead)));
 		//uglyf("Got the line :##%s#%i %i\n", *cA, (int)strlen(*cA), *bytesRead);
 		//uglyf("I read %i \n", sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence));
 		//uglyf("%s,  %i %i %c %i %s\n", seqName, start, i /*ignore the length field*/, strand, seqLength, sequence);
@@ -272,7 +272,7 @@ void getTriosP(void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extra
 		assert(j == 6 || (j == 5 && seqLength == 0));
 		if(j == 5) {
 			free(sequence);
-			sequence = stringPrint("");
+			sequence = st_string_print("");
 		}
 
 		length = strlen(sequence);
@@ -389,7 +389,7 @@ void getPairs(const char *mAFFile1, void (*passPairFn)(APair *pair, void *extraA
 	int nBytes = 100;
 	char *cA;
 
-	cA = mallocLocal(nBytes + 1);
+	cA = st_malloc(nBytes + 1);
 	bytesRead = benLine (&cA, &nBytes, fileHandle);
 
 	//read through lines until reaching a line starting with an 'a':
@@ -422,7 +422,7 @@ void getTrios(const char *mAFFile1, void (*passTrioFn)(ATrio *trio, void *extraA
 	char *match = NULL;
 	int sscanfResultCnt = 0;
 
-	cA = mallocLocal(nBytes + 1);
+	cA = st_malloc(nBytes + 1);
 	bytesRead = benLine (&cA, &nBytes, fileHandle);
 
 	//read through lines until reaching a line starting with an 'a':
@@ -434,7 +434,7 @@ void getTrios(const char *mAFFile1, void (*passTrioFn)(ATrio *trio, void *extraA
 			//   a score=5 tree="(A,B)R;"
 			match = strstr(cA, "tree");
 			assert(match != NULL);
-			treeString = mallocLocal(sizeof(char) * (bytesRead+1));
+			treeString = st_malloc(sizeof(char) * (bytesRead+1));
 			sscanfResultCnt = sscanf(match, "tree=%*[\'\"]%[^\'\"]", treeString);
 			assert(sscanfResultCnt != 0);
 			getTriosP(passTrioFn, extraArgument1, extraArgument2, extraArgument3, &bytesRead, &nBytes, &cA, fileHandle, speciesList, treeString);
@@ -678,15 +678,15 @@ void populateNameHash(const char *mAFFile, struct hashtable *htp) {
 	char *seqName;
 	char *sequence;
 	char strand;
-	cA = mallocLocal(nBytes + 1);
+	cA = st_malloc(nBytes + 1);
 	bytesRead = benLine (&cA, &nBytes, fileHandle);
 
 	//read through lines until reaching a line starting with an 's':
 	length = INT32_MAX;
 	while(bytesRead != -1) {
 		if (bytesRead > 0 && cA[0] == 's') {
-			seqName = mallocLocal(sizeof(char) * (1+ (bytesRead)));
-			sequence = mallocLocal(sizeof(char) * (1+ (bytesRead)));
+			seqName = st_malloc(sizeof(char) * (1+ (bytesRead)));
+			sequence = st_malloc(sizeof(char) * (1+ (bytesRead)));
 			//assert(sscanf(cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence) == 6);
 			j = sscanf(cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence);
 			assert(j == 6 || (j == 5 && seqLength == 0));
@@ -774,7 +774,7 @@ void postOrderLabelNodes(ETree *node, int32_t *index, char **labelArray) {
 	for (i=0; i<eTree_getChildNumber(node); i++) {
 		postOrderLabelNodes(eTree_getChild(node, i), index, labelArray);
 	}
-	labelArray[*index] = stringCopy(eTree_getLabel(node));
+	labelArray[*index] = st_string_copy(eTree_getLabel(node));
 	*index += 1;
 
 	return;
@@ -786,7 +786,7 @@ void postOrderLabelLeaves(ETree *node, int32_t *index, char **labelArray) {
 		postOrderLabelLeaves(eTree_getChild(node, i), index, labelArray);
 	}
 	if (eTree_getChildNumber(node) == 0) {
-		labelArray[*index] = stringCopy(eTree_getLabel(node));
+		labelArray[*index] = st_string_copy(eTree_getLabel(node));
 		*index += 1;
 	}
 
@@ -832,21 +832,21 @@ int32_t **lca(ETree *root, struct hashtable *ht) {
 	int32_t i = 0;
 
 	int32_t *ancestor = NULL;
-	ancestor = mallocLocal(sizeof(int32_t) * nodeNum);
+	ancestor = st_malloc(sizeof(int32_t) * nodeNum);
 	for (i=0; i<nodeNum; i++) {
 		ancestor[i] = 0;
 	}
 
 	int32_t *color = NULL;
-	color = mallocLocal(sizeof(int32_t) * nodeNum);
+	color = st_malloc(sizeof(int32_t) * nodeNum);
 	for (i=0; i<nodeNum; i++) {
 		color[i] = 0;
 	}
  
 	int32_t **lcaMatrix = NULL;
-	lcaMatrix = mallocLocal(sizeof(int32_t *) * nodeNum);
+	lcaMatrix = st_malloc(sizeof(int32_t *) * nodeNum);
 	for (i=0; i<nodeNum; i++) {
-		lcaMatrix[i] = mallocLocal(sizeof(int32_t) * nodeNum);
+		lcaMatrix[i] = st_malloc(sizeof(int32_t) * nodeNum);
 	}
 
 	lcaP(root, uf, ancestor, color, ht, nodeNum, lcaMatrix);
@@ -870,7 +870,7 @@ void lcaMatrix_free (int32_t **lcaMatrix, int32_t nodeNum) {
 }
 
 char **createNodeLabelArray(ETree *tree, int32_t nodeNum) {
-	char **labelArray = mallocLocal(sizeof(char *) * nodeNum);
+	char **labelArray = st_malloc(sizeof(char *) * nodeNum);
 	int32_t po_index = 0;
 
 	postOrderLabelNodes(tree, &po_index, labelArray);
@@ -879,7 +879,7 @@ char **createNodeLabelArray(ETree *tree, int32_t nodeNum) {
 }
 
 char **createLeafLabelArray(ETree *tree, int32_t nodeNum) {
-	char **leafLabelArray = mallocLocal(sizeof(char *) * nodeNum);
+	char **leafLabelArray = st_malloc(sizeof(char *) * nodeNum);
 	int32_t po_index = 0;
 
 	postOrderLabelLeaves(tree, &po_index, leafLabelArray);
@@ -901,7 +901,7 @@ struct hashtable * getTreeLabelHash(char **labelArray, int32_t nodeNum) {
 	int32_t i = 0;
 	treeLabelHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, free, free);
 	for (i=0; i<nodeNum; i++) {
-		hashtable_insert(treeLabelHash, stringCopy(labelArray[i]), constructInt(i));
+		hashtable_insert(treeLabelHash, st_string_copy(labelArray[i]), constructInt(i));
 	}
 
 	return treeLabelHash;
@@ -955,7 +955,7 @@ TrioDecoder *trioDecoder_construct(char *treestring) {
 	int32_t **lcaMatrix = NULL;
 	lcaMatrix = lca(tree, treeLabelHash);
 
-	TrioDecoder *decoder = mallocLocal(sizeof(TrioDecoder));
+	TrioDecoder *decoder = st_malloc(sizeof(TrioDecoder));
 	decoder->nodeLabelArray = nodeLabelArray;
 	decoder->leafLabelArray = leafLabelArray;
 	decoder->treeLabelHash = treeLabelHash;

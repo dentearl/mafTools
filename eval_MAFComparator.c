@@ -77,16 +77,16 @@ int main(int argc, char *argv[]) {
 
 		switch(key) {
 			case 'a':
-				logLevelString = stringCopy(optarg);
+				logLevelString = st_string_copy(optarg);
 				break;
 			case 'b':
-				mAFFile1 = stringCopy(optarg);
+				mAFFile1 = st_string_copy(optarg);
 				break;
 			case 'c':
-				mAFFile2 = stringCopy(optarg);
+				mAFFile2 = st_string_copy(optarg);
 				break;
 			case 'd':
-				outputFile = stringCopy(optarg);
+				outputFile = st_string_copy(optarg);
 				break;
 			case 'e':
 				assert(sscanf(optarg, "%i", &sampleNumber) == 1);
@@ -125,19 +125,19 @@ int main(int argc, char *argv[]) {
 	//////////////////////////////////////////////
 
 	if(logLevelString != NULL && strcmp(logLevelString, "INFO") == 0) {
-		setLogLevel(LOGGING_INFO);
+		st_setLogLevel(ST_LOGGING_INFO);
 	}
 	if(logLevelString != NULL && strcmp(logLevelString, "DEBUG") == 0) {
-		setLogLevel(LOGGING_DEBUG);
+		st_setLogLevel(ST_LOGGING_DEBUG);
 	}
 
 	//////////////////////////////////////////////
 	//Log (some of) the inputs
 	//////////////////////////////////////////////
 
-	logInfo("MAF file 1 name : %s\n", mAFFile1);
-	logInfo("MAF file 2 name : %s\n", mAFFile2);
-	logInfo("Output stats file : %s\n", outputFile);
+	st_logInfo("MAF file 1 name : %s\n", mAFFile1);
+	st_logInfo("MAF file 2 name : %s\n", mAFFile2);
+	st_logInfo("Output stats file : %s\n", outputFile);
 
     //////////////////////////////////////////////
 	// Create hashtable for the first MAF file.
