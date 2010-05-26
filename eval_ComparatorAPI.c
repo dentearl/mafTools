@@ -745,8 +745,8 @@ int32_t countNodes(stETree *node) {
 		return 0;
 	} else {
 		count = 1;
-		for (i=0; i<eTree_getChildNumber(node); i++) {
-			count += countNodes(eTree_getChild(node, i));
+		for (i=0; i<st_eTree_getChildNumber(node); i++) {
+			count += countNodes(st_eTree_getChild(node, i));
 		}
 		return count;
 	}
@@ -758,11 +758,11 @@ int32_t countLeaves(stETree *node) {
 	if (node == NULL) {
 		return 0;
 	} else {
-		if (eTree_getChildNumber(node) == 0) {
+		if (st_eTree_getChildNumber(node) == 0) {
 			return 1;
 		} else {
-			for (i=0; i<eTree_getChildNumber(node); i++) {
-				count += countLeaves(eTree_getChild(node, i));
+			for (i=0; i<st_eTree_getChildNumber(node); i++) {
+				count += countLeaves(st_eTree_getChild(node, i));
 			}
 			return count;
 		}
@@ -771,10 +771,10 @@ int32_t countLeaves(stETree *node) {
   
 void postOrderLabelNodes(stETree *node, int32_t *index, char **labelArray) {
 	int32_t i = 0;
-	for (i=0; i<eTree_getChildNumber(node); i++) {
-		postOrderLabelNodes(eTree_getChild(node, i), index, labelArray);
+	for (i=0; i<st_eTree_getChildNumber(node); i++) {
+		postOrderLabelNodes(st_eTree_getChild(node, i), index, labelArray);
 	}
-	labelArray[*index] = stringCopy(eTree_getLabel(node));
+	labelArray[*index] = stringCopy(st_eTree_getLabel(node));
 	*index += 1;
 
 	return;
@@ -782,11 +782,11 @@ void postOrderLabelNodes(stETree *node, int32_t *index, char **labelArray) {
 
 void postOrderLabelLeaves(stETree *node, int32_t *index, char **labelArray) {
 	int32_t i = 0;
-	for (i=0; i<eTree_getChildNumber(node); i++) {
-		postOrderLabelLeaves(eTree_getChild(node, i), index, labelArray);
+	for (i=0; i<st_eTree_getChildNumber(node); i++) {
+		postOrderLabelLeaves(st_eTree_getChild(node, i), index, labelArray);
 	}
-	if (eTree_getChildNumber(node) == 0) {
-		labelArray[*index] = stringCopy(eTree_getLabel(node));
+	if (st_eTree_getChildNumber(node) == 0) {
+		labelArray[*index] = stringCopy(st_eTree_getLabel(node));
 		*index += 1;
 	}
 
@@ -798,16 +798,16 @@ void lcaP(stETree *node, struct djs *uf, int32_t *ancestor, int32_t *color, stru
 		return;
 	}
  
-	int32_t u = *((int *) hashtable_search(ht, (void *) eTree_getLabel(node)));
+	int32_t u = *((int *) hashtable_search(ht, (void *) st_eTree_getLabel(node)));
 	djs_makeset(uf, u);
 	ancestor[djs_findset(uf, u)] = u;
 
 	int32_t v;
 
 	int32_t i = 0;
-	for (i=0; i<eTree_getChildNumber(node); i++) {
-		lcaP(eTree_getChild(node, i), uf, ancestor, color, ht, size, lcaMatrix);
-		v = *((int *) hashtable_search(ht, (void *) eTree_getLabel(eTree_getChild(node, i))));
+	for (i=0; i<st_eTree_getChildNumber(node); i++) {
+		lcaP(st_eTree_getChild(node, i), uf, ancestor, color, ht, size, lcaMatrix);
+		v = *((int *) hashtable_search(ht, (void *) st_eTree_getLabel(st_eTree_getChild(node, i))));
 		djs_union(uf, u, v);
 		ancestor[djs_findset(uf, u)] = u;
 	}
@@ -943,7 +943,7 @@ int32_t calcTrioState(TrioDecoder *decoder, int32_t spAIdx, int32_t spBIdx, int3
 
 TrioDecoder *trioDecoder_construct(char *treestring) {
 	stETree *tree = NULL;
-	tree = eTree_parseNewickString(treestring);
+	tree = st_eTree_parseNewickString(treestring);
 
 	int32_t nodeNum = countNodes(tree);
 	int32_t leafNum = countLeaves(tree);
@@ -963,7 +963,7 @@ TrioDecoder *trioDecoder_construct(char *treestring) {
 	decoder->nodeNum = nodeNum;
 	decoder->leafNum = leafNum;
 
-	eTree_destruct(tree);
+	st_eTree_destruct(tree);
 	return decoder;
 }
 
