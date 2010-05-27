@@ -1,43 +1,5 @@
 """Test for eval_mAFJoiner. 
 
-Let A be a MAF file containing a tree for each MAF block.
-We define the following properties for A.
-
-Let a be a MAF block
-in A. Let T(a) be the 'block tree' for a. T(a) is composed of 'leaf nodes', with no descendants and
-'internal nodes', which have 1 or more descendants. The root node of T(a) is the unique most
-ancestral node of the tree. For each node in T(a) there is a corresponding label in the tree and row in the MAF block. 
-For each node n in T(a) except the root node, there is an associated ancestral branch, this branch must 
-be labelled with an associated branch length. 
-
-Each node in T(a) also has an associated 'species' label. Let T'(A) be the 'species tree' associated with the genomes in A. 
-We call the nodes in T'(A) 'species nodes', reusing the same terminology as with the MAF block trees.
-The tree T(a) for any a in A may 'disagree' with T'(A), due to duplication, loss and incomplete lineage sorting, however
-if x is the root species nodes of T'(A) then for any node n with species label x in any tree T(a), n 
-must be a root node, i.e. no coalescence can occur that is more ancestral than the coalesence of the root species.
-
-A MAF file with the above properties is called 'tree normal'. Again let A be a tree normal MAF file.
-Let i represent a column in a MAF block a in A. 
-Let F(i) be the set of sequence positions in i (i.e. excluding gaps).
-Let T''(i) be the tree for column i, which is an induced subtree of T(a) excluding nodes that are gapped in the alignment. 
-Each node in T''(i) therefore has an associated sequence position in F(i).
-Let S(A) be the species in T'(A).
-
-Let i and j now represent two columns from two different MAF files. i and j can be 'joined' 
-if the intersection of F(i) and F(j) is non-empty to form a larger
-alignment column k of sequence positions that are all derived from a common ancestor.
-The join to form a column k is 'simple' if T''(k) is a tree composed of T''(i)
-and T''(j) merged at a single common node (this needs more explanation). 
-A 'complete join' of two tree normal MAF files is a third tree normal file whose columns contain the 'closure' (wrong word) of joins of 
-the columns of A and B.
-
-Let A and B be two tree normal MAF files. We say that A and B are 'compatible' iff (1) the intersection of S(A) and S(B) is { x } (so x is the 
-unique shared species), and (2) x is the root of either or both of T(A) and T(B).
-
-Theorem 1:  For two compatible tree normal MAF files there exists a (unique) 
-complete join of A and B for which all joins are simple.
-
-mafJoin performs a complete join on two compatible tree normal MAF files.
 """
 
 import os,sys
@@ -179,7 +141,7 @@ class MafJoinTests(unittest.TestCase):
         s baboon.chr6    249187 7 -   4622798 gaaaaca
         """ 
         C = """
-        a score=0.000000 tree=\"(((panTro1.chr6:0.3)baboon.chr6:0.2),mm4.chr6:0.15)hg18.chr7\"
+        a score=0.000000 tree=\"(((panTro1.chr6:0.3)baboon.chr6:0.2),mm4.chr6:0.15)hg18.chr7;\"
         s panTro1.chr6  28869787 12 + 161576975 gcagc-gaaaaca
         s baboon.chr6     249182 12 -   4622798 gcagc-gaaaaca
         s mm4.chr6      53310102 13 - 151104725 ACAGCTGAAAATA
@@ -262,11 +224,11 @@ class MafJoinTests(unittest.TestCase):
         s baboon.chr6    249182 13 -   4622798 gcagctgaaaaca
         """
         B = """
-        a score=5.0 tree=\"(mm4.chr6:0.1)hg18.chr7\"
+        a score=5.0 tree=\"(mm4.chr6:0.1)hg18.chr7;\"
         s mm4.chr6     53310102 13 - 151104725 ACAGCTGAAAATA
         s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
         
-        a score=5.0 tree=\"(mm4.chr6:0.2)hg18.chr9\"
+        a score=5.0 tree=\"(mm4.chr6:0.2)hg18.chr9;\"
         s mm4.chr6     54310102 13 - 151104725 ACAGCTGAAAATA
         s hg18.chr9    27707221 13 + 158545518 gcagctgaaaaca
         """
