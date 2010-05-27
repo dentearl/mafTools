@@ -1,22 +1,46 @@
-#ifndef _DISJOINTSET_H_
-#define _DISJOINTSET_H_
+/*
+ * Disjoint-Set Data Structure
+ *
+ * Implementation of the disjoint-set forest data structure.
+ * Based off pseudocode in "Introduction to Algorithms" by Cormen, et al.
+ */
 
-#include <stdint.h>
-#include <stdlib.h>
+#ifndef DISJOINTSET_H_
+#define DISJOINTSET_H_
+
 #include "commonC.h"
 
+/* Structure for a disjoint-set forest data structure */
 struct djs 
 {
-  int32_t *p;
-  int32_t *rank;
+	uint32_t *p;    /* Parent of node x is p[x] */
+	uint32_t *rank; /* Rank of node x is rank[x] */
+	uint32_t size;  /* Maximum number of elements in set */
 };
 
-struct djs * djs_new (int32_t size);
-void djs_free (struct djs *unionFind);
+/* 
+ * Create a new disjoint-set with a max set size equal to "size"
+ */
+struct djs *djs_new(uint32_t size);
 
-void djs_makeset (struct djs *unionFind, int32_t x);
-void djs_link (struct djs *unionFind, int32_t x, int32_t y);
-int32_t djs_findset (struct djs *unionFind, int32_t x);
-void djs_union (struct djs *unionFind, int32_t x, int32_t y);
+/* 
+ * Free the memory associated with a disjoint-set
+ */
+void djs_free(struct djs *unionFind);
 
-#endif /* _DISJOINTSET_H_ */
+/* 
+ * Adds the element "x" to the set
+ */
+void djs_makeset(struct djs *unionFind, uint32_t x);
+
+/* 
+ * Returns the set that element "x" belongs to.
+ */
+uint32_t djs_findset (struct djs *unionFind, uint32_t x);
+
+/* 
+ * Unites the sets that contain elements "x" and "y"
+ */
+void djs_union(struct djs *unionFind, uint32_t x, uint32_t y);
+
+#endif /* DISJOINTSET_H_ */
