@@ -6,6 +6,7 @@
 #undef uglyf // FIXME: macro in kent, function in sonlib
 #include "sonLibETree.h"
 struct mafAli;
+struct ETree;
 
 
 /* one cell in one column of the MAF */
@@ -21,7 +22,7 @@ struct MafInvertCol {
     struct MafInvertCol *next;     // next in list (used in building, not adjacency)
     struct MafInvertCol *leftAdj;  // adjacent cells
     struct MafInvertCol *rightAdj;
-    ETree *tree;                   // tree for column (not owned here)
+    ETree *tree;                   // tree for column, shared so never freed
     int numRows;
     bool joinCol;                  // column contains a join cell (in both seqs)
     bool done;                     // have to indicate column has been consumed in some manner (hacky)

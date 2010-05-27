@@ -3,7 +3,7 @@ include ../../../include.mk
 binPath = ../../../bin
 libPath = ../../../lib
 
-cflags += -I../../sonLib
+cflags += -I../../sonLib/inc
 ifneq ($(wildcard ${kentLibWeb}),)
 objs = jkmaf.o genome.o mafInvert.o mafInvertJoin.o mafInvertWrite.o mafJoin.o
 cflags += -I ${kentInc}
@@ -16,7 +16,7 @@ CFLAGS=${cflags} -std=c99
 all: ${objs} ${progs}
 
 ${binPath}/mafJoin: ${objs}
-	${CC} ${cflags} -I ${libPath} -I ${kentInc} -o $@ $^ ${kentLibWeb}
+	${CC} ${cflags} -I ${libPath} -I ${kentInc} -o $@ $^ ${kentLibWeb} ${libPath}/sonLib.a
 
 
 clean: 

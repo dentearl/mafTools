@@ -92,8 +92,12 @@ struct blkInfo {
 /* fill in a row info object from a mafComp */
 static void rowInfoFromMafComp(struct Genomes *genomes, struct mafComp *comp, struct rowInfo *row) {
     char buf[128];
+    char *srcDb = mafCompGetSrcDb(comp, buf, sizeof(buf));
+    if (srcDb == NULL) {
+        errAbort("Error: no org name in MAF component, source must be org.seq: %s", comp->src);
+    }
     row->comp = comp;
-    row->seq = genomesObtainSeq(genomes, mafCompGetSrcDb(comp, buf, sizeof(buf)), mafCompGetSrcName(comp), comp->srcSize);
+    row->seq = genomesObtainSeq(genomes, srcDb, mafCompGetSrcName(comp), comp->srcSize);
     row->nextPos = comp->start;
     row->strand = comp->strand;
 }
@@ -134,7 +138,7 @@ static void mkMafInvertCells(struct MafInvert *mi, struct MafInvertCol *col, str
 }
 
 /* construct a MafInvertCol object from an alignment column */
-static void mkMafInvertCol(struct MafInvert *mi, struct blkInfo *blk, int iAli) {
+static void mkMafInvertCol(struct MafInvert *mi, struct blkInfo *blk, int iAli, ETree *tree) {
     struct MafInvertCol *col = mafInvertColNew(blk->numRows);
     if (blk->prevCol != NULL) {
         mafInvertColInsertLeft(col, blk->prevCol);
@@ -143,14 +147,26 @@ static void mkMafInvertCol(struct MafInvert *mi, struct blkInfo *blk, int iAli) 
     blk->prevCol = col;
 }
 
+/* get the tree for a mafAli, either building it from the data
+ * or parsing it. */
+static ETree *getMafAliTree(struct MafInvert *mi, struct mafAli *ali) {
+    if (ali->tree == NULL) {
+        errAbort("mafAli does not have a tree"); // FIXME: tmp
+        return NULL;
+    } else {
+        return eTree_parseNewickString(ali->tree);
+    }
+}
+
 /* Add columns from a mafAli to the inverted maf */
 static void mafInvertAddMafAli(struct MafInvert *mi, struct Genomes *genomes, struct mafAli *ali) {
+    ETree *tree = getMafAliTree(mi, ali);
     int numRows = slCount(ali->components);
     struct blkInfo blk;
     struct rowInfo rows[numRows];
     blkInfoInit(genomes, ali, numRows, &blk, rows);
     for (int iAli = 0; iAli < ali->textSize; iAli++) {
-        mkMafInvertCol(mi, &blk, iAli);
+        mkMafInvertCol(mi, &blk, iAli, tree);
     }
 }
 

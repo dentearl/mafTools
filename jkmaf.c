@@ -94,25 +94,25 @@ ali->regDef = mafRegDefNew(row[0], lineFileNeedFullNum(mf->lf, row, 1),
                            row[2]);
 }
 
-static void parseTreeAbort(struct lineFile *lf)
+static void parseTreeAbort(struct lineFile *lf, char *val)
 /* output slightly useful error message */
 {
-lineFileAbort(lf, "invalid tree attributed, expect tree=\"...\"");
+lineFileAbort(lf, "invalid tree attributed, expect tree=\"...\", may not contain spaces: %s", val);
 }
 
-static char *parseTree(struct lineFile *lf, char **linePtr)
-/* parse tree="...". not very robust */
+static char *parseTree(struct lineFile *lf, char *val)
+/* parse tree="...". not very robust, assumes tree does not spaces */
 {
-char *p = *linePtr;
+// FIXME rewrite, this is a quick hack
+char *p = val;
 if (*p != '"')
-    parseTreeAbort(lf);
+    parseTreeAbort(lf, val);
 char *start = ++p;
 while ((*p != '\0') && (*p != '"'))
     p++;
 if (*p != '"')
-    parseTreeAbort(lf);
+    parseTreeAbort(lf, val);
 *p = '\0';
-*linePtr = ++p;
 return cloneString(start);
 }
 
@@ -156,7 +156,7 @@ for (;;)
 	    if (sameString(name, "score"))
 		ali->score = atof(val);
             else if (sameString(name, "tree"))
-		ali->tree = parseTree(mf->lf, &line);
+		ali->tree = parseTree(mf->lf, val);
 	    }
 
 	/* Parse alignment components until blank line. */

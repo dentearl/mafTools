@@ -80,13 +80,8 @@ struct Genome *genomesGetGenome(struct Genomes *genomes, char *name) {
 
 
 /* Obtain a new Seq object, creating the genome and seq objects it they
- * don't exist.  If the genomeName is NULL, the seqName is used as the
- * genome name.  This behavior corresponds to having a maf with only
- * one name. */
+ * don't exist. */
 struct Seq *genomesObtainSeq(struct Genomes *genomes, char *genomeName, char *seqName, int size) {
-    if (genomeName == NULL) {
-        genomeName = seqName;
-    }
     struct Genome *genome = genomesObtainGenome(genomes, genomeName);
     return genomeObtainSeq(genome, seqName, size);
 }
