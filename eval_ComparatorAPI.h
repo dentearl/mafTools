@@ -39,6 +39,7 @@ typedef struct _trio {
 	int32_t pos2;
 	int32_t pos3;
 	int32_t top; // tree topology
+	int32_t topMat[10];
 } ATrio;
 
 typedef struct _trioNames {
@@ -67,5 +68,6 @@ void aPair_destruct(APair *pair, void *extraArgument);
 void aTrio_destruct(ATrio *trio, void *extraArgument);
 
 TrioDecoder *trioDecoder_construct(char *treestring);
+int32_t calcTrioState(TrioDecoder *decoder, int32_t i, int32_t j, int32_t k);
 
 #endif /* _EVAL_COMPARATOR_API_H_ */

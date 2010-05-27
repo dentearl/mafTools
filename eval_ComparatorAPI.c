@@ -47,11 +47,15 @@ APair *aPair_construct(const char *seq1, const char *seq2, int32_t pos1, int32_t
 }
 
 ATrio *aTrio_construct(const char *seq1, const char *seq2, const char *seq3, int32_t pos1, int32_t pos2, int32_t pos3, int32_t top) {
+	int32_t i;
 	ATrio *aTrio = st_malloc(sizeof(ATrio));
 	aTrio_fillOut(aTrio, (char *)seq1, (char *)seq2, (char *)seq3, pos1, pos2, pos3, top);
 	aTrio->seq1 = st_string_copy(aTrio->seq1);
 	aTrio->seq2 = st_string_copy(aTrio->seq2);
 	aTrio->seq3 = st_string_copy(aTrio->seq3);
+	for (i=0; i<10; i++) {
+		aTrio->topMat[i] = 0;
+	}
 	return aTrio;
 }
 
@@ -131,7 +135,7 @@ int32_t aPair_cmpFunction(APair *aPair1, APair *aPair2, void *a) {
 	return i;
 }
 
-int32_t aTrio_cmpFunction(ATrio *aTrio1, ATrio *aTrio2, void *a) {
+int32_t aTrio_cmpFunction_seqAndPos(ATrio *aTrio1, ATrio *aTrio2, void *a) {
 	/*
 	 * Compares first the sequence then the position arguments of the a trios.
 	 */
@@ -145,6 +149,17 @@ int32_t aTrio_cmpFunction(ATrio *aTrio1, ATrio *aTrio2, void *a) {
 			}
 		}
 	}
+	return i;
+}
+
+int32_t aTrio_cmpFunction(ATrio *aTrio1, ATrio *aTrio2, void *a) {
+	/*
+	 * Compares first the sequence, then the position, then the top arguments of the a trios.
+	 */
+	int32_t i = aTrio_cmpFunction_seqAndPos(aTrio1, aTrio2, a);
+//	if (i == 0) {
+//		i = aTrio1->top - aTrio2->top;
+//	}
 	return i;
 }
 
@@ -449,6 +464,18 @@ void getTrios(const char *mAFFile1, void (*passTrioFn)(ATrio *trio, void *extraA
 	fclose(fileHandle);
 }
 
+int32_t encodeTopoMatIdx(int32_t top1, int32_t top2) {
+	int32_t tmp;
+
+	if (top1 > top2) {
+		tmp = top1;
+		top1 = top2;
+		top2 = tmp;
+	}
+
+	return 4 * top1 + top2 - ((top1 + 1) * top1 / 2);
+}
+
 void countPairs(APair *pair, int64_t *counter, struct hashtable *legitPairs, void *a) {
 	/*
 	 * Counts the number of pairs in the MAF file.
@@ -496,27 +523,28 @@ void sampleTrios(ATrio *trio, struct avl_table *trios, double *acceptProbability
 void homologyTests1(APair *pair, struct avl_table *pairs, struct avl_table *resultPairs, struct hashtable *legitPairs) {
 	/*
 	 * If both members of *pair are in the intersection of MAFFileA and MAFFileB,
-     * and *pair is in the set *pairs then adds to the result pair a positive result.
+	 * and *pair is in the set *pairs then adds to the result pair a positive result.
 	 */
-   if((hashtable_search(legitPairs, pair->seq1) != NULL) &&
-      (hashtable_search(legitPairs, pair->seq2) != NULL)){
-      APair *resultPair = avl_find(resultPairs, pair);
-      if(resultPair == NULL) {
-         resultPair = aPair_construct(pair->seq1, pair->seq2, 0, 0);
-         avl_insert(resultPairs, resultPair);
-      }
+	if ((hashtable_search(legitPairs, pair->seq1) != NULL) && (hashtable_search(legitPairs, pair->seq2) != NULL)) {
+		APair *resultPair = avl_find(resultPairs, pair);
+		if (resultPair == NULL) {
+			resultPair = aPair_construct(pair->seq1, pair->seq2, 0, 0);
+			avl_insert(resultPairs, resultPair);
+		}
 
-      if(avl_find(pairs, pair) != NULL) { //we use the positions as indices as to the outcome of of the homology test.
-         resultPair->pos1++;
-      }
-   }
+		if (avl_find(pairs, pair) != NULL) { //we use the positions as indices as to the outcome of of the homology test.
+			resultPair->pos1++;
+		}
+	}
 }
 
 void homologyTestsTrio1(ATrio *trio, struct avl_table *trios, struct avl_table *resultTrios, struct hashtable *legitTrios) {
 	/*
 	 * If all 3 members of *trio are in the intersection of MAFFileA and MAFFileB,
-	* and *trio is in the set *trios and tops are equal then adds to the result trio a positive result.
+	 * and *trio is in the set *trios and tops are equal then adds to the result trio a positive result.
 	 */
+
+	int32_t idx = -1;
 	if ((hashtable_search(legitTrios, trio->seq1) != NULL) &&
 	    (hashtable_search(legitTrios, trio->seq2) != NULL) && 
 	    (hashtable_search(legitTrios, trio->seq3) != NULL)) {
@@ -526,7 +554,10 @@ void homologyTestsTrio1(ATrio *trio, struct avl_table *trios, struct avl_table *
 			avl_insert(resultTrios, resultTrio);
 		}
 
-		if(avl_find(trios, trio) != NULL) { //we use the positions as indices as to the outcome of of the homology test.
+		ATrio *triosTrio = avl_find(trios, trio);
+		if(triosTrio != NULL) { //we use the positions as indices as to the outcome of the trio test.
+			idx = encodeTopoMatIdx(trio->top, triosTrio->top);
+			resultTrio->topMat[idx]++;
 			resultTrio->pos1++;
 		}
 	}
@@ -630,17 +661,20 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
 				"\t\t<homology_test sequenceA=\"%s\" sequenceB=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\">\n",
 				resultPair->seq1, resultPair->seq2, resultPair->pos2, resultPair->pos1, resultPair->pos2 - resultPair->pos1, ((double)resultPair->pos1)/resultPair->pos2);
 		fprintf(fileHandle,
-						"\t\t\t<single_homology_test sequenceA=\"%s\" sequenceB=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\"/>\n",
-						resultPair->seq1, resultPair->seq2, resultPair->pos2, resultPair->pos1, resultPair->pos2 - resultPair->pos1, ((double)resultPair->pos1)/resultPair->pos2);
+				"\t\t\t<single_homology_test sequenceA=\"%s\" sequenceB=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\"/>\n",
+				resultPair->seq1, resultPair->seq2, resultPair->pos2, resultPair->pos1, resultPair->pos2 - resultPair->pos1, ((double)resultPair->pos1)/resultPair->pos2);
 		fprintf(fileHandle, "\t\t</homology_test>\n");
 	}
 	fprintf(fileHandle, "\t</homology_tests>\n");
+
+	return;
 }
 
 void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle) {
 	/*
 	 * Report results in an XML formatted document.
 	 */
+	int32_t i;
 	static struct avl_traverser iterator;
 	avl_t_init(&iterator, results_AB);
 	ATrio *resultTrio;
@@ -661,9 +695,14 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA, const
 		fprintf(fileHandle,
 				"\t\t\t<single_trio_test sequenceA=\"%s\" sequenceB=\"%s\" sequenceC=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\"/>\n",
 				resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos2, resultTrio->pos1, resultTrio->pos2 - resultTrio->pos1, ((double)resultTrio->pos1)/resultTrio->pos2);
+		for (i=0; i<10; i++) {
+			fprintf(fileHandle, "\t\t\t\t%d\t%d\n", i, resultTrio->topMat[i]);
+		}
 		fprintf(fileHandle, "\t\t</trio_test>\n");
 	}
 	fprintf(fileHandle, "\t</trio_tests>\n");
+
+	return;
 }
 
 void populateNameHash(const char *mAFFile, struct hashtable *htp) {
