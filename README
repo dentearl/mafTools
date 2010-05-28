@@ -8,7 +8,7 @@ Let a be a MAF block in A. Let T(a) be the 'block tree' for a. T(a) is
 composed of 'leaf nodes', with no descendants and 'internal nodes', which have
 1 or more descendants. The root node of T(a) is the unique most ancestral node
 of the tree. For each node in T(a) there is a corresponding label in the tree
-and row in the MAF block.  For each node n in T(a) except the root node, there
+and row in the MAF block.  For each node in T(a) except the root node, there
 is an associated ancestral branch, this branch must be labelled with an
 associated branch length.
 
@@ -16,7 +16,7 @@ Each node in T(a) also has an associated 'species' label. Let T'(A) be the
 'species tree' associated with the genomes in A.  We call the nodes in T'(A)
 'species nodes', reusing the same terminology as with the MAF block trees.
 The tree T(a) for any a in A may 'disagree' with T'(A), due to duplication,
-loss and incomplete lineage sorting, however if x is the root species nodes of
+loss and incomplete lineage sorting, however if x is the root species node of
 T'(A) then for any node n with species label x in any tree T(a), n must be a
 root node, i.e. no coalescence can occur that is more ancestral than the
 coalesence of the root species.
