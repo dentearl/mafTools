@@ -41,8 +41,8 @@ void aTrio_fillOut(ATrio *aTrio, char *seq1, char *seq2, char *seq3, int32_t pos
 APair *aPair_construct(const char *seq1, const char *seq2, int32_t pos1, int32_t pos2) {
 	APair *aPair = st_malloc(sizeof(APair));
 	aPair_fillOut(aPair, (char *)seq1, (char *)seq2, pos1, pos2);
-	aPair->seq1 = st_string_copy(aPair->seq1);
-	aPair->seq2 = st_string_copy(aPair->seq2);
+	aPair->seq1 = stString_copy(aPair->seq1);
+	aPair->seq2 = stString_copy(aPair->seq2);
 	return aPair;
 }
 
@@ -50,9 +50,9 @@ ATrio *aTrio_construct(const char *seq1, const char *seq2, const char *seq3, int
 	int32_t i;
 	ATrio *aTrio = st_malloc(sizeof(ATrio));
 	aTrio_fillOut(aTrio, (char *)seq1, (char *)seq2, (char *)seq3, pos1, pos2, pos3, top);
-	aTrio->seq1 = st_string_copy(aTrio->seq1);
-	aTrio->seq2 = st_string_copy(aTrio->seq2);
-	aTrio->seq3 = st_string_copy(aTrio->seq3);
+	aTrio->seq1 = stString_copy(aTrio->seq1);
+	aTrio->seq2 = stString_copy(aTrio->seq2);
+	aTrio->seq3 = stString_copy(aTrio->seq3);
 	for (i=0; i<10; i++) {
 		aTrio->topMat[i] = 0;
 	}
@@ -189,7 +189,7 @@ void getPairsP(void (*passPairFn)(APair *pair, void *extraArgument1, void *extra
 		assert(j == 6 || (j == 5 && seqLength == 0));
 		if(j == 5) {
 			free(sequence);
-			sequence = st_string_print("");
+			sequence = stString_print("");
 		}
 		length = strlen(sequence);
 		assert(strand == '+' || strand == '-');
@@ -287,7 +287,7 @@ void getTriosP(void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extra
 		assert(j == 6 || (j == 5 && seqLength == 0));
 		if(j == 5) {
 			free(sequence);
-			sequence = st_string_print("");
+			sequence = stString_print("");
 		}
 
 		length = strlen(sequence);
@@ -813,7 +813,7 @@ void postOrderLabelNodes(ETree *node, int32_t *index, char **labelArray) {
 	for (i=0; i<eTree_getChildNumber(node); i++) {
 		postOrderLabelNodes(eTree_getChild(node, i), index, labelArray);
 	}
-	labelArray[*index] = st_string_copy(eTree_getLabel(node));
+	labelArray[*index] = stString_copy(eTree_getLabel(node));
 	*index += 1;
 
 	return;
@@ -825,7 +825,7 @@ void postOrderLabelLeaves(ETree *node, int32_t *index, char **labelArray) {
 		postOrderLabelLeaves(eTree_getChild(node, i), index, labelArray);
 	}
 	if (eTree_getChildNumber(node) == 0) {
-		labelArray[*index] = st_string_copy(eTree_getLabel(node));
+		labelArray[*index] = stString_copy(eTree_getLabel(node));
 		*index += 1;
 	}
 
@@ -940,7 +940,7 @@ struct hashtable * getTreeLabelHash(char **labelArray, int32_t nodeNum) {
 	int32_t i = 0;
 	treeLabelHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, free, free);
 	for (i=0; i<nodeNum; i++) {
-		hashtable_insert(treeLabelHash, st_string_copy(labelArray[i]), constructInt(i));
+		hashtable_insert(treeLabelHash, stString_copy(labelArray[i]), constructInt(i));
 	}
 
 	return treeLabelHash;

@@ -125,22 +125,22 @@ int main(int argc, char *argv[]) {
 
 		switch(key) {
 			case 'a':
-				logLevelString = st_string_copy(optarg);
+				logLevelString = stString_copy(optarg);
 				break;
 			case 'b':
-				mAFFile1 = st_string_copy(optarg);
+				mAFFile1 = stString_copy(optarg);
 				break;
 			case 'c':
-				mAFFile2 = st_string_copy(optarg);
+				mAFFile2 = stString_copy(optarg);
 				break;
 			case 'd':
-				outputFile = st_string_copy(optarg);
+				outputFile = stString_copy(optarg);
 				break;
 			case 'e':
 				assert(sscanf(optarg, "%i", &sampleNumber) == 1);
 				break;
 			case 'f':
-				trioFile = st_string_copy(optarg);
+				trioFile = stString_copy(optarg);
 				break;
 			case 'h':
 				usage();
