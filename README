@@ -1,79 +1,34 @@
-Joins two MAFs files based on a tree and one common reference genome shared
+Joins two MAFs files with one common reference genome shared
 between the two MAFs.
 
 Let A be a MAF file that describes the alignment between a set of sequences S(A). 
-Let a column be subset of individual residues in S(A) which all share a common ancestor.
-Let C(A) be the set of columns in A. C(A) has the property that every residue in S(A) is in a column in C(A). 
+Let a column be a subset of individual residues in S(A) which all share a common ancestor.
+Let C(A) be the set of columns in A such that every residue in S(A) is in one column in C(A). 
 
 For column x let T(x) be an evolutionary tree that relates the residues in x, such that
-S(A) is a column 
-
+every node in T(x) has a single associated residue. Let R(x) be the residue in x associated
+with the root node of T(x).
 
 A is a 'tree maf' if T(x) is encoded within it for every column x in C(A).
 
-Now let A and B be two tree MAFs
+Now let A and B be two tree MAFs and let x be a column in C(A) and y be a column
+in C(B) and z be the intersection of x and y. Let ~ be a 'join' relation, such that x ~ y iff 
+(1) R(x) is in y and { R(x) } = z and/or (2) R(y) is in x and { R(y) } = z. 
+For x ~ y we call the unique sequence position in z the 'shared' position.  
+It is easy to check that if x ~ y we can define a unique 'tree join operation' that constructs 
+the tree containing T(x) and T(y) as subtrees joined at their shared position (needs a figure).
+
+Let ~~ be a 'sharing' relation, such that x ~~ y iff z is non-empty.
+We say A and B are 'compatible' iff ~~ and the union of ~ and the identity relation (to make it reflexive) 
+are equivalent, i.e. informally, for every pair of columns in A X B sharing residues there is a tree join operation. 
+
+Let ~~~ be an equivalence relation defined as the union of the transitive closure of ~ and the identity relation.
+mafJoin constructs a new tree file AB from two compatible tree MAF files A and B such that C(AB)
+is the set of columns defined by the equivalence classes of ~~~ and for each x in C(AB), 
+T(x) is defined by a series of tree joins defined by ~. 
+
+mafJoins assumes that each member of S(A) and S(B) has a 'species label' 
+and that for any x ~ y the shared position's species label equals z, where z 
+is a parameter passed to mafJoin.
 
 
-
-
-Let x be a column in C(A), let T(x) be the evolutionary tree relates the residues in x.
-If A additional 
-
-
-
-
-A can be viewed as a set of aligned 'columns'
-
-, a column
-being a set of residues all of which share a common ancestor and are related by an 
-evolutionary tree. Let x be a column in A
-
-Let x be a column of aligned positions in A. Let T(x) be 
-the tree relating all the positions in x, we assume this is encoded in the MAF file.
-. Let R(x) be the root node of this tree. 
-
-
-Let A be a MAF file containing a tree for each MAF block.  We define the
-following properties for A.
-
-Let a be a MAF block in A. Let T(a) be the 'block tree' for a. T(a) is
-composed of 'leaf nodes', with no descendants and 'internal nodes', which have
-1 or more descendants. The root node of T(a) is the unique most ancestral node
-of the tree. For each node in T(a) there is a corresponding label in the tree
-and row in the MAF block.  For each node in T(a) except the root node, there
-is an associated ancestral branch, this branch must be labelled with an
-associated branch length.
-
-Each node in T(a) also has an associated 'species' label. Let T'(A) be the
-'species tree' associated with the genomes in A.  We call the nodes in T'(A)
-'species nodes', reusing the same terminology as with the MAF block trees.
-The tree T(a) for any a in A may 'disagree' with T'(A), due to duplication,
-loss and incomplete lineage sorting, however if x is the root species node of
-T'(A) then for any node n with species label x in any tree T(a), n must be a
-root node, i.e. no coalescence can occur that is more ancestral than the
-coalesence of the root species.
-
-A MAF file with the above properties is called 'tree normal'. Again let A be a
-tree normal MAF file.  Let i represent a column in a MAF block a in A.  Let
-F(i) be the set of sequence positions in i (i.e. excluding gaps).  Let T''(i)
-be the tree for column i, which is an induced subtree of T(a) excluding nodes
-that are gapped in the alignment.  Each node in T''(i) therefore has an
-associated sequence position in F(i).  Let S(A) be the species in T'(A).
-
-Let i and j now represent two columns from two different MAF files. i and j
-can be 'joined' if the intersection of F(i) and F(j) is non-empty to form a
-larger alignment column k of sequence positions that are all derived from a
-common ancestor.  The join to form a column k is 'simple' if T''(k) is a tree
-composed of T''(i) and T''(j) merged at a single common node (this needs more
-explanation).  A 'complete join' of two tree normal MAF files is a third tree
-normal file whose columns contain the 'closure' (wrong word) of joins of the
-columns of A and B.
-
-Let A and B be two tree normal MAF files. We say that A and B are 'compatible'
-iff (1) the intersection of S(A) and S(B) is { x } (so x is the unique shared
-species), and (2) x is the root of either or both of T(A) and T(B).
-
-Theorem 1:  For two compatible tree normal MAF files there exists a (unique) 
-complete join of A and B for which all joins are simple.
-
-mafJoin performs a complete join on two compatible tree normal MAF files.
