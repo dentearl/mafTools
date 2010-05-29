@@ -1,6 +1,38 @@
 Joins two MAFs files based on a tree and one common reference genome shared
 between the two MAFs.
 
+Let A be a MAF file that describes the alignment between a set of sequences S(A). 
+Let a column be subset of individual residues in S(A) which all share a common ancestor.
+Let C(A) be the set of columns in A. C(A) has the property that every residue in S(A) is in a column in C(A). 
+
+For column x let T(x) be an evolutionary tree that relates the residues in x, such that
+S(A) is a column 
+
+
+A is a 'tree maf' if T(x) is encoded within it for every column x in C(A).
+
+Now let A and B be two tree MAFs
+
+
+
+
+Let x be a column in C(A), let T(x) be the evolutionary tree relates the residues in x.
+If A additional 
+
+
+
+
+A can be viewed as a set of aligned 'columns'
+
+, a column
+being a set of residues all of which share a common ancestor and are related by an 
+evolutionary tree. Let x be a column in A
+
+Let x be a column of aligned positions in A. Let T(x) be 
+the tree relating all the positions in x, we assume this is encoded in the MAF file.
+. Let R(x) be the root node of this tree. 
+
+
 Let A be a MAF file containing a tree for each MAF block.  We define the
 following properties for A.
 
