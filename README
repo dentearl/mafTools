@@ -11,16 +11,15 @@ with the root node of T(x).
 
 A is a 'tree maf' if T(x) is encoded within it for every column x in C(A).
 
-Now let A and B be two tree MAFs and let x be a column in C(A) and y be a column
-in C(B) and z be the intersection of x and y. Let ~ be a 'join' relation, such that x ~ y iff 
-(1) R(x) is in y and { R(x) } = z and/or (2) R(y) is in x and { R(y) } = z. 
+Now let A and B be two tree MAFs. Let ~ be a 'join' relation on the union of C(A) and C(B), such that x ~ y iff 
+(1) R(x) is in y and { R(x) } = z and/or (2) R(y) is in x and { R(y) } = z, where z is the intersection of x and y.
 For x ~ y we call the unique sequence position in z the 'shared' position.  
 It is easy to check that if x ~ y we can define a unique 'tree join operation' that constructs 
-the tree containing T(x) and T(y) as subtrees joined at their shared position (needs a figure).
+the evolutionary tree containing T(x) and T(y) as subtrees joined at a node containing their shared position (needs a figure).
 
-Let ~~ be a 'sharing' relation, such that x ~~ y iff z is non-empty.
+Let ~~ be a 'sharing' relation on the union of C(A) and C(B), such that x ~~ y iff z is non-empty.
 We say A and B are 'compatible' iff ~~ and the union of ~ and the identity relation (to make it reflexive) 
-are equivalent, i.e. informally, for every pair of columns in A X B sharing residues there is a tree join operation. 
+are equivalent, i.e. informally, this means that for every pair of columns in A X B sharing residues there is a valid tree join operation. 
 
 Let ~~~ be an equivalence relation defined as the union of the transitive closure of ~ and the identity relation.
 mafJoin constructs a new tree file AB from two compatible tree MAF files A and B such that C(AB)
