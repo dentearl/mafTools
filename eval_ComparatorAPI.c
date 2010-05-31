@@ -8,7 +8,7 @@ int32_t calcTrioState(TrioDecoder *decoder, int32_t spA, int32_t spB, int32_t sp
 void aPair_fillOut(APair *aPair, char *seq1, char *seq2, int32_t pos1, int32_t pos2) {
 	int32_t i = strcmp(seq1, seq2);
 	if(i > 0 || (i == 0 && pos1 > pos2)) { //we construct the sequence so that seq1 < seq2 || seq1 == seq2 and pos1 < pos2
-		return aPair_fillOut(aPair, seq2, seq1, pos2, pos1);
+		aPair_fillOut(aPair, seq2, seq1, pos2, pos1);
 	}
 	aPair->seq1 = seq1;
 	aPair->seq2 = seq2;
