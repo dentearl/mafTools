@@ -1,30 +1,40 @@
 Joins two MAFs files with one common reference genome shared
 between the two MAFs.
 
-Let A be a MAF file that describes the alignment between a set of sequences S(A). 
-Let a column be a subset of individual residues in S(A) which all share a common ancestor.
-Let C(A) be the set of columns in A such that every residue in S(A) is in one column in C(A). 
+Let A be a MAF file that describes the alignment between a set of sequences
+S(A).
 
-For column x let T(x) be an evolutionary tree that relates the residues in x, such that
-every node in T(x) has a single associated residue. Let R(x) be the residue in x associated
-with the root node of T(x).
+Let a column be a subset of individual residues in S(A) which all share a
+common ancestor.
+
+Let C(A) be the set of columns in A such that every residue in S(A) is in one
+column in C(A).
+
+For column x let T(x) be an evolutionary tree that relates the residues in x,
+such that every node in T(x) has a single associated residue. Let R(x) be the
+residue in x associated with the root node of T(x).
 
 A is a 'tree maf' if T(x) is encoded within it for every column x in C(A).
 
-Now let A and B be two tree MAFs. Let ~ be a 'join' relation on the union of C(A) and C(B), such that x ~ y iff 
-(1) R(x) is in y and { R(x) } = z and/or (2) R(y) is in x and { R(y) } = z, where z is the intersection of x and y.
-For x ~ y we call the unique sequence position in z the 'shared' position.  
-It is easy to check that if x ~ y we can define a unique 'tree join operation' that constructs 
-the evolutionary tree containing T(x) and T(y) as subtrees joined at a node containing their shared position (needs a figure).
+Now let A and B be two tree MAFs. Let ~ be a 'join' relation on the union of
+C(A) and C(B), such that x ~ y iff (1) R(x) is in y and { R(x) } = z and/or
+(2) R(y) is in x and { R(y) } = z, where z is the intersection of x and y.
+For x ~ y we call the unique sequence position in z the 'shared' position.  It
+is easy to check that if x ~ y we can define a unique 'tree join operation'
+that constructs the evolutionary tree containing T(x) and T(y) as subtrees
+joined at a node containing their shared position (needs a figure).
 
-Let ~~ be a 'sharing' relation on the union of C(A) and C(B), such that x ~~ y iff z is non-empty.
-We say A and B are 'compatible' iff ~~ and the union of ~ and the identity relation (to make it reflexive) 
-are equivalent, i.e. informally, this means that for every pair of columns in A X B sharing residues there is a valid tree join operation. 
+Let ~~ be a 'sharing' relation on the union of C(A) and C(B), such that x ~~ y
+iff z is non-empty.  We say A and B are 'compatible' iff ~~ and the union of ~
+and the identity relation (to make it reflexive) are equivalent,
+i.e. informally, this means that for every pair of columns in A X B sharing
+residues there is a valid tree join operation.
 
-Let ~~~ be an equivalence relation defined as the union of the transitive closure of ~ and the identity relation.
-mafJoin constructs a new tree file AB from two compatible tree MAF files A and B such that C(AB)
-is the set of columns defined by the equivalence classes of ~~~ and for each x in C(AB), 
-T(x) is defined by a series of tree joins defined by ~. 
+Let ~~~ be an equivalence relation defined as the union of the transitive
+closure of ~ and the identity relation.  mafJoin constructs a new tree file AB
+from two compatible tree MAF files A and B such that C(AB) is the set of
+columns defined by the equivalence classes of ~~~ and for each x in C(AB),
+T(x) is defined by a series of tree joins defined by ~.
 
 mafJoins assumes that each member of S(A) and S(B) has a 'species label' 
 and that for any x ~ y the shared position's species label equals z, where z 
