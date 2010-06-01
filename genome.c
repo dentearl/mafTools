@@ -20,7 +20,7 @@ static struct Seq *seqNew(struct Genome *genome, char *name, int size) {
     seq->name = cloneString(name);
     seq->size = size;
     return seq;
-};
+}
 
 /* constructor */
 static struct Genome *genomeNew(char *name) {
