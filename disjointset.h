@@ -13,9 +13,9 @@
 /* Structure for a disjoint-set forest data structure */
 struct djs 
 {
-	uint32_t *p;    /* Parent of node x is p[x] */
-	uint32_t *rank; /* Rank of node x is rank[x] */
-	uint32_t size;  /* Maximum number of elements in set */
+    uint32_t *p;    /* Parent of node x is p[x] */
+    uint32_t *rank; /* Rank of node x is rank[x] */
+    uint32_t size;  /* Maximum number of elements in set */
 };
 
 /* 

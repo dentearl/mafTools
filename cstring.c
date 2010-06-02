@@ -43,26 +43,26 @@ void upperCase(char *string) {
  *   if "ignorecase" == 1
  */
 int startswith(char *string, char *query, int ignorecase) {
-	assert(strlen(query) <= strlen(string));
-	assert(strlen(string) > 0);
-	assert(strlen(query) > 0);
+    assert(strlen(query) <= strlen(string));
+    assert(strlen(string) > 0);
+    assert(strlen(query) > 0);
 
-	int i = 0;
-	while(1) {
-		if (query[i] == '\0') {
-			return 1;
-		}
-		if (ignorecase) {
-			if (tolower(string[i]) != tolower(query[i])) {
-				return 0;
-			}
-		} else {
-			if (string[i] != query[i]) {
-				return 0;
-			}
-		}
+    int i = 0;
+    while(1) {
+        if (query[i] == '\0') {
+            return 1;
+        }
+        if (ignorecase) {
+            if (tolower(string[i]) != tolower(query[i])) {
+                return 0;
+            }
+        } else {
+            if (string[i] != query[i]) {
+                return 0;
+            }
+        }
 
-		i++;
-	}
+        i++;
+    }
 }
 

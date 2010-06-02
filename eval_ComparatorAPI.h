@@ -20,26 +20,26 @@
 #include "disjointset.h"
 
 typedef struct _solo {
-	char *name;
-	int32_t pos;
+    char *name;
+    int32_t pos;
 } ASolo;
 
 typedef struct _pair {
-	char *seq1;
-	char *seq2;
-	int32_t pos1;
-	int32_t pos2;
+    char *seq1;
+    char *seq2;
+    int32_t pos1;
+    int32_t pos2;
 } APair;
 
 typedef struct _trio {
-	char *seq1;
-	char *seq2;
-	char *seq3;
-	int32_t pos1;
-	int32_t pos2;
-	int32_t pos3;
-	int32_t top; // tree topology
-	int32_t topMat[10];
+    char *seq1;
+    char *seq2;
+    char *seq3;
+    int32_t pos1;
+    int32_t pos2;
+    int32_t pos3;
+    int32_t top; // tree topology
+    int32_t topMat[10];
 } ATrio;
 
 typedef struct _trioNames {
@@ -49,12 +49,12 @@ typedef struct _trioNames {
 } TrioNames;
 
 typedef struct _trioDecoder {
-	char **nodeLabelArray;
-	char **leafLabelArray;
-	struct hashtable *treeLabelHash;
-	int32_t **lcaMatrix;
-	int32_t nodeNum;
-	int32_t leafNum;
+    char **nodeLabelArray;
+    char **leafLabelArray;
+    struct hashtable *treeLabelHash;
+    int32_t **lcaMatrix;
+    int32_t nodeNum;
+    int32_t leafNum;
 } TrioDecoder;
 
 void populateNameHash(const char *mAFFile, struct hashtable *htp);

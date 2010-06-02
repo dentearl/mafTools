@@ -24,234 +24,234 @@
  */
 
 void freeTrioNames(void *trio) {
-	free(((TrioNames *)trio)->speciesA);
-	free(((TrioNames *)trio)->speciesB);
-	free(((TrioNames *)trio)->speciesC);
-	free(trio);
+    free(((TrioNames *)trio)->speciesA);
+    free(((TrioNames *)trio)->speciesB);
+    free(((TrioNames *)trio)->speciesC);
+    free(trio);
 }
 
 void usage() {
-	fprintf(stderr, "eval_PhyloComparator, version 0.1\n");
-	fprintf(stderr, "\t-a --logLevel : Set the log level\n");
-	fprintf(stderr, "\t-b --mAFFile1 : The location of the first MAF file\n");
-	fprintf(stderr, "\t-c --mAFFile2 : The location of the second MAF file\n");
-	fprintf(stderr, "\t-d --outputFile : The output XML formatted results file.\n");
-	fprintf(stderr, "\t-e --sampleNumber : The number of sample phylotrio tests to perform (total).\n");
-	fprintf(stderr, "\t-f --trioFile: The location of the trio species file\n");
-	fprintf(stderr, "\t-h --help : Print this help screen\n");
+    fprintf(stderr, "eval_PhyloComparator, version 0.1\n");
+    fprintf(stderr, "\t-a --logLevel : Set the log level\n");
+    fprintf(stderr, "\t-b --mAFFile1 : The location of the first MAF file\n");
+    fprintf(stderr, "\t-c --mAFFile2 : The location of the second MAF file\n");
+    fprintf(stderr, "\t-d --outputFile : The output XML formatted results file.\n");
+    fprintf(stderr, "\t-e --sampleNumber : The number of sample phylotrio tests to perform (total).\n");
+    fprintf(stderr, "\t-f --trioFile: The location of the trio species file\n");
+    fprintf(stderr, "\t-h --help : Print this help screen\n");
 }
 
 struct List *parseTrioFile(char *trioFile) {
-	FILE *fileHandle = fopen(trioFile, "r");
-	int bytesRead;
-	int nBytes = 100;
-	char *cA;
-	int j;
+    FILE *fileHandle = fopen(trioFile, "r");
+    int bytesRead;
+    int nBytes = 100;
+    char *cA;
+    int j;
 
-	char *species[3];
+    char *species[3];
 
-	struct List *speciesList = NULL;
-	speciesList = constructEmptyList(0, freeTrioNames);
+    struct List *speciesList = NULL;
+    speciesList = constructEmptyList(0, freeTrioNames);
 
-	cA = st_malloc(nBytes + 1);
-	bytesRead = benLine(&cA, &nBytes, fileHandle);
+    cA = st_malloc(nBytes + 1);
+    bytesRead = benLine(&cA, &nBytes, fileHandle);
 
-	while(bytesRead != -1) {
-		if (bytesRead > 0) {
-			species[0] = st_malloc(sizeof(char) * (1 + (bytesRead)));
-			species[1] = st_malloc(sizeof(char) * (1 + (bytesRead)));
-			species[2] = st_malloc(sizeof(char) * (1 + (bytesRead)));
-			j = sscanf(cA, "%s\t%s\t%s", species[0], species[1], species[2]);
-			if (j != 3) {
-				fprintf(stderr, "Invalid triple line '%s' in '%s'\n", cA, trioFile);
-				exit(1);
-			}
+    while(bytesRead != -1) {
+        if (bytesRead > 0) {
+            species[0] = st_malloc(sizeof(char) * (1 + (bytesRead)));
+            species[1] = st_malloc(sizeof(char) * (1 + (bytesRead)));
+            species[2] = st_malloc(sizeof(char) * (1 + (bytesRead)));
+            j = sscanf(cA, "%s\t%s\t%s", species[0], species[1], species[2]);
+            if (j != 3) {
+                fprintf(stderr, "Invalid triple line '%s' in '%s'\n", cA, trioFile);
+                exit(1);
+            }
 
-			lowerCase(species[0]);
-			lowerCase(species[1]);
-			lowerCase(species[2]);
-			qsort(species, 3, sizeof(char *), cstring_cmp);
+            lowerCase(species[0]);
+            lowerCase(species[1]);
+            lowerCase(species[2]);
+            qsort(species, 3, sizeof(char *), cstring_cmp);
 
-			TrioNames *trio = st_malloc(sizeof(TrioNames));
-			trio->speciesA = species[0];
-			trio->speciesB = species[1];
-			trio->speciesC = species[2];
-			
-			listAppend(speciesList, trio);
-		}
-		bytesRead = benLine(&cA, &nBytes, fileHandle);
-	}
-	fclose(fileHandle);
+            TrioNames *trio = st_malloc(sizeof(TrioNames));
+            trio->speciesA = species[0];
+            trio->speciesB = species[1];
+            trio->speciesC = species[2];
+            
+            listAppend(speciesList, trio);
+        }
+        bytesRead = benLine(&cA, &nBytes, fileHandle);
+    }
+    fclose(fileHandle);
 
-	free(cA);
+    free(cA);
 
-	return speciesList;
+    return speciesList;
 }
 
 int main(int argc, char *argv[]) {
-	/*
-	 * Arguments/options
-	 */
-	char * logLevelString = NULL;
-	char * mAFFile1 = NULL;
-	char * mAFFile2 = NULL;
-	char * outputFile = NULL;
-	int32_t sampleNumber = 1000000; // by default do a million samples per pair.
-	char * trioFile = NULL;
+    /*
+     * Arguments/options
+     */
+    char * logLevelString = NULL;
+    char * mAFFile1 = NULL;
+    char * mAFFile2 = NULL;
+    char * outputFile = NULL;
+    int32_t sampleNumber = 1000000; // by default do a million samples per pair.
+    char * trioFile = NULL;
 
-	///////////////////////////////////////////////////////////////////////////
-	// (0) Parse the inputs handed by genomeCactus.py / setup stuff.
-	///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
+    ///////////////////////////////////////////////////////////////////////////
 
-	while(1) {
-		static struct option long_options[] = {
-			{ "logLevel", required_argument, 0, 'a' },
-			{ "mAFFile1", required_argument, 0, 'b' },
-			{ "mAFFile2", required_argument, 0, 'c' },
-			{ "outputFile", required_argument, 0, 'd' },
-			{ "sampleNumber", required_argument, 0, 'e' },
-			{ "trioFile", required_argument, 0, 'f' },
-			{ "help", no_argument, 0, 'h' },
-			{ 0, 0, 0, 0 }
-		};
+    while(1) {
+        static struct option long_options[] = {
+            { "logLevel", required_argument, 0, 'a' },
+            { "mAFFile1", required_argument, 0, 'b' },
+            { "mAFFile2", required_argument, 0, 'c' },
+            { "outputFile", required_argument, 0, 'd' },
+            { "sampleNumber", required_argument, 0, 'e' },
+            { "trioFile", required_argument, 0, 'f' },
+            { "help", no_argument, 0, 'h' },
+            { 0, 0, 0, 0 }
+        };
 
-		int option_index = 0;
+        int option_index = 0;
 
-		int key = getopt_long(argc, argv, "a:b:c:d:e:f:h", long_options, &option_index);
+        int key = getopt_long(argc, argv, "a:b:c:d:e:f:h", long_options, &option_index);
 
-		if(key == -1) {
-			break;
-		}
+        if(key == -1) {
+            break;
+        }
 
-		switch(key) {
-			case 'a':
-				logLevelString = stString_copy(optarg);
-				break;
-			case 'b':
-				mAFFile1 = stString_copy(optarg);
-				break;
-			case 'c':
-				mAFFile2 = stString_copy(optarg);
-				break;
-			case 'd':
-				outputFile = stString_copy(optarg);
-				break;
-			case 'e':
-				assert(sscanf(optarg, "%i", &sampleNumber) == 1);
-				break;
-			case 'f':
-				trioFile = stString_copy(optarg);
-				break;
-			case 'h':
-				usage();
-				return 0;
-			default:
-				usage();
-				return 1;
-		}
-	}
+        switch(key) {
+            case 'a':
+                logLevelString = stString_copy(optarg);
+                break;
+            case 'b':
+                mAFFile1 = stString_copy(optarg);
+                break;
+            case 'c':
+                mAFFile2 = stString_copy(optarg);
+                break;
+            case 'd':
+                outputFile = stString_copy(optarg);
+                break;
+            case 'e':
+                assert(sscanf(optarg, "%i", &sampleNumber) == 1);
+                break;
+            case 'f':
+                trioFile = stString_copy(optarg);
+                break;
+            case 'h':
+                usage();
+                return 0;
+            default:
+                usage();
+                return 1;
+        }
+    }
 
-	///////////////////////////////////////////////////////////////////////////
-	// (0) Check the inputs.
-	///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    // (0) Check the inputs.
+    ///////////////////////////////////////////////////////////////////////////
 
-	if (argc == 1) {
-		usage();
-		return 1;
-	}
+    if (argc == 1) {
+        usage();
+        return 1;
+    }
 
-	assert(mAFFile1 != NULL);
-	assert(mAFFile2 != NULL);
-	assert(outputFile != NULL);
-	assert(trioFile != NULL);
+    assert(mAFFile1 != NULL);
+    assert(mAFFile2 != NULL);
+    assert(outputFile != NULL);
+    assert(trioFile != NULL);
 
-	FILE *fileHandle = fopen(mAFFile1, "r");
-	if (fileHandle == NULL) {
-		fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", mAFFile1);
-		exit(1);
-	}
-	fclose(fileHandle);
-	fileHandle = fopen(mAFFile2, "r");
-	if (fileHandle == NULL) {
-		fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", mAFFile2);
-		exit(1);
-	}
-	fclose(fileHandle);
-	fileHandle = fopen(trioFile, "r");
-	if (fileHandle == NULL) {
-		fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", trioFile);
-		exit(1);
-	}
-	fclose(fileHandle);
+    FILE *fileHandle = fopen(mAFFile1, "r");
+    if (fileHandle == NULL) {
+        fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", mAFFile1);
+        exit(1);
+    }
+    fclose(fileHandle);
+    fileHandle = fopen(mAFFile2, "r");
+    if (fileHandle == NULL) {
+        fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", mAFFile2);
+        exit(1);
+    }
+    fclose(fileHandle);
+    fileHandle = fopen(trioFile, "r");
+    if (fileHandle == NULL) {
+        fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", trioFile);
+        exit(1);
+    }
+    fclose(fileHandle);
 
-	//////////////////////////////////////////////
-	//Set up logging
-	//////////////////////////////////////////////
+    //////////////////////////////////////////////
+    //Set up logging
+    //////////////////////////////////////////////
 
-	if (logLevelString != NULL && strcmp(logLevelString, "INFO") == 0) {
-		st_setLogLevel(ST_LOGGING_INFO);
-	}
-	if (logLevelString != NULL && strcmp(logLevelString, "DEBUG") == 0) {
-		st_setLogLevel(ST_LOGGING_DEBUG);
-	}
+    if (logLevelString != NULL && strcmp(logLevelString, "INFO") == 0) {
+        st_setLogLevel(ST_LOGGING_INFO);
+    }
+    if (logLevelString != NULL && strcmp(logLevelString, "DEBUG") == 0) {
+        st_setLogLevel(ST_LOGGING_DEBUG);
+    }
 
-	//////////////////////////////////////////////
-	//Log (some of) the inputs
-	//////////////////////////////////////////////
+    //////////////////////////////////////////////
+    //Log (some of) the inputs
+    //////////////////////////////////////////////
 
-	st_logInfo("MAF file 1 name : %s\n", mAFFile1);
-	st_logInfo("MAF file 2 name : %s\n", mAFFile2);
-	st_logInfo("Trio species name : %s\n", trioFile);
-	st_logInfo("Output stats file : %s\n", outputFile);
+    st_logInfo("MAF file 1 name : %s\n", mAFFile1);
+    st_logInfo("MAF file 2 name : %s\n", mAFFile2);
+    st_logInfo("Trio species name : %s\n", trioFile);
+    st_logInfo("Output stats file : %s\n", outputFile);
 
-	/* Parse the trioFile triples into a list */
-	struct List *speciesList = parseTrioFile(trioFile);
+    /* Parse the trioFile triples into a list */
+    struct List *speciesList = parseTrioFile(trioFile);
 
-	//////////////////////////////////////////////
-	// Create hashtable for the first MAF file.
-	//////////////////////////////////////////////
+    //////////////////////////////////////////////
+    // Create hashtable for the first MAF file.
+    //////////////////////////////////////////////
 
-	struct hashtable *seqNameHash;
-	seqNameHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, free, free);
-	populateNameHash(mAFFile1, seqNameHash);
+    struct hashtable *seqNameHash;
+    seqNameHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, free, free);
+    populateNameHash(mAFFile1, seqNameHash);
 
-	// TODO: Check if query species are in maf file
+    // TODO: Check if query species are in maf file
 
-	//////////////////////////////////////////////
-	//Do comparisons.
-	//////////////////////////////////////////////
+    //////////////////////////////////////////////
+    //Do comparisons.
+    //////////////////////////////////////////////
 
-	struct avl_table *results_12 = compareMAFs_AB_Trio(mAFFile1, mAFFile2, sampleNumber, seqNameHash, speciesList);
-	struct avl_table *results_21 = compareMAFs_AB_Trio(mAFFile2, mAFFile1, sampleNumber, seqNameHash, speciesList);
+    struct avl_table *results_12 = compareMAFs_AB_Trio(mAFFile1, mAFFile2, sampleNumber, seqNameHash, speciesList);
+    struct avl_table *results_21 = compareMAFs_AB_Trio(mAFFile2, mAFFile1, sampleNumber, seqNameHash, speciesList);
 
-	fileHandle = fopen(outputFile, "w");
-	if (fileHandle == NULL) {
-		fprintf(stderr, "ERROR, unable to open `%s' for writing.\n", outputFile);
-		exit(1);
-	}
+    fileHandle = fopen(outputFile, "w");
+    if (fileHandle == NULL) {
+        fprintf(stderr, "ERROR, unable to open `%s' for writing.\n", outputFile);
+        exit(1);
+    }
 
-	fprintf(fileHandle, "<trio_comparisons sampleNumber=\"%i\">\n", sampleNumber);
-	reportResultsTrio(results_12, mAFFile1, mAFFile2, fileHandle);
-	reportResultsTrio(results_21, mAFFile2, mAFFile1, fileHandle);
-	fprintf(fileHandle, "</trio_comparisons>\n");
-	fclose(fileHandle);
+    fprintf(fileHandle, "<trio_comparisons sampleNumber=\"%i\">\n", sampleNumber);
+    reportResultsTrio(results_12, mAFFile1, mAFFile2, fileHandle);
+    reportResultsTrio(results_21, mAFFile2, mAFFile1, fileHandle);
+    fprintf(fileHandle, "</trio_comparisons>\n");
+    fclose(fileHandle);
 
-	///////////////////////////////////////////////////////////////////////////
-	// Clean up.
-	///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    // Clean up.
+    ///////////////////////////////////////////////////////////////////////////
 
-	free(mAFFile1);
-	free(mAFFile2);
-	free(outputFile);
-	free(trioFile);
-	free(logLevelString);
+    free(mAFFile1);
+    free(mAFFile2);
+    free(outputFile);
+    free(trioFile);
+    free(logLevelString);
 
-	hashtable_destroy(seqNameHash, 1, 1);
+    hashtable_destroy(seqNameHash, 1, 1);
 
-	avl_destroy(results_12, (void (*)(void *, void *))aTrio_destruct);
-	avl_destroy(results_21, (void (*)(void *, void *))aTrio_destruct);
+    avl_destroy(results_12, (void (*)(void *, void *))aTrio_destruct);
+    avl_destroy(results_21, (void (*)(void *, void *))aTrio_destruct);
 
-	destructList(speciesList);
+    destructList(speciesList);
 
-	return 0;
+    return 0;
 }

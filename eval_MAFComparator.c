@@ -33,80 +33,80 @@
  */
 
 void usage() {
-	fprintf(stderr, "eval_MAFComparator, version 0.1\n");
-	fprintf(stderr, "-a --logLevel : Set the log level\n");
-	fprintf(stderr, "-b --mAFFile1 : The location of the first MAF file\n");
-	fprintf(stderr, "-c --mAFFile2 : The location of the second MAF file\n");
-	fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
-	fprintf(stderr, "-e --sampleNumber : The number of sample homology tests to perform (total).\n");
-	fprintf(stderr, "-h --help : Print this help screen\n");
+    fprintf(stderr, "eval_MAFComparator, version 0.1\n");
+    fprintf(stderr, "-a --logLevel : Set the log level\n");
+    fprintf(stderr, "-b --mAFFile1 : The location of the first MAF file\n");
+    fprintf(stderr, "-c --mAFFile2 : The location of the second MAF file\n");
+    fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
+    fprintf(stderr, "-e --sampleNumber : The number of sample homology tests to perform (total).\n");
+    fprintf(stderr, "-h --help : Print this help screen\n");
 }
 
 int main(int argc, char *argv[]) {
-	/*
-	 * Arguments/options
-	 */
-	char * logLevelString = NULL;
-	char * mAFFile1 = NULL;
-	char * mAFFile2 = NULL;
-	char * outputFile = NULL;
-	int32_t sampleNumber = 1000000; // by default do a million samples per pair.
+    /*
+     * Arguments/options
+     */
+    char * logLevelString = NULL;
+    char * mAFFile1 = NULL;
+    char * mAFFile2 = NULL;
+    char * outputFile = NULL;
+    int32_t sampleNumber = 1000000; // by default do a million samples per pair.
 
-	///////////////////////////////////////////////////////////////////////////
-	// (0) Parse the inputs handed by genomeCactus.py / setup stuff.
-	///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
+    ///////////////////////////////////////////////////////////////////////////
 
-	while(1) {
-		static struct option long_options[] = {
-			{ "logLevel", required_argument, 0, 'a' },
-			{ "mAFFile1", required_argument, 0, 'b' },
-			{ "mAFFile2", required_argument, 0, 'c' },
-			{ "outputFile", required_argument, 0, 'd' },
-			{ "sampleNumber", required_argument, 0, 'e' },
-			{ "help", no_argument, 0, 'h' },
-			{ 0, 0, 0, 0 }
-		};
+    while(1) {
+        static struct option long_options[] = {
+            { "logLevel", required_argument, 0, 'a' },
+            { "mAFFile1", required_argument, 0, 'b' },
+            { "mAFFile2", required_argument, 0, 'c' },
+            { "outputFile", required_argument, 0, 'd' },
+            { "sampleNumber", required_argument, 0, 'e' },
+            { "help", no_argument, 0, 'h' },
+            { 0, 0, 0, 0 }
+        };
 
-		int option_index = 0;
+        int option_index = 0;
 
-		int key = getopt_long(argc, argv, "a:b:c:d:e:h", long_options, &option_index);
+        int key = getopt_long(argc, argv, "a:b:c:d:e:h", long_options, &option_index);
 
-		if(key == -1) {
-			break;
-		}
+        if(key == -1) {
+            break;
+        }
 
-		switch(key) {
-			case 'a':
-				logLevelString = stString_copy(optarg);
-				break;
-			case 'b':
-				mAFFile1 = stString_copy(optarg);
-				break;
-			case 'c':
-				mAFFile2 = stString_copy(optarg);
-				break;
-			case 'd':
-				outputFile = stString_copy(optarg);
-				break;
-			case 'e':
-				assert(sscanf(optarg, "%i", &sampleNumber) == 1);
-				break;
-			case 'h':
-				usage();
-				return 0;
-			default:
-				usage();
-				return 1;
-		}
-	}
+        switch(key) {
+            case 'a':
+                logLevelString = stString_copy(optarg);
+                break;
+            case 'b':
+                mAFFile1 = stString_copy(optarg);
+                break;
+            case 'c':
+                mAFFile2 = stString_copy(optarg);
+                break;
+            case 'd':
+                outputFile = stString_copy(optarg);
+                break;
+            case 'e':
+                assert(sscanf(optarg, "%i", &sampleNumber) == 1);
+                break;
+            case 'h':
+                usage();
+                return 0;
+            default:
+                usage();
+                return 1;
+        }
+    }
 
-	///////////////////////////////////////////////////////////////////////////
-	// (0) Check the inputs.
-	///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    // (0) Check the inputs.
+    ///////////////////////////////////////////////////////////////////////////
 
-	assert(mAFFile1 != NULL);
-	assert(mAFFile2 != NULL);
-	assert(outputFile != NULL);
+    assert(mAFFile1 != NULL);
+    assert(mAFFile2 != NULL);
+    assert(outputFile != NULL);
     FILE *fileHandle = fopen(mAFFile1, "r");
     if(fileHandle == NULL){
        fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", mAFFile1);
@@ -120,64 +120,64 @@ int main(int argc, char *argv[]) {
     }
     fclose(fileHandle);
 
-	//////////////////////////////////////////////
-	//Set up logging
-	//////////////////////////////////////////////
+    //////////////////////////////////////////////
+    //Set up logging
+    //////////////////////////////////////////////
 
-	if(logLevelString != NULL && strcmp(logLevelString, "INFO") == 0) {
-		st_setLogLevel(ST_LOGGING_INFO);
-	}
-	if(logLevelString != NULL && strcmp(logLevelString, "DEBUG") == 0) {
-		st_setLogLevel(ST_LOGGING_DEBUG);
-	}
-
-	//////////////////////////////////////////////
-	//Log (some of) the inputs
-	//////////////////////////////////////////////
-
-	st_logInfo("MAF file 1 name : %s\n", mAFFile1);
-	st_logInfo("MAF file 2 name : %s\n", mAFFile2);
-	st_logInfo("Output stats file : %s\n", outputFile);
+    if(logLevelString != NULL && strcmp(logLevelString, "INFO") == 0) {
+        st_setLogLevel(ST_LOGGING_INFO);
+    }
+    if(logLevelString != NULL && strcmp(logLevelString, "DEBUG") == 0) {
+        st_setLogLevel(ST_LOGGING_DEBUG);
+    }
 
     //////////////////////////////////////////////
-	// Create hashtable for the first MAF file.
-	//////////////////////////////////////////////
+    //Log (some of) the inputs
+    //////////////////////////////////////////////
+
+    st_logInfo("MAF file 1 name : %s\n", mAFFile1);
+    st_logInfo("MAF file 2 name : %s\n", mAFFile2);
+    st_logInfo("Output stats file : %s\n", outputFile);
+
+    //////////////////////////////////////////////
+    // Create hashtable for the first MAF file.
+    //////////////////////////////////////////////
 
     struct hashtable *seqNameHash;
     seqNameHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, free, free);
     populateNameHash(mAFFile1, seqNameHash);
 
 
-	//////////////////////////////////////////////
-	//Do comparisons.
-	//////////////////////////////////////////////
+    //////////////////////////////////////////////
+    //Do comparisons.
+    //////////////////////////////////////////////
 
-	struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNameHash);
-	struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNameHash);
-	fileHandle = fopen(outputFile, "w");
+    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNameHash);
+    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNameHash);
+    fileHandle = fopen(outputFile, "w");
     if(fileHandle == NULL){
        fprintf(stderr, "ERROR, unable to open `%s' for writing.\n", outputFile);
        exit(1);
     }
-	fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\">\n", sampleNumber);
-	reportResults(results_12, mAFFile1, mAFFile2, fileHandle);
-	reportResults(results_21, mAFFile2, mAFFile1, fileHandle);
-	fprintf(fileHandle, "</alignment_comparisons>\n");
-	fclose(fileHandle);
+    fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\">\n", sampleNumber);
+    reportResults(results_12, mAFFile1, mAFFile2, fileHandle);
+    reportResults(results_21, mAFFile2, mAFFile1, fileHandle);
+    fprintf(fileHandle, "</alignment_comparisons>\n");
+    fclose(fileHandle);
 
-	///////////////////////////////////////////////////////////////////////////
-	// Clean up.
-	///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    // Clean up.
+    ///////////////////////////////////////////////////////////////////////////
 
-	avl_destroy(results_12, (void (*)(void *, void *))aPair_destruct);
-	avl_destroy(results_21, (void (*)(void *, void *))aPair_destruct);
+    avl_destroy(results_12, (void (*)(void *, void *))aPair_destruct);
+    avl_destroy(results_21, (void (*)(void *, void *))aPair_destruct);
 
-	free(mAFFile1);
-	free(mAFFile2);
-	free(outputFile);
-	free(logLevelString);
+    free(mAFFile1);
+    free(mAFFile2);
+    free(outputFile);
+    free(logLevelString);
 
-	hashtable_destroy(seqNameHash, 1, 1);
+    hashtable_destroy(seqNameHash, 1, 1);
 
-	return 0;
+    return 0;
 }
