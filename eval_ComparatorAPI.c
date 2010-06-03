@@ -10,10 +10,12 @@ void aPair_fillOut(APair *aPair, char *seq1, char *seq2, int32_t pos1, int32_t p
     if(i > 0 || (i == 0 && pos1 > pos2)) { //we construct the sequence so that seq1 < seq2 || seq1 == seq2 and pos1 < pos2
         aPair_fillOut(aPair, seq2, seq1, pos2, pos1);
     }
-    aPair->seq1 = seq1;
-    aPair->seq2 = seq2;
-    aPair->pos1 = pos1;
-    aPair->pos2 = pos2;
+    else {
+        aPair->seq1 = seq1;
+        aPair->seq2 = seq2;
+        aPair->pos1 = pos1;
+        aPair->pos2 = pos2;
+    }
 }
 
 void aTrio_fillOut(ATrio *aTrio, char *seq1, char *seq2, char *seq3, int32_t pos1, int32_t pos2, int32_t pos3, int32_t top) {
