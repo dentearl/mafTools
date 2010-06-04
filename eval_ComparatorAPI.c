@@ -673,36 +673,70 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
 }
 
 void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle) {
-    /*
-     * Report results in an XML formatted document.
-     */
-    int32_t i;
-    static struct avl_traverser iterator;
-    avl_t_init(&iterator, results_AB);
-    ATrio *resultTrio;
-    double positive = 0.0;
-    double total = 0.0;
-    while((resultTrio = avl_t_next(&iterator)) != NULL) {
-        assert(resultTrio->pos2 >= resultTrio->pos1);
-        positive += resultTrio->pos1;
-        total += resultTrio->pos2;
-    }
-    fprintf(fileHandle, "\t<trio_tests fileA=\"%s\" fileB=\"%s\" totalTests=\"%.0f\" totalTrue=\"%.0f\" totalFalse=\"%.0f\" average=\"%f\">\n",
-            mAFFileA, mAFFileB, total, positive, total - positive, positive / total);
-    while((resultTrio = avl_t_prev(&iterator)) != NULL) {
-        assert(resultTrio->pos2 >= resultTrio->pos1);
-        fprintf(fileHandle,
-                "\t\t<trio_test sequenceA=\"%s\" sequenceB=\"%s\" sequenceC=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\">\n",
-                resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos2, resultTrio->pos1, resultTrio->pos2 - resultTrio->pos1, ((double)resultTrio->pos1)/resultTrio->pos2);
-        fprintf(fileHandle,
-                "\t\t\t<single_trio_test sequenceA=\"%s\" sequenceB=\"%s\" sequenceC=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\"/>\n",
-                resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos2, resultTrio->pos1, resultTrio->pos2 - resultTrio->pos1, ((double)resultTrio->pos1)/resultTrio->pos2);
-        for (i=0; i<10; i++) {
-            fprintf(fileHandle, "\t\t\t\t%d\t%d\n", i, resultTrio->topMat[i]);
-        }
-        fprintf(fileHandle, "\t\t</trio_test>\n");
-    }
-    fprintf(fileHandle, "\t</trio_tests>\n");
+	/*
+	 * Report results in an XML formatted document.
+	 */
+	int32_t i, j;
+	static struct avl_traverser iterator;
+	avl_t_init(&iterator, results_AB);
+	ATrio *resultTrio;
+	double positive = 0.0;
+	double total = 0.0;
+	while((resultTrio = avl_t_next(&iterator)) != NULL) {
+		assert(resultTrio->pos2 >= resultTrio->pos1);
+		positive += resultTrio->pos1;
+		total += resultTrio->pos2;
+	}
+
+//	char *topString = NULL;
+	double goodDiagonal = 0.0;
+	double goodTriangle = 0.0;
+	double totalTriangle = 0.0;
+
+	fprintf(fileHandle, "\t<trio_tests fileA=\"%s\" fileB=\"%s\" totalTests=\"%.0f\" totalTrue=\"%.0f\" totalFalse=\"%.0f\" average=\"%f\">\n",
+			mAFFileA, mAFFileB, total, positive, total - positive, positive / total);
+	while((resultTrio = avl_t_prev(&iterator)) != NULL) {
+		assert(resultTrio->pos2 >= resultTrio->pos1);
+		fprintf(fileHandle,
+				"\t\t<trio_test sequenceA=\"%s\" sequenceB=\"%s\" sequenceC=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\">\n",
+				resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos2, resultTrio->pos1, resultTrio->pos2 - resultTrio->pos1, ((double)resultTrio->pos1)/resultTrio->pos2);
+
+//		topString = arrayToString(resultTrio->topMat, 10, ',');
+		goodDiagonal = 0.0;
+		goodTriangle = 0.0;
+		totalTriangle = 0.0;
+		for (i=0; i<3; i++) {
+			goodDiagonal += resultTrio->topMat[encodeTopoMatIdx(i, i)];
+		}
+		for (i=0; i<3; i++) {
+			for (j=i; j<3; j++) {
+				goodTriangle += resultTrio->topMat[encodeTopoMatIdx(i, j)];
+			}
+		}
+		for (i=0; i<4; i++) {
+			for (j=i; j<4; j++) {
+				totalTriangle += resultTrio->topMat[encodeTopoMatIdx(i, j)];
+			}
+		}
+
+		fprintf(fileHandle,
+				"\t\t\t<single_trio_test sequenceA=\"%s\" sequenceB=\"%s\" sequenceC=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\" topGoodAvg=\"%f\" topAllAvg=\"%f\">\n",
+				resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos2, resultTrio->pos1, resultTrio->pos2 - resultTrio->pos1, ((double)resultTrio->pos1)/resultTrio->pos2,
+				goodDiagonal/goodTriangle, goodDiagonal/totalTriangle);
+
+		for (i=0; i<4; i++) {
+			for (j=i; j<4; j++) {
+				fprintf(fileHandle, "\t\t\t\t<trio_test_instance topStateA=\"%d\" topStateB = \"%d\" count = \"%d\"/>\n", i, j, resultTrio->topMat[encodeTopoMatIdx(i,j)]);
+			}
+		}
+
+		fprintf(fileHandle, "\t\t\t</single_trio_test>\n");
+//		free(topString);
+//		topString = NULL;
+
+		fprintf(fileHandle, "\t\t</trio_test>\n");
+	}
+	fprintf(fileHandle, "\t</trio_tests>\n");
 
     return;
 }
