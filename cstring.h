@@ -1,9 +1,12 @@
 #ifndef CSTRING_H_
 #define CSTRING_H_
 
+#include "commonC.h"
+
 #include <assert.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdint.h>
 
 /*
  * Comparison function to sort strings alphabetically
@@ -30,5 +33,15 @@ void upperCase(char *string);
  *   if "ignorecase" == 1
  */
 int startswith(char *string, char *query, int ignorecase);
+
+int32_t countDigits(int32_t n);
+
+void reverse(char *s);
+
+void itoa(int n, char *s);
+
+void append(char *s, char c);
+
+char *arrayToString(int32_t *array, int32_t size, const char sep);
 
 #endif /* CSTRING_H_ */
