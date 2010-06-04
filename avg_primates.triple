@@ -1,0 +1,4 @@
+human	chimp	gorilla
+human	chimp	orangutan
+gorilla	chimp	orangutan
+human	gorilla	orangutan
