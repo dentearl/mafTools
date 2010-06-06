@@ -100,9 +100,29 @@ static void joinColumnList(struct MafInvert *miJoin, struct MafInvertCol *joinCo
     }
 }
 
+/* get the tree for a column list, which must be the same
+ * (damn, I think this is gonna break things) */
+static stMafTree *getColumnListMTree(struct MafInvertCol *cols) {
+    if (cols == NULL) {
+        return NULL;
+    }
+    stMafTree *mTree = cols->mTree;
+    if (mTree == NULL) {
+        errAbort("NULL MAF tree in column");
+    }
+    for (struct MafInvertCol *col = cols; col != NULL; cols = col->next) {
+        if (col->mTree != mTree) {
+            errAbort("not all MAF trees the same in a column list");
+        }
+    }
+    return mTree;
+}
+
 /* Join a column of the invert maf */
 static struct MafInvertCol *joinSeqColumn(struct MafInvert *miJoin, struct MafInvertCol *cols1, struct MafInvertCol *cols2, struct MafInvertCol *prevJoinCol) {
-    struct MafInvertCol *joinCol = mafInvertColNew(mafInvertColTotalSize(cols1) + mafInvertColTotalSize(cols2));
+    getColumnListMTree(cols1);
+    getColumnListMTree(cols2);
+    struct MafInvertCol *joinCol = mafInvertColNew(mafInvertColTotalSize(cols1) + mafInvertColTotalSize(cols2), NULL);
     joinColumnList(miJoin, joinCol, cols1);
     joinColumnList(miJoin, joinCol, cols2);
     if (prevJoinCol != NULL) {

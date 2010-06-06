@@ -310,7 +310,11 @@ struct mafComp *comp;
 int srcChars = 0, startChars = 0, sizeChars = 0, srcSizeChars = 0;
 
 /* Write out alignment header */
-fprintf(f, "a score=%f\n", ali->score);
+fprintf(f, "a score=%f", ali->score);
+if (ali->tree != NULL)
+    fprintf(f, " tree=\"%s\"", ali->tree);
+fputc('\n', f);
+    
 
 /* include region definition */
 if (ali->regDef != NULL)

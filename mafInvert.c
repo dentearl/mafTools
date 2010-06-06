@@ -1,6 +1,8 @@
 /* inverted representation of a MAF around one reference sequence */ 
-#include "common.h"
 #include "mafInvert.h"
+#include "stMafTree.h"
+#include "stMafTreeTbl.h"
+#include "common.h"
 #include "hash.h"
 #include "jkmaf.h"
 #include "obscure.h"
@@ -12,9 +14,10 @@ void mafInvertCellDump(struct MafInvertCell *cell, FILE *fh) {
 }
 
 /* constructor */
-struct MafInvertCol *mafInvertColNew(int maxNumRows) {
+struct MafInvertCol *mafInvertColNew(int maxNumRows, stMafTree *mTree) {
     struct MafInvertCol *col;
     AllocVar(col);
+    col->mTree = mTree;
     col->cells = needMem(maxNumRows * sizeof(struct MafInvertCell));
     return col;
 }
@@ -23,6 +26,7 @@ struct MafInvertCol *mafInvertColNew(int maxNumRows) {
 struct MafInvertCol *mafInvertColClone(struct MafInvertCol *srcCol) {
     struct MafInvertCol *col;
     AllocVar(col);
+    col->mTree = srcCol->mTree;
     col->numRows = srcCol->numRows;
     col->cells = needMem(col->numRows * sizeof(struct MafInvertCell));
     memcpy(col->cells, srcCol->cells, col->numRows * sizeof(struct MafInvertCell));
@@ -52,6 +56,7 @@ struct MafInvert *mafInvertNew(struct Genome *ref) {
     AllocVar(mi);
     mi->ref = ref;
     mi->refSeqMap = hashNew(8);
+    mi->mafTreeTbl = stMafTreeTbl_construct();
     return mi;
 }
 
@@ -138,8 +143,8 @@ static void mkMafInvertCells(struct MafInvert *mi, struct MafInvertCol *col, str
 }
 
 /* construct a MafInvertCol object from an alignment column */
-static void mkMafInvertCol(struct MafInvert *mi, struct blkInfo *blk, int iAli, ETree *tree) {
-    struct MafInvertCol *col = mafInvertColNew(blk->numRows);
+static void mkMafInvertCol(struct MafInvert *mi, struct blkInfo *blk, int iAli, stMafTree *mTree) {
+    struct MafInvertCol *col = mafInvertColNew(blk->numRows, mTree);
     if (blk->prevCol != NULL) {
         mafInvertColInsertLeft(col, blk->prevCol);
     }
@@ -147,26 +152,15 @@ static void mkMafInvertCol(struct MafInvert *mi, struct blkInfo *blk, int iAli, 
     blk->prevCol = col;
 }
 
-/* get the tree for a mafAli, either building it from the data
- * or parsing it. */
-static ETree *getMafAliTree(struct MafInvert *mi, struct mafAli *ali) {
-    if (ali->tree == NULL) {
-        errAbort("mafAli does not have a tree"); // FIXME: tmp
-        return NULL;
-    } else {
-        return eTree_parseNewickString(ali->tree);
-    }
-}
-
 /* Add columns from a mafAli to the inverted maf */
 static void mafInvertAddMafAli(struct MafInvert *mi, struct Genomes *genomes, struct mafAli *ali) {
-    ETree *tree = getMafAliTree(mi, ali);
+    stMafTree *mTree = stMafTreeTbl_obtainForMafAli(mi->mafTreeTbl, ali);
     int numRows = slCount(ali->components);
     struct blkInfo blk;
     struct rowInfo rows[numRows];
     blkInfoInit(genomes, ali, numRows, &blk, rows);
     for (int iAli = 0; iAli < ali->textSize; iAli++) {
-        mkMafInvertCol(mi, &blk, iAli, tree);
+        mkMafInvertCol(mi, &blk, iAli, mTree);
     }
 }
 

@@ -5,7 +5,7 @@ libPath = ../../../lib
 
 cflags += -I../../sonLib/inc
 ifneq ($(wildcard ${kentLibWeb}),)
-objs = jkmaf.o genome.o mafInvert.o mafInvertJoin.o mafInvertWrite.o mafJoin.o
+objs = jkmaf.o genome.o mafInvert.o mafInvertJoin.o mafInvertWrite.o mafJoin.o stMafTree.o stMafTreeTbl.o stMafTreeJoined.o
 cflags += -I ${kentInc}
 progs = ${binPath}/mafJoin
 endif

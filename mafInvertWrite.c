@@ -2,6 +2,8 @@
 #include "common.h"
 #include "mafInvertWrite.h"
 #include "mafInvert.h"
+#include "stMafTree.h"
+#include "sonLibETree.h"
 #include "genome.h"
 #include "jkmaf.h"
 #include "dystring.h"
@@ -19,7 +21,7 @@ struct BlkComp {
 /* current block being assembled */
 struct BlkBuilder {
     struct Genome *refGenome;
-    int numRows;           /* number of rows in current block */
+    stMafTree *mTree;
     int width;             /* current number of columns */
     struct BlkComp *comps; /* components being built */
 };
@@ -42,10 +44,12 @@ static void blkCompFree(struct BlkComp *bc) {
     freeMem(bc);
 }
 
+#if 0 // FIXME:
 /* get length of a blkComp? */
 static int blkCompLen(const struct BlkComp *bc) {
     return bc->nextPos - bc->startPos;
 }
+#endif
 
 /* can a blkComp be extended to the specified position? */
 static bool blkCompCanExtend(const struct BlkComp *bc, const struct Seq *seq, char strand, int pos) {
@@ -143,11 +147,15 @@ static void blkBuilderAddCol(struct BlkBuilder *bb, struct MafInvertCol *col) {
     }
     bb->width++;
     blkBuilderPadBy1(bb);
+    if (col->mTree != NULL) {
+        assert((bb->mTree == NULL) || (bb->mTree == col->mTree));
+        bb->mTree = col->mTree;
+    }
     col->done = TRUE;
 }
 
-/* Fill in a BlkBuilder, start with the block containing  specified column, including adjacencies
- * not in the ref seq array. */
+/* Fill in a BlkBuilder, start with the block containing the specified column,
+ * including adjacencies not in the ref seq array. */
 static struct BlkBuilder *blkBuilderFillFromRefSeq(struct MafInvertSeq *refSeq, int pos) {
     struct BlkBuilder *bb = blkBuilderNew(refSeq->seq->genome);
     for (struct MafInvertCol *col = mafInvertColFindLeftMost(refSeq->cols[pos]); col != NULL; col = col->rightAdj) {
@@ -157,53 +165,25 @@ static struct BlkBuilder *blkBuilderFillFromRefSeq(struct MafInvertSeq *refSeq, 
 }
 
 /* globals for compare */
-static struct Genome *gRefGenome;
+static stMafTree *gMafTree;
 
-/* compare two genomes, sorting reference high */
-static int genomeCmp(struct Genome *genome1, struct Genome *genome2) {
-    if (genome1 == genome2) {
-        return 0;
-    } else if (genome1 == gRefGenome) {
-        return -1;
-    } else if (genome2 == gRefGenome) {
-        return 1;
-    } else {
-        return strcmp(genome1->name, genome2->name);
-    }
-}
-
-/* compare strands */
-static int strandCmp(char strand1, char strand2) {
-    if (strand1 == strand2) {
-        return 0;
-    } else {
-        return (strand1 == '+') ? -1 : 1;
-    }
-}
-
-/* compare function for two BlkComp objects */
+/* compare function for two BlkComp objects by tree order */
 static int blkCompCmp(const void *vbc1, const void *vbc2) {
     const struct BlkComp *bc1 = *((const struct BlkComp**)vbc1);
     const struct BlkComp *bc2 = *((const struct BlkComp**)vbc2);
-    int diff = genomeCmp(bc1->seq->genome, bc2->seq->genome);
-    if (diff == 0) {
-        diff = strcmp(bc1->seq->name, bc2->seq->name);
-    }
-    if (diff == 0) {
-        diff = -(blkCompLen(bc1) - blkCompLen(bc2));
-    }
-    if (diff == 0) {
-        diff = -(bc1->startPos - bc2->startPos);
-    }
-    if (diff == 0) {
-        diff = strandCmp(bc1->strand, bc2->strand);
-    }
-    return diff;
+    char *seq1Name = seqMkName(bc1->seq);
+    char *seq2Name = seqMkName(bc2->seq);
+    int order1 = stMafTree_getMafOrder(gMafTree, seq1Name);
+    int order2 = stMafTree_getMafOrder(gMafTree, seq2Name);
+    free(seq1Name);
+    free(seq2Name);
+    return order1 - order2;
 }
 
 /* sort components, putting reference sequences first */
 static void blkBuilderSort(struct BlkBuilder *bb) {
-    gRefGenome = bb->refGenome;
+    assert(bb->mTree != NULL);
+    gMafTree = bb->mTree;
     slSort(&bb->comps, blkCompCmp);
 }
 
@@ -211,6 +191,9 @@ static void blkBuilderSort(struct BlkBuilder *bb) {
 static struct mafAli *blkBuilderToMafAli(struct BlkBuilder *bb) {
     struct mafAli *ma;
     AllocVar(ma);
+    if (bb->mTree != NULL) {
+        ma->tree = eTree_getNewickTreeString(stMafTree_getETree(bb->mTree));
+    }
     for (struct BlkComp *bc = bb->comps; bc != NULL; bc = bc->next) {
         if (bc->startPos >= 0) {
             struct mafComp *mc = blkCompToMafComp(bc);
