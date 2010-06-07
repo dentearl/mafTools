@@ -110,7 +110,7 @@ static stMafTree *getColumnListMTree(struct MafInvertCol *cols) {
     if (mTree == NULL) {
         errAbort("NULL MAF tree in column");
     }
-    for (struct MafInvertCol *col = cols; col != NULL; cols = col->next) {
+    for (struct MafInvertCol *col = cols; col != NULL; col = col->next) {
         if (col->mTree != mTree) {
             errAbort("not all MAF trees the same in a column list");
         }
