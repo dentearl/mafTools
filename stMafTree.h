@@ -4,8 +4,13 @@
 #include "mafJoinTypes.h"
 struct mafAli;
 
-/* construct a MafTree object from an eTree and corresponding MafComp block */
-stMafTree *stMafTree_constructFromMaf(ETree *eTree, struct mafAli *ali);
+/* Construct a MafTree object from an mafComp block if it contains a tree.
+ * If it doesn't contain a tree and is pairwise maf, create a tree with the root
+ * the last component of the maf. */
+stMafTree *stMafTree_constructFromMaf(struct mafAli *ali);
+
+/* clone a stMafTree */
+stMafTree *stMafTree_clone(stMafTree *srcMTree);
 
 /* destroy a MafTree object */
 void stMafTree_destruct(stMafTree *mTree);
@@ -13,18 +18,12 @@ void stMafTree_destruct(stMafTree *mTree);
 /* validate tree order and nodes matches mafAli */
 void stMafTree_validateWithMaf(stMafTree *mTree, struct mafAli *ali);
 
-/* get the associated ETree */
-ETree *stMafTree_getETree(stMafTree *mTree);
+/* compare function for coordinates by tree order  */
+int stMafTree_treeOrderCmp(stMafTree *mTree, const char *orgSeq1, int chromStart1, int chromEnd1, const char *orgSeq2, int chromStart2, int chromEnd2);
 
-/* Find MAF order number for an organism/sequence, return -1 if not found */
-int stMafTree_findMafOrder(stMafTree *mTree, const char *orgSeq);
+/* join two trees at nodes specified by components */
+stMafTree *stMafTree_join(stMafTree *mTree1, const char *orgSeq1, int chromStart1, int chromEnd1, stMafTree *mTree2, const char *orgSeq2, int chromStart2, int chromEnd2);
 
-/* Get MAF order number for an organism/sequence, error if not found */
-int stMafTree_getMafOrder(stMafTree *mTree, const char *orgSeq);
-
-/* Get an eTree node by MAF order number */
-ETree *stMafTree_getByMafOrder(stMafTree *mTree, int mafOrder);
-
-/* join two trees at the nodes identified by their maf order */
-stMafTree *stMafTree_join(stMafTree *mTree1, int mafOrder1, stMafTree *mTree2, int mafOrder2);
+/* format tree as a newick string */
+char *stMafTree_format(stMafTree *mTree);
 #endif

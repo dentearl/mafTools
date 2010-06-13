@@ -5,7 +5,7 @@
 #include "jkmaf.h"
 
 /* make db.seq name */
-char *seqMkName(struct Seq *seq) {
+static char *seqMkName(struct Seq *seq) {
     int bufSize = strlen(seq->genome->name) + strlen(seq->name) + 2;
     char *buf = needMem(bufSize);
     safef(buf, bufSize, "%s.%s", seq->genome->name, seq->name);
@@ -19,6 +19,7 @@ static struct Seq *seqNew(struct Genome *genome, char *name, int size) {
     seq->genome = genome;
     seq->name = cloneString(name);
     seq->size = size;
+    seq->orgSeqName = seqMkName(seq);
     return seq;
 }
 

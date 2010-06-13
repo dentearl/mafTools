@@ -1,13 +1,21 @@
 /* genome information */
 #ifndef genome_h
 #define genome_h
-struct mafAli;
+#include <stdbool.h>
+#include <ctype.h>
+
+/* a [0-n) range */
+struct stRange {
+    int start;
+    int end;
+};
 
 /* a sequence in the genome */
 struct Seq {
     struct Seq *next;
     struct Genome *genome;
     char *name;
+    char *orgSeqName;  // db.seq
     int size;
 };
 
@@ -19,8 +27,16 @@ struct Genome {
     struct Seq *seqs;
 };
 
-/* make db.seq name */
-char *seqMkName(struct Seq *seq);
+/* does a character represent a base */
+static inline bool isBase(char base) {
+    // n.b. isalpha doesn't return 0/1, might be out of bool range
+    return isalpha(base) != 0;
+}
+
+/* are two bases the same, ignoring case */
+static inline bool baseEq(char base1, char base2) {
+    return toupper(base1) == toupper(base2);
+}
 
 /* Table of all genomes. Genomes are normally added in a lazy manner while
  * scanning a MAF. */

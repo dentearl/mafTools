@@ -1,9 +1,8 @@
 #include "common.h"
 #include "options.h"
 #include "genome.h"
-#include "mafInvert.h"
-#include "mafInvertJoin.h"
-#include "mafInvertWrite.h"
+#include "stMalnSet.h"
+#include "stMalnJoin.h"
 
 /*
  * Notes: 
@@ -33,17 +32,17 @@ static void usage(char *msg) {
 /* join two mafs */
 static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMaf, char *maf1Copy, char *maf2Copy) {
     struct Genomes *genomes = genomesNew();
-    struct Genome *ref = genomesObtainGenome(genomes, refGenomeName);
-    struct MafInvert *maf1Inv = mafInvertBuild(genomes, ref, inMaf1);
+    struct Genome *refGenome = genomesObtainGenome(genomes, refGenomeName);
+    struct stMalnSet *malnSet1 = stMalnSet_constructFromMaf(genomes, refGenome, inMaf1);
     if (maf1Copy != NULL) {
-        mafInvertToMaf(maf1Inv, maf1Copy);
+        stMalnSet_writeMaf(malnSet1, maf1Copy);
     }
-    struct MafInvert *maf2Inv = mafInvertBuild(genomes, ref, inMaf2);
+    struct stMalnSet *malnSet2 = stMalnSet_constructFromMaf(genomes, refGenome, inMaf2);
     if (maf2Copy != NULL) {
-        mafInvertToMaf(maf2Inv, maf2Copy);
+        stMalnSet_writeMaf(malnSet2, maf2Copy);
     }
-    struct MafInvert *joinMafInv = mafInvertJoin(genomes, maf1Inv, maf2Inv);
-    mafInvertToMaf(joinMafInv, outMaf);
+    struct stMalnSet *malnSetJoined = stMalnJoin_joinSets(refGenome, malnSet1, malnSet2);
+    stMalnSet_writeMaf(malnSetJoined, outMaf);
 }
 
 /* Process command line. */
@@ -52,6 +51,6 @@ int main(int argc, char *argv[]) {
     if (argc != 5)  {
         usage("Error: wrong number of arguments");
     }
-    mafJoin(argv[1], argv[2], argv[3], argv[4], optionVal("maf1Copy", NULL), optionVal("maf1Copy", NULL));
+    mafJoin(argv[1], argv[2], argv[3], argv[4], optionVal("maf1Copy", NULL), optionVal("maf2Copy", NULL));
     return 0;
 }

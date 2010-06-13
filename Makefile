@@ -5,13 +5,13 @@ libPath = ../../../lib
 
 cflags += -I../../sonLib/inc
 ifneq ($(wildcard ${kentLibWeb}),)
-objs = jkmaf.o genome.o mafInvert.o mafInvertJoin.o mafInvertWrite.o mafJoin.o stMafTree.o stMafTreeTbl.o stMafTreeJoined.o
+objs = jkmaf.o genome.o stMalnComp.o stMalnBlk.o stMalnSet.o stMalnJoin.o mafJoin.o stMalnBlkCursor.o stMafTree.o
 cflags += -I ${kentInc}
 progs = ${binPath}/mafJoin
 endif
 
 # holy didn't read the make manual batman
-CFLAGS=${cflags} -std=c99
+CFLAGS=${cflags} -std=c99 -pedantic
 
 all: ${objs} ${progs}
 

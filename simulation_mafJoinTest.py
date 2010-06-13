@@ -83,11 +83,11 @@ class MafJoinTests(unittest.TestCase):
         """
         C = """
         a score=0.000000 tree=\"((panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;\"
-        s panTro1.chr6  28741140 33 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTA-----
-        s baboon.chr6     116834 33 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTA-----
-        s hg18.chr7     27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
-        s mm4.chr6      53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
-        s rn3.chr4      81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+        s panTro1.chr6 28741140 33 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTA-----
+        s baboon.chr6    116834 33 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTA-----
+        s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+        s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+        s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
         """
         self.mafJoinTest("hg18", A, B, C)
     
@@ -108,11 +108,11 @@ class MafJoinTests(unittest.TestCase):
         """
         C = """
         a score=0.000000 tree=\"((panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;\"
-        s panTro1.chr6  28862317 6 + 161576975 TAAA---GA
-        s baboon.chr6     241163 3 +   4622798 T------GA
-        s hg18.chr7     27699739 3 + 158545518 T------GA
-        s mm4.chr6      53303881 6 + 151104725 T---AAAGA
-        s rn3.chr4      81444246 6 + 187371129 t---aagga
+        s panTro1.chr6 28862317 6 + 161576975 T---AAAGA
+        s baboon.chr6    241163 3 +   4622798 T------GA
+        s hg18.chr7    27699739 3 + 158545518 T------GA
+        s mm4.chr6     53303881 6 + 151104725 TAAA---GA
+        s rn3.chr4     81444246 6 + 187371129 taag---ga
         """
         self.mafJoinTest("hg18", A, B, C)
     
@@ -168,15 +168,15 @@ class MafJoinTests(unittest.TestCase):
         s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
         """
         C = """
-        a score=0.000000 tree=\"((mm4.chr6:0.15,mm4.chr7:0.14)rn3.chr4:0.15,rn3.chr4:0.14,(baboon.chr6:0.3,baboon.chr6:0.1)panTro1.chr6:0.2)hg18.chr7\"
-        s baboon.chr6     126834 37 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGT-
-        s baboon.chr6     116834 37 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGT-
-        s panTro1.chr6  28741140 37 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGT-
-        s mm4.chr6      53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
-        s mm4.chr7      50000000 40 + 150000000 AAATGGGAATGTTAAGCAAACGAT--ATTGTCTCTCAGTGTG
-        s rn3.chr4      81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
-        s rn3.chr4      80000000 35 - 187371129 -AA-GGGGATG-----CCAATGAGTTGTTGTCTCTCAATGTG
-        s hg18.chr7     27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+        a score=0.000000 tree=\"((baboon.chr6:0.3,baboon.chr6:0.1)panTro1.chr6:0.2,(mm4.chr6:0.15,mm4.chr7:0.14)rn3.chr4:0.15,rn3.chr4:0.14)hg18.chr7;\"
+        s baboon.chr6    116834 37 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGT-
+        s baboon.chr6    126834 37 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGT-
+        s panTro1.chr6 28741140 37 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGT-
+        s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+        s mm4.chr7     50000000 40 + 150000000 AAATGGGAATGTTAAGCAAACGAT--ATTGTCTCTCAGTGTG
+        s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+        s rn3.chr4     80000000 35 - 187371129 -AA-GGGGATG-----CCAATGAGTTGTTGTCTCTCAATGTG
+        s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
         """
         self.mafJoinTest("hg18", A, B, C)
         
@@ -203,13 +203,13 @@ class MafJoinTests(unittest.TestCase):
         """
         C = """
         a score=0.000000 tree=\"((((panTro1.chr6:0.3,panTro1.chr6:0.1)baboon.chr6:0.2)hg18.chr7:0.1,hg18.chr7:0.5)mm4.chr6:0.15)rn3.chr4;\"
-        s panTro1.chr6  29862317 6 + 161576975 T---AAAGA
-        s panTro1.chr6  28862317 6 + 161576975 T---AAAGA
-        s baboon.chr6     241163 3 +   4622798 T------GA
-        s hg18.chr7     27000000 5 + 158545518 T-GG---GA
-        s hg18.chr7     27699739 3 + 158545518 T------GA
-        s mm4.chr6      53303881 6 + 151104725 TAAA---GA
-        s rn3.chr4      81444246 6 + 187371129 taag---ga
+        s panTro1.chr6 28862317 6 + 161576975 TAAA---GA
+        s panTro1.chr6 29862317 6 + 161576975 TAAA---GA
+        s baboon.chr6    241163 3 +   4622798 T------GA
+        s hg18.chr7    27699739 3 + 158545518 T------GA
+        s hg18.chr7    27000000 5 + 158545518 T----GGGA
+        s mm4.chr6     53303881 6 + 151104725 T---AAAGA
+        s rn3.chr4     81444246 6 + 187371129 t---aagga
         """
         self.mafJoinTest("hg18", A, B, C)
         
@@ -234,12 +234,33 @@ class MafJoinTests(unittest.TestCase):
         """
         C = """
         a score=0.000000 tree=\"(((mm4.chr6:0.1)hg18.chr7:0.1,(mm4.chr6:0.2)hg18.chr9:0.5)panTro1.chr6:0.15)baboon.chr6;\"
-        s mm4.chr6      53310102 13 - 151104725 ACAGCTGAAAATA
-        s hg18.chr7     27707221 13 + 158545518 gcagctgaaaaca
-        s mm4.chr6      54310102 13 - 151104725 ACAGCTGAAAATA
-        s hg18.chr9     27707221 13 + 158545518 gcagctgaaaaca
-        s panTro1.chr6  28869787 13 + 161576975 gcagctgaaaaca
-        s baboon.chr6     249182 13 -   4622798 gcagctgaaaaca
+        s mm4.chr6     53310102 13 - 151104725 ACAGCTGAAAATA
+        s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
+        s mm4.chr6     54310102 13 - 151104725 ACAGCTGAAAATA
+        s hg18.chr9    27707221 13 + 158545518 gcagctgaaaaca
+        s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+        s baboon.chr6    249182 13 -   4622798 gcagctgaaaaca
+        """
+        self.mafJoinTest("hg18", A, B, C)
+          
+    def testJoin7(self):
+        """pairwise MAFs with no trees
+        """
+        A = """
+        a score=2.0
+        s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
+        s baboon.chr6    249182 13 -   4622798 gcagctgaaaaca
+        """
+        B = """
+        a score=5.0
+        s mm4.chr6     53310102 13 - 151104725 ACAGCTGAAAATA
+        s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
+        """
+        C = """
+        a score=0.000000 tree=\"((mm4.chr6)hg18.chr7)baboon.chr6;\"
+        s mm4.chr6    53310102 13 - 151104725 ACAGCTGAAAATA
+        s hg18.chr7   27707221 13 + 158545518 gcagctgaaaaca
+        s baboon.chr6   249182 13 -   4622798 gcagctgaaaaca
         """
         self.mafJoinTest("hg18", A, B, C)
           

@@ -5,9 +5,14 @@
 #include "sonLibETree.h"
 #include "sonLibList.h"
 #include "sonLibString.h"
+#include "sonLibHash.h"
 
-/* notes:
- *   - tree designed to be shared by all columns parsed from a given mafAli.
+/* 
+ * treeOrder is the DFS post-traversal order number of the node,
+ * which corresponds to the order in the MAF.
+ *
+ * Each eTree node's client data contains a pointer to the struct nodeCompLink
+ * node in the stMafTree.  This is initially copied on clone. and then update.
  */
 
 /*
@@ -16,104 +21,61 @@
  */
 struct stMafTree {
     ETree *eTree;
+    int numNodes;    // array of nodes, indexed by tree DFS order
+    struct nodeCompLink *nodes;
 };
 
-ETree *stMafTree_getETree(stMafTree *mTree) {
-    return mTree->eTree;
-}
+/* link a tree node with component coordinates */
+struct nodeCompLink {
+    int treeOrder;
+    ETree *eNode;
+    const char *orgSeq;   // not owed here, label from node
+    int chromStart;       // component coords
+    int chromEnd;
+};
 
-/* DFS to get MAF order */
-static bool findMafOrderDFS(ETree *root, const char *orgSeq, int *curMafOrder) {
-    for (int i = 0; i < eTree_getChildNumber(root); i++) {
-        if (findMafOrderDFS(eTree_getChild(root, i), orgSeq, curMafOrder)) {
-            return true;
-        }
+/* DFS to fill in table of node links and link back with clientData */
+static void fillTreeOrderDFS(stMafTree *mTree, ETree *eNode, int *treeOrder) {
+    for (int i = 0; i < eTree_getChildNumber(eNode); i++) {
+        fillTreeOrderDFS(mTree, eTree_getChild(eNode, i), treeOrder);
     }
-    const char *lab = eTree_getLabel(root);
-    if ((lab != NULL) && (strcmp(lab, orgSeq) == 0)) {
-        return true;
+    struct nodeCompLink *ncLink = &(mTree->nodes[*treeOrder]);
+    ncLink->treeOrder = *treeOrder;
+    ncLink->eNode = eNode;
+    ncLink->orgSeq = eTree_getLabel(eNode);
+    eTree_setClientData(eNode, ncLink);
+    (*treeOrder)++;
+}
+
+/* Fill in stMafTree.nodes from tree. */
+static void fillTreeOrder(stMafTree *mTree) {
+    mTree->numNodes = eTree_getNumNodes(mTree->eTree);
+    mTree->nodes = needMem(mTree->numNodes * sizeof(struct nodeCompLink));
+    int treeOrder = 0;
+    fillTreeOrderDFS(mTree, mTree->eTree, &treeOrder);
+}
+
+/* fill in one node link */
+static void fillNodeLinkFromMafComp(struct nodeCompLink *ncLink, int treeOrder, struct mafComp *comp) {
+    if (!sameString(ncLink->orgSeq, comp->src)) {
+        errAbort("MAF node with tree order %d label %s doesn't match component label %s", treeOrder, ncLink->orgSeq, comp->src);
     }
-    (*curMafOrder)++;
-    return false;
-}
-
-/* Get MAF order for an ETree, or -1 if not found. */
-static int findMafOrder(ETree *root, const char *orgSeq) {
-    int curMafOrder = 0;
-    if (findMafOrderDFS(root, orgSeq, &curMafOrder)) {
-        return curMafOrder;
-    } else {
-        return -1;
-    }
-}
-
-/* Get MAF order for an ETree, or error if not found. */
-static int getMafOrder(ETree *root, const char *orgSeq) {
-    int mafOrder = findMafOrder(root, orgSeq);
-    if (mafOrder < 0) {
-        errAbort("%s not found in MAF tree", orgSeq);
-    }
-    return mafOrder;
-}
-
-int stMafTree_findMafOrder(stMafTree *mTree, const char *orgSeq) {
-    return findMafOrder(mTree->eTree, orgSeq);
-}
-
-int stMafTree_getMafOrder(stMafTree *mTree, const char *orgSeq) {
-    return getMafOrder(mTree->eTree, orgSeq);
-}
-
-/* Recursively get an eTree node by MAF order number */
-static ETree *findByMafOrderDFS(ETree *root, int mafOrder, int *curMafOrder) {
-    for (int i = 0; i < eTree_getChildNumber(root); i++) {
-        ETree *node = findByMafOrderDFS(eTree_getChild(root, i), mafOrder, curMafOrder);
-        if (node != NULL) {
-            return node;
-        }
-    }
-    if (*curMafOrder == mafOrder) {
-        return root;
-    }
-    (*curMafOrder)++;
-    return NULL;
-}
-
-/* Get an eTree node by MAF order number, or NULL if not found */
-static ETree *findByMafOrder(ETree *root, int mafOrder) {
-    int curMafOrder = 0;
-    return findByMafOrderDFS(root, mafOrder, &curMafOrder);
-}
-
-/* Recursively get an eTree node by MAF order number, or error if not found */
-static ETree *getByMafOrder(ETree *root, int mafOrder) {
-    ETree *node = findByMafOrder(root, mafOrder);
-    if (node == NULL) {
-        errAbort("MAF order %d not found in MAF tree", mafOrder);
-    }
-    return node;
-}
-
-ETree *stMafTree_getByMafOrder(stMafTree *mTree, int mafOrder) {
-    return getByMafOrder(mTree->eTree, mafOrder);
-}
-
-/* verify a mafComp against MAF order in the tree  */
-static void checkCompWithTree(stMafTree *mTree, struct mafComp *comp, int iComp) {
-    int mafOrder = stMafTree_getMafOrder(mTree, comp->src);
-    if (mafOrder != iComp) {
-        errAbort("MAF tree order for %s (%d) doesn't match MAF component order (%d)", comp->src, mafOrder, iComp);
+    assert(ncLink->treeOrder == treeOrder);
+    ncLink->chromStart = comp->start;
+    ncLink->chromEnd = comp->start + comp->size;
+    if (comp->strand == '-') {
+        reverseIntRange(&ncLink->chromStart, &ncLink->chromEnd, comp->srcSize);
     }
 }
 
-/* validate tree MAF order and nodes matches mafAli */
-void stMafTree_validateWithMaf(stMafTree *mTree, struct mafAli *ali) {
-    if (eTree_getNumNodes(mTree->eTree) != slCount(ali->components)) {
-        errAbort("number of nodes in MAF tree (%d) doesn't match rows in MAF alignment (%d)", eTree_getNumNodes(mTree->eTree), slCount(ali));
+/* fill in sequence coordinates from  mafAli */
+static void fillNodeLinksFromMafAli(stMafTree *mTree, struct mafAli *ali) {
+    if (mTree->numNodes != slCount(ali->components)) {
+        errAbort("number of nodes in MAF tree (%d) doesn't match rows in MAF alignment (%d)", mTree->numNodes, slCount(ali));
     }
     struct mafComp *comp = ali->components;
-    for (int iComp = 0; comp != NULL; iComp++, comp = comp->next) {
-        checkCompWithTree(mTree, comp, iComp);
+    for (int treeOrder = 0; comp != NULL; treeOrder++, comp = comp->next) {
+        fillNodeLinkFromMafComp(&(mTree->nodes[treeOrder]), treeOrder, comp);
     }
 }
 
@@ -122,16 +84,54 @@ static stMafTree *stMafTree_construct(ETree *eTree) {
     stMafTree *mTree;
     AllocVar(mTree);
     mTree->eTree = eTree;
+    fillTreeOrder(mTree);
     return mTree;
 }
 
-stMafTree *stMafTree_constructFromMaf(ETree *eTree, struct mafAli *ali) {
-    if (ali->tree == NULL) {
-        errAbort("mafAli does not have a tree");
+/* clone a stMafTree */
+stMafTree *stMafTree_clone(stMafTree *srcMTree) {
+    stMafTree *mTree = stMafTree_construct(eTree_clone(srcMTree->eTree));
+    for (int i = 0; i < srcMTree->numNodes; i++) {
+        mTree->nodes[i].chromStart = srcMTree->nodes[i].chromStart;
+        mTree->nodes[i].chromEnd = srcMTree->nodes[i].chromEnd;
     }
-    stMafTree *mTree = stMafTree_construct(eTree);
-    stMafTree_validateWithMaf(mTree, ali);
     return mTree;
+}
+
+/* parse a tree from a maf */
+static stMafTree *stMafTree_parseFromMaf(struct mafAli *ali) {
+    ETree *eTree = eTree_parseNewickString(ali->tree);
+    stMafTree *mTree = stMafTree_construct(eTree);
+    fillNodeLinksFromMafAli(mTree, ali);
+    return mTree;
+}
+
+/* construct an ETree node from a mafComp */
+static ETree *mafCompToETreeNode(struct mafComp *comp) {
+    ETree *eTree = eTree_construct();
+    eTree_setLabel(eTree, comp->src);
+    return eTree;
+}
+
+/* create a tree from a pairwise maf */
+static stMafTree *stMafTree_inferFromPairwiseMaf(struct mafAli *ali) {
+    ETree *eRoot = mafCompToETreeNode(ali->components->next);
+    ETree *eLeaf = mafCompToETreeNode(ali->components);
+    eTree_setParent(eLeaf, eRoot);
+    stMafTree *mTree = stMafTree_construct(eRoot);
+    fillNodeLinksFromMafAli(mTree, ali);
+    return mTree;
+}
+
+stMafTree *stMafTree_constructFromMaf(struct mafAli *ali) {
+    if (ali->tree != NULL) {
+        return stMafTree_parseFromMaf(ali);
+    } else if (slCount(ali->components) == 2) {
+        return stMafTree_inferFromPairwiseMaf(ali);
+    } else {
+        errAbort("mafAli isn't pairwise and doesn't have a tree");
+        return NULL;
+    }
 }
 
 void stMafTree_destruct(stMafTree *mTree) {
@@ -141,6 +141,23 @@ void stMafTree_destruct(stMafTree *mTree) {
     }
 }
 
+/* find a nodeCompLink by component coords */
+static struct nodeCompLink *stMafTree_findNodeCompLink(stMafTree *mTree, const char *orgSeq, int chromStart, int chromEnd) {
+    for (int i = 0 ; i < mTree->numNodes; i++) {
+        struct nodeCompLink *ncLink = &(mTree->nodes[i]);
+        if (sameString(ncLink->orgSeq, orgSeq) && (ncLink->chromStart == chromStart) && (ncLink->chromEnd == chromEnd)) {
+            return ncLink;
+        }
+    }
+    errAbort("nodeCompLink not found for %s:%d-%d", orgSeq, chromStart, chromEnd);
+    return NULL;
+}
+
+/* compare function for coordinates by tree order  */
+int stMafTree_treeOrderCmp(stMafTree *mTree, const char *orgSeq1, int chromStart1, int chromEnd1, const char *orgSeq2, int chromStart2, int chromEnd2) {
+    return stMafTree_findNodeCompLink(mTree, orgSeq1, chromStart1, chromEnd1) - stMafTree_findNodeCompLink(mTree, orgSeq2, chromStart2, chromEnd2);
+}
+
 /* validate that a join node is either a root or a leaf */
 static void validateJoinNode(ETree *node) {
     if (!((eTree_getParent(node) == NULL) || (eTree_getChildNumber(node) == 0))) {
@@ -148,46 +165,98 @@ static void validateJoinNode(ETree *node) {
     }
 }
 
+/* clone a node, recording a mapping of the source nodeCompLink to the new node */
+static ETree *cloneNodeRecordLink(ETree *srcENode, stHash *linkMap) {
+    ETree *destENode = eTree_cloneNode(srcENode);
+    eTree_setClientData(destENode, NULL);
+    stHash_insert(linkMap, eTree_getClientData(srcENode), destENode);
+    return destENode;
+}
+
+/* recursively clone a tree, recording a mapping of the source nodeCompLink to the new node */
+static ETree *cloneTreeRecordLink(ETree *node, ETree *parent2, stHash *linkMap) {
+    ETree *node2 = cloneNodeRecordLink(node, linkMap);
+    eTree_setParent(node2, parent2);
+    for (int i = 0; i < eTree_getChildNumber(node); i++) {
+        cloneTreeRecordLink(eTree_getChild(node, i), node2, linkMap);
+    }
+    return node2;
+}
+
 /* clone child and append clones to a give parent node */
-static void cloneChildren(ETree *srcParent, ETree *destParent) {
+static void cloneChildren(ETree *srcParent, ETree *destParent, stHash *linkMap) {
+    // two linkMap entry will point to join point
+    stHash_insert(linkMap, eTree_getClientData(srcParent), destParent);
     for (int i = 0; i < eTree_getChildNumber(srcParent); i++) {
-        eTree_setParent(eTree_clone(eTree_getChild(srcParent, i)), destParent);;
+        eTree_setParent(cloneTreeRecordLink(eTree_getChild(srcParent, i), NULL, linkMap), destParent);
     }
 }
 
 /* join two trees at a shared root */
-static ETree *joinAtRoots(ETree *root1, ETree *root2) {
-    ETree *joinedRoot = eTree_clone(root1);
-    cloneChildren(root2, joinedRoot);
+static ETree *joinAtRoots(struct nodeCompLink *ncLink1, struct nodeCompLink *ncLink2, stHash *linkMap) {
+    ETree *joinedRoot = cloneTreeRecordLink(ncLink1->eNode, NULL, linkMap);
+    cloneChildren(ncLink2->eNode, joinedRoot, linkMap);
     return joinedRoot;
 }
 
 /* join two trees with a root being attached to a leaf */
-static ETree *joinAtLeaf(ETree *root1, int leafMafOrder1, ETree *root2) {
-    ETree *joinedRoot = eTree_clone(root1);
-    cloneChildren(getByMafOrder(joinedRoot, leafMafOrder1), root2);
+static ETree *joinAtLeaf(ETree *root1, struct nodeCompLink *leafNcLink1, struct nodeCompLink *rootNcLink2, stHash *linkMap) {
+    ETree *joinedRoot = cloneTreeRecordLink(root1, NULL, linkMap);
+    ETree *joinPoint = stHash_search(linkMap, leafNcLink1);
+    cloneChildren(rootNcLink2->eNode, joinPoint, linkMap);
     return joinedRoot;
 }
 
-/* join two trees at the nodes identified by their maf order */
-stMafTree *stMafTree_join(stMafTree *mTree1, int mafOrder1, stMafTree *mTree2, int mafOrder2) {
-    ETree *joinNode1 = stMafTree_getByMafOrder(mTree1, mafOrder1);
-    ETree *joinNode2 = stMafTree_getByMafOrder(mTree2, mafOrder2);
-    validateJoinNode(joinNode1);
-    validateJoinNode(joinNode2);
-    if (!stString_eq(eTree_getLabel(joinNode1), eTree_getLabel(joinNode2))) {
-        errAbort("join nodes are not the same organism.sequence: \"%s\" and \"%s\"", eTree_getLabel(joinNode1), eTree_getLabel(joinNode2));
+/* fill in coordinates in one node link */
+static void setJoinNodeLinkCoords(struct nodeCompLink *srcNcLink, stHash *linkMap) {
+    ETree *destENode = stHash_search(linkMap, srcNcLink);
+    struct nodeCompLink *destNcLink = eTree_getClientData(destENode);
+    assert(stString_eq(destNcLink->orgSeq, srcNcLink->orgSeq));
+    if (destNcLink->chromStart == destNcLink->chromEnd) {
+        destNcLink->chromStart = srcNcLink->chromStart;
+        destNcLink->chromEnd = srcNcLink->chromEnd;
+    } else {
+        destNcLink->chromStart = min(destNcLink->chromStart, srcNcLink->chromStart);
+        destNcLink->chromEnd = max(destNcLink->chromEnd, srcNcLink->chromEnd);
     }
+}
 
+/* fill in coordinates in node links */
+static void fillJoinNodeLinkCoords(stMafTree *srcMTree, stHash *linkMap) {
+    for (int i = 0 ; i < srcMTree->numNodes; i++) {
+        setJoinNodeLinkCoords(&(srcMTree->nodes[i]), linkMap);
+    }
+}
+
+/* join two trees at nodes specified by components */
+stMafTree *stMafTree_join(stMafTree *mTree1, const char *orgSeq1, int chromStart1, int chromEnd1, stMafTree *mTree2, const char *orgSeq2, int chromStart2, int chromEnd2) {
+    if (!stString_eq(orgSeq1, orgSeq2)) {
+        errAbort("join nodes are not the same organism.sequence: \"%s\" and \"%s\"", orgSeq1, orgSeq2);
+    }
+    struct nodeCompLink *ncLink1 = stMafTree_findNodeCompLink(mTree1, orgSeq1, chromStart1, chromEnd1);
+    struct nodeCompLink *ncLink2 = stMafTree_findNodeCompLink(mTree2, orgSeq2, chromStart2, chromEnd2);
+    validateJoinNode(ncLink1->eNode);
+    validateJoinNode(ncLink1->eNode);
+
+    stHash *linkMap = stHash_construct();
     ETree *joinedRoot = NULL;
-    if ((eTree_getParent(joinNode1) == NULL) && (eTree_getParent(joinNode2) == NULL)) {
-        joinedRoot = joinAtRoots(joinNode1, joinNode2);
-    } else if (eTree_getParent(joinNode1) == NULL) {
-        joinedRoot = joinAtLeaf(mTree2->eTree, mafOrder2, joinNode1);
-    } else if (eTree_getParent(joinNode2) == NULL) {
-        joinedRoot = joinAtLeaf(mTree1->eTree, mafOrder1, joinNode2);
+    if ((eTree_getParent(ncLink1->eNode) == NULL) && (eTree_getParent(ncLink2->eNode) == NULL)) {
+        joinedRoot = joinAtRoots(ncLink1, ncLink2, linkMap);
+    } else if (eTree_getParent(ncLink1->eNode) == NULL) {
+        joinedRoot = joinAtLeaf(mTree2->eTree, ncLink2, ncLink1, linkMap);
+    } else if (eTree_getParent(ncLink2->eNode) == NULL) {
+        joinedRoot = joinAtLeaf(mTree1->eTree, ncLink1, ncLink2, linkMap);
     } else {
         errAbort("join nodes don't obey rules");
     }
-    return stMafTree_construct(joinedRoot);
+    stMafTree *mTreeJoined = stMafTree_construct(joinedRoot);
+    fillJoinNodeLinkCoords(mTree1, linkMap);
+    fillJoinNodeLinkCoords(mTree2, linkMap);
+    stHash_destruct(linkMap);
+    return mTreeJoined;
+}
+
+/* format tree as a newick string */
+char *stMafTree_format(stMafTree *mTree) {
+    return eTree_getNewickTreeString(mTree->eTree);
 }
