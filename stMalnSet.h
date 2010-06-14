@@ -1,5 +1,6 @@
 #ifndef stMalnSet_h
 #define stMalnSet_h
+#include "sonLibTypes.h"
 struct Genomes;
 struct Genome;
 struct stMalnSet;
@@ -9,8 +10,9 @@ struct Seq;
 /* construct an empty stMalnSet  */
 struct stMalnSet *stMalnSet_construct(struct Genomes *genomes, struct Genome *refGenome);
 
-/* construct a stMalnSet from a MAF file  */
-struct stMalnSet *stMalnSet_constructFromMaf(struct Genomes *genomes, struct Genome *refGenome, char *mafFileName);
+/* Construct a stMalnSet from a MAF file. defaultBranchLength is used to
+ * assign branch lengths when inferring trees from pair-wise MAFs. */
+struct stMalnSet *stMalnSet_constructFromMaf(struct Genomes *genomes, struct Genome *refGenome, char *mafFileName, double defaultBranchLength);
 
 /* get associated genomes object  */
 struct Genomes *stMalnSet_getGenomes(struct stMalnSet *malnSet);

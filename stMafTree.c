@@ -34,6 +34,7 @@ struct nodeCompLink {
     int chromEnd;
 };
 
+
 /* DFS to fill in table of node links and link back with clientData */
 static void fillTreeOrderDFS(stMafTree *mTree, ETree *eNode, int *treeOrder) {
     for (int i = 0; i < eTree_getChildNumber(eNode); i++) {
@@ -114,20 +115,21 @@ static ETree *mafCompToETreeNode(struct mafComp *comp) {
 }
 
 /* create a tree from a pairwise maf */
-static stMafTree *stMafTree_inferFromPairwiseMaf(struct mafAli *ali) {
+static stMafTree *stMafTree_inferFromPairwiseMaf(struct mafAli *ali, double defaultBranchLength) {
     ETree *eRoot = mafCompToETreeNode(ali->components->next);
     ETree *eLeaf = mafCompToETreeNode(ali->components);
     eTree_setParent(eLeaf, eRoot);
     stMafTree *mTree = stMafTree_construct(eRoot);
     fillNodeLinksFromMafAli(mTree, ali);
+    eTree_setBranchLength(eLeaf, defaultBranchLength);
     return mTree;
 }
 
-stMafTree *stMafTree_constructFromMaf(struct mafAli *ali) {
+stMafTree *stMafTree_constructFromMaf(struct mafAli *ali, double defaultBranchLength) {
     if (ali->tree != NULL) {
         return stMafTree_parseFromMaf(ali);
     } else if (slCount(ali->components) == 2) {
-        return stMafTree_inferFromPairwiseMaf(ali);
+        return stMafTree_inferFromPairwiseMaf(ali, defaultBranchLength);
     } else {
         errAbort("mafAli isn't pairwise and doesn't have a tree");
         return NULL;

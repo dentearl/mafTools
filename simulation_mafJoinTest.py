@@ -122,30 +122,36 @@ class MafJoinTests(unittest.TestCase):
         """
         A = """
         a score=5.0 tree=\"(mm4.chr6:0.15)hg18.chr7;\"
-        s hg18.chr7    27707221 2 + 158545518 gc
         s mm4.chr6     53310102 2 - 151104725 AC
+        s hg18.chr7    27707221 2 + 158545518 gc
         
         a score=5.0 tree=\"(mm4.chr6:0.15)hg18.chr7;\"
-        s hg18.chr7    27707223 11 + 158545518 agctgaaaaca
         s mm4.chr6     53310104 11 - 151104725 AGCTGAAAATA
+        s hg18.chr7    27707223 11 + 158545518 agctgaaaaca
         """
         B = """
         a score=2.0 tree=\"((panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;\"
-        s hg18.chr7    27707221 6 + 158545518 gcagct
         s panTro1.chr6 28869787 5 + 161576975 gcagc-
         s baboon.chr6    249182 5 -   4622798 gcagc-
+        s hg18.chr7    27707221 6 + 158545518 gcagct
         
         a score=2.0 tree=\"((panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;\"
-        s hg18.chr7    27707227 7 + 158545518 gaaaaca
         s panTro1.chr6 28869792 7 + 161576975 gaaaaca
         s baboon.chr6    249187 7 -   4622798 gaaaaca
+        s hg18.chr7    27707227 7 + 158545518 gaaaaca
         """ 
         C = """
-        a score=0.000000 tree=\"(((panTro1.chr6:0.3)baboon.chr6:0.2),mm4.chr6:0.15)hg18.chr7;\"
-        s panTro1.chr6  28869787 12 + 161576975 gcagc-gaaaaca
-        s baboon.chr6     249182 12 -   4622798 gcagc-gaaaaca
-        s mm4.chr6      53310102 13 - 151104725 ACAGCTGAAAATA
-        s hg18.chr7     27707221 13 + 158545518 gcagctgaaaaca
+        a score=0.000000 tree=\"(mm4.chr6:0.15,(panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;\"
+        s mm4.chr6     53310104 11 - 151104725 AGCTGAAAATA
+        s panTro1.chr6 28869792  7 + 161576975 ----gaaaaca
+        s baboon.chr6    249187  7 -   4622798 ----gaaaaca
+        s hg18.chr7    27707223 11 + 158545518 agctgaaaaca
+
+        a score=0.000000 tree=\"(mm4.chr6:0.15,(panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;\"
+        s mm4.chr6     53310102 2 - 151104725 AC----
+        s panTro1.chr6 28869787 5 + 161576975 gcagc-
+        s baboon.chr6    249182 5 -   4622798 gcagc-
+        s hg18.chr7    27707221 6 + 158545518 gcagct
         """
         self.mafJoinTest("hg18", A, B, C)
 
@@ -257,7 +263,7 @@ class MafJoinTests(unittest.TestCase):
         s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
         """
         C = """
-        a score=0.000000 tree=\"((mm4.chr6)hg18.chr7)baboon.chr6;\"
+        a score=0.000000 tree=\"((mm4.chr6:0.1)hg18.chr7:0.1)baboon.chr6;\"
         s mm4.chr6    53310102 13 - 151104725 ACAGCTGAAAATA
         s hg18.chr7   27707221 13 + 158545518 gcagctgaaaaca
         s baboon.chr6   249182 13 -   4622798 gcagctgaaaaca

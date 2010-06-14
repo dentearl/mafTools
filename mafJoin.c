@@ -3,6 +3,7 @@
 #include "genome.h"
 #include "stMalnSet.h"
 #include "stMalnJoin.h"
+#include "sonLibETree.h"
 
 /*
  * Notes: 
@@ -13,6 +14,7 @@
 
 /* command line option specifications */
 static struct optionSpec optionSpecs[] = {
+    {"branchLength", OPTION_DOUBLE},
     {"maf1Copy", OPTION_STRING},
     {"maf2Copy", OPTION_STRING},
     {NULL, 0}
@@ -21,8 +23,11 @@ static struct optionSpec optionSpecs[] = {
 static char *usageMsg =
     "mafJoin [options] refGenome inMaf1 inMaf2 outMaf\n"
     "\n"
-    "-maf1Out=maf1Copy - output maf1 for debugging\n"
-    "-maf2Out=maf2Copy - output maf1 for debugging\n";
+    "Options:\n"
+    "  -branchLength=0.1 - branch length to use when generating\n"
+    "   a tree from a pair-wise MAF. Defaults to 0.1.\n"
+    "  -maf1Out=maf1Copy - output maf1 for debugging\n"
+    "  -maf2Out=maf2Copy - output maf2 for debugging\n";
 
 /* usage msg and exit */
 static void usage(char *msg) {
@@ -30,14 +35,14 @@ static void usage(char *msg) {
 }
 
 /* join two mafs */
-static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMaf, char *maf1Copy, char *maf2Copy) {
+static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMaf, double defaultBranchLength, char *maf1Copy, char *maf2Copy) {
     struct Genomes *genomes = genomesNew();
     struct Genome *refGenome = genomesObtainGenome(genomes, refGenomeName);
-    struct stMalnSet *malnSet1 = stMalnSet_constructFromMaf(genomes, refGenome, inMaf1);
+    struct stMalnSet *malnSet1 = stMalnSet_constructFromMaf(genomes, refGenome, inMaf1, defaultBranchLength);
     if (maf1Copy != NULL) {
         stMalnSet_writeMaf(malnSet1, maf1Copy);
     }
-    struct stMalnSet *malnSet2 = stMalnSet_constructFromMaf(genomes, refGenome, inMaf2);
+    struct stMalnSet *malnSet2 = stMalnSet_constructFromMaf(genomes, refGenome, inMaf2, defaultBranchLength);
     if (maf2Copy != NULL) {
         stMalnSet_writeMaf(malnSet2, maf2Copy);
     }
@@ -51,6 +56,6 @@ int main(int argc, char *argv[]) {
     if (argc != 5)  {
         usage("Error: wrong number of arguments");
     }
-    mafJoin(argv[1], argv[2], argv[3], argv[4], optionVal("maf1Copy", NULL), optionVal("maf2Copy", NULL));
+    mafJoin(argv[1], argv[2], argv[3], argv[4], optionDouble("branchLength", 0.1), optionVal("maf1Copy", NULL), optionVal("maf2Copy", NULL));
     return 0;
 }

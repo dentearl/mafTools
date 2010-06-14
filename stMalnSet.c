@@ -31,8 +31,8 @@ static struct stMalnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafC
 }
 
 /* convert a mafAli to an stMalnBlk */
-static struct stMalnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct mafAli *ali) {
-    struct stMalnBlk *blk = stMalnBlk_construct(stMafTree_constructFromMaf(ali));
+static struct stMalnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct mafAli *ali, double defaultBranchLength) {
+    struct stMalnBlk *blk = stMalnBlk_construct(stMafTree_constructFromMaf(ali, defaultBranchLength));
     for (struct mafComp *comp = ali->components; comp != NULL; comp = comp->next) {
         stMalnBlk_addComp(blk, mafCompToMAlnComp(genomes, comp));
     }
@@ -55,13 +55,14 @@ struct stMalnSet *stMalnSet_construct(struct Genomes *genomes, struct Genome *re
     return malnSet;
 }
 
-/* construct a stMalnSet from a MAF file  */
-struct stMalnSet *stMalnSet_constructFromMaf(struct Genomes *genomes, struct Genome *refGenome, char *mafFileName) {
+/* Construct a stMalnSet from a MAF file. defaultBranchLength is used to
+ * assign branch lengths when inferring trees from pair-wise MAFs. */
+struct stMalnSet *stMalnSet_constructFromMaf(struct Genomes *genomes, struct Genome *refGenome, char *mafFileName, double defaultBranchLength) {
     struct stMalnSet *malnSet = stMalnSet_construct(genomes, refGenome);
     struct mafFile *mafFile = mafOpen(mafFileName);
     struct mafAli *ali;
     while ((ali = mafNext(mafFile)) != NULL) {
-        stMalnSet_addBlk(malnSet, mafAliToMAlnBlk(genomes, ali));
+        stMalnSet_addBlk(malnSet, mafAliToMAlnBlk(genomes, ali, defaultBranchLength));
         mafAliFree(&ali);
     }
     slReverse(&malnSet->blks);
