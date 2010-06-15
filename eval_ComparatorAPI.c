@@ -357,9 +357,9 @@ void getTriosP(void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extra
                 qsort(tmpNameArray, 3, sizeof(struct stringSortIdx), stringSortIdx_cmp);
                 for (index=0; index<speciesList->length; index++) {
                     trio = speciesList->list[index];
-                    if (startswith(tmpNameArray[0].name, trio->speciesA, 1) == 1 &&
-                        startswith(tmpNameArray[1].name, trio->speciesB, 1) == 1 &&
-                        startswith(tmpNameArray[2].name, trio->speciesC, 1) == 1) {
+                    if (cStr_startsWith(tmpNameArray[0].name, trio->speciesA, 1) == 1 &&
+                        cStr_startsWith(tmpNameArray[1].name, trio->speciesB, 1) == 1 &&
+                        cStr_startsWith(tmpNameArray[2].name, trio->speciesC, 1) == 1) {
                         flag = 1;
                         break;
                     }

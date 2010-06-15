@@ -11,37 +11,37 @@
 /*
  * Comparison function to sort strings alphabetically
  */
-int cstring_cmp(const void *a, const void *b);
+int cStr_compare(const void *a, const void *b);
 
 /*
  * Comparison function to sort strings in descending order
  */
-int cstring_cmp_desc(const void *a, const void *b);
+int cStr_compareDesc(const void *a, const void *b);
 
 /*
  * In-place substitution to lower-case string
  */
-void lowerCase(char *string);
+void cStr_lowerCase(char *string);
 
 /*
  * In-place substitution to upper-case string
  */
-void upperCase(char *string);
+void cStr_upperCase(char *string);
 
 /* 
  * Check if "string" starts with "query" and ignores case
  *   if "ignorecase" == 1
  */
-int startswith(char *string, char *query, int ignorecase);
+int cStr_startsWith(char *string, char *query, int ignorecase);
 
-int32_t countDigits(int32_t n);
+int32_t cStr_getIntLength(int32_t n);
 
-void reverse(char *s);
+void cStr_reverse(char *s);
 
-void itoa(int n, char *s);
+void cStr_itoa(int n, char *s);
 
-void append(char *s, char c);
+void cStr_appendChar(char *s, char c);
 
-char *arrayToString(int32_t *array, int32_t size, const char sep);
+char *cStr_getStringFromIntArray(int32_t *array, int32_t size, const char sep);
 
 #endif /* CSTRING_H_ */

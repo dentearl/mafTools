@@ -67,10 +67,10 @@ struct List *parseTrioFile(char *trioFile) {
                 exit(1);
             }
 
-            lowerCase(species[0]);
-            lowerCase(species[1]);
-            lowerCase(species[2]);
-            qsort(species, 3, sizeof(char *), cstring_cmp);
+            cStr_lowerCase(species[0]);
+            cStr_lowerCase(species[1]);
+            cStr_lowerCase(species[2]);
+            qsort(species, 3, sizeof(char *), cStr_compare);
 
             TrioNames *trio = st_malloc(sizeof(TrioNames));
             trio->speciesA = species[0];

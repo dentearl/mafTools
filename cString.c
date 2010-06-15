@@ -3,7 +3,7 @@
 /*
  * Comparison function to sort strings alphabetically
  */
-int cstring_cmp(const void *a, const void *b) {
+int cStr_compare(const void *a, const void *b) {
         const char **ia = (const char **)a;
         const char **ib = (const char **)b;
         return strcmp(*ia, *ib);
@@ -12,7 +12,7 @@ int cstring_cmp(const void *a, const void *b) {
 /*
  * Comparison function to sort strings in descending order
  */
-int cstring_cmp_desc(const void *a, const void *b) {
+int cStr_compareDesc(const void *a, const void *b) {
         const char **ia = (const char **)a;
         const char **ib = (const char **)b;
         return -1 * strcmp(*ia, *ib);
@@ -21,7 +21,7 @@ int cstring_cmp_desc(const void *a, const void *b) {
 /*
  * In-place substitution to lower-case string
  */
-void lowerCase(char *string) {
+void cStr_lowerCase(char *string) {
         char *p;
         for (p=string; *p != '\0'; p++) {
                 *p = tolower(*p);
@@ -31,7 +31,7 @@ void lowerCase(char *string) {
 /*
  * In-place substitution to upper-case string
  */
-void upperCase(char *string) {
+void cStr_upperCase(char *string) {
         char *p;
         for (p=string; *p != '\0'; p++) {
                 *p = toupper(*p);
@@ -42,7 +42,7 @@ void upperCase(char *string) {
  * Check if "string" starts with "query" and ignores case
  *   if "ignorecase" == 1
  */
-int startswith(char *string, char *query, int ignorecase) {
+int cStr_startsWith(char *string, char *query, int ignorecase) {
 	assert(strlen(string) > 0);
 	assert(strlen(query) > 0);
 
@@ -64,7 +64,7 @@ int startswith(char *string, char *query, int ignorecase) {
 	}
 }
 
-int32_t countDigits(int32_t n) {
+int32_t cStr_getIntLength(int32_t n) {
 	int32_t count = 0;
 	do {
 		count++;
@@ -77,7 +77,7 @@ int32_t countDigits(int32_t n) {
 }
 
 /* reverse:  reverse string s in place */
-void reverse(char *s) {
+void cStr_reverse(char *s) {
 	int i, j;
 	char c;
 
@@ -89,7 +89,7 @@ void reverse(char *s) {
 }
 
 /* itoa:  convert n to characters in s */
-void itoa(int n, char *s) {
+void cStr_itoa(int n, char *s) {
 	int i, sign;
 
 	if ((sign = n) < 0)	/* record sign */
@@ -101,34 +101,34 @@ void itoa(int n, char *s) {
 	if (sign < 0)
 		s[i++] = '-';
 	s[i] = '\0';
-	reverse(s);
+	cStr_reverse(s);
 }
 
-void append(char *s, char c) {
+void cStr_appendChar(char *s, char c) {
 	int len = strlen(s);
 	s[len] = c;
 	s[len + 1] = '\0';
 }
 
-char *arrayToString(int32_t *array, int32_t size, const char sep) {
+char *cStr_getStringFromIntArray(int32_t *array, int32_t size, const char sep) {
 	int32_t i;
 	int numChars = 0;
 	char *string = NULL;
 	char buffer[64];
 
 	for (i = 0; i < size; i++) {
-		numChars += countDigits(array[i]);
+		numChars += cStr_getIntLength(array[i]);
 	}
 	numChars += (size - 1);
 
 	string = st_malloc(sizeof(char) * (numChars + 1));
 	string[0] = '\0';
 
-	itoa(array[0], buffer);
+	cStr_itoa(array[0], buffer);
 	strcat(string, buffer);
 	for (i = 1; i < size; i++) {
-		append(string, sep);
-		itoa(array[i], buffer);
+		cStr_appendChar(string, sep);
+		cStr_itoa(array[i], buffer);
 		strcat(string, buffer);
 	}
 
