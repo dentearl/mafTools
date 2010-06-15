@@ -2,7 +2,7 @@ include ../../../include.mk
 libPath = ../../../lib
 binPath = ../../../bin
 
-extraAPI = cstring.c disjointset.c
+extraAPI = cString.c disjointset.c
 
 all: ${binPath}/eval_PhyloComparator ${binPath}/eval_MAFComparator ${binPath}/eval_mergeMAFComparatorResults.py
 

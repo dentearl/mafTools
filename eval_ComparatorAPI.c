@@ -1,5 +1,5 @@
 #include "eval_ComparatorAPI.h"
-#include "cstring.h"
+#include "cString.h"
 
 int aSolo_cmpFunction(const void *a, const void *b);
 void trioDecoder_destruct(TrioDecoder *decoder);

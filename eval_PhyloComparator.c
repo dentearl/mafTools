@@ -14,7 +14,7 @@
 #include "bioioC.h"
 
 #include "eval_ComparatorAPI.h"
-#include "cstring.h"
+#include "cString.h"
 
 /*
  * The script takes two MAF files and for each ordered trio in the MAFS calculates

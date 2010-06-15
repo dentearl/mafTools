@@ -1,4 +1,4 @@
-#include "cstring.h"
+#include "cString.h"
 
 /*
  * Comparison function to sort strings alphabetically
