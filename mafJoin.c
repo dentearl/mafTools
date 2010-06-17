@@ -1,8 +1,8 @@
 #include "common.h"
 #include "options.h"
 #include "genome.h"
-#include "stMalnSet.h"
-#include "stMalnJoin.h"
+#include "malnSet.h"
+#include "malnJoin.h"
 #include "sonLibETree.h"
 
 /*
@@ -38,16 +38,16 @@ static void usage(char *msg) {
 static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMaf, double defaultBranchLength, char *maf1Copy, char *maf2Copy) {
     struct Genomes *genomes = genomesNew();
     struct Genome *refGenome = genomesObtainGenome(genomes, refGenomeName);
-    struct stMalnSet *malnSet1 = stMalnSet_constructFromMaf(genomes, refGenome, inMaf1, defaultBranchLength);
+    struct malnSet *malnSet1 = malnSet_constructFromMaf(genomes, refGenome, inMaf1, defaultBranchLength);
     if (maf1Copy != NULL) {
-        stMalnSet_writeMaf(malnSet1, maf1Copy);
+        malnSet_writeMaf(malnSet1, maf1Copy);
     }
-    struct stMalnSet *malnSet2 = stMalnSet_constructFromMaf(genomes, refGenome, inMaf2, defaultBranchLength);
+    struct malnSet *malnSet2 = malnSet_constructFromMaf(genomes, refGenome, inMaf2, defaultBranchLength);
     if (maf2Copy != NULL) {
-        stMalnSet_writeMaf(malnSet2, maf2Copy);
+        malnSet_writeMaf(malnSet2, maf2Copy);
     }
-    struct stMalnSet *malnSetJoined = stMalnJoin_joinSets(refGenome, malnSet1, malnSet2);
-    stMalnSet_writeMaf(malnSetJoined, outMaf);
+    struct malnSet *malnSetJoined = malnJoin_joinSets(refGenome, malnSet1, malnSet2);
+    malnSet_writeMaf(malnSetJoined, outMaf);
 }
 
 /* Process command line. */

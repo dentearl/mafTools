@@ -1,0 +1,52 @@
+#ifndef malnBlk_h
+#define malnBlk_h
+#include "mafJoinTypes.h"
+#include <stdbool.h>
+struct Seq;
+struct Genome;
+
+/* 
+ * Multiple alignment block.
+ */
+struct malnBlk {
+    struct malnBlk *next;
+    int alnWidth;
+    struct malnComp *comps;   // components
+    mafTree *mTree;           // tree associated with block
+    bool done;                  // finished some kind of processing
+};
+
+/* constructor */
+struct malnBlk *malnBlk_construct(mafTree *mTree);
+
+/* constructor clone */
+struct malnBlk *malnBlk_constructClone(struct malnBlk *srcBlk);
+
+/* destructor */
+void malnBlk_destruct(struct malnBlk *blk);
+
+/* set location and type attributes from tree */
+void malnBlk_setLocAttr(struct malnBlk *blk, struct Genome *refGenome);
+
+/* add a component */
+void malnBlk_addComp(struct malnBlk *blk, struct malnComp *comp);
+
+/* sort components by tree */
+void malnBlk_sortComps(struct malnBlk *blk);
+
+/* find a component by seq and start, NULL if not found  */
+struct malnComp *malnBlk_findBySeqStart(struct malnBlk *blk, struct Seq *seq, int start);
+
+/* find a component by seq and chrom range, NULL if not found  */
+struct malnComp *malnBlk_findCompByChromRange(struct malnBlk *blk, struct Seq *seq, int chromStart, int chromEnd);
+
+/* block reverse complement */
+struct malnBlk *malnBlk_reverseComplement(struct malnBlk *blk);
+
+/* pad all components so they are the same width as the overall alignment. */
+void malnBlk_pad(struct malnBlk *blk);
+
+/* assert that the block is set-consistent */
+void malnBlk_assert(struct malnBlk *blk);
+
+#endif

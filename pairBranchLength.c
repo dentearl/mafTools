@@ -1,4 +1,4 @@
-#include "stPairBranchLength.h"
+#include "pairBranchLength.h"
 #include "sonLibETree.h"
 #include "sonLibString.h"
 #include <stdbool.h>
@@ -60,7 +60,7 @@ static bool dfsFindFirst(ETree *root, struct tracker *tracker) {
 
 /* get distance between two species in the tree as an estimate of length between
  * species. */
-double stPairBranchLength(ETree *initBranchLenTree, char *org1, char *org2) {
+double pairBranchLength(ETree *initBranchLenTree, char *org1, char *org2) {
     struct tracker tracker = {org1, org2, 0.0};
 
     return tracker.distance;

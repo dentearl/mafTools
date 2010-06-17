@@ -1,77 +1,77 @@
-#include "stMalnSet.h"
-#include "stMalnComp.h"
-#include "stMalnBlk.h"
-#include "stMafTree.h"
+#include "malnSet.h"
+#include "malnComp.h"
+#include "malnBlk.h"
+#include "mafTree.h"
 #include "common.h"
 #include "jkmaf.h"
 #include "genomeRangeTree.h"
 
-struct stMalnSet {
+struct malnSet {
     struct Genomes *genomes;
     struct Genome *refGenome;
-    struct stMalnBlk *blks;
-    struct genomeRangeTree *refBlks; /* range index of reference genome components to slRefs to stMalnBlk
+    struct malnBlk *blks;
+    struct genomeRangeTree *refBlks; /* range index of reference genome components to slRefs to malnBlk
                                       * objects.  Built on demand. */
 };
 
 /* get associated genomes object  */
-struct Genomes *stMalnSet_getGenomes(struct stMalnSet *malnSet) {
+struct Genomes *malnSet_getGenomes(struct malnSet *malnSet) {
     return malnSet->genomes;
 }
 
-/* convert a mafComp to an stMalnComp */
-static struct stMalnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafComp *comp) {
+/* convert a mafComp to an malnComp */
+static struct malnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafComp *comp) {
     char buf[128];
     char *srcDb = mafCompGetSrcDb(comp, buf, sizeof(buf));
     if (srcDb == NULL) {
         errAbort("Error: no org name in MAF component, source must be org.seq: %s", comp->src);
     }
-    return stMalnComp_construct(genomesObtainSeq(genomes, srcDb, mafCompGetSrcName(comp), comp->srcSize),
+    return malnComp_construct(genomesObtainSeq(genomes, srcDb, mafCompGetSrcName(comp), comp->srcSize),
                                 comp->strand, comp->start, comp->start+comp->size, comp->text);
 }
 
-/* convert a mafAli to an stMalnBlk */
-static struct stMalnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct Genome *refGenome, struct mafAli *ali, double defaultBranchLength) {
-    struct stMalnBlk *blk = stMalnBlk_construct(stMafTree_constructFromMaf(ali, defaultBranchLength));
+/* convert a mafAli to an malnBlk */
+static struct malnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct Genome *refGenome, struct mafAli *ali, double defaultBranchLength) {
+    struct malnBlk *blk = malnBlk_construct(mafTree_constructFromMaf(ali, defaultBranchLength));
     for (struct mafComp *comp = ali->components; comp != NULL; comp = comp->next) {
-        stMalnBlk_addComp(blk, mafCompToMAlnComp(genomes, comp));
+        malnBlk_addComp(blk, mafCompToMAlnComp(genomes, comp));
     }
-    stMalnBlk_sortComps(blk);
-    stMalnBlk_setLocAttr(blk, refGenome);
+    malnBlk_sortComps(blk);
+    malnBlk_setLocAttr(blk, refGenome);
     return blk;
 }
 
 /* add a block to a malnSet */
-void stMalnSet_addBlk(struct stMalnSet *malnSet, struct stMalnBlk *blk) {
-    stMalnBlk_assert(blk);
+void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk) {
+    malnBlk_assert(blk);
     slAddHead(&malnSet->blks, blk);
 }
 
-/* construct an empty stMalnSet  */
-struct stMalnSet *stMalnSet_construct(struct Genomes *genomes, struct Genome *refGenome) {
-    struct stMalnSet *malnSet;
+/* construct an empty malnSet  */
+struct malnSet *malnSet_construct(struct Genomes *genomes, struct Genome *refGenome) {
+    struct malnSet *malnSet;
     AllocVar(malnSet);
     malnSet->genomes = genomes;
     malnSet->refGenome = refGenome;
     return malnSet;
 }
 
-/* Construct a stMalnSet from a MAF file. defaultBranchLength is used to
+/* Construct a malnSet from a MAF file. defaultBranchLength is used to
  * assign branch lengths when inferring trees from pair-wise MAFs. */
-struct stMalnSet *stMalnSet_constructFromMaf(struct Genomes *genomes, struct Genome *refGenome, char *mafFileName, double defaultBranchLength) {
-    struct stMalnSet *malnSet = stMalnSet_construct(genomes, refGenome);
+struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, struct Genome *refGenome, char *mafFileName, double defaultBranchLength) {
+    struct malnSet *malnSet = malnSet_construct(genomes, refGenome);
     struct mafFile *mafFile = mafOpen(mafFileName);
     struct mafAli *ali;
     while ((ali = mafNext(mafFile)) != NULL) {
-        stMalnSet_addBlk(malnSet, mafAliToMAlnBlk(genomes, refGenome, ali, defaultBranchLength));
+        malnSet_addBlk(malnSet, mafAliToMAlnBlk(genomes, refGenome, ali, defaultBranchLength));
         mafAliFree(&ali);
     }
     slReverse(&malnSet->blks);
     return malnSet;
 }
 
-/* convert a stMalnComp to a mafComp */
-static struct mafComp *malnCompToMafComp(struct stMalnComp *comp) {
+/* convert a malnComp to a mafComp */
+static struct mafComp *malnCompToMafComp(struct malnComp *comp) {
     struct mafComp *mc;
     AllocVar(mc);
     mc->src = cloneString(comp->seq->orgSeqName);
@@ -79,20 +79,20 @@ static struct mafComp *malnCompToMafComp(struct stMalnComp *comp) {
     mc->strand = comp->strand;
     mc->start = comp->start;
     mc->size = comp->end - comp->start;
-    mc->text = cloneString(stMalnComp_getAln(comp));
+    mc->text = cloneString(malnComp_getAln(comp));
     return mc;
 }
 
-/* convert a stMalnBlk to a mafAli */
-static struct mafAli *malnAliToMafAli(struct stMalnBlk *blk) {
-    stMalnBlk_assert(blk);
+/* convert a malnBlk to a mafAli */
+static struct mafAli *malnAliToMafAli(struct malnBlk *blk) {
+    malnBlk_assert(blk);
     struct mafAli *ma;
     AllocVar(ma);
     if (blk->mTree != NULL) {
-        ma->tree = stMafTree_format(blk->mTree);
+        ma->tree = mafTree_format(blk->mTree);
     }
     ma->textSize = blk->alnWidth;
-    for (struct stMalnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
+    for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         slAddHead(&ma->components, malnCompToMafComp(comp));
     }
     slReverse(&ma->components);
@@ -100,17 +100,17 @@ static struct mafAli *malnAliToMafAli(struct stMalnBlk *blk) {
 }
 
 /* write a block to a MAF */
-static void writeBlkToMaf(struct stMalnBlk *blk, FILE *mafFh) {
+static void writeBlkToMaf(struct malnBlk *blk, FILE *mafFh) {
     struct mafAli *ma = malnAliToMafAli(blk);
     mafWrite(mafFh, ma);
     mafAliFree(&ma);
 }
 
-/* write a stMalnSet to a MAF file  */
-void stMalnSet_writeMaf(struct stMalnSet *malnSet, char *mafFileName) {
+/* write a malnSet to a MAF file  */
+void malnSet_writeMaf(struct malnSet *malnSet, char *mafFileName) {
     FILE *mafFh = mustOpen(mafFileName, "w");
     mafWriteStart(mafFh, NULL);
-    for (struct stMalnBlk *blk = malnSet->blks; blk != NULL; blk = blk->next) {
+    for (struct malnBlk *blk = malnSet->blks; blk != NULL; blk = blk->next) {
         writeBlkToMaf(blk, mafFh);
     }
     mafWriteEnd(mafFh);
@@ -118,13 +118,13 @@ void stMalnSet_writeMaf(struct stMalnSet *malnSet, char *mafFileName) {
 }
 
 /* get list of blocks.  Don't modify this list. */
-struct stMalnBlk *stMalnSet_getBlocks(struct stMalnSet *malnSet) {
+struct malnBlk *malnSet_getBlocks(struct malnSet *malnSet) {
     return malnSet->blks;
 }
 
 /* add block to range map for all reference genome components */
-static void addRefRanges(struct stMalnSet *malnSet, struct stMalnBlk *blk) {
-    for (struct stMalnComp *mc = blk->comps; mc != NULL; mc = mc->next) {
+static void addRefRanges(struct malnSet *malnSet, struct malnBlk *blk) {
+    for (struct malnComp *mc = blk->comps; mc != NULL; mc = mc->next) {
         if (mc->seq->genome == malnSet->refGenome) {
             genomeRangeTreeAddValList(malnSet->refBlks, mc->seq->name, mc->chromStart, mc->chromEnd, slRefNew(blk));
         }
@@ -132,16 +132,16 @@ static void addRefRanges(struct stMalnSet *malnSet, struct stMalnBlk *blk) {
 }
 
 /* build the range tree when needed */
-static void buildRangeTree(struct stMalnSet *malnSet) {
+static void buildRangeTree(struct malnSet *malnSet) {
     malnSet->refBlks = genomeRangeTreeNew();
-    for (struct stMalnBlk *blk = malnSet->blks; blk != NULL; blk = blk->next) {
+    for (struct malnBlk *blk = malnSet->blks; blk != NULL; blk = blk->next) {
         addRefRanges(malnSet, blk);
     }
 }
 
 /* get list of slRefs to blks who's reference range overlaps the specified
  * range.  slFreeList of results when done. */
-struct slRef *stMalnSet_getOverlapping(struct stMalnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd) {
+struct slRef *malnSet_getOverlapping(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd) {
     if (malnSet->refBlks == NULL) {
         buildRangeTree(malnSet);
     }

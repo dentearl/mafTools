@@ -1,12 +1,12 @@
-#include "stMalnComp.h"
-#include "stMalnCompCursor.h"
+#include "malnComp.h"
+#include "malnCompCursor.h"
 #include "common.h"
 #include "dnautil.h"
 
 /* basic component constructor using all or part of an alignment string . */
-static struct stMalnComp *stMalnComp_make(struct Seq *seq, char strand, int start, int end, char *alnStr, int strStart, int strEnd) {
+static struct malnComp *malnComp_make(struct Seq *seq, char strand, int start, int end, char *alnStr, int strStart, int strEnd) {
     assert(end-start <= strEnd-strStart);
-    struct stMalnComp *comp;
+    struct malnComp *comp;
     AllocVar(comp);
     comp->seq = seq;
     comp->strand = strand;
@@ -23,17 +23,17 @@ static struct stMalnComp *stMalnComp_make(struct Seq *seq, char strand, int star
 }
 
 /* component constructor */
-struct stMalnComp *stMalnComp_construct(struct Seq *seq, char strand, int start, int end, char *alnStr) {
-    return stMalnComp_make(seq, strand, start, end, alnStr, 0, strlen(alnStr));
+struct malnComp *malnComp_construct(struct Seq *seq, char strand, int start, int end, char *alnStr) {
+    return malnComp_make(seq, strand, start, end, alnStr, 0, strlen(alnStr));
 }
 
 /* component constructor to clone another component */
-struct stMalnComp *stMalnComp_constructClone(struct stMalnComp *srcComp) {
-    return stMalnComp_construct(srcComp->seq, srcComp->strand, srcComp->start, srcComp->end, stMalnComp_getAln(srcComp));
+struct malnComp *malnComp_constructClone(struct malnComp *srcComp) {
+    return malnComp_construct(srcComp->seq, srcComp->strand, srcComp->start, srcComp->end, malnComp_getAln(srcComp));
 }
 
 /* destructor */
-void stMalnComp_destruct(struct stMalnComp *comp) {
+void malnComp_destruct(struct malnComp *comp) {
     if (comp != NULL) {
         dyStringFree(&comp->alnStr);
         freeMem(comp);
@@ -41,8 +41,8 @@ void stMalnComp_destruct(struct stMalnComp *comp) {
 }
 
 /* component reverse complement */
-struct stMalnComp *stMalnComp_reverseComplement(struct stMalnComp *comp) {
-    struct stMalnComp *rc = stMalnComp_construct(comp->seq, ((comp->strand == '-') ? '+' : '-'), comp->start, comp->end, stMalnComp_getAln(comp));
+struct malnComp *malnComp_reverseComplement(struct malnComp *comp) {
+    struct malnComp *rc = malnComp_construct(comp->seq, ((comp->strand == '-') ? '+' : '-'), comp->start, comp->end, malnComp_getAln(comp));
     reverseIntRange(&rc->start, &rc->end, rc->seq->size);
     reverseComplement(rc->alnStr->string, rc->alnStr->stringSize);
     return rc;
@@ -50,13 +50,13 @@ struct stMalnComp *stMalnComp_reverseComplement(struct stMalnComp *comp) {
 
 /* convert an alignment range to a sequence range, set range to 0-0 and return
  * false if none aligned */
-bool stMalnComp_alnRangeToSeqRange(struct stMalnComp *comp, int alnStart, int alnEnd, int *start, int *end) {
-    struct stMalnCompCursor cc = stMalnCompCursor_make(comp);
-    stMalnCompCursor_setAlignCol(&cc, alnStart);
+bool malnComp_alnRangeToSeqRange(struct malnComp *comp, int alnStart, int alnEnd, int *start, int *end) {
+    struct malnCompCursor cc = malnCompCursor_make(comp);
+    malnCompCursor_setAlignCol(&cc, alnStart);
 
     // find start
-    if (!stMalnCompCursor_isAligned(&cc)) {
-        if (!stMalnCompCursor_nextPos(&cc)) {
+    if (!malnCompCursor_isAligned(&cc)) {
+        if (!malnCompCursor_nextPos(&cc)) {
             *start = *end = 0;
             return false;
         }
@@ -64,7 +64,7 @@ bool stMalnComp_alnRangeToSeqRange(struct stMalnComp *comp, int alnStart, int al
     *start = cc.pos;
     
     // find end
-    stMalnCompCursor_setAlignCol(&cc,  alnEnd-1);
+    malnCompCursor_setAlignCol(&cc,  alnEnd-1);
     *end = cc.pos;
     return true;
 }
@@ -72,13 +72,13 @@ bool stMalnComp_alnRangeToSeqRange(struct stMalnComp *comp, int alnStart, int al
 
 /* convert a sequence range to an alignment range, set range to 0-0 and return
  * false if none aligned */
-bool stMalnComp_seqRangeToAlnRange(struct stMalnComp *comp, int start, int end, int *alnStart, int *alnEnd) {
-    struct stMalnCompCursor cc = stMalnCompCursor_make(comp);
-    stMalnCompCursor_setSeqPos(&cc, start);
+bool malnComp_seqRangeToAlnRange(struct malnComp *comp, int start, int end, int *alnStart, int *alnEnd) {
+    struct malnCompCursor cc = malnCompCursor_make(comp);
+    malnCompCursor_setSeqPos(&cc, start);
 
     // find start
-    if (!stMalnCompCursor_isAligned(&cc)) {
-        if (!stMalnCompCursor_nextPos(&cc)) {
+    if (!malnCompCursor_isAligned(&cc)) {
+        if (!malnCompCursor_nextPos(&cc)) {
             *alnStart = *alnEnd = 0;
             return false;
         }
@@ -86,20 +86,20 @@ bool stMalnComp_seqRangeToAlnRange(struct stMalnComp *comp, int start, int end, 
     *alnStart = cc.alnIdx;
     
     // find end
-    stMalnCompCursor_setSeqPos(&cc,  end-1);
+    malnCompCursor_setSeqPos(&cc,  end-1);
     *alnEnd = cc.alnIdx+1;
     return true;
 }
 
 /* pad component to the specified alignment width */
-void stMalnComp_pad(struct stMalnComp *comp, int width) {
-    assert(stMalnComp_getWidth(comp) <= width);
-    dyStringAppendMultiC(comp->alnStr, '-', width-stMalnComp_getWidth(comp));
+void malnComp_pad(struct malnComp *comp, int width) {
+    assert(malnComp_getWidth(comp) <= width);
+    dyStringAppendMultiC(comp->alnStr, '-', width-malnComp_getWidth(comp));
 }
 
 /* append the specified number of characters from the string, adjusting component
  * coordinates */
-void stMalnComp_append(struct stMalnComp *comp, char *src, int len) {
+void malnComp_append(struct malnComp *comp, char *src, int len) {
     int nbases = 0;
     for (int i = 0; i < len; i++) {
         if (isBase(src[i])) {
@@ -117,6 +117,6 @@ void stMalnComp_append(struct stMalnComp *comp, char *src, int len) {
 
 /* Append the specified alignment region of a component to this component.
  * The component must extend the range of this component. */
-void stMalnComp_appendCompAln(struct stMalnComp *comp, struct stMalnComp *srcComp, int alnStart, int alnEnd) {
-    stMalnComp_append(comp, stMalnComp_getAln(srcComp)+alnStart, alnEnd-alnStart);
+void malnComp_appendCompAln(struct malnComp *comp, struct malnComp *srcComp, int alnStart, int alnEnd) {
+    malnComp_append(comp, malnComp_getAln(srcComp)+alnStart, alnEnd-alnStart);
 }

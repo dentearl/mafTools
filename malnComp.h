@@ -1,24 +1,24 @@
-#ifndef stMalnComp_h
-#define stMalnComp_h
+#ifndef malnComp_h
+#define malnComp_h
 #include <stdbool.h>
 #include "genome.h"
 #include "common.h"
 #include "dystring.h"
 
 /* location of a component in the tree */
-enum stMalnCompTreeLoc {
-    stMalnCompTreeUnknown,
-    stMalnCompTreeRoot,
-    stMalnCompTreeInternal,
-    stMalnCompTreeLeaf
+enum malnCompTreeLoc {
+    malnCompTreeUnknown,
+    malnCompTreeRoot,
+    malnCompTreeInternal,
+    malnCompTreeLeaf
 };
 
 
 /* 
  * component of a multiple alignment block.
  */
-struct stMalnComp {
-    struct stMalnComp *next;
+struct malnComp {
+    struct malnComp *next;
     struct Seq *seq;       // genome sequence
     char strand;
     int start;             // start/end in strand coordinates
@@ -27,63 +27,63 @@ struct stMalnComp {
     int chromEnd;
     struct dyString *alnStr;
     bool isReference;      // is this the reference genome?
-    enum stMalnCompTreeLoc treeLoc;  // location in tree.
+    enum malnCompTreeLoc treeLoc;  // location in tree.
 };
 
 /* get a width of component */
-static inline int stMalnComp_getWidth(struct stMalnComp *comp) {
+static inline int malnComp_getWidth(struct malnComp *comp) {
     return comp->alnStr->stringSize;
 }
 
 /* get a column */
-static inline char stMalnComp_getCol(struct stMalnComp *comp, int alnIdx) {
+static inline char malnComp_getCol(struct malnComp *comp, int alnIdx) {
     assert((0 <= alnIdx) && (alnIdx < comp->alnStr->stringSize));
     return comp->alnStr->string[alnIdx];
 }
 
 /* get entire alignment string */
-static inline char *stMalnComp_getAln(struct stMalnComp *comp) {
+static inline char *malnComp_getAln(struct malnComp *comp) {
     return comp->alnStr->string;
 }
 
 /* is a position aligned? */
-static inline bool stMalnComp_isAligned(struct stMalnComp *comp, int alnIdx) {
-    return isBase(stMalnComp_getCol(comp, alnIdx));
+static inline bool malnComp_isAligned(struct malnComp *comp, int alnIdx) {
+    return isBase(malnComp_getCol(comp, alnIdx));
 }
 
 /* component constructor */
-struct stMalnComp *stMalnComp_construct(struct Seq *seq, char strand, int start, int end, char *alnStr);
+struct malnComp *malnComp_construct(struct Seq *seq, char strand, int start, int end, char *alnStr);
 
 /* component constructor to clone another component */
-struct stMalnComp *stMalnComp_constructClone(struct stMalnComp *srcComp);
+struct malnComp *malnComp_constructClone(struct malnComp *srcComp);
 
 /* destructor */
-void stMalnComp_destruct(struct stMalnComp *comp);
+void malnComp_destruct(struct malnComp *comp);
 
 /* component reverse complement */
-struct stMalnComp *stMalnComp_reverseComplement(struct stMalnComp *comp);
+struct malnComp *malnComp_reverseComplement(struct malnComp *comp);
 
 /* convert an alignment range to a sequence range, set range to 0-0 and return
  * false if none aligned */
-bool stMalnComp_alnRangeToSeqRange(struct stMalnComp *comp, int alnStart, int alnEnd, int *start, int *end) ;
+bool malnComp_alnRangeToSeqRange(struct malnComp *comp, int alnStart, int alnEnd, int *start, int *end) ;
 
 /* convert a sequence range to an alignment range, set range to 0-0 and return
  * false if none aligned */
-bool stMalnComp_seqRangeToAlnRange(struct stMalnComp *comp, int start, int end, int *alnStart, int *alnEnd);
+bool malnComp_seqRangeToAlnRange(struct malnComp *comp, int start, int end, int *alnStart, int *alnEnd);
 
 /* pad component to the specified alignment width */
-void stMalnComp_pad(struct stMalnComp *comp, int width);
+void malnComp_pad(struct malnComp *comp, int width);
 
 /* append the specified number of characters from the string, adjusting component
  * coordinates */
-void stMalnComp_append(struct stMalnComp *comp, char *src, int len);
+void malnComp_append(struct malnComp *comp, char *src, int len);
 
 /* Append the specified alignment region of a component to this component.
  * The component must extend the range of this component. */
-void stMalnComp_appendCompAln(struct stMalnComp *comp, struct stMalnComp *srcComp, int alnStart, int alnEnd);
+void malnComp_appendCompAln(struct malnComp *comp, struct malnComp *srcComp, int alnStart, int alnEnd);
 
 /* compare to component to see if they overlap */
-static inline bool stMalnComp_overlap(struct stMalnComp *comp, struct stMalnComp *comp2) {
+static inline bool malnComp_overlap(struct malnComp *comp, struct malnComp *comp2) {
     return (comp->seq == comp2->seq) && (comp->chromStart < comp2->chromEnd) && (comp->chromEnd > comp2->chromStart);
 }
 
