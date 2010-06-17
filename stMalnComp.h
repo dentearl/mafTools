@@ -5,6 +5,15 @@
 #include "common.h"
 #include "dystring.h"
 
+/* location of a component in the tree */
+enum stMalnCompTreeLoc {
+    stMalnCompTreeUnknown,
+    stMalnCompTreeRoot,
+    stMalnCompTreeInternal,
+    stMalnCompTreeLeaf
+};
+
+
 /* 
  * component of a multiple alignment block.
  */
@@ -17,6 +26,8 @@ struct stMalnComp {
     int chromStart;        // start/end in chrom coordinates
     int chromEnd;
     struct dyString *alnStr;
+    bool isReference;      // is this the reference genome?
+    enum stMalnCompTreeLoc treeLoc;  // location in tree.
 };
 
 /* get a width of component */

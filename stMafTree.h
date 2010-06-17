@@ -4,6 +4,14 @@
 #include "mafJoinTypes.h"
 struct mafAli;
 
+/* location of a component in the tree */
+enum stMafTreeLoc {
+    stMafTreeRoot,
+    stMafTreeInternal,
+    stMafTreeLeaf
+};
+
+
 /* Construct a MafTree object from an mafComp block if it contains a tree.  If
  * it doesn't contain a tree and is pairwise maf, create a tree with the root
  * the last component of the maf.  defaultBranchLength is used to assign
@@ -24,6 +32,9 @@ int stMafTree_treeOrderCmp(stMafTree *mTree, const char *orgSeq1, int chromStart
 
 /* join two trees at nodes specified by components */
 stMafTree *stMafTree_join(stMafTree *mTree1, const char *orgSeq1, int chromStart1, int chromEnd1, stMafTree *mTree2, const char *orgSeq2, int chromStart2, int chromEnd2);
+
+/* get location type in tree */
+enum stMafTreeLoc stMafTree_getLoc(stMafTree *mTree, const char *orgSeq, int chromStart, int chromEnd);
 
 /* format tree as a newick string */
 char *stMafTree_format(stMafTree *mTree);

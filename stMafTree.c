@@ -258,6 +258,18 @@ stMafTree *stMafTree_join(stMafTree *mTree1, const char *orgSeq1, int chromStart
     return mTreeJoined;
 }
 
+/* get location type in tree */
+enum stMafTreeLoc stMafTree_getLoc(stMafTree *mTree, const char *orgSeq, int chromStart, int chromEnd) {
+    struct nodeCompLink *ncLink = stMafTree_findNodeCompLink(mTree, orgSeq, chromStart, chromEnd);
+    if (eTree_getParent(ncLink->eNode) == NULL) {
+        return stMafTreeRoot;
+    } else if (eTree_getChildNumber(ncLink->eNode) == 0) {
+        return stMafTreeLeaf;
+    } else {
+        return stMafTreeInternal;
+    }
+}
+
 /* format tree as a newick string */
 char *stMafTree_format(stMafTree *mTree) {
     return eTree_getNewickTreeString(mTree->eTree);

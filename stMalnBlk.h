@@ -3,6 +3,7 @@
 #include "mafJoinTypes.h"
 #include <stdbool.h>
 struct Seq;
+struct Genome;
 
 /* 
  * Multiple alignment block.
@@ -23,6 +24,9 @@ struct stMalnBlk *stMalnBlk_constructClone(struct stMalnBlk *srcBlk);
 
 /* destructor */
 void stMalnBlk_destruct(struct stMalnBlk *blk);
+
+/* set location and type attributes from tree */
+void stMalnBlk_setLocAttr(struct stMalnBlk *blk, struct Genome *refGenome);
 
 /* add a component */
 void stMalnBlk_addComp(struct stMalnBlk *blk, struct stMalnComp *comp);

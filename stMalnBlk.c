@@ -32,6 +32,29 @@ void stMalnBlk_destruct(struct stMalnBlk *blk) {
     }
 }
 
+/* set location and type attributes for a component tree */
+static void stMalnBlk_setCompLocAttr(struct stMalnBlk *blk, struct stMalnComp *comp, struct Genome *refGenome) {
+    comp->isReference = (comp->seq->genome == refGenome);
+    switch (stMafTree_getLoc(blk->mTree, comp->seq->orgSeqName, comp->chromStart, comp->chromEnd)) {
+    case stMafTreeRoot:
+        comp->treeLoc = stMalnCompTreeRoot;
+        break;
+    case stMafTreeInternal:
+        comp->treeLoc = stMalnCompTreeInternal;
+        break;
+    case stMafTreeLeaf:
+        comp->treeLoc = stMalnCompTreeLeaf;
+        break;
+    }
+}
+
+/* set location and type attributes from tree */
+void stMalnBlk_setLocAttr(struct stMalnBlk *blk, struct Genome *refGenome) {
+    for (struct stMalnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
+        stMalnBlk_setCompLocAttr(blk, comp, refGenome);
+    }
+}
+
 /* add a component */
 void stMalnBlk_addComp(struct stMalnBlk *blk, struct stMalnComp *comp) {
     slAddHead(&blk->comps, comp);

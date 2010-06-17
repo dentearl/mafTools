@@ -31,12 +31,13 @@ static struct stMalnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafC
 }
 
 /* convert a mafAli to an stMalnBlk */
-static struct stMalnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct mafAli *ali, double defaultBranchLength) {
+static struct stMalnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct Genome *refGenome, struct mafAli *ali, double defaultBranchLength) {
     struct stMalnBlk *blk = stMalnBlk_construct(stMafTree_constructFromMaf(ali, defaultBranchLength));
     for (struct mafComp *comp = ali->components; comp != NULL; comp = comp->next) {
         stMalnBlk_addComp(blk, mafCompToMAlnComp(genomes, comp));
     }
     stMalnBlk_sortComps(blk);
+    stMalnBlk_setLocAttr(blk, refGenome);
     return blk;
 }
 
@@ -62,7 +63,7 @@ struct stMalnSet *stMalnSet_constructFromMaf(struct Genomes *genomes, struct Gen
     struct mafFile *mafFile = mafOpen(mafFileName);
     struct mafAli *ali;
     while ((ali = mafNext(mafFile)) != NULL) {
-        stMalnSet_addBlk(malnSet, mafAliToMAlnBlk(genomes, ali, defaultBranchLength));
+        stMalnSet_addBlk(malnSet, mafAliToMAlnBlk(genomes, refGenome, ali, defaultBranchLength));
         mafAliFree(&ali);
     }
     slReverse(&malnSet->blks);
