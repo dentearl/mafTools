@@ -20,6 +20,7 @@ enum malnCompTreeLoc {
  */
 struct malnComp {
     struct malnComp *next;
+    struct malnBlk *blk;   // block we are associated with
     struct Seq *seq;       // genome sequence
     char strand;
     int start;             // start/end in strand coordinates
@@ -86,6 +87,19 @@ void malnComp_appendCompAln(struct malnComp *comp, struct malnComp *srcComp, int
 /* compare to component to see if they overlap */
 static inline bool malnComp_overlap(struct malnComp *comp, struct malnComp *comp2) {
     return (comp->seq == comp2->seq) && (comp->chromStart < comp2->chromEnd) && (comp->chromEnd > comp2->chromStart);
+}
+
+/* can a join be made at this component? */
+static inline bool malnComp_joinable(struct malnComp *comp) {
+    return (comp->isReference && ((comp->treeLoc & (malnCompTreeRoot|malnCompTreeLeaf)) != 0));
+}
+
+/* can two components be joined? */
+static inline bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *comp2) {
+    return comp1->isReference && comp2->isReference
+        && (((comp1->treeLoc == malnCompTreeRoot) && (comp2->treeLoc == malnCompTreeRoot))
+            || ((comp1->treeLoc == malnCompTreeRoot) && (comp2->treeLoc == malnCompTreeLeaf))
+            || ((comp1->treeLoc == malnCompTreeLeaf) && (comp2->treeLoc == malnCompTreeRoot)));
 }
 
 #endif

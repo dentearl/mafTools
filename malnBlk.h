@@ -34,6 +34,9 @@ void malnBlk_addComp(struct malnBlk *blk, struct malnComp *comp);
 /* sort components by tree */
 void malnBlk_sortComps(struct malnBlk *blk);
 
+/* get the root component */
+struct malnComp *malnBlk_getRootComp(struct malnBlk *blk);
+
 /* find a component by seq and start, NULL if not found  */
 struct malnComp *malnBlk_findBySeqStart(struct malnBlk *blk, struct Seq *seq, int start);
 

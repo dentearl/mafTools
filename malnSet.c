@@ -3,6 +3,7 @@
 #include "malnBlk.h"
 #include "mafTree.h"
 #include "sonLibSortedSet.h"
+#include "sonLibList.h"
 #include "common.h"
 #include "jkmaf.h"
 #include "genomeRangeTree.h"
@@ -26,11 +27,11 @@ static void addRefCompsToMap(struct malnSet *malnSet, struct malnBlk *blk) {
 
 /* build the range tree when needed */
 static void buildRangeTree(struct malnSet *malnSet) {
-    malnSet->refBlks = genomeRangeTreeNew();
+    malnSet->refCompMap = genomeRangeTreeNew();
     stSortedSetIterator *iter = stSortedSet_getIterator(malnSet->blks);
     struct malnBlk *blk;
     while ((blk = stSortedSet_getNext(iter)) != NULL) {
-        addRefRanges(malnSet, blk);
+        addRefCompsToMap(malnSet, blk);
     }
     stSortedSet_destructIterator(iter);
 }
@@ -39,12 +40,13 @@ static void buildRangeTree(struct malnSet *malnSet) {
  * this just set reference to NULL, which must be handled when getting overlaps*/
 static void removeCompRange(struct malnSet *malnSet, struct malnBlk *blk, struct malnComp *comp) {
     bool found = false;
-    for (struct range *rng = genomeRangeTreeAllOverlapping(malnSet->refBlks, comp->seq->name, comp->chromStart, comp->chromEnd); (rng != NULL) && (!found); rng = rng->next) {
-        for (struct slRef *compRef = rng->val; (compRef != NULL; compRef = compRef->next) {
-            struct malnComp = compRef->val;
-        if (blkRef->val == blk) {
-            blkRef->val = NULL;
-            found = true;
+    for (struct range *rng = genomeRangeTreeAllOverlapping(malnSet->refCompMap, comp->seq->name, comp->chromStart, comp->chromEnd); (rng != NULL) && (!found); rng = rng->next) {
+        for (struct slRef *compRef = rng->val; (compRef != NULL) && (!found); compRef = compRef->next) {
+            struct malnComp *comp = compRef->val;
+            if ((comp !=NULL) && (comp->blk == blk)) {
+                compRef->val = NULL;
+                found = true;
+            }
         }
     }
     assert(found);
@@ -96,13 +98,16 @@ void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     assert(blk->malnSet == NULL);
     malnBlk_assert(blk);
     blk->malnSet = malnSet;
-    slAddHead(&malnSet->blks, blk);
+    stSortedSet_insert(malnSet->blks, blk);
+    if (malnSet->refCompMap != NULL) {
+        addRefCompsToMap(malnSet, blk);
+    }
 }
 
 /* remove a block from malnSet */
 void malnSet_removeBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     assert(blk->malnSet != NULL);
-    if (malnSet->refBlks != NULL) {
+    if (malnSet->refCompMap != NULL) {
         removeRefRanges(malnSet, blk);
     }
     stSortedSet_remove(malnSet->blks, blk);
@@ -228,20 +233,38 @@ stSortedSetIterator *malnSet_getBlocks(struct malnSet *malnSet) {
     return stSortedSet_getIterator(malnSet->blks);
 }
 
-/* get list of slRefs to blks who's reference range overlaps the specified
- * range. */
-stSortedSet *malnSet_getOverlapping(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd) {
-    if (malnSet->refBlks == NULL) {
+/* Get a list of components that overlaps the specified reference range
+ * and are in blocks not flagged as done and passing treeLoc filters.
+ * Return NULL if no overlaps. */
+stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter) {
+    if (malnSet->refCompMap == NULL) {
         buildRangeTree(malnSet);
     }
-    stSortedSet *overBlks = stSortedSet_construct();
-    for (struct range *rng = genomeRangeTreeAllOverlapping(malnSet->refBlks, seq->name, chromStart, chromEnd); rng != NULL; rng = rng->next) {
-        struct slRef *blkRef = rng->val;
-        if (blkRef->val != NULL) {
-            stSortedSet_insert(overBlks, blkRef->val);
+    stList *overBlks = NULL;
+    for (struct range *rng = genomeRangeTreeAllOverlapping(malnSet->refCompMap, seq->name, chromStart, chromEnd); rng != NULL; rng = rng->next) {
+        for (struct slRef *compRef = rng->val; compRef != NULL; compRef = compRef->next) {
+            struct malnComp *comp = compRef->val;
+            if ((comp != NULL) && ((comp->treeLoc & treeLocFilter) != 0) && (!comp->blk->done)) {
+                if (overBlks == NULL) { 
+                    overBlks = stList_construct();
+                }
+                stList_append(overBlks, comp);
+            }
         }
     }
     return overBlks;
+}
+
+/* assert done flag is set on all blocks */
+void malnSet_assertDone(struct malnSet *malnSet) {
+#ifndef NDEBUG
+    stSortedSetIterator *iter = stSortedSet_getIterator(malnSet->blks);
+    struct malnBlk *blk;
+    while ((blk = stSortedSet_getNext(iter)) != NULL) {
+        assert(blk->done);
+    }
+    stSortedSet_destructIterator(iter);
+#endif
 }
 
 /* clear done flag on all blocks */

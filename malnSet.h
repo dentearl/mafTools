@@ -32,9 +32,10 @@ void malnSet_deleteBlk(struct malnSet *malnSet, struct malnBlk *blk);
 /* get iterator of the blocks. Don't remove or add blocks while in motion. */
 stSortedSetIterator *malnSet_getBlocks(struct malnSet *malnSet);
 
-/* get list of slRefs to blks who's reference range overlaps the specified
- * range. */
-stSortedSet *malnSet_getOverlapping(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd);
+stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter);
+
+/* assert done flag is set on all blocks */
+void malnSet_assertDone(struct malnSet *malnSet);
 
 /* clear done flag on all blocks */
 void malnSet_clearDone(struct malnSet *malnSet);

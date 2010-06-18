@@ -57,6 +57,7 @@ void malnBlk_setLocAttr(struct malnBlk *blk, struct Genome *refGenome) {
 
 /* add a component */
 void malnBlk_addComp(struct malnBlk *blk, struct malnComp *comp) {
+    comp->blk = blk;
     slAddHead(&blk->comps, comp);
     blk->alnWidth = max(blk->alnWidth, malnComp_getWidth(comp));
 }
@@ -77,6 +78,13 @@ void malnBlk_sortComps(struct malnBlk *blk) {
     cmpMTree = blk->mTree;
     slSort(&blk->comps, compTreeOrderCmp);
     cmpMTree = NULL;
+}
+
+/* get the root component */
+struct malnComp *malnBlk_getRootComp(struct malnBlk *blk) {
+    struct malnComp *root = slLastEl(blk->comps);
+    assert((root->treeLoc & malnCompTreeRoot) == 0);
+    return root;
 }
 
 /* find a component by seq and start, NULL if not found  */

@@ -2,7 +2,8 @@
 #include "options.h"
 #include "genome.h"
 #include "malnSet.h"
-#include "malnJoin.h"
+#include "malnJoinDups.h"
+#include "malnJoinSets.h"
 #include "sonLibETree.h"
 
 /*
@@ -39,14 +40,16 @@ static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMa
     struct Genomes *genomes = genomesNew();
     struct Genome *refGenome = genomesObtainGenome(genomes, refGenomeName);
     struct malnSet *malnSet1 = malnSet_constructFromMaf(genomes, refGenome, inMaf1, defaultBranchLength);
+    malnJoin_joinSetDups(malnSet1);
     if (maf1Copy != NULL) {
         malnSet_writeMaf(malnSet1, maf1Copy);
     }
     struct malnSet *malnSet2 = malnSet_constructFromMaf(genomes, refGenome, inMaf2, defaultBranchLength);
+    malnJoin_joinSetDups(malnSet2);
     if (maf2Copy != NULL) {
         malnSet_writeMaf(malnSet2, maf2Copy);
     }
-    struct malnSet *malnSetJoined = malnJoin_joinSets(malnSet1, malnSet2);
+    struct malnSet *malnSetJoined = malnJoinSets(malnSet1, malnSet2);
     malnSet_writeMaf(malnSetJoined, outMaf);
 }
 

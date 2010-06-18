@@ -1,4 +1,4 @@
-#include "malnJoin.h"
+#include "malnJoinBlks.h"
 #include "malnBlk.h"
 #include "malnBlkCursor.h"
 #include "malnComp.h"
@@ -105,8 +105,11 @@ static void joinSharedRefColumns(struct malnBlk *blkJoined,
     malnBlk_assert(blkJoined);
 }
 
-/* join two blocks using the specified reference components. */
-struct malnBlk *malnJoinBlks(struct malnBlk *blk1, struct malnComp *refComp1, struct malnBlk *blk2, struct malnComp *refComp2) {
+/* join two blocks using their specified reference components. */
+struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp2) {
+    struct malnBlk *blk1 = refComp1->blk;
+    struct malnBlk *blk2 = refComp2->blk;
+
     // reverse complement if needed
     struct malnBlk *freeBlk = NULL;
     if (refComp1->strand != refComp2->strand) {
