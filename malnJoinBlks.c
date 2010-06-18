@@ -15,7 +15,7 @@ static mafTree *joinTrees(struct malnBlkCursor *blkCursor1, struct malnBlkCursor
     struct malnComp *comp1 = blkCursor1->rows[0].comp;
     struct malnComp *comp2 = blkCursor2->rows[0].comp;
     return mafTree_join(blkCursor1->blk->mTree, comp1->seq->orgSeqName, comp1->chromStart, comp1->chromEnd,
-                          blkCursor2->blk->mTree, comp2->seq->orgSeqName, comp2->chromStart, comp2->chromEnd);
+                        blkCursor2->blk->mTree, comp2->seq->orgSeqName, comp2->chromStart, comp2->chromEnd);
 }
 
 /* add components to the joined blk and destination component array, starting an row index,
@@ -105,8 +105,10 @@ static void joinSharedRefColumns(struct malnBlk *blkJoined,
     malnBlk_assert(blkJoined);
 }
 
-/* join two blocks using their specified reference components. */
-struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp2) {
+/* join two blocks using their specified reference components.  Optionally return
+ * resulting join component. */
+struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp2, struct malnComp **joinedCompRet) {
+    assert(malnComp_overlap(refComp1, refComp2));
     struct malnBlk *blk1 = refComp1->blk;
     struct malnBlk *blk2 = refComp2->blk;
 
@@ -130,6 +132,9 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     if (!(malnComp_seqRangeToAlnRange(refComp1, refCommonStart, refCommonEnd, &aln1CommonStart, &aln1CommonEnd)
           && malnComp_seqRangeToAlnRange(refComp2, refCommonStart, refCommonEnd, &aln2CommonStart, &aln2CommonEnd))) {
         errAbort("BUG: failure to get alignment ranges for common reference sequence range");
+    }
+    if (joinedCompRet != NULL) {
+        *joinedCompRet = destComps1[0];
     }
     
     // before common start

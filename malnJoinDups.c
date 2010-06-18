@@ -14,7 +14,7 @@
 static struct malnComp *joinCompWithDup(struct malnSet *malnSet, struct malnComp *joinComp, struct malnComp *dupComp, stList *deleteBlkList) {
     assert(!dupComp->blk->done);
     assert(joinComp->blk->done);
-    struct malnBlk *joinedBlk = malnJoinBlks(joinComp, dupComp);
+    struct malnBlk *joinedBlk = malnJoinBlks(joinComp, dupComp, NULL);
     stList_append(deleteBlkList, joinedBlk);
     dupComp->blk->done = true;
     stList_append(deleteBlkList, dupComp->blk);

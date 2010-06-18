@@ -69,7 +69,7 @@ static struct malnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafCom
         errAbort("Error: no org name in MAF component, source must be org.seq: %s", comp->src);
     }
     return malnComp_construct(genomesObtainSeq(genomes, srcDb, mafCompGetSrcName(comp), comp->srcSize),
-                                comp->strand, comp->start, comp->start+comp->size, comp->text);
+                              comp->strand, comp->start, comp->start+comp->size, comp->text);
 }
 
 /* convert a mafAli to an malnBlk */
@@ -140,7 +140,6 @@ struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, struct Genome 
         malnSet_addBlk(malnSet, mafAliToMAlnBlk(genomes, refGenome, ali, defaultBranchLength));
         mafAliFree(&ali);
     }
-    slReverse(&malnSet->blks);
     return malnSet;
 }
 
@@ -192,15 +191,16 @@ static int blkCmpRootComp(const void *vblk1, const void *vblk2) {
     return diff;
 }
 
-/* build a set of the blocks, sorted by root components */
-static stSortedSet *buildRootSortSet(struct malnSet *malnSet) {
-    stSortedSet *sorted = stSortedSet_construct3(blkCmpRootComp, NULL);
+/* build a list of blocks, sorted by the root components */
+static stList *buildRootSorted(struct malnSet *malnSet) {
+    stList *sorted = stList_construct();
     stSortedSetIterator *iter = stSortedSet_getIterator(malnSet->blks);
     struct malnBlk *blk;
     while ((blk = stSortedSet_getNext(iter)) != NULL) {
-        stSortedSet_insert(sorted, blk);
+        stList_append(sorted, blk);
     }
     stSortedSet_destructIterator(iter);
+    stList_sort(sorted, blkCmpRootComp);
     return sorted;
 }
 
@@ -213,19 +213,19 @@ static void writeBlkToMaf(struct malnBlk *blk, FILE *mafFh) {
 
 /* write a malnSet to a MAF file  */
 void malnSet_writeMaf(struct malnSet *malnSet, char *mafFileName) {
-    stSortedSet *sorted = buildRootSortSet(malnSet);
+    stList *sorted = buildRootSorted(malnSet);
 
     FILE *mafFh = mustOpen(mafFileName, "w");
     mafWriteStart(mafFh, NULL);
-    stSortedSetIterator *iter = stSortedSet_getIterator(malnSet->blks);
+    stListIterator *iter = stList_getIterator(sorted);
     struct malnBlk *blk;
-    while ((blk = stSortedSet_getNext(iter)) != NULL) {
+    while ((blk = stList_getNext(iter)) != NULL) {
         writeBlkToMaf(blk, mafFh);
     }
-    stSortedSet_destructIterator(iter);
+    stList_destructIterator(iter);
     mafWriteEnd(mafFh);
     carefulClose(&mafFh);
-    stSortedSet_destruct(sorted);
+    stList_destruct(sorted);
 }
 
 /* get iterator of the blocks. Don't remove or add blocks while in motion. */

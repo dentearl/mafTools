@@ -142,16 +142,16 @@ class MafJoinTests(unittest.TestCase):
         """ 
         C = """
         a score=0.000000 tree=\"(mm4.chr6:0.15,(panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;\"
-        s mm4.chr6     53310104 11 - 151104725 AGCTGAAAATA
-        s panTro1.chr6 28869792  7 + 161576975 ----gaaaaca
-        s baboon.chr6    249187  7 -   4622798 ----gaaaaca
-        s hg18.chr7    27707223 11 + 158545518 agctgaaaaca
-
-        a score=0.000000 tree=\"(mm4.chr6:0.15,(panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;\"
         s mm4.chr6     53310102 2 - 151104725 AC----
         s panTro1.chr6 28869787 5 + 161576975 gcagc-
         s baboon.chr6    249182 5 -   4622798 gcagc-
         s hg18.chr7    27707221 6 + 158545518 gcagct
+
+        a score=0.000000 tree=\"(mm4.chr6:0.15,(panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;\"
+        s mm4.chr6     53310104 11 - 151104725 AGCTGAAAATA
+        s panTro1.chr6 28869792  7 + 161576975 ----gaaaaca
+        s baboon.chr6    249187  7 -   4622798 ----gaaaaca
+        s hg18.chr7    27707223 11 + 158545518 agctgaaaaca
         """
         self.mafJoinTest("hg18", A, B, C)
 

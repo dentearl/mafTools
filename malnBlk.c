@@ -83,7 +83,7 @@ void malnBlk_sortComps(struct malnBlk *blk) {
 /* get the root component */
 struct malnComp *malnBlk_getRootComp(struct malnBlk *blk) {
     struct malnComp *root = slLastEl(blk->comps);
-    assert((root->treeLoc & malnCompTreeRoot) == 0);
+    assert((root->treeLoc & malnCompTreeRoot) != 0);
     return root;
 }
 
