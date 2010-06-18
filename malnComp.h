@@ -5,12 +5,13 @@
 #include "common.h"
 #include "dystring.h"
 
-/* location of a component in the tree */
+/* location of a component in the tree, can also be a bit-set for
+ * selection. */
 enum malnCompTreeLoc {
-    malnCompTreeUnknown,
-    malnCompTreeRoot,
-    malnCompTreeInternal,
-    malnCompTreeLeaf
+    malnCompTreeUnknown    = 0x0,
+    malnCompTreeRoot       = 0x1,
+    malnCompTreeInternal   = 0x2,
+    malnCompTreeLeaf       = 0x4
 };
 
 

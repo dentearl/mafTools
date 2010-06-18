@@ -46,7 +46,7 @@ static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMa
     if (maf2Copy != NULL) {
         malnSet_writeMaf(malnSet2, maf2Copy);
     }
-    struct malnSet *malnSetJoined = malnJoin_joinSets(refGenome, malnSet1, malnSet2);
+    struct malnSet *malnSetJoined = malnJoin_joinSets(malnSet1, malnSet2);
     malnSet_writeMaf(malnSetJoined, outMaf);
 }
 

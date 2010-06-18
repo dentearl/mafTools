@@ -3,21 +3,51 @@
 #include "malnBlk.h"
 #include "malnComp.h"
 #include "malnJoinBlks.h"
+#include "sonLibSortedSet.h"
 #include "genome.h"
 #include "common.h"
 #include <stdbool.h>
 #include <unistd.h>
 
-/* return a reverse list of reference components in a block. */
-static struct slRef *getRefComps(struct Genome *refGenome, struct malnBlk *blk) {
-    struct slRef *refComps = NULL;
+/* join duplication blocks in a set, which */
+void malnJoin_joinSetDups(struct malnSet *malnSet) {
+    
+}
+
+#if 0
+/* get the component that can be joined with the specified component, or null
+ * if none */
+static struct malnComp *getJoinComp(struct malnComp *refComp, struct malnBlk *blk, unsigned treeLocFilter) {
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
-        if (comp->seq->genome == refGenome) {
-            slAddHead(&refComps, slRefNew(comp));
+        if (comp->isReference && ((comp->treeLoc & treeLocFilter) != 0) && malnComp_overlap(comp, refComp)) {
+            return comp;
         }
     }
-    return refComps;
+    return NULL;
 }
+
+
+/* Add blocks overlapping the particular reference component to the overlapping set */
+static void findJoinCompOverlapBlks(struct malnComp *refComp, struct malnSet *malnSet, unsigned treeLocFilter, stSortedSet *overlapping) {
+    struct slRef *overBlks = malnSet_getOverlapping(malnSet, refComp->seq, refComp->chromStart, refComp->chromEnd);
+    for (struct slRef *overBlkRef = overBlks; overBlkRef != NULL; overBlkRef = overBlkRef->next) {
+        struct malnBlk *overBlk = overBlkRef->val;
+        if ((!overBlk->done) && (getJoinComp(refComp, overBlk, treeLocFilter) != NULL)) {
+            stSortedSet_insert(overlapping, overBlk);
+        }
+    }
+    slFreeList(&overBlks2);
+}
+
+/* get a set of blocks with join-reference components overlapping the reference in the
+ * seed block. */
+static stSortedSet *findJoinOverlap(struct malnBlk *refBlk, struct malnSet *malnSet, unsigned treeLocFilter) {
+    stSortedSet *overlapping = stSortedSet_construct();
+    for (struct malnComp *refComp = refBlk->comps; refComp != NULL; refComp = refComp->next) {
+        findJoinCompOverlapBlks(refComp, malnSet, treeLocFilter, overlapping);
+    }
+    return overlapping;
+}    
 
 /* recursively find a component overlapping the specified component, or NULL if none found.  Start
  * with the last component and work back to try to get the top of the tree.
@@ -70,10 +100,39 @@ static void joinBlk(struct Genome *refGenome, struct malnSet *malnSetJoined, str
     slFreeList(&refComps1);
 }
 
+/* join on one seed block range from both sets */
+static void joinBlk(struct Genome *refGenome, struct malnSet *malnSetJoined, struct malnBlk *blk1, struct malnSet *malnSet2) {
+    struct slRef *refComps1 = getRefComps(malnSet_getRefGenome(malnSetJoined), blk1);
+    for (struct slRef *refComp1Ref = refComps1; refComp1Ref != NULL; refComp1Ref = refComp1Ref->next) {
+        if (joinBlkComp(malnSetJoined, blk1, refComp1Ref->val, malnSet2)) {
+            break;
+        }
+    }
+    slFreeList(&refComps1);
+}
+
+/* join from two sets based one reference components in a seed block range */
+static void joinFromSeedBlk(struct malnSet *malnSetJoined, struct malnBlk *seedBlk, struct malnSet *malnSet1, struct malnSet *malnSet2) {
+    static stSortedSet *joinBlks1 = findJoinOverlap(seedBlk, malnSet1);
+    static stSortedSet *joinBlks2 = findJoinOverlap(seedBlk, malnSet2);
+    
+
+    struct slRef *refComps1 = getRefComps(malnSet_getRefGenome(malnSetJoined), blk1);
+    for (struct slRef *refComp1Ref = refComps1; refComp1Ref != NULL; refComp1Ref = refComp1Ref->next) {
+        if (joinBlkComp(malnSetJoined, blk1, refComp1Ref->val, malnSet2)) {
+            break;
+        }
+    }
+    slFreeList(&refComps1);
+    stSortedSet_destruct(joinBlks1);
+    stSortedSet_destruct(joinBlks2);
+}
+
 /* add blocks that were not joined into the alignment */
 static void addUndone(struct malnSet *malnSetJoined, struct malnSet *malnSet) {
     for (struct malnBlk *blk = malnSet_getBlocks(malnSet); blk != NULL; blk = blk->next) {
         if (!blk->done) {
+            assert(false); // FIXME: don't this should happen any more
             malnSet_addBlk(malnSetJoined, malnBlk_constructClone(blk));
             blk->done = true;
         }
@@ -81,12 +140,15 @@ static void addUndone(struct malnSet *malnSetJoined, struct malnSet *malnSet) {
 }
 
 /* join two sets, generating a third */
-struct malnSet *malnJoin_joinSets(struct Genome *refGenome, struct malnSet *malnSet1, struct malnSet *malnSet2) {
-    struct malnSet *malnSetJoined = malnSet_construct(malnSet_getGenomes(malnSet1), refGenome);
-    for (struct malnBlk *blk1 = malnSet_getBlocks(malnSet1); blk1 != NULL; blk1 = blk1->next) {
-        joinBlk(refGenome, malnSetJoined, blk1, malnSet2);
+struct malnSet *malnJoin_joinSets(struct malnSet *malnSet1, struct malnSet *malnSet2) {
+    struct malnSet *malnSetJoined = malnSet_construct(malnSet_getGenomes(malnSet1), malnSet_getRefGenome(malnSet1));
+    for (struct malnBlk *seedBlk = malnSet_getBlocks(malnSet); seedBlk != NULL; seedBlk1 = seedBlk->next) {
+        if (!seedBlk->done) {
+            joinFromSeedBlk(refGenome, malnSetJoined, seedblk, malnSet1, malnSet2);
+        }
     }
     addUndone(malnSetJoined, malnSet1);
     addUndone(malnSetJoined, malnSet2);
     return malnSetJoined;
 }
+#endif

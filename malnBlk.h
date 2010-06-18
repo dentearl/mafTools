@@ -9,11 +9,11 @@ struct Genome;
  * Multiple alignment block.
  */
 struct malnBlk {
-    struct malnBlk *next;
+    struct malnSet *malnSet;  // set block is in, or NULL if not in a set.
     int alnWidth;
     struct malnComp *comps;   // components
     mafTree *mTree;           // tree associated with block
-    bool done;                  // finished some kind of processing
+    bool done;                // finished some kind of processing
 };
 
 /* constructor */
