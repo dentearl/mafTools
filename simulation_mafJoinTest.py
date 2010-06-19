@@ -270,5 +270,35 @@ class MafJoinTests(unittest.TestCase):
         """
         self.mafJoinTest("hg18", A, B, C)
           
+    def testJoin8(self):
+        """duplication represented by two separate blocks, as with evolver
+        """
+        A = """
+        a score=10.0 tree=\"(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;\"
+        s hg18.chr7    27699739 3 + 158545518 T---GA
+        s mm4.chr6     53303881 6 + 151104725 TAAAGA
+        s rn3.chr4     81444246 6 + 187371129 taagga
+
+        a score=10.0 tree=\"(mm4.chr6:0.15)rn3.chr4;\"
+        s mm4.chr6     54303881 6 + 151104725 TAAAGA
+        s rn3.chr4     81444246 6 + 187371129 taagga
+        """
+        B = """
+        a score=1000.0 tree=\"(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;\"
+        s panTro1.chr6 28862317 6 + 161576975 TAAAGA
+        s baboon.chr6    241163 3 +   4622798 T---GA
+        s hg18.chr7    27699739 3 + 158545518 T---GA
+        """
+        C = """
+        a score=0.000000 tree=\"((panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7:0.1,mm4.chr6:0.15,mm4.chr6:0.15)rn3.chr4;\"
+        s panTro1.chr6 28862317 6 + 161576975 T---AAAGA
+        s baboon.chr6    241163 3 +   4622798 T------GA
+        s hg18.chr7    27699739 3 + 158545518 T------GA
+        s mm4.chr6     54303881 6 + 151104725 TAAA---GA
+        s mm4.chr6     53303881 6 + 151104725 TAAA---GA
+        s rn3.chr4     81444246 6 + 187371129 taag---ga
+        """
+        self.mafJoinTest("hg18", A, B, C)
+    
 if __name__ == '__main__':
     unittest.main()
