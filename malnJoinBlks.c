@@ -155,6 +155,7 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     malnBlk_destruct(freeBlk);
     blk1->done = blk2->done = true;
     malnBlk_sortComps(blkJoined);
+    malnBlk_setLocAttr(blkJoined, refComp1->seq->genome);
     malnBlk_assert(blkJoined);
     return blkJoined;
 }

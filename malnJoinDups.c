@@ -32,7 +32,7 @@ static struct malnComp *joinCompWithDup(struct malnSet *malnSet, struct malnComp
  * invalidated.  Return true if any were joined.
  */
 static bool joinCompWithDups(struct malnSet *malnSet, struct malnComp *joinComp, stList *deleteBlkList) {
-    joinComp->blk->done = true;  // set upfront so not return in list
+    joinComp->blk->done = true;  // set upfront so not returned in overlap
     stList *overComps = malnSet_getOverlappingPendingComps(malnSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, malnCompTreeRoot);
     for (int i = 0; i < stList_length(overComps); i++) {
         joinComp = joinCompWithDup(malnSet, joinComp, stList_get(overComps, i), deleteBlkList);
