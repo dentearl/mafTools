@@ -10,28 +10,27 @@
 
 struct malnSet {
     struct Genomes *genomes;
-    struct Genome *refGenome;
     stSortedSet *blks;
-    struct genomeRangeTree *refCompMap; /* range index slRefs of reference  malnComp objects.  Built on
-                                         * demand. */
+    struct genomeRangeTree *compRangeMap; /* range index slRefs of malnComp
+                                           * objects.  chrom name is org.seq,
+                                           * allowing indexing all components, not
+                                           * just reference, need to join dups */
 };
 
-/* Add all reference genome components. */
-static void addRefCompsToMap(struct malnSet *malnSet, struct malnBlk *blk) {
+/* Add all components to range map. */
+static void addCompsToMap(struct malnSet *malnSet, struct malnBlk *blk) {
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
-        if (comp->seq->genome == malnSet->refGenome) {
-            genomeRangeTreeAddValList(malnSet->refCompMap, comp->seq->name, comp->chromStart, comp->chromEnd, slRefNew(comp));
-        }
+        genomeRangeTreeAddValList(malnSet->compRangeMap, comp->seq->orgSeqName, comp->chromStart, comp->chromEnd, slRefNew(comp));
     }
 }
 
 /* build the range tree when needed */
 static void buildRangeTree(struct malnSet *malnSet) {
-    malnSet->refCompMap = genomeRangeTreeNew();
+    malnSet->compRangeMap = genomeRangeTreeNew();
     stSortedSetIterator *iter = stSortedSet_getIterator(malnSet->blks);
     struct malnBlk *blk;
     while ((blk = stSortedSet_getNext(iter)) != NULL) {
-        addRefCompsToMap(malnSet, blk);
+        addCompsToMap(malnSet, blk);
     }
     stSortedSet_destructIterator(iter);
 }
@@ -40,7 +39,7 @@ static void buildRangeTree(struct malnSet *malnSet) {
  * this just set reference to NULL, which must be handled when getting overlaps*/
 static void removeCompRange(struct malnSet *malnSet, struct malnBlk *blk, struct malnComp *comp) {
     bool found = false;
-    for (struct range *rng = genomeRangeTreeAllOverlapping(malnSet->refCompMap, comp->seq->name, comp->chromStart, comp->chromEnd); (rng != NULL) && (!found); rng = rng->next) {
+    for (struct range *rng = genomeRangeTreeAllOverlapping(malnSet->compRangeMap, comp->seq->orgSeqName, comp->chromStart, comp->chromEnd); (rng != NULL) && (!found); rng = rng->next) {
         for (struct slRef *compRef = rng->val; (compRef != NULL) && (!found); compRef = compRef->next) {
             struct malnComp *comp = compRef->val;
             if ((comp !=NULL) && (comp->blk == blk)) {
@@ -53,11 +52,9 @@ static void removeCompRange(struct malnSet *malnSet, struct malnBlk *blk, struct
 }
 
 /* remove all references to this blk from the rangeTree */
-static void removeRefRanges(struct malnSet *malnSet, struct malnBlk *blk) {
+static void removeBlkRanges(struct malnSet *malnSet, struct malnBlk *blk) {
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
-        if (comp->seq->genome == malnSet->refGenome) {
-            removeCompRange(malnSet, blk, comp);
-        }
+        removeCompRange(malnSet, blk, comp);
     }
 }
 
@@ -73,13 +70,12 @@ static struct malnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafCom
 }
 
 /* convert a mafAli to an malnBlk */
-static struct malnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct Genome *refGenome, struct mafAli *ali, double defaultBranchLength) {
+static struct malnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct mafAli *ali, double defaultBranchLength) {
     struct malnBlk *blk = malnBlk_construct(mafTree_constructFromMaf(ali, defaultBranchLength));
     for (struct mafComp *comp = ali->components; comp != NULL; comp = comp->next) {
         malnBlk_addComp(blk, mafCompToMAlnComp(genomes, comp));
     }
-    malnBlk_sortComps(blk);
-    malnBlk_setLocAttr(blk, refGenome);
+    malnBlk_finish(blk);
     return blk;
 }
 
@@ -88,27 +84,22 @@ struct Genomes *malnSet_getGenomes(struct malnSet *malnSet) {
     return malnSet->genomes;
 }
 
-/* get reference genome object  */
-struct Genome *malnSet_getRefGenome(struct malnSet *malnSet) {
-    return malnSet->refGenome;
-}
-
 /* add a block to a malnSet */
 void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     assert(blk->malnSet == NULL);
     malnBlk_assert(blk);
     blk->malnSet = malnSet;
     stSortedSet_insert(malnSet->blks, blk);
-    if (malnSet->refCompMap != NULL) {
-        addRefCompsToMap(malnSet, blk);
+    if (malnSet->compRangeMap != NULL) {
+        addCompsToMap(malnSet, blk);
     }
 }
 
 /* remove a block from malnSet */
 void malnSet_removeBlk(struct malnSet *malnSet, struct malnBlk *blk) {
-    assert(blk->malnSet != NULL);
-    if (malnSet->refCompMap != NULL) {
-        removeRefRanges(malnSet, blk);
+    assert(blk->malnSet == malnSet);
+    if (malnSet->compRangeMap != NULL) {
+        removeBlkRanges(malnSet, blk);
     }
     stSortedSet_remove(malnSet->blks, blk);
     blk->malnSet = NULL;
@@ -121,25 +112,25 @@ void malnSet_deleteBlk(struct malnSet *malnSet, struct malnBlk *blk) {
 }
 
 /* construct an empty malnSet  */
-struct malnSet *malnSet_construct(struct Genomes *genomes, struct Genome *refGenome) {
+struct malnSet *malnSet_construct(struct Genomes *genomes) {
     struct malnSet *malnSet;
     AllocVar(malnSet);
     malnSet->genomes = genomes;
-    malnSet->refGenome = refGenome;
     malnSet->blks = stSortedSet_construct();
     return malnSet;
 }
 
 /* Construct a malnSet from a MAF file. defaultBranchLength is used to
  * assign branch lengths when inferring trees from pair-wise MAFs. */
-struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, struct Genome *refGenome, char *mafFileName, double defaultBranchLength) {
-    struct malnSet *malnSet = malnSet_construct(genomes, refGenome);
+struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, char *mafFileName, double defaultBranchLength) {
+    struct malnSet *malnSet = malnSet_construct(genomes);
     struct mafFile *mafFile = mafOpen(mafFileName);
     struct mafAli *ali;
     while ((ali = mafNext(mafFile)) != NULL) {
-        malnSet_addBlk(malnSet, mafAliToMAlnBlk(genomes, refGenome, ali, defaultBranchLength));
+        malnSet_addBlk(malnSet, mafAliToMAlnBlk(genomes, ali, defaultBranchLength));
         mafAliFree(&ali);
     }
+    malnSet_assert(malnSet);
     return malnSet;
 }
 
@@ -213,6 +204,7 @@ static void writeBlkToMaf(struct malnBlk *blk, FILE *mafFh) {
 
 /* write a malnSet to a MAF file  */
 void malnSet_writeMaf(struct malnSet *malnSet, char *mafFileName) {
+    malnSet_assert(malnSet);
     stList *sorted = buildRootSorted(malnSet);
 
     FILE *mafFh = mustOpen(mafFileName, "w");
@@ -237,11 +229,11 @@ stSortedSetIterator *malnSet_getBlocks(struct malnSet *malnSet) {
  * and are in blocks not flagged as done and passing treeLoc filters.
  * Return NULL if no overlaps. */
 stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter) {
-    if (malnSet->refCompMap == NULL) {
+    if (malnSet->compRangeMap == NULL) {
         buildRangeTree(malnSet);
     }
     stList *overBlks = NULL;
-    for (struct range *rng = genomeRangeTreeAllOverlapping(malnSet->refCompMap, seq->name, chromStart, chromEnd); rng != NULL; rng = rng->next) {
+    for (struct range *rng = genomeRangeTreeAllOverlapping(malnSet->compRangeMap, seq->orgSeqName, chromStart, chromEnd); rng != NULL; rng = rng->next) {
         for (struct slRef *compRef = rng->val; compRef != NULL; compRef = compRef->next) {
             struct malnComp *comp = compRef->val;
             if ((comp != NULL) && ((comp->treeLoc & treeLocFilter) != 0) && (!comp->blk->done)) {
@@ -253,6 +245,19 @@ stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *
         }
     }
     return overBlks;
+}
+
+/* assert some sanity checks on a set */
+void malnSet_assert(struct malnSet *malnSet) {
+#ifndef NDEBUG
+    stSortedSetIterator *iter = stSortedSet_getIterator(malnSet->blks);
+    struct malnBlk *blk;
+    while ((blk = stSortedSet_getNext(iter)) != NULL) {
+        assert(blk->malnSet == malnSet);
+        malnBlk_assert(blk);
+    }
+    stSortedSet_destructIterator(iter);
+#endif
 }
 
 /* assert done flag is set on all blocks */

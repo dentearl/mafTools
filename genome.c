@@ -53,7 +53,7 @@ struct Seq *genomeGetSeq(struct Genome *genome, char *name) {
 }
 
 /* constructor */
-struct Genomes *genomesNew() {
+struct Genomes *genomesNew(void) {
     struct Genomes *genomes;
     AllocVar(genomes);
     genomes->genomeMap = hashNew(8);

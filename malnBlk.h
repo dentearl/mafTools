@@ -25,14 +25,12 @@ struct malnBlk *malnBlk_constructClone(struct malnBlk *srcBlk);
 /* destructor */
 void malnBlk_destruct(struct malnBlk *blk);
 
-/* set location and type attributes from tree */
-void malnBlk_setLocAttr(struct malnBlk *blk, struct Genome *refGenome);
-
 /* add a component */
 void malnBlk_addComp(struct malnBlk *blk, struct malnComp *comp);
 
-/* sort components by tree */
-void malnBlk_sortComps(struct malnBlk *blk);
+/* finish construction a block, setting component attributes and sorting
+ * components */
+void malnBlk_finish(struct malnBlk *blk);
 
 /* get the root component */
 struct malnComp *malnBlk_getRootComp(struct malnBlk *blk);

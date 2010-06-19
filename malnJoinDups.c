@@ -15,7 +15,8 @@ static struct malnComp *joinCompWithDup(struct malnSet *malnSet, struct malnComp
     assert(!dupComp->blk->done);
     assert(joinComp->blk->done);
     struct malnBlk *joinedBlk = malnJoinBlks(joinComp, dupComp, NULL);
-    stList_append(deleteBlkList, joinedBlk);
+    joinComp->blk->done = true;
+    stList_append(deleteBlkList, joinComp->blk);
     dupComp->blk->done = true;
     stList_append(deleteBlkList, dupComp->blk);
     return malnBlk_getRootComp(joinedBlk);
@@ -37,6 +38,10 @@ static bool joinCompWithDups(struct malnSet *malnSet, struct malnComp *joinComp,
     for (int i = 0; i < stList_length(overComps); i++) {
         joinComp = joinCompWithDup(malnSet, joinComp, stList_get(overComps, i), deleteBlkList);
     }
+    if (overComps != NULL) {
+        assert(joinComp->blk->malnSet == NULL);
+        malnSet_addBlk(malnSet, joinComp->blk);
+    }
     stList_destruct(overComps);
     return (overComps != NULL);
 }
@@ -48,8 +53,10 @@ static bool joinSetDupsPass(struct malnSet *malnSet, stList *deleteBlkList) {
     stSortedSetIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *joinBlk;
     while ((joinBlk = stSortedSet_getNext(iter)) != NULL) {
-        if (joinCompWithDups(malnSet, malnBlk_getRootComp(joinBlk), deleteBlkList)) {
-            joinedSome = true;
+        if (!joinBlk->done) {
+            if (joinCompWithDups(malnSet, malnBlk_getRootComp(joinBlk), deleteBlkList)) {
+                joinedSome = true;
+            }
         }
     }
     stSortedSet_destructIterator(iter);
@@ -59,12 +66,13 @@ static bool joinSetDupsPass(struct malnSet *malnSet, stList *deleteBlkList) {
 /* Join duplication blocks in a set, which evolver outputs as separate
  * block.  Duplications will only be joined at the root */
 void malnJoin_joinSetDups(struct malnSet *malnSet) {
-    stList *deleteBlkList = stList_construct(0, malnBlk_destruct);
+    stList *deleteBlkList = stList_construct3(0, (void (*)(void *))malnBlk_destruct);
     while (joinSetDupsPass(malnSet, deleteBlkList)) {
         continue;
     }
     malnSet_assertDone(malnSet);
     malnSet_clearDone(malnSet);
     stList_destruct(deleteBlkList);
+    malnSet_assert(malnSet);
 }
 

@@ -294,8 +294,8 @@ class MafJoinTests(unittest.TestCase):
         s panTro1.chr6 28862317 6 + 161576975 T---AAAGA
         s baboon.chr6    241163 3 +   4622798 T------GA
         s hg18.chr7    27699739 3 + 158545518 T------GA
-        s mm4.chr6     54303881 6 + 151104725 TAAA---GA
         s mm4.chr6     53303881 6 + 151104725 TAAA---GA
+        s mm4.chr6     54303881 6 + 151104725 TAAA---GA
         s rn3.chr4     81444246 6 + 187371129 taag---ga
         """
         self.mafJoinTest("hg18", A, B, C)

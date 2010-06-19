@@ -8,17 +8,14 @@ struct malnBlk;
 struct Seq;
 
 /* construct an empty malnSet  */
-struct malnSet *malnSet_construct(struct Genomes *genomes, struct Genome *refGenome);
+struct malnSet *malnSet_construct(struct Genomes *genomes);
 
 /* Construct a malnSet from a MAF file. defaultBranchLength is used to
  * assign branch lengths when inferring trees from pair-wise MAFs. */
-struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, struct Genome *refGenome, char *mafFileName, double defaultBranchLength);
+struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, char *mafFileName, double defaultBranchLength);
 
 /* get associated genomes object  */
 struct Genomes *malnSet_getGenomes(struct malnSet *malnSet);
-
-/* get reference genome object  */
-struct Genome *malnSet_getRefGenome(struct malnSet *malnSet);
 
 /* add a block to a malnSet */
 void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk);
@@ -33,6 +30,9 @@ void malnSet_deleteBlk(struct malnSet *malnSet, struct malnBlk *blk);
 stSortedSetIterator *malnSet_getBlocks(struct malnSet *malnSet);
 
 stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter);
+
+/* assert some sanity checks on a set */
+void malnSet_assert(struct malnSet *malnSet);
 
 /* assert done flag is set on all blocks */
 void malnSet_assertDone(struct malnSet *malnSet);

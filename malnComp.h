@@ -28,7 +28,6 @@ struct malnComp {
     int chromStart;        // start/end in chrom coordinates
     int chromEnd;
     struct dyString *alnStr;
-    bool isReference;      // is this the reference genome?
     enum malnCompTreeLoc treeLoc;  // location in tree.
 };
 
@@ -91,12 +90,12 @@ static inline bool malnComp_overlap(struct malnComp *comp, struct malnComp *comp
 
 /* can a join be made at this component? */
 static inline bool malnComp_joinable(struct malnComp *comp) {
-    return (comp->isReference && ((comp->treeLoc & (malnCompTreeRoot|malnCompTreeLeaf)) != 0));
+    return (comp->treeLoc & (malnCompTreeRoot|malnCompTreeLeaf)) != 0;
 }
 
 /* can two components be joined? */
 static inline bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *comp2) {
-    return comp1->isReference && comp2->isReference
+    return malnComp_overlap(comp1, comp2)
         && (((comp1->treeLoc == malnCompTreeRoot) && (comp2->treeLoc == malnCompTreeRoot))
             || ((comp1->treeLoc == malnCompTreeRoot) && (comp2->treeLoc == malnCompTreeLeaf))
             || ((comp1->treeLoc == malnCompTreeLeaf) && (comp2->treeLoc == malnCompTreeRoot)));

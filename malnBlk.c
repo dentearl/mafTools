@@ -1,6 +1,8 @@
 #include "malnBlk.h"
+#include "malnSet.h"
 #include "malnComp.h"
 #include "mafTree.h"
+#include "genome.h"
 #include "common.h"
 
 /* constructor */
@@ -17,24 +19,28 @@ struct malnBlk *malnBlk_constructClone(struct malnBlk *srcBlk) {
     for (struct malnComp *srcComp = srcBlk->comps; srcComp != NULL; srcComp = srcComp->next) {
         malnBlk_addComp(blk, malnComp_constructClone(srcComp));
     }
-    malnBlk_sortComps(blk);
+    malnBlk_finish(blk);
     return blk;
 }
 
 /* destructor */
 void malnBlk_destruct(struct malnBlk *blk) {
     if (blk != NULL) {
+        if (blk->malnSet != NULL) {
+            malnSet_removeBlk(blk->malnSet, blk);
+        }
         while (blk->comps != NULL) {
             malnComp_destruct(slPopHead(&blk->comps));
         }
-        // FIXME: free tree?
+        mafTree_destruct(blk->mTree);
         freeMem(blk);
     }
 }
 
-/* set location and type attributes for a component tree */
-static void malnBlk_setCompLocAttr(struct malnBlk *blk, struct malnComp *comp, struct Genome *refGenome) {
-    comp->isReference = (comp->seq->genome == refGenome);
+/* set the tree location attribute for a component tree.  
+ * FIXME: this feels hacky compared to saving links with tree and
+ * check on the fly. */
+static void malnBlk_setCompLocAttr(struct malnBlk *blk, struct malnComp *comp) {
     switch (mafTree_getLoc(blk->mTree, comp->seq->orgSeqName, comp->chromStart, comp->chromEnd)) {
     case mafTreeRoot:
         comp->treeLoc = malnCompTreeRoot;
@@ -49,9 +55,9 @@ static void malnBlk_setCompLocAttr(struct malnBlk *blk, struct malnComp *comp, s
 }
 
 /* set location and type attributes from tree */
-void malnBlk_setLocAttr(struct malnBlk *blk, struct Genome *refGenome) {
+static void malnBlk_setLocAttr(struct malnBlk *blk) {
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
-        malnBlk_setCompLocAttr(blk, comp, refGenome);
+        malnBlk_setCompLocAttr(blk, comp);
     }
 }
 
@@ -73,11 +79,18 @@ static int compTreeOrderCmp(const void *vcomp1, const void *vcomp2) {
 }
 
 /* sort components by tree */
-void malnBlk_sortComps(struct malnBlk *blk) {
+static void malnBlk_sortComps(struct malnBlk *blk) {
     assert(blk->mTree != NULL);
     cmpMTree = blk->mTree;
     slSort(&blk->comps, compTreeOrderCmp);
     cmpMTree = NULL;
+}
+
+/* finish construction a block, setting component attributes and sorting
+ * components */
+void malnBlk_finish(struct malnBlk *blk) {
+    malnBlk_sortComps(blk);
+    malnBlk_setLocAttr(blk);
 }
 
 /* get the root component */
@@ -108,12 +121,12 @@ struct malnComp *malnBlk_findCompByChromRange(struct malnBlk *blk, struct Seq *s
 }
 
 /* block reverse complement */
-struct malnBlk *malnBlk_reverseComplement(struct malnBlk *blk) {
-    struct malnBlk *rcBlk = malnBlk_construct(blk->mTree);
-    for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
-        malnBlk_addComp(rcBlk, malnComp_reverseComplement(comp));
+struct malnBlk *malnBlk_reverseComplement(struct malnBlk *srcBlk) {
+    struct malnBlk *rcBlk = malnBlk_construct(srcBlk->mTree);
+    for (struct malnComp *srcComp = srcBlk->comps; srcComp != NULL; srcComp = srcComp->next) {
+        malnBlk_addComp(rcBlk, malnComp_reverseComplement(srcComp));
     }
-    malnBlk_sortComps(rcBlk);
+    malnBlk_finish(rcBlk);
     return rcBlk;
 }
 
@@ -130,8 +143,10 @@ void malnBlk_pad(struct malnBlk *blk) {
 /* assert that the block is set-consistent */
 void malnBlk_assert(struct malnBlk *blk) {
 #ifndef NDEBUG
-   for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
+    assert(blk->comps != NULL);
+    for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
+        assert(comp->blk == blk);
         assert(malnComp_getWidth(comp) == blk->alnWidth);
-   }
+    }
 #endif
 }

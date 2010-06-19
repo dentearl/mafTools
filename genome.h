@@ -51,7 +51,7 @@ struct Seq *genomeObtainSeq(struct Genome *genome, char *name, int size);
 struct Seq *genomeGetSeq(struct Genome *genome, char *name);
 
 /* constructor */
-struct Genomes *genomesNew();
+struct Genomes *genomesNew(void);
 
 /* obtain a genome object, constructing a new one if it doesn't exist */
 struct Genome *genomesObtainGenome(struct Genomes *genomes, char *name);

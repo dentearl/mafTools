@@ -2,6 +2,7 @@
 #include "malnBlk.h"
 #include "malnBlkCursor.h"
 #include "malnComp.h"
+#include "malnSet.h"
 #include "mafTree.h"
 #include "genome.h"
 #include "common.h"
@@ -154,8 +155,7 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     malnBlkCursor_destruct(blkCursor2);
     malnBlk_destruct(freeBlk);
     blk1->done = blk2->done = true;
-    malnBlk_sortComps(blkJoined);
-    malnBlk_setLocAttr(blkJoined, refComp1->seq->genome);
+    malnBlk_finish(blkJoined);
     malnBlk_assert(blkJoined);
     return blkJoined;
 }

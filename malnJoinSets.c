@@ -84,8 +84,8 @@ static void addUndone(struct malnSet *malnSetJoined, struct malnSet *malnSet) {
 }
 
 /* join two sets, generating a third */
-struct malnSet *malnJoinSets(struct malnSet *malnSet1, struct malnSet *malnSet2) {
-    struct malnSet *malnSetJoined = malnSet_construct(malnSet_getGenomes(malnSet1), malnSet_getRefGenome(malnSet1));
+struct malnSet *malnJoinSets(struct Genome *refGenome, struct malnSet *malnSet1, struct malnSet *malnSet2) {
+    struct malnSet *malnSetJoined = malnSet_construct(malnSet_getGenomes(malnSet1));
 
     stSortedSetIterator *iter1 = malnSet_getBlocks(malnSet1);
     struct malnBlk *blk1;
@@ -95,5 +95,9 @@ struct malnSet *malnJoinSets(struct malnSet *malnSet1, struct malnSet *malnSet2)
     stSortedSet_destructIterator(iter1);
     addUndone(malnSetJoined, malnSet1);
     addUndone(malnSetJoined, malnSet2);
+    malnSet_clearDone(malnSet1);
+    malnSet_clearDone(malnSet2);
+    malnSet_clearDone(malnSetJoined);
+    malnSet_assert(malnSetJoined);
     return malnSetJoined;
 }
