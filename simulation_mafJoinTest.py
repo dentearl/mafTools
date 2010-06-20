@@ -271,7 +271,7 @@ class MafJoinTests(unittest.TestCase):
         self.mafJoinTest("hg18", A, B, C)
           
     def testJoin8(self):
-        """duplication represented by two separate blocks, as with evolver
+        """simple duplication represented by two separate blocks, as with evolver
         """
         A = """
         a score=10.0 tree=\"(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;\"
@@ -299,6 +299,121 @@ class MafJoinTests(unittest.TestCase):
         s rn3.chr4     81444246 6 + 187371129 taag---ga
         """
         self.mafJoinTest("hg18", A, B, C)
+    
+    def testJoin9(self):
+        """multiple duplications that don't have exact same bounds and include
+        a reverse complement.
+        """
+        A = """
+        a score=10.0 tree=\"(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;\"
+        s hg18.chr7    27699739 3 + 158545518 T---GA
+        s mm4.chr6     53303881 6 + 151104725 TAAAGA
+        s rn3.chr4     81444246 6 + 187371129 taagga
+
+        a score=10.0 tree=\"(mm4.chr6:0.15)rn3.chr4;\"
+        s mm4.chr6     54303882 5 + 151104725 AAAG-A
+        s rn3.chr4     81444247 6 + 187371129 aaggaa
+
+        a score=10.0 tree=\"(mm4.chr8:0.15)rn3.chr4;\"
+        s mm4.chr8     54303880 11 + 151104725 CATTCCTTAAC
+        s rn3.chr4     105926875 9 - 187371129 c-ttcctta-c
+        """
+        B = """
+        a score=1000.0 tree=\"(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;\"
+        s panTro1.chr6 28862317 6 + 161576975 TAAAGA
+        s baboon.chr6    241163 3 +   4622798 T---GA
+        s hg18.chr7    27699739 3 + 158545518 T---GA
+        """
+        C = """
+        a score=0.000000 tree="((panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7:0.1,mm4.chr6:0.15,mm4.chr6:0.15,mm4.chr8:0.15)rn3.chr4;"
+        s panTro1.chr6 28862317  6 + 161576975 --T---AAAGA---
+        s baboon.chr6    241163  3 +   4622798 --T------GA---
+        s hg18.chr7    27699739  3 + 158545518 --T------GA---
+        s mm4.chr6     53303881  6 + 151104725 --TAAA---GA---
+        s mm4.chr6     54303882  5 + 151104725 ---AAA---G-A--
+        s mm4.chr8     96800834 11 - 151104725 GTTAAG---GAATG
+        s rn3.chr4     81444245  9 + 187371129 g-taag---gaa-g
+        """
+        self.mafJoinTest("hg18", A, B, C)
+
+    def testJoin10(self):
+        """regression where second block got lost
+        """
+        # this was a buggy version of testJoin9
+        A = """
+        a score=10.0 tree=\"(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;\"
+        s hg18.chr7    27699739 3 + 158545518 T---GA
+        s mm4.chr6     53303881 6 + 151104725 TAAAGA
+        s rn3.chr4     81444246 6 + 187371129 taagga
+
+        a score=10.0 tree=\"(mm4.chr6:0.15)rn3.chr4;\"
+        s mm4.chr6     54303882 5 + 151104725 AAAG-A
+        s rn3.chr4     81444247 6 + 187371129 aaggaa
+
+        a score=10.0 tree=\"(mm4.chr8:0.15)rn3.chr4;\"
+        s mm4.chr8     54303880 11 + 151104725 CATTCCTTAAC
+        s rn3.chr4     105926875 9 + 187371129 c-ttcctta-c
+        """
+        B = """
+        a score=1000.0 tree=\"(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;\"
+        s panTro1.chr6 28862317 6 + 161576975 TAAAGA
+        s baboon.chr6    241163 3 +   4622798 T---GA
+        s hg18.chr7    27699739 3 + 158545518 T---GA
+        """
+        C = """
+        a score=0.000000 tree="((panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7:0.1,mm4.chr6:0.15,mm4.chr6:0.15)rn3.chr4;"
+        s panTro1.chr6 28862317 6 + 161576975 T---AAAGA-
+        s baboon.chr6    241163 3 +   4622798 T------GA-
+        s hg18.chr7    27699739 3 + 158545518 T------GA-
+        s mm4.chr6     53303881 6 + 151104725 TAAA---GA-
+        s mm4.chr6     54303882 5 + 151104725 -AAA---G-A
+        s rn3.chr4     81444246 7 + 187371129 taag---gaa
+
+        a score=0.000000 tree="(mm4.chr8:0.15)rn3.chr4;"
+        s mm4.chr8  54303880 11 + 151104725 CATTCCTTAAC
+        s rn3.chr4 105926875  9 + 187371129 c-ttcctta-c
+        """
+        self.mafJoinTest("hg18", A, B, C)
+    
+    
+    def testJoin11(self):
+        """reverse of regression testJoin10, where second block got lost
+        """
+        A = """
+        a score=1000.0 tree=\"(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;\"
+        s panTro1.chr6 28862317 6 + 161576975 TAAAGA
+        s baboon.chr6    241163 3 +   4622798 T---GA
+        s hg18.chr7    27699739 3 + 158545518 T---GA
+        """
+        B = """
+        a score=10.0 tree=\"(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;\"
+        s hg18.chr7    27699739 3 + 158545518 T---GA
+        s mm4.chr6     53303881 6 + 151104725 TAAAGA
+        s rn3.chr4     81444246 6 + 187371129 taagga
+
+        a score=10.0 tree=\"(mm4.chr6:0.15)rn3.chr4;\"
+        s mm4.chr6     54303882 5 + 151104725 AAAG-A
+        s rn3.chr4     81444247 6 + 187371129 aaggaa
+
+        a score=10.0 tree=\"(mm4.chr8:0.15)rn3.chr4;\"
+        s mm4.chr8     54303880 11 + 151104725 CATTCCTTAAC
+        s rn3.chr4     105926875 9 + 187371129 c-ttcctta-c
+        """
+        C = """
+        a score=0.000000 tree="((panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7:0.1,mm4.chr6:0.15,mm4.chr6:0.15)rn3.chr4;"
+        s panTro1.chr6 28862317 6 + 161576975 TAAA---GA-
+        s baboon.chr6    241163 3 +   4622798 T------GA-
+        s hg18.chr7    27699739 3 + 158545518 T------GA-
+        s mm4.chr6     53303881 6 + 151104725 T---AAAGA-
+        s mm4.chr6     54303882 5 + 151104725 ----AAAG-A
+        s rn3.chr4     81444246 7 + 187371129 t---aaggaa
+
+        a score=0.000000 tree="(mm4.chr8:0.15)rn3.chr4;"
+        s mm4.chr8  54303880 11 + 151104725 CATTCCTTAAC
+        s rn3.chr4 105926875  9 + 187371129 c-ttcctta-c
+        """
+        self.mafJoinTest("hg18", A, B, C)
+    
     
 if __name__ == '__main__':
     unittest.main()

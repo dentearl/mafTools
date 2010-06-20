@@ -1,6 +1,7 @@
 #ifndef malnBlk_h
 #define malnBlk_h
 #include "mafJoinTypes.h"
+#include <stdio.h>
 #include <stdbool.h>
 struct Seq;
 struct Genome;
@@ -49,5 +50,8 @@ void malnBlk_pad(struct malnBlk *blk);
 
 /* assert that the block is set-consistent */
 void malnBlk_assert(struct malnBlk *blk);
+
+/* print a block for debugging purposes */
+void malnBlk_dump(struct malnBlk *blk, const char *label, FILE *fh);
 
 #endif

@@ -44,10 +44,9 @@ static void joinCompWithSet(struct joinBlkComp *joining, struct malnSet *malnSet
     stList_destruct(overComps2);
 }
 
-/* join blocks overlapping a block of another set. */
+/* join blocks overlapping a block of another set. If none are joined,
+ * add blk1, copy blk1 to new set */
 static void joinBlkWithSet(struct malnSet *malnSetJoined, struct malnBlk *blk1, struct malnSet *malnSet2) {
-    assert(!blk1->done);
-    blk1->done = true;
     struct joinBlkComp joining = {blk1, NULL};
     // since joining creates a new block and we want to continue to search other components,
     // we start over with the first component when we create a new block.  We do this until
@@ -65,8 +64,12 @@ static void joinBlkWithSet(struct malnSet *malnSetJoined, struct malnBlk *blk1, 
     } while (joinedOne);
 
     if (joining.blk->malnSet == NULL) {
-        // created a new block, meaning something was joined
+        // new block, something was joined
         malnSet_addBlk(malnSetJoined, joining.blk);
+    } else {
+        // nothing joined, copy it.
+        assert(joining.blk == blk1);
+        malnSet_addBlk(malnSetJoined, malnBlk_constructClone(joining.blk));
     }
 }
 
@@ -93,9 +96,7 @@ struct malnSet *malnJoinSets(struct Genome *refGenome, struct malnSet *malnSet1,
         joinBlkWithSet(malnSetJoined, blk1, malnSet2);
     }
     stSortedSet_destructIterator(iter1);
-    addUndone(malnSetJoined, malnSet1);
     addUndone(malnSetJoined, malnSet2);
-    malnSet_clearDone(malnSet1);
     malnSet_clearDone(malnSet2);
     malnSet_clearDone(malnSetJoined);
     malnSet_assert(malnSetJoined);

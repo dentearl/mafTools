@@ -5,74 +5,71 @@
 #include "malnJoinBlks.h"
 #include "sonLibSortedSet.h"
 #include "sonLibList.h"
+#include "sonLibHash.h"
 #include "genome.h"
 #include "common.h"
 #include <stdbool.h>
 #include <unistd.h>
 
-/* join one into joinComp, returning the new joined comp. */
-static struct malnComp *joinCompWithDup(struct malnSet *malnSet, struct malnComp *joinComp, struct malnComp *dupComp, stList *deleteBlkList) {
-    assert(!dupComp->blk->done);
-    assert(joinComp->blk->done);
-    struct malnBlk *joinedBlk = malnJoinBlks(joinComp, dupComp, NULL);
-    joinComp->blk->done = true;
-    stList_append(deleteBlkList, joinComp->blk);
-    dupComp->blk->done = true;
-    stList_append(deleteBlkList, dupComp->blk);
+/* add a component's block to the delete table */
+static void flagDeleted(stHash *deleteBlksTbl, struct malnComp *comp) {
+    stHash_insert(deleteBlksTbl, comp->blk, comp->blk);
+}
+
+/* is a block in the delete table? */
+static bool isDeletedBlk(stHash *deleteBlksTbl, struct malnBlk *blk) {
+    return stHash_search(deleteBlksTbl, blk) != NULL; 
+}
+
+/* is a component in the delete table? */
+static bool isDeletedComp(stHash *deleteBlksTbl, struct malnComp *comp) {
+    return isDeletedBlk(deleteBlksTbl, comp->blk);
+}
+
+/* join two blocks associated components, create and third block. Return that
+ * blocks root component. Joined blocks are inserted into delete table */
+static struct malnComp *joinCompWithDup(struct malnSet *malnSet, struct malnComp *comp1, struct malnComp *comp2, stHash *deleteBlksTbl) {
+    struct malnBlk *joinedBlk = malnJoinBlks(comp1, comp2, NULL);
+    flagDeleted(deleteBlksTbl, comp1);
+    flagDeleted(deleteBlksTbl, comp2);
     return malnBlk_getRootComp(joinedBlk);
 }
 
 /* Join one block with any duplications of that block in the same
- * set.  
- *  - If joinComp doesn't have any dups, it' block is marked as done.
- *  - If joinComp does have dups, it is join with the dups into a
- *    joinedComp. The joinComp and dups are marked as done and added to the
- *    delete list.  The new joinedComp is added to the set and left undone,
- *    so any transitive joins will be picked up on the next round.
- * The delete list is used to delay deletes so that iterators are not
- * invalidated.  Return true if any were joined.
+ * set. Duplicates are added to a table and skipped so that iterators are not
+ * invalidated.
  */
-static bool joinCompWithDups(struct malnSet *malnSet, struct malnComp *joinComp, stList *deleteBlkList) {
-    joinComp->blk->done = true;  // set upfront so not returned in overlap
+static void joinCompWithDups(struct malnSet *malnSet, struct malnComp *joinComp, stHash *deleteBlksTbl) {
     stList *overComps = malnSet_getOverlappingPendingComps(malnSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, malnCompTreeRoot);
+    struct malnComp *startComp = joinComp;
+    int addCnt = 0;
     for (int i = 0; i < stList_length(overComps); i++) {
-        joinComp = joinCompWithDup(malnSet, joinComp, stList_get(overComps, i), deleteBlkList);
+        struct malnComp *dupComp = stList_get(overComps, i);
+        // ignore starting point and deleted
+        if ((dupComp != startComp) && !isDeletedComp(deleteBlksTbl, dupComp)) {
+            joinComp = joinCompWithDup(malnSet, joinComp, dupComp, deleteBlksTbl);
+            addCnt++;
+        }
     }
-    if (overComps != NULL) {
-        assert(joinComp->blk->malnSet == NULL);
+    if (addCnt > 0) {
         malnSet_addBlk(malnSet, joinComp->blk);
     }
     stList_destruct(overComps);
-    return (overComps != NULL);
-}
-
-/* one pass in duplicate joins, return true if any joined.  Multiple
- * passes are done to handling transitive join cases */
-static bool joinSetDupsPass(struct malnSet *malnSet, stList *deleteBlkList) {
-    bool joinedSome = false;
-    stSortedSetIterator *iter = malnSet_getBlocks(malnSet);
-    struct malnBlk *joinBlk;
-    while ((joinBlk = stSortedSet_getNext(iter)) != NULL) {
-        if (!joinBlk->done) {
-            if (joinCompWithDups(malnSet, malnBlk_getRootComp(joinBlk), deleteBlkList)) {
-                joinedSome = true;
-            }
-        }
-    }
-    stSortedSet_destructIterator(iter);
-    return joinedSome;
 }
 
 /* Join duplication blocks in a set, which evolver outputs as separate
  * block.  Duplications will only be joined at the root */
 void malnJoin_joinSetDups(struct malnSet *malnSet) {
-    stList *deleteBlkList = stList_construct3(0, (void (*)(void *))malnBlk_destruct);
-    while (joinSetDupsPass(malnSet, deleteBlkList)) {
-        continue;
+    stHash *deleteBlksTbl = stHash_construct2(NULL, (void (*)(void *))malnBlk_destruct);
+    stSortedSetIterator *iter = malnSet_getBlocks(malnSet);
+    struct malnBlk *joinBlk;
+    while ((joinBlk = stSortedSet_getNext(iter)) != NULL) {
+        if (!isDeletedBlk(deleteBlksTbl, joinBlk)) {
+            joinCompWithDups(malnSet, malnBlk_getRootComp(joinBlk), deleteBlksTbl);
+        }
     }
-    malnSet_assertDone(malnSet);
-    malnSet_clearDone(malnSet);
-    stList_destruct(deleteBlkList);
+    stSortedSet_destructIterator(iter);
+    stHash_destruct(deleteBlksTbl);
     malnSet_assert(malnSet);
 }
 

@@ -1,7 +1,20 @@
 #include "malnComp.h"
 #include "malnCompCursor.h"
+#include "genome.h"
 #include "common.h"
+#include "dystring.h"
 #include "dnautil.h"
+
+/* count aligned positions */
+static int countAligned(const struct malnComp *comp) {
+    int c = 0;
+    for (const char *p = comp->alnStr->string; *p != '\0'; p++) {
+        if (isBase(*p)) {
+            c++;
+        }
+    }
+    return c;
+}
 
 /* basic component constructor using all or part of an alignment string . */
 static struct malnComp *malnComp_make(struct Seq *seq, char strand, int start, int end, char *alnStr, int strStart, int strEnd) {
@@ -19,6 +32,12 @@ static struct malnComp *malnComp_make(struct Seq *seq, char strand, int start, i
     }
     comp->alnStr = dyStringNew(strEnd-strStart);
     dyStringAppendN(comp->alnStr, alnStr+strStart, strEnd-strStart);
+
+    // sanity check, as bad sequence can really break things
+    int n = countAligned(comp);
+    if (n != (comp->end - comp->start)) {
+        errAbort("component %s %d-%d(%c): aligned positions (%d) != range (%d)", seq->orgSeqName, start, end, strand, n, end-start);
+    }
     return comp;
 }
 
@@ -42,8 +61,9 @@ void malnComp_destruct(struct malnComp *comp) {
 
 /* component reverse complement */
 struct malnComp *malnComp_reverseComplement(struct malnComp *comp) {
-    struct malnComp *rc = malnComp_construct(comp->seq, ((comp->strand == '-') ? '+' : '-'), comp->start, comp->end, malnComp_getAln(comp));
-    reverseIntRange(&rc->start, &rc->end, rc->seq->size);
+    int start = comp->start, end = comp->end;
+    reverseIntRange(&start, &end, comp->seq->size);
+    struct malnComp *rc = malnComp_construct(comp->seq, ((comp->strand == '-') ? '+' : '-'), start, end, malnComp_getAln(comp));
     reverseComplement(rc->alnStr->string, rc->alnStr->stringSize);
     return rc;
 }
@@ -86,8 +106,8 @@ bool malnComp_seqRangeToAlnRange(struct malnComp *comp, int start, int end, int 
     *alnStart = cc.alnIdx;
     
     // find end
-    malnCompCursor_setSeqPos(&cc,  end-1);
-    *alnEnd = cc.alnIdx+1;
+    malnCompCursor_setSeqPos(&cc,  end);
+    *alnEnd = cc.alnIdx;
     return true;
 }
 
@@ -119,4 +139,24 @@ void malnComp_append(struct malnComp *comp, char *src, int len) {
  * The component must extend the range of this component. */
 void malnComp_appendCompAln(struct malnComp *comp, struct malnComp *srcComp, int alnStart, int alnEnd) {
     malnComp_append(comp, malnComp_getAln(srcComp)+alnStart, alnEnd-alnStart);
+}
+
+/* assert that the component is set-consistent */
+void malnComp_assert(struct malnComp *comp) {
+#ifndef NDEBUG
+    assert((comp->strand == '+') || (comp->strand == '-'));
+    if (comp->strand == '+') {
+        assert(comp->start == comp->chromStart);
+        assert(comp->end == comp->chromEnd);
+    } else {
+        assert(comp->start == (comp->seq->size - comp->chromEnd));
+        assert(comp->end == (comp->seq->size - comp->chromStart));
+    }
+    assert(countAligned(comp) == (comp->end - comp->start));
+#endif
+}
+
+/* print a component for debugging purposes */
+void malnComp_dump(struct malnComp *comp, const char *label, FILE *fh) {
+    fprintf(fh, "%s %s (%c) %d-%d %d-%d %s\n", label, comp->seq->orgSeqName, comp->strand, comp->start, comp->end, comp->chromStart, comp->chromEnd, comp->alnStr->string);
 }

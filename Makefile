@@ -22,3 +22,4 @@ ${binPath}/mafJoin: ${objs}
 clean: 
 	rm -f ${objs}
 
+${objs}: *.h

@@ -19,28 +19,37 @@ static mafTree *joinTrees(struct malnBlkCursor *blkCursor1, struct malnBlkCursor
                         blkCursor2->blk->mTree, comp2->seq->orgSeqName, comp2->chromStart, comp2->chromEnd);
 }
 
-/* add components to the joined blk and destination component array, starting an row index,
- * to allow skipping reference */
-static void addCompToJoined(struct malnBlk *blkJoined, int iStart, struct malnBlkCursor *blkCursor, struct malnComp **destComps) {
-    for (int i = iStart; i < blkCursor->numRows; i++) {
-        struct malnComp *comp = destComps[i] = malnComp_construct(blkCursor->rows[i].comp->seq, blkCursor->rows[i].comp->strand, blkCursor->rows[i].comp->start, blkCursor->rows[i].comp->start, "");
-        malnBlk_addComp(blkJoined, comp);
+/* create new reference components from the two being joined */
+static struct malnComp *createJoinedRefComp(struct malnBlk *blkJoined, struct malnComp *refComp1, struct malnComp *refComp2) {
+    int start = min(refComp1->start, refComp2->start);
+    struct malnComp *comp = malnComp_construct(refComp1->seq, refComp1->strand, start, start, "");
+    malnBlk_addComp(blkJoined, comp);
+    return comp;
+}
+
+/* add non-reference components to the joined blk and destination component
+ * array */
+static void addCompsToJoined(struct malnBlk *blkJoined, struct malnBlkCursor *blkCursor, struct malnComp **destComps) {
+    // skip rows[0], which is the reference
+    for (int i = 1; i < blkCursor->numRows; i++) {
+        destComps[i] = malnComp_construct(blkCursor->rows[i].comp->seq, blkCursor->rows[i].comp->strand, blkCursor->rows[i].comp->start, blkCursor->rows[i].comp->start, "");
+        malnBlk_addComp(blkJoined, destComps[i]);
     }
 }
 
-/* initialize joined blk and an two array of destination components
- * corresponding to order in the two source block cursors, with the reference
- * sequence first in each */
-static struct malnBlk *initJoinedBlk(struct malnBlkCursor *blkCursor1, struct malnBlkCursor *blkCursor2, struct malnComp ***destComps1Ret, struct malnComp ***destComps2Ret) {
-    struct malnBlk *blkJoined = malnBlk_construct(joinTrees(blkCursor1, blkCursor2));
-    struct malnComp **destComps1 = *destComps1Ret = needMem(blkCursor1->numRows*sizeof(struct malnComp*));
-    struct malnComp **destComps2 = *destComps2Ret = needMem(blkCursor2->numRows*sizeof(struct malnComp*));
+/* assert new reference component covers the entire range */
+static void assertJoinedRefComp(struct malnComp *destRefComp, struct malnComp *refComp1, struct malnComp *refComp2) {
+    assert(destRefComp->start == min(refComp1->start, refComp2->start));
+    assert(destRefComp->end == max(refComp1->end, refComp2->end));
+}
 
-    // add components, reference is done only once
-    addCompToJoined(blkJoined, 0, blkCursor1, destComps1);
-    destComps2[0] = destComps1[0];
-    addCompToJoined(blkJoined, 1, blkCursor2, destComps2);
-    return blkJoined;
+/* assert new non-reference components cover entire range  */
+static void assertJoinedComps(struct malnBlkCursor *blkCursor, struct malnComp **destComps) {
+    // skip rows[0], which is the reference
+    for (int i = 1; i < blkCursor->numRows; i++) {
+        assert(destComps[i]->start == blkCursor->rows[i].comp->start);
+        assert(destComps[i]->end == blkCursor->rows[i].comp->end);
+    }
 }
 
 /* copy columns outside of the common reference sequence region to the joined maf */
@@ -103,7 +112,7 @@ static void joinSharedRefColumns(struct malnBlk *blkJoined,
     }
     assert(blkCursor1->alnIdx == aln1CommonEnd);
     assert(blkCursor2->alnIdx == aln2CommonEnd);
-    malnBlk_assert(blkJoined);
+    malnBlk_assert(blkJoined); // FIXME debugging
 }
 
 /* join two blocks using their specified reference components.  Optionally return
@@ -112,21 +121,32 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     assert(malnComp_overlap(refComp1, refComp2));
     struct malnBlk *blk1 = refComp1->blk;
     struct malnBlk *blk2 = refComp2->blk;
+    if (false) { // FIXME: tmp
+        malnBlk_dump(blk1, "blk1", stderr);
+        malnBlk_dump(blk2, "blk2", stderr);
+    }
 
     // reverse complement if needed
     struct malnBlk *freeBlk = NULL;
     if (refComp1->strand != refComp2->strand) {
-        freeBlk = malnBlk_reverseComplement(blk2);
-        blk2 = freeBlk;
+        blk2 = freeBlk = malnBlk_reverseComplement(blk2);
         refComp2 = malnBlk_findCompByChromRange(blk2, refComp2->seq, refComp2->chromStart, refComp2->chromEnd);
         assert(refComp2 != NULL);
+        if (false) { // FIXME: tmp
+            malnBlk_dump(blk2, "blk2rc", stderr);
+        }
     }
 
-    // set up for the hard work
+    // set up for the hard work destComps arrays parallel the rows in the
+    // blkCursors
     struct malnBlkCursor *blkCursor1 = malnBlkCursor_construct(blk1, refComp1);
     struct malnBlkCursor *blkCursor2 = malnBlkCursor_construct(blk2, refComp2);
-    struct malnComp **destComps1, **destComps2;
-    struct malnBlk *blkJoined = initJoinedBlk(blkCursor1, blkCursor2, &destComps1, &destComps2);
+    struct malnComp *destComps1[blkCursor1->numRows];
+    struct malnComp *destComps2[blkCursor2->numRows];
+    struct malnBlk *blkJoined = malnBlk_construct(joinTrees(blkCursor1, blkCursor2));
+    destComps1[0] = destComps2[0] = createJoinedRefComp(blkJoined, refComp1, refComp2);
+    addCompsToJoined(blkJoined, blkCursor1, destComps1);
+    addCompsToJoined(blkJoined, blkCursor2, destComps2);
     int refCommonStart = max(refComp1->start, refComp2->start);
     int refCommonEnd = min(refComp1->end, refComp2->end);
     int aln1CommonStart, aln1CommonEnd, aln2CommonStart, aln2CommonEnd;
@@ -137,20 +157,23 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     if (joinedCompRet != NULL) {
         *joinedCompRet = destComps1[0];
     }
-    
+
     // before common start
     copyUnsharedRefColumns(blkJoined, destComps1, blkCursor1, 0, aln1CommonStart);
     copyUnsharedRefColumns(blkJoined, destComps2, blkCursor2, 0, aln2CommonStart);
 
     // common
+    assert(destComps1[0]->end == refCommonStart);
     joinSharedRefColumns(blkJoined, destComps1, blkCursor1, aln1CommonEnd, destComps2, blkCursor2, aln2CommonEnd);
+    assert(destComps1[0]->end == refCommonEnd);
 
     // after common end
     copyUnsharedRefColumns(blkJoined, destComps1, blkCursor1, aln1CommonEnd, blk1->alnWidth);
     copyUnsharedRefColumns(blkJoined, destComps2, blkCursor2, aln2CommonEnd, blk2->alnWidth);
-
-    freeMem(destComps1);
-    freeMem(destComps2);
+    
+    assertJoinedRefComp(destComps1[0], refComp1, refComp2);
+    assertJoinedComps(blkCursor1, destComps1);
+    assertJoinedComps(blkCursor2, destComps2);
     malnBlkCursor_destruct(blkCursor1);
     malnBlkCursor_destruct(blkCursor2);
     malnBlk_destruct(freeBlk);
@@ -159,5 +182,3 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     malnBlk_assert(blkJoined);
     return blkJoined;
 }
-
-

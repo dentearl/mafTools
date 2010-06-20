@@ -91,6 +91,7 @@ static void malnBlk_sortComps(struct malnBlk *blk) {
 void malnBlk_finish(struct malnBlk *blk) {
     malnBlk_sortComps(blk);
     malnBlk_setLocAttr(blk);
+    malnBlk_assert(blk);
 }
 
 /* get the root component */
@@ -122,7 +123,8 @@ struct malnComp *malnBlk_findCompByChromRange(struct malnBlk *blk, struct Seq *s
 
 /* block reverse complement */
 struct malnBlk *malnBlk_reverseComplement(struct malnBlk *srcBlk) {
-    struct malnBlk *rcBlk = malnBlk_construct(srcBlk->mTree);
+    malnBlk_assert(srcBlk);
+    struct malnBlk *rcBlk = malnBlk_construct(mafTree_clone(srcBlk->mTree));
     for (struct malnComp *srcComp = srcBlk->comps; srcComp != NULL; srcComp = srcComp->next) {
         malnBlk_addComp(rcBlk, malnComp_reverseComplement(srcComp));
     }
@@ -147,6 +149,15 @@ void malnBlk_assert(struct malnBlk *blk) {
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         assert(comp->blk == blk);
         assert(malnComp_getWidth(comp) == blk->alnWidth);
+        malnComp_assert(comp);
     }
 #endif
+}
+
+/* print a block for debugging purposes */
+void malnBlk_dump(struct malnBlk *blk, const char *label, FILE *fh) {
+    fprintf(fh, "%s %zx %d\n", label, (size_t)blk, blk->alnWidth);
+    for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
+        malnComp_dump(comp, "    ", fh);
+    }    
 }

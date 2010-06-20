@@ -3,6 +3,8 @@
 #include "sonLibTypes.h"
 #include "mafJoinTypes.h"
 struct mafAli;
+struct malnComp;
+struct malnBlk;
 
 /* location of a component in the tree */
 enum mafTreeLoc {
@@ -27,7 +29,7 @@ void mafTree_destruct(mafTree *mTree);
 /* validate tree order and nodes matches mafAli */
 void mafTree_validateWithMaf(mafTree *mTree, struct mafAli *ali);
 
-/* compare function for coordinates by tree order  */
+/* compare function for component coordinates by tree order  */
 int mafTree_treeOrderCmp(mafTree *mTree, const char *orgSeq1, int chromStart1, int chromEnd1, const char *orgSeq2, int chromStart2, int chromEnd2);
 
 /* join two trees at nodes specified by components */

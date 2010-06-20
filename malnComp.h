@@ -101,4 +101,10 @@ static inline bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *com
             || ((comp1->treeLoc == malnCompTreeLeaf) && (comp2->treeLoc == malnCompTreeRoot)));
 }
 
+/* assert that the component is set-consistent */
+void malnComp_assert(struct malnComp *comp);
+
+/* print a component for debugging purposes */
+void malnComp_dump(struct malnComp *comp, const char *label, FILE *fh);
+
 #endif
