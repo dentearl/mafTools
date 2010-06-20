@@ -97,6 +97,7 @@ struct malnSet *malnJoinSets(struct Genome *refGenome, struct malnSet *malnSet1,
     }
     stSortedSet_destructIterator(iter1);
     addUndone(malnSetJoined, malnSet2);
+    malnSet_clearDone(malnSet1);
     malnSet_clearDone(malnSet2);
     malnSet_clearDone(malnSetJoined);
     malnSet_assert(malnSetJoined);
