@@ -88,6 +88,11 @@ static inline bool malnComp_overlap(struct malnComp *comp, struct malnComp *comp
     return (comp->seq == comp2->seq) && (comp->chromStart < comp2->chromEnd) && (comp->chromEnd > comp2->chromStart);
 }
 
+/* compare to a range to see if they overlap */
+static inline bool malnComp_overlapRange(struct malnComp *comp, struct Seq *seq, int chromStart, int chromEnd) {
+    return (comp->seq == seq) && (comp->chromStart < chromEnd) && (comp->chromEnd > chromStart);
+}
+
 /* can a join be made at this component? */
 static inline bool malnComp_joinable(struct malnComp *comp) {
     return (comp->treeLoc & (malnCompTreeRoot|malnCompTreeLeaf)) != 0;

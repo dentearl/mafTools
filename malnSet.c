@@ -236,7 +236,9 @@ stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *
     for (struct range *rng = genomeRangeTreeAllOverlapping(malnSet->compRangeMap, seq->orgSeqName, chromStart, chromEnd); rng != NULL; rng = rng->next) {
         for (struct slRef *compRef = rng->val; compRef != NULL; compRef = compRef->next) {
             struct malnComp *comp = compRef->val;
-            if ((comp != NULL) && ((comp->treeLoc & treeLocFilter) != 0) && (!comp->blk->done)) {
+            // FIXME: not sure why the overla
+            if ((comp != NULL) && ((comp->treeLoc & treeLocFilter) != 0) && (!comp->blk->done)
+                && malnComp_overlapRange(comp, seq, chromStart, chromEnd)) {
                 if (overBlks == NULL) { 
                     overBlks = stList_construct();
                 }
