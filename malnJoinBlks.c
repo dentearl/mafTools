@@ -86,7 +86,6 @@ static void copySharedRefColumns(struct malnBlk *blkJoined,
         copyColumn(destComps1, blkCursor1, false);
         copyColumn(destComps2, blkCursor2, true);
         blkJoined->alnWidth++;  // FIXME should have append methods
-        malnBlk_assert(blkJoined);
     }
 }
 
@@ -176,8 +175,8 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     assertJoinedComps(blkCursor2, destComps2);
     malnBlkCursor_destruct(blkCursor1);
     malnBlkCursor_destruct(blkCursor2);
-    malnBlk_destruct(freeBlk);
     blk1->done = blk2->done = true;
+    malnBlk_destruct(freeBlk);
     malnBlk_finish(blkJoined);
     malnBlk_assert(blkJoined);
     return blkJoined;
