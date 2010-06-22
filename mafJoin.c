@@ -18,6 +18,8 @@ static bool memLeakDebugCleanup = false;
 /* command line option specifications */
 static struct optionSpec optionSpecs[] = {
     {"branchLength", OPTION_DOUBLE},
+    {"treelessRoot1", OPTION_STRING},
+    {"treelessRoot2", OPTION_STRING},
     {"maf1Copy", OPTION_STRING},
     {"maf2Copy", OPTION_STRING},
     {NULL, 0}
@@ -28,7 +30,11 @@ static char *usageMsg =
     "\n"
     "Options:\n"
     "  -branchLength=0.1 - branch length to use when generating\n"
-    "   a tree from a pair-wise MAF. Defaults to 0.1.\n"
+    "   a trees for MAF. Defaults to 0.1.\n"
+    "  -treelessRoot1=org - use org as the root organism for treeless MAFs in\n"
+    "   inMaf1 file\n"
+    "  -treelessRoot2=org - use org as the root organism for treeless MAFs in\n"
+    "   inMaf2 file\n"
     "  -maf1Out=maf1Copy - output maf1 for debugging\n"
     "  -maf2Out=maf2Copy - output maf2 for debugging\n";
 
@@ -38,15 +44,19 @@ static void usage(char *msg) {
 }
 
 /* join two mafs */
-static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMaf, double defaultBranchLength, char *maf1Copy, char *maf2Copy) {
+static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMaf, double defaultBranchLength,
+                    char *treelessRoot1OrgName, char *treelessRoot2OrgName,
+                    char *maf1Copy, char *maf2Copy) {
     struct Genomes *genomes = genomesNew();
     struct Genome *refGenome = genomesObtainGenome(genomes, refGenomeName);
-    struct malnSet *malnSet1 = malnSet_constructFromMaf(genomes, inMaf1, defaultBranchLength);
+    struct Genome *treelessRoot1Genome = (treelessRoot1OrgName != NULL) ? genomesObtainGenome(genomes, treelessRoot1OrgName) : NULL;
+    struct Genome *treelessRoot2Genome = (treelessRoot2OrgName != NULL) ? genomesObtainGenome(genomes, treelessRoot2OrgName) : NULL;
+    struct malnSet *malnSet1 = malnSet_constructFromMaf(genomes, inMaf1, defaultBranchLength, treelessRoot1Genome);
     malnJoin_joinSetDups(malnSet1);
     if (maf1Copy != NULL) {
         malnSet_writeMaf(malnSet1, maf1Copy);
     }
-    struct malnSet *malnSet2 = malnSet_constructFromMaf(genomes, inMaf2, defaultBranchLength);
+    struct malnSet *malnSet2 = malnSet_constructFromMaf(genomes, inMaf2, defaultBranchLength, treelessRoot2Genome);
     malnJoin_joinSetDups(malnSet2);
     if (maf2Copy != NULL) {
         malnSet_writeMaf(malnSet2, maf2Copy);
@@ -68,6 +78,8 @@ int main(int argc, char *argv[]) {
     if (argc != 5)  {
         usage("Error: wrong number of arguments");
     }
-    mafJoin(argv[1], argv[2], argv[3], argv[4], optionDouble("branchLength", 0.1), optionVal("maf1Copy", NULL), optionVal("maf2Copy", NULL));
+    mafJoin(argv[1], argv[2], argv[3], argv[4], optionDouble("branchLength", 0.1), 
+            optionVal("treelessRoot1", NULL), optionVal("treelessRoot2", NULL),
+            optionVal("maf1Copy", NULL), optionVal("maf2Copy", NULL));
     return 0;
 }

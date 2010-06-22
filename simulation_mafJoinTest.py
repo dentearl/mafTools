@@ -1,4 +1,4 @@
-"""Test for eval_mAFJoiner. 
+"""Test for mafJoin
 
 """
 
@@ -35,9 +35,14 @@ class MafJoinTests(unittest.TestCase):
         fileHandle.close()
         return tempFile
 
-    def runEvalMafJoiner(self, ref, mAFFileA, mAFFileB, outputMAFFile):
-        system("mafJoin %s %s %s %s" \
-               % (ref, mAFFileA, mAFFileB, outputMAFFile))
+    def runEvalMafJoiner(self, ref, mafFileA, mafFileB, outputMafFile, treelessRoot1=None, treelessRoot2=None):
+        cmd = ["mafJoin"]
+        if treelessRoot1 != None:
+            cmd.append("-treelessRoot1="+treelessRoot1)
+        if treelessRoot2 != None:
+            cmd.append("-treelessRoot2="+treelessRoot2)
+        cmd.extend([ref, mafFileA, mafFileB, outputMafFile])
+        system(" ".join(cmd))
         logger.info("Ran eval-maf joiner okay")
 
     def compareExpectedAndRecieved(self, expected, recieved):
@@ -45,9 +50,9 @@ class MafJoinTests(unittest.TestCase):
         """
         system("diff -u %s %s" % (expected, recieved))
 
-    def mafJoinTest(self, ref, mafA, mafB, mafC):
+    def mafJoinTest(self, ref, mafA, mafB, mafC, treelessRoot1=None, treelessRoot2=None):
         """Writes out mafA and mafB to temp files.
-        Runs eval_mAFJoiner.
+        Runs mafJoin
         Parses the output and compares it to mafC.
         """
         tempFileA = self.writeMAF(mafA, "A.maf")
@@ -55,7 +60,7 @@ class MafJoinTests(unittest.TestCase):
         tempFileC = self.writeMAF(mafC, "C.maf")
         tempOutputFile = self.getTestTempFile("out.maf")
         logger.info("Got inputs to test")
-        self.runEvalMafJoiner(ref, tempFileA, tempFileB, tempOutputFile)
+        self.runEvalMafJoiner(ref, tempFileA, tempFileB, tempOutputFile, treelessRoot1, treelessRoot2)
         self.compareExpectedAndRecieved(tempFileC, tempOutputFile)
         logger.info("Ran test apparently okay")
 
@@ -250,7 +255,7 @@ class MafJoinTests(unittest.TestCase):
         self.mafJoinTest("hg18", A, B, C)
           
     def testJoin7(self):
-        """pairwise MAFs with no trees
+        """MAFs with no trees
         """
         A = """
         a score=2.0
@@ -414,6 +419,52 @@ class MafJoinTests(unittest.TestCase):
         """
         self.mafJoinTest("hg18", A, B, C)
     
+    def testJoin12(self):
+        """MAFs with no trees and multiple leaves
+        """
+        A = """
+        a score=2.0
+        s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
+        s rn4.chr7        07221 13 + 158545518 gcaGCTGAAaaca
+        s baboon.chr6    249182 13 -   4622798 gcagctgaaaaca
+        """
+        B = """
+        a score=5.0
+        s mm4.chr6     53310102 13 - 151104725 ACAGCTGAAAATA
+        s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
+        """
+        C = """
+        a score=0.000000 tree="((mm4.chr6:0.1)hg18.chr7:0.1,rn4.chr7:0.1)baboon.chr6;"
+        s mm4.chr6    53310102 13 - 151104725 ACAGCTGAAAATA
+        s hg18.chr7   27707221 13 + 158545518 gcagctgaaaaca
+        s rn4.chr7        7221 13 + 158545518 gcaGCTGAAaaca
+        s baboon.chr6   249182 13 -   4622798 gcagctgaaaaca
+        """
+        self.mafJoinTest("hg18", A, B, C)
+          
+    def testJoin13(self):
+        """MAFs with no trees and specified roots
+        """
+        A = """
+        a score=2.0
+        s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
+        s baboon.chr6    249182 13 -   4622798 gcagctgaaaaca
+        s rn4.chr7        07221 13 + 158545518 gcaGCTGAAaaca
+        """
+        B = """
+        a score=5.0
+        s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
+        s mm4.chr6     53310102 13 - 151104725 ACAGCTGAAAATA
+        """
+        C = """
+        a score=0.000000 tree="((mm4.chr6:0.1)hg18.chr7:0.1,rn4.chr7:0.1)baboon.chr6;"
+        s mm4.chr6    53310102 13 - 151104725 ACAGCTGAAAATA
+        s hg18.chr7   27707221 13 + 158545518 gcagctgaaaaca
+        s rn4.chr7        7221 13 + 158545518 gcaGCTGAAaaca
+        s baboon.chr6   249182 13 -   4622798 gcagctgaaaaca
+        """
+        self.mafJoinTest("hg18", A, B, C, treelessRoot1="baboon", treelessRoot2="hg18")
+          
     
 if __name__ == '__main__':
     unittest.main()

@@ -109,9 +109,31 @@ struct Genome *genomesGetGenome(struct Genomes *genomes, char *name) {
 }
 
 
-/* Obtain a new Seq object, creating the genome and seq objects it they
- * don't exist. */
+/* Obtain a new Seq object, creating the genome and seq objects it they don't
+ * exist. If size is -1, then it will not be initialized until a request is
+ * made with the size. */
 struct Seq *genomesObtainSeq(struct Genomes *genomes, char *genomeName, char *seqName, int size) {
     struct Genome *genome = genomesObtainGenome(genomes, genomeName);
-    return genomeObtainSeq(genome, seqName, size);
+    struct Seq *seq = genomeObtainSeq(genome, seqName, size);
+    if ((seq->size < 0) && (size >= 0)) {
+        seq->size = size;
+    }
+    return seq;
 }
+
+/* Obtain a new Seq object given organism.seq, creating the genome and seq objects it they
+ * don't exist. If size is -1, then it will not be initialized until a request is
+ * made with the size. */
+struct Seq *genomesObtainSeqForOrgSeqName(struct Genomes *genomes, char *orgSeqName, int size) {
+    char nameBuf[strlen(orgSeqName)+1];
+    strcpy(nameBuf, orgSeqName);
+    char *dot = strchr(nameBuf, '.');
+    if (dot == NULL) {
+        errAbort("sequence name not in the form org.seq: %s", orgSeqName);
+    }
+    *dot = '\0';
+    char *genomeName = nameBuf;
+    char *seqName = dot+1;
+    return genomesObtainSeq(genomes, genomeName, seqName, size);
+}
+

@@ -5,6 +5,8 @@
 struct mafAli;
 struct malnComp;
 struct malnBlk;
+struct Genome;
+struct Genomes;
 
 /* location of a component in the tree */
 enum mafTreeLoc {
@@ -13,12 +15,11 @@ enum mafTreeLoc {
     mafTreeLeaf
 };
 
-
 /* Construct a MafTree object from an mafComp block if it contains a tree.  If
- * it doesn't contain a tree and is pairwise maf, create a tree with the root
- * the last component of the maf.  defaultBranchLength is used to assign
- * branch lengths when inferring trees from pair-wise MAFs. */
-mafTree *mafTree_constructFromMaf(struct mafAli *ali, double defaultBranchLength);
+ * it doesn't contain a tree, create one with the root the last component of
+ * the MAF or treelessRootGenome if specified.  defaultBranchLength is used to
+ * assign branch lengths when inferring trees from the MAFs. */
+mafTree *mafTree_constructFromMaf(struct Genomes *genomes, struct mafAli *ali, double defaultBranchLength, struct Genome *treelessRootGenome);
 
 /* clone a mafTree */
 mafTree *mafTree_clone(mafTree *srcMTree);

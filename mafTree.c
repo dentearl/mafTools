@@ -1,6 +1,7 @@
 #include "mafJoinTypes.h"
 #include "mafTree.h"
 #include "common.h"
+#include "genome.h"
 #include "jkmaf.h"
 #include "sonLibETree.h"
 #include "sonLibList.h"
@@ -14,7 +15,6 @@
  * Each eTree node's client data contains a pointer to the struct nodeCompLink
  * node in the mafTree.  This is initially copied on clone. and then update.
  */
-
 /*
  * Object for containing and manipulating parsed tree and mapping to the order
  * of the maf rows.  Rows of MAF are in DFS post-traversal order.
@@ -22,6 +22,7 @@
 struct mafTree {
     ETree *eTree;
     int numNodes;    // array of nodes, indexed by tree DFS order
+    struct Genomes *genomes;
     struct nodeCompLink *nodes;
 };
 
@@ -29,11 +30,10 @@ struct mafTree {
 struct nodeCompLink {
     int treeOrder;
     ETree *eNode;
-    const char *orgSeq;   // not owed here, label from node
+    struct Seq *seq;
     int chromStart;       // component coords
     int chromEnd;
 };
-
 
 /* DFS to fill in table of node links and link back with clientData */
 static void fillTreeOrderDFS(mafTree *mTree, ETree *eNode, int *treeOrder) {
@@ -44,7 +44,7 @@ static void fillTreeOrderDFS(mafTree *mTree, ETree *eNode, int *treeOrder) {
     struct nodeCompLink *ncLink = &(mTree->nodes[*treeOrder]);
     ncLink->treeOrder = *treeOrder;
     ncLink->eNode = eNode;
-    ncLink->orgSeq = eTree_getLabel(eNode);
+    ncLink->seq = genomesObtainSeqForOrgSeqName(mTree->genomes, (char*)eTree_getLabel(eNode), -1);
     eTree_setClientData(eNode, ncLink);
     (*treeOrder)++;
 }
@@ -58,9 +58,10 @@ static void fillTreeOrder(mafTree *mTree) {
 }
 
 /* fill in one node link */
-static void fillNodeLinkFromMafComp(struct nodeCompLink *ncLink, int treeOrder, struct mafComp *comp) {
-    if (!sameString(ncLink->orgSeq, comp->src)) {
-        errAbort("MAF node with tree order %d label %s doesn't match component label %s", treeOrder, ncLink->orgSeq, comp->src);
+static void fillNodeLinkFromMafComp(mafTree *mTree, int treeOrder, struct mafComp *comp) {
+    struct nodeCompLink *ncLink = &(mTree->nodes[treeOrder]);
+    if (!sameString(ncLink->seq->orgSeqName, comp->src)) {
+        errAbort("MAF node with tree order %d label %s doesn't match component label %s", treeOrder, ncLink->seq->orgSeqName, comp->src);
     }
     assert(ncLink->treeOrder == treeOrder);
     ncLink->chromStart = comp->start;
@@ -68,6 +69,8 @@ static void fillNodeLinkFromMafComp(struct nodeCompLink *ncLink, int treeOrder, 
     if (comp->strand == '-') {
         reverseIntRange(&ncLink->chromStart, &ncLink->chromEnd, comp->srcSize);
     }
+    // request sequence just to set size
+    (void)genomesObtainSeqForOrgSeqName(mTree->genomes, comp->src, comp->srcSize);
 }
 
 /* fill in sequence coordinates from  mafAli */
@@ -77,22 +80,23 @@ static void fillNodeLinksFromMafAli(mafTree *mTree, struct mafAli *ali) {
     }
     struct mafComp *comp = ali->components;
     for (int treeOrder = 0; comp != NULL; treeOrder++, comp = comp->next) {
-        fillNodeLinkFromMafComp(&(mTree->nodes[treeOrder]), treeOrder, comp);
+        fillNodeLinkFromMafComp(mTree, treeOrder, comp);
     }
 }
 
 /* construct a mafTree from a ETree object */
-static mafTree *mafTree_construct(ETree *eTree) {
+static mafTree *mafTree_construct(struct Genomes *genomes, ETree *eTree) {
     mafTree *mTree;
     AllocVar(mTree);
     mTree->eTree = eTree;
+    mTree->genomes = genomes;
     fillTreeOrder(mTree);
     return mTree;
 }
 
 /* clone a mafTree */
 mafTree *mafTree_clone(mafTree *srcMTree) {
-    mafTree *mTree = mafTree_construct(eTree_clone(srcMTree->eTree));
+    mafTree *mTree = mafTree_construct(srcMTree->genomes, eTree_clone(srcMTree->eTree));
     for (int i = 0; i < srcMTree->numNodes; i++) {
         mTree->nodes[i].chromStart = srcMTree->nodes[i].chromStart;
         mTree->nodes[i].chromEnd = srcMTree->nodes[i].chromEnd;
@@ -101,8 +105,8 @@ mafTree *mafTree_clone(mafTree *srcMTree) {
 }
 
 /* parse a tree from a maf */
-static mafTree *mafTree_parseFromMaf(struct mafAli *ali) {
-    mafTree *mTree = mafTree_construct(eTree_parseNewickString(ali->tree));
+static mafTree *mafTree_parseFromMaf(struct Genomes *genomes, struct mafAli *ali) {
+    mafTree *mTree = mafTree_construct(genomes, eTree_parseNewickString(ali->tree));
     fillNodeLinksFromMafAli(mTree, ali);
     return mTree;
 }
@@ -114,25 +118,73 @@ static ETree *mafCompToETreeNode(struct mafComp *comp) {
     return eTree;
 }
 
-/* create a tree from a pairwise maf */
-static mafTree *mafTree_inferFromPairwiseMaf(struct mafAli *ali, double defaultBranchLength) {
-    ETree *eRoot = mafCompToETreeNode(ali->components->next);
-    ETree *eLeaf = mafCompToETreeNode(ali->components);
-    eTree_setParent(eLeaf, eRoot);
-    mafTree *mTree = mafTree_construct(eRoot);
+/* does a mafComp have the specific genome name? */
+static bool sameGenome(struct mafComp *comp, struct Genome *genome) {
+    int bufSize = strlen(comp->src)+1;
+    char buf[bufSize];
+    char *srcDb = mafCompGetSrcDb(comp, buf, bufSize);
+    return sameString(srcDb, genome->name);
+}
+
+/* find root in mafAli given a genome name, ensure there are no other sequences from this
+ * genome.*/
+static struct mafComp *findRootCompByName(struct mafAli *ali, struct Genome *treelessRootGenome) {
+    struct mafComp *rootComp = NULL, *comp;
+    for (comp = ali->components; (comp != NULL) && (rootComp == NULL); comp = comp->next) {
+        if (sameGenome(comp, treelessRootGenome)) {
+            rootComp = comp;
+        }
+    }
+    if (rootComp == NULL) {
+        errAbort("treeless root genome %s not found in MAF block", treelessRootGenome->name);
+    }
+    for (comp = comp->next; (comp != NULL); comp = comp->next) {
+        if (sameGenome(comp, treelessRootGenome)) {
+            errAbort("multiple occurrences of root genome %s found in MAF block", treelessRootGenome->name);
+        }
+    }
+    return rootComp;
+}
+
+/* find root in mafAli given using a genome if specified, otherwise the component */
+static struct mafComp *findRootComp(struct mafAli *ali, struct Genome *treelessRootGenome) {
+    if (treelessRootGenome != NULL) {
+        return findRootCompByName(ali, treelessRootGenome);
+    } else {
+        return slLastEl(ali->components);
+    }
+}
+
+/* Make the root component the last component so that inferred trees can be
+ * have their nodeCompLinks build in the same way as parsed trees */
+static void orderInferedTreeMaf(struct mafAli *ali, struct mafComp *rootComp) {
+    // unlink, then add to tail
+    if (!slRemoveEl(&ali->components, rootComp)) {
+        assert(false);
+    }
+    slAddTail(&ali->components, rootComp);
+}
+
+/* create a tree from a organism maf */
+static mafTree *mafTree_inferFromMaf(struct Genomes *genomes, struct mafAli *ali, double defaultBranchLength, struct Genome *treelessRootGenome) {
+    struct mafComp *rootComp = findRootComp(ali, treelessRootGenome);
+    orderInferedTreeMaf(ali, rootComp);
+    ETree *eRoot = mafCompToETreeNode(rootComp);
+    for (struct mafComp *comp = ali->components; comp != rootComp; comp = comp->next) {
+        ETree *eLeaf = mafCompToETreeNode(comp);
+        eTree_setParent(eLeaf, eRoot);
+        eTree_setBranchLength(eLeaf, defaultBranchLength);
+    }
+    mafTree *mTree = mafTree_construct(genomes, eRoot);
     fillNodeLinksFromMafAli(mTree, ali);
-    eTree_setBranchLength(eLeaf, defaultBranchLength);
     return mTree;
 }
 
-mafTree *mafTree_constructFromMaf(struct mafAli *ali, double defaultBranchLength) {
+mafTree *mafTree_constructFromMaf(struct Genomes *genomes, struct mafAli *ali, double defaultBranchLength, struct Genome *treelessRootGenome) {
     if (ali->tree != NULL) {
-        return mafTree_parseFromMaf(ali);
-    } else if (slCount(ali->components) == 2) {
-        return mafTree_inferFromPairwiseMaf(ali, defaultBranchLength);
+        return mafTree_parseFromMaf(genomes, ali);
     } else {
-        errAbort("mafAli isn't pairwise and doesn't have a tree");
-        return NULL;
+        return mafTree_inferFromMaf(genomes, ali, defaultBranchLength, treelessRootGenome);
     }
 }
 
@@ -148,7 +200,7 @@ void mafTree_destruct(mafTree *mTree) {
 static struct nodeCompLink *mafTree_findNodeCompLink(mafTree *mTree, const char *orgSeq, int chromStart, int chromEnd) {
     for (int i = 0 ; i < mTree->numNodes; i++) {
         struct nodeCompLink *ncLink = &(mTree->nodes[i]);
-        if (sameString(ncLink->orgSeq, orgSeq) && (ncLink->chromStart == chromStart) && (ncLink->chromEnd == chromEnd)) {
+        if (sameString(ncLink->seq->orgSeqName, orgSeq) && (ncLink->chromStart == chromStart) && (ncLink->chromEnd == chromEnd)) {
             return ncLink;
         }
     }
@@ -214,7 +266,7 @@ static ETree *joinAtLeaf(ETree *root1, struct nodeCompLink *leafNcLink1, struct 
 static void setJoinNodeLinkCoords(struct nodeCompLink *srcNcLink, stHash *linkMap) {
     ETree *destENode = stHash_search(linkMap, srcNcLink);
     struct nodeCompLink *destNcLink = eTree_getClientData(destENode);
-    assert(stString_eq(destNcLink->orgSeq, srcNcLink->orgSeq));
+    assert(stString_eq(destNcLink->seq->orgSeqName, srcNcLink->seq->orgSeqName));
     if (destNcLink->chromStart == destNcLink->chromEnd) {
         destNcLink->chromStart = srcNcLink->chromStart;
         destNcLink->chromEnd = srcNcLink->chromEnd;
@@ -252,7 +304,7 @@ mafTree *mafTree_join(mafTree *mTree1, const char *orgSeq1, int chromStart1, int
     } else {
         errAbort("join nodes don't obey rules");
     }
-    mafTree *mTreeJoined = mafTree_construct(joinedRoot);
+    mafTree *mTreeJoined = mafTree_construct(mTree1->genomes, joinedRoot);
     fillJoinNodeLinkCoords(mTree1, linkMap);
     fillJoinNodeLinkCoords(mTree2, linkMap);
     stHash_destruct(linkMap);

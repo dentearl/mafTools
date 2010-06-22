@@ -16,7 +16,7 @@ struct Seq {
     struct Genome *genome;
     char *name;
     char *orgSeqName;  // db.seq
-    int size;
+    int size;  // -1 of not known
 };
 
 /* an organism's genome */
@@ -62,8 +62,14 @@ struct Genome *genomesObtainGenome(struct Genomes *genomes, char *name);
 /* get a genome object, error if it doesn't exist */
 struct Genome *genomesGetGenome(struct Genomes *genomes, char *name);
 
-/* Obtain a new Seq object, creating the genome and seq objects it they
- * don't exist. */
+/* Obtain a new Seq object, creating the genome and seq objects it they don't
+ * exist. If size is -1, then it will not be initialized until a request is
+ * made with the size. */
 struct Seq *genomesObtainSeq(struct Genomes *genomes, char *genomeName, char *seqName, int size);
+
+/* Obtain a new Seq object given organism.seq, creating the genome and seq objects it they
+ * don't exist. If size is -1, then it will not be initialized until a request is
+ * made with the size. */
+struct Seq *genomesObtainSeqForOrgSeqName(struct Genomes *genomes, char *orgSeqName, int size);
 
 #endif

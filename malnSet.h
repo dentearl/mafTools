@@ -11,8 +11,8 @@ struct Seq;
 struct malnSet *malnSet_construct(struct Genomes *genomes);
 
 /* Construct a malnSet from a MAF file. defaultBranchLength is used to
- * assign branch lengths when inferring trees from pair-wise MAFs. */
-struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, char *mafFileName, double defaultBranchLength);
+ * assign branch lengths when inferring trees from the MAF. */
+struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, char *mafFileName, double defaultBranchLength, struct Genome *treelessRootGenome);
 
 /* destructor */
 void malnSet_destruct(struct malnSet *malnSet);
