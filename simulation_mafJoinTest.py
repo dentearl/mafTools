@@ -35,13 +35,8 @@ class MafJoinTests(unittest.TestCase):
         fileHandle.close()
         return tempFile
 
-    def runEvalMafJoiner(self, ref, mafFileA, mafFileB, outputMafFile, treelessRoot1=None, treelessRoot2=None):
-        cmd = ["mafJoin"]
-        if treelessRoot1 != None:
-            cmd.append("-treelessRoot1="+treelessRoot1)
-        if treelessRoot2 != None:
-            cmd.append("-treelessRoot2="+treelessRoot2)
-        cmd.extend([ref, mafFileA, mafFileB, outputMafFile])
+    def runEvalMafJoiner(self, ref, mafFileA, mafFileB, outputMafFile):
+        cmd = ["mafJoin", ref, mafFileA, mafFileB, outputMafFile]
         system(" ".join(cmd))
         logger.info("Ran eval-maf joiner okay")
 
@@ -50,7 +45,7 @@ class MafJoinTests(unittest.TestCase):
         """
         system("diff -u %s %s" % (expected, recieved))
 
-    def mafJoinTest(self, ref, mafA, mafB, mafC, treelessRoot1=None, treelessRoot2=None):
+    def mafJoinTest(self, ref, mafA, mafB, mafC):
         """Writes out mafA and mafB to temp files.
         Runs mafJoin
         Parses the output and compares it to mafC.
@@ -60,7 +55,7 @@ class MafJoinTests(unittest.TestCase):
         tempFileC = self.writeMAF(mafC, "C.maf")
         tempOutputFile = self.getTestTempFile("out.maf")
         logger.info("Got inputs to test")
-        self.runEvalMafJoiner(ref, tempFileA, tempFileB, tempOutputFile, treelessRoot1, treelessRoot2)
+        self.runEvalMafJoiner(ref, tempFileA, tempFileB, tempOutputFile)
         self.compareExpectedAndRecieved(tempFileC, tempOutputFile)
         logger.info("Ran test apparently okay")
 
@@ -268,10 +263,10 @@ class MafJoinTests(unittest.TestCase):
         s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
         """
         C = """
-        a score=0.000000 tree=\"((mm4.chr6:0.1)hg18.chr7:0.1)baboon.chr6;\"
+        a score=0.000000 tree="(baboon.chr6:0.1,mm4.chr6:0.1)hg18.chr7;"
+        s baboon.chr6   249182 13 -   4622798 gcagctgaaaaca
         s mm4.chr6    53310102 13 - 151104725 ACAGCTGAAAATA
         s hg18.chr7   27707221 13 + 158545518 gcagctgaaaaca
-        s baboon.chr6   249182 13 -   4622798 gcagctgaaaaca
         """
         self.mafJoinTest("hg18", A, B, C)
           
@@ -434,36 +429,40 @@ class MafJoinTests(unittest.TestCase):
         s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
         """
         C = """
-        a score=0.000000 tree="((mm4.chr6:0.1)hg18.chr7:0.1,rn4.chr7:0.1)baboon.chr6;"
-        s mm4.chr6    53310102 13 - 151104725 ACAGCTGAAAATA
-        s hg18.chr7   27707221 13 + 158545518 gcagctgaaaaca
+        a score=0.000000 tree="(rn4.chr7:0.1,baboon.chr6:0.1,mm4.chr6:0.1)hg18.chr7;"
         s rn4.chr7        7221 13 + 158545518 gcaGCTGAAaaca
         s baboon.chr6   249182 13 -   4622798 gcagctgaaaaca
+        s mm4.chr6    53310102 13 - 151104725 ACAGCTGAAAATA
+        s hg18.chr7   27707221 13 + 158545518 gcagctgaaaaca
         """
         self.mafJoinTest("hg18", A, B, C)
           
     def testJoin13(self):
-        """MAFs with no trees and specified roots
+        """MAFs with no trees and specified roots, and multiple reference sequences
         """
         A = """
         a score=2.0
         s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
+        s hg18.chr7    37707221 12 + 158545518 gcagct-aaaaca
         s baboon.chr6    249182 13 -   4622798 gcagctgaaaaca
         s rn4.chr7        07221 13 + 158545518 gcaGCTGAAaaca
         """
         B = """
         a score=5.0
         s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
+        s hg18.chr12      07221 11 + 158545518 gcagc--aaaaca
         s mm4.chr6     53310102 13 - 151104725 ACAGCTGAAAATA
         """
         C = """
-        a score=0.000000 tree="((mm4.chr6:0.1)hg18.chr7:0.1,rn4.chr7:0.1)baboon.chr6;"
+        a score=0.000000 tree="(hg18.chr7:0.1,baboon.chr6:0.1,rn4.chr7:0.1,hg18.chr12:0.1,mm4.chr6:0.1)hg18.chr7;"
+        s hg18.chr7   37707221 12 + 158545518 gcagct-aaaaca
+        s baboon.chr6   249182 13 -   4622798 gcagctgaaaaca
+        s rn4.chr7        7221 13 + 158545518 gcaGCTGAAaaca
+        s hg18.chr12      7221 11 + 158545518 gcagc--aaaaca
         s mm4.chr6    53310102 13 - 151104725 ACAGCTGAAAATA
         s hg18.chr7   27707221 13 + 158545518 gcagctgaaaaca
-        s rn4.chr7        7221 13 + 158545518 gcaGCTGAAaaca
-        s baboon.chr6   249182 13 -   4622798 gcagctgaaaaca
         """
-        self.mafJoinTest("hg18", A, B, C, treelessRoot1="baboon", treelessRoot2="hg18")
+        self.mafJoinTest("hg18", A, B, C)
           
     
 if __name__ == '__main__':

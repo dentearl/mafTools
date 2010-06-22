@@ -126,33 +126,19 @@ static bool sameGenome(struct mafComp *comp, struct Genome *genome) {
     return sameString(srcDb, genome->name);
 }
 
-/* find root in mafAli given a genome name, ensure there are no other sequences from this
- * genome.*/
-static struct mafComp *findRootCompByName(struct mafAli *ali, struct Genome *treelessRootGenome) {
-    struct mafComp *rootComp = NULL, *comp;
-    for (comp = ali->components; (comp != NULL) && (rootComp == NULL); comp = comp->next) {
-        if (sameGenome(comp, treelessRootGenome)) {
+/* find root in mafAli given a genome name.  If there are multiple root components, pick the
+ * longest */
+static struct mafComp *findRootComp(struct mafAli *ali, struct Genome *treelessRootGenome) {
+    struct mafComp *rootComp = NULL;
+    for (struct mafComp *comp = ali->components; comp != NULL; comp = comp->next) {
+        if (sameGenome(comp, treelessRootGenome) && ((rootComp == NULL) || ((comp->size > rootComp->size)))) {
             rootComp = comp;
         }
     }
     if (rootComp == NULL) {
         errAbort("treeless root genome %s not found in MAF block", treelessRootGenome->name);
     }
-    for (comp = comp->next; (comp != NULL); comp = comp->next) {
-        if (sameGenome(comp, treelessRootGenome)) {
-            errAbort("multiple occurrences of root genome %s found in MAF block", treelessRootGenome->name);
-        }
-    }
     return rootComp;
-}
-
-/* find root in mafAli given using a genome if specified, otherwise the component */
-static struct mafComp *findRootComp(struct mafAli *ali, struct Genome *treelessRootGenome) {
-    if (treelessRootGenome != NULL) {
-        return findRootCompByName(ali, treelessRootGenome);
-    } else {
-        return slLastEl(ali->components);
-    }
 }
 
 /* Make the root component the last component so that inferred trees can be

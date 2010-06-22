@@ -16,9 +16,9 @@ enum mafTreeLoc {
 };
 
 /* Construct a MafTree object from an mafComp block if it contains a tree.  If
- * it doesn't contain a tree, create one with the root the last component of
- * the MAF or treelessRootGenome if specified.  defaultBranchLength is used to
- * assign branch lengths when inferring trees from the MAFs. */
+ * it doesn't contain a tree, create one with a sequence from
+ * treelessRootGenome as the root.  defaultBranchLength is used to assign
+ * branch lengths when inferring trees from the MAFs. */
 mafTree *mafTree_constructFromMaf(struct Genomes *genomes, struct mafAli *ali, double defaultBranchLength, struct Genome *treelessRootGenome);
 
 /* clone a mafTree */
