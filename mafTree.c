@@ -40,6 +40,7 @@ static void fillTreeOrderDFS(mafTree *mTree, ETree *eNode, int *treeOrder) {
     for (int i = 0; i < eTree_getChildNumber(eNode); i++) {
         fillTreeOrderDFS(mTree, eTree_getChild(eNode, i), treeOrder);
     }
+    assert(*treeOrder < mTree->numNodes);
     struct nodeCompLink *ncLink = &(mTree->nodes[*treeOrder]);
     ncLink->treeOrder = *treeOrder;
     ncLink->eNode = eNode;
@@ -101,8 +102,7 @@ mafTree *mafTree_clone(mafTree *srcMTree) {
 
 /* parse a tree from a maf */
 static mafTree *mafTree_parseFromMaf(struct mafAli *ali) {
-    ETree *eTree = eTree_parseNewickString(ali->tree);
-    mafTree *mTree = mafTree_construct(eTree);
+    mafTree *mTree = mafTree_construct(eTree_parseNewickString(ali->tree));
     fillNodeLinksFromMafAli(mTree, ali);
     return mTree;
 }
@@ -139,7 +139,8 @@ mafTree *mafTree_constructFromMaf(struct mafAli *ali, double defaultBranchLength
 void mafTree_destruct(mafTree *mTree) {
     if (mTree != NULL) {
         eTree_destruct(mTree->eTree);
-        free(mTree);
+        freeMem(mTree->nodes);
+        freeMem(mTree);
     }
 }
 

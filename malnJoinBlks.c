@@ -9,6 +9,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+static bool malnJoinBlksDebug = false;  // FIXME: tmp
+
 /*
  * join trees
  */
@@ -120,7 +122,7 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     assert(malnComp_overlap(refComp1, refComp2));
     struct malnBlk *blk1 = refComp1->blk;
     struct malnBlk *blk2 = refComp2->blk;
-    if (false) { // FIXME: tmp
+    if (malnJoinBlksDebug) { // FIXME: tmp
         malnBlk_dump(blk1, "blk1", stderr);
         malnBlk_dump(blk2, "blk2", stderr);
     }
@@ -131,7 +133,7 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
         blk2 = freeBlk = malnBlk_reverseComplement(blk2);
         refComp2 = malnBlk_findCompByChromRange(blk2, refComp2->seq, refComp2->chromStart, refComp2->chromEnd);
         assert(refComp2 != NULL);
-        if (false) { // FIXME: tmp
+        if (malnJoinBlksDebug) { // FIXME: tmp
             malnBlk_dump(blk2, "blk2rc", stderr);
         }
     }
@@ -175,7 +177,7 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     assertJoinedComps(blkCursor2, destComps2);
     malnBlkCursor_destruct(blkCursor1);
     malnBlkCursor_destruct(blkCursor2);
-    blk1->done = blk2->done = true;
+    blk1->done = blk2->done = true;  // must do before destruct, as blk1 might be freeBlk
     malnBlk_destruct(freeBlk);
     malnBlk_finish(blkJoined);
     malnBlk_assert(blkJoined);

@@ -15,7 +15,7 @@ struct malnBlk *malnBlk_construct(mafTree *mTree) {
 
 /* constructor clone */
 struct malnBlk *malnBlk_constructClone(struct malnBlk *srcBlk) {
-    struct malnBlk *blk = malnBlk_construct(srcBlk->mTree);
+    struct malnBlk *blk = malnBlk_construct(mafTree_clone(srcBlk->mTree));
     for (struct malnComp *srcComp = srcBlk->comps; srcComp != NULL; srcComp = srcComp->next) {
         malnBlk_addComp(blk, malnComp_constructClone(srcComp));
     }

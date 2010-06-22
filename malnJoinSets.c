@@ -28,20 +28,26 @@ static void joinCompWithComp(struct joinBlkComp *joining, struct malnComp *comp2
     } else {
         malnBlk_destruct(joining->blk);
     }
+    comp2->blk->done = true;
+    // return resulting block for more additions
     joining->blk = joinedBlk;
     joining->comp = joinedComp;
 }
 
-/* join for specified joinable component, returning the potentially new joinedBlk */
-static void joinCompWithSet(struct joinBlkComp *joining, struct malnSet *malnSet2) {
+/* join for specified joinable component, returning the potentially new joinedBlk.  Return
+ * true if any joined. */
+static bool joinCompWithSet(struct joinBlkComp *joining, struct malnSet *malnSet2) {
+    bool joinedOne = false;
     stList *overComps2 = malnSet_getOverlappingPendingComps(malnSet2, joining->comp->seq, joining->comp->chromStart, joining->comp->chromEnd, malnCompTreeRoot|malnCompTreeLeaf);
     for (int i = 0; i < stList_length(overComps2); i++) {
         struct malnComp *comp2 = stList_get(overComps2, i);
-        if (malnComp_canJoin(joining->comp, comp2)) {
+        if ((!comp2->blk->done) && malnComp_canJoin(joining->comp, comp2)) {
             joinCompWithComp(joining, comp2);
+            joinedOne = true;
         }
     }
     stList_destruct(overComps2);
+    return joinedOne;
 }
 
 /* join blocks overlapping a block of another set. If none are joined,
@@ -56,13 +62,13 @@ static void joinBlkWithSet(struct malnSet *malnSetJoined, struct malnBlk *blk1, 
         joinedOne = false;
         for (joining.comp = joining.blk->comps; (joining.comp != NULL) && (!joinedOne); joining.comp = joining.comp->next) {
             if (malnComp_joinable(joining.comp)) {
-                struct malnBlk *prevBlk = joining.blk;  // remember what we started with
-                joinCompWithSet(&joining, malnSet2);
-                joinedOne = (joining.blk != prevBlk);
+                if (joinCompWithSet(&joining, malnSet2)) {
+                    joinedOne = true;
+                }
             }
         }
     } while (joinedOne);
-
+        
     if (joining.blk->malnSet == NULL) {
         // new block, something was joined
         malnSet_addBlk(malnSetJoined, joining.blk);

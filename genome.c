@@ -23,6 +23,13 @@ static struct Seq *seqNew(struct Genome *genome, char *name, int size) {
     return seq;
 }
 
+/* destructor */
+static void seqFree(struct Seq *seq) {
+    freeMem(seq->name);
+    freeMem(seq->orgSeqName);
+    freeMem(seq);
+}
+
 /* constructor */
 static struct Genome *genomeNew(char *name) {
     struct Genome *genome;
@@ -30,6 +37,17 @@ static struct Genome *genomeNew(char *name) {
     genome->name = cloneString(name);
     genome->seqMap = hashNew(8);
     return genome;
+}
+
+/* destructor */
+static void genomeFree(struct Genome *genome) {
+    struct Seq *seq;
+    while ((seq = slPopHead(&genome->seqs)) != NULL) {
+        seqFree(seq);
+    }
+    freeMem(genome->name);
+    hashFree(&genome->seqMap);
+    freeMem(genome);
 }
 
 /* obtain a new Seq object, creating if it doesn't exist */
@@ -58,6 +76,17 @@ struct Genomes *genomesNew(void) {
     AllocVar(genomes);
     genomes->genomeMap = hashNew(8);
     return genomes;
+}
+
+/* destructor */
+void genomesFree(struct Genomes *genomes) {
+    struct hashCookie cookie = hashFirst(genomes->genomeMap);
+    struct hashEl *hel;
+    while ((hel = hashNext(&cookie)) != NULL) {
+        genomeFree(hel->val);
+    }
+    hashFree(&genomes->genomeMap);
+    freeMem(genomes);
 }
 
 /* obtain a genome object, constructing a new one if it doesn't exist. */

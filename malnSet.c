@@ -15,6 +15,8 @@ struct malnSet {
                                            * objects.  chrom name is org.seq,
                                            * allowing indexing all components, not
                                            * just reference, need to join dups */
+    bool dying;   /* indicates set is in the process of being deleted; used
+                   * to prevent circular deletes */
 };
 
 /* Add all components to range map. */
@@ -98,10 +100,12 @@ void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk) {
 /* remove a block from malnSet */
 void malnSet_removeBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     assert(blk->malnSet == malnSet);
-    if (malnSet->compRangeMap != NULL) {
-        removeBlkRanges(malnSet, blk);
+    if (!malnSet->dying) {
+        if (malnSet->compRangeMap != NULL) {
+            removeBlkRanges(malnSet, blk);
+        }
+        stSortedSet_remove(malnSet->blks, blk);
     }
-    stSortedSet_remove(malnSet->blks, blk);
     blk->malnSet = NULL;
 }
 
@@ -116,7 +120,7 @@ struct malnSet *malnSet_construct(struct Genomes *genomes) {
     struct malnSet *malnSet;
     AllocVar(malnSet);
     malnSet->genomes = genomes;
-    malnSet->blks = stSortedSet_construct();
+    malnSet->blks = stSortedSet_construct2((void (*)(void *))malnBlk_destruct);
     return malnSet;
 }
 
@@ -131,7 +135,33 @@ struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, char *mafFileN
         mafAliFree(&ali);
     }
     malnSet_assert(malnSet);
+    mafFileFree(&mafFile);
     return malnSet;
+}
+
+/* free slRef objects in the compRangeMap */
+static void destructCompRangeMap(struct malnSet *malnSet) {
+    struct hashCookie cookie = hashFirst(malnSet->compRangeMap->hash);
+    struct hashEl *hel;
+    while ((hel = hashNext(&cookie)) != NULL) {
+        struct rbTree *rangeTree = hel->val;
+        for (struct range *rng = rangeTreeList(rangeTree); rng != NULL; rng = rng->next) {
+            slFreeList(&rng->val);
+        }
+    }
+    genomeRangeTreeFree(&malnSet->compRangeMap);
+}
+
+/* destructor */
+void malnSet_destruct(struct malnSet *malnSet) {
+    // prevent attempts to remove from stSortedSet while stSortedSet
+    // is being deleted.
+    malnSet->dying = true;
+    if (malnSet->compRangeMap != NULL) {
+        destructCompRangeMap(malnSet);
+    }
+    stSortedSet_destruct(malnSet->blks);
+    freeMem(malnSet);
 }
 
 /* convert a malnComp to a mafComp */
@@ -236,7 +266,8 @@ stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *
     for (struct range *rng = genomeRangeTreeAllOverlapping(malnSet->compRangeMap, seq->orgSeqName, chromStart, chromEnd); rng != NULL; rng = rng->next) {
         for (struct slRef *compRef = rng->val; compRef != NULL; compRef = compRef->next) {
             struct malnComp *comp = compRef->val;
-            // FIXME: not sure why the overla
+            // FIXME: not sure why the overlap check is needed, shouldn't return non-overlaping,
+            // but it did!
             if ((comp != NULL) && ((comp->treeLoc & treeLocFilter) != 0) && (!comp->blk->done)
                 && malnComp_overlapRange(comp, seq, chromStart, chromEnd)) {
                 if (overBlks == NULL) { 

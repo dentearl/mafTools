@@ -53,6 +53,9 @@ struct Seq *genomeGetSeq(struct Genome *genome, char *name);
 /* constructor */
 struct Genomes *genomesNew(void);
 
+/* destructor */
+void genomesFree(struct Genomes *genomes);
+
 /* obtain a genome object, constructing a new one if it doesn't exist */
 struct Genome *genomesObtainGenome(struct Genomes *genomes, char *name);
 

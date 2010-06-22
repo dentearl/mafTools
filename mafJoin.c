@@ -12,6 +12,8 @@
  *    it was done with block based rather than column based merges.
  */
 
+/* set to true to cleanup all memory for memory leak checks */
+static bool memLeakDebugCleanup = false;
 
 /* command line option specifications */
 static struct optionSpec optionSpecs[] = {
@@ -51,6 +53,13 @@ static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMa
     }
     struct malnSet *malnSetJoined = malnJoinSets(refGenome, malnSet1, malnSet2);
     malnSet_writeMaf(malnSetJoined, outMaf);
+
+    if (memLeakDebugCleanup) {
+        malnSet_destruct(malnSet1);
+        malnSet_destruct(malnSet2);
+        malnSet_destruct(malnSetJoined);
+        genomesFree(genomes);
+    }
 }
 
 /* Process command line. */

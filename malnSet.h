@@ -14,6 +14,9 @@ struct malnSet *malnSet_construct(struct Genomes *genomes);
  * assign branch lengths when inferring trees from pair-wise MAFs. */
 struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, char *mafFileName, double defaultBranchLength);
 
+/* destructor */
+void malnSet_destruct(struct malnSet *malnSet);
+
 /* get associated genomes object  */
 struct Genomes *malnSet_getGenomes(struct malnSet *malnSet);
 

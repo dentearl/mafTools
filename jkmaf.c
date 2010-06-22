@@ -456,6 +456,7 @@ if (obj == NULL)
     return;
 mafCompFreeList(&obj->components);
 mafRegDefFree(&obj->regDef);
+freeMem(obj->tree);
 freez(pObj);
 }
 
