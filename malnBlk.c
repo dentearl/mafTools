@@ -150,6 +150,10 @@ void malnBlk_assert(struct malnBlk *blk) {
         assert(comp->blk == blk);
         assert(malnComp_getWidth(comp) == blk->alnWidth);
         malnComp_assert(comp);
+        // check for overlaps
+        for (struct malnComp *comp2 = comp->next; comp2 != NULL; comp2 = comp2->next) {
+            assert(!malnComp_overlap(comp, comp2));
+        }
     }
 #endif
 }

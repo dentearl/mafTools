@@ -78,6 +78,9 @@ static struct malnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct mafAli *a
         malnBlk_addComp(blk, mafCompToMAlnComp(genomes, comp));
     }
     malnBlk_finish(blk);
+#if 0
+    malnBlk_assert(blk);
+#endif
     return blk;
 }
 
