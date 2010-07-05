@@ -35,8 +35,13 @@ class MafJoinTests(unittest.TestCase):
         fileHandle.close()
         return tempFile
 
-    def runEvalMafJoiner(self, ref, mafFileA, mafFileB, outputMafFile):
-        cmd = ["mafJoin", ref, mafFileA, mafFileB, outputMafFile]
+    def runEvalMafJoiner(self, ref, mafFileA, mafFileB, outputMafFile, treelessRoot1=None, treelessRoot2=None):
+        cmd = ["mafJoin"]
+        if treelessRoot1 != None:
+            cmd.append("-treelessRoot1="+treelessRoot1)
+        if treelessRoot2 != None:
+            cmd.append("-treelessRoot2="+treelessRoot2)
+        cmd.extend([ref, mafFileA, mafFileB, outputMafFile])
         system(" ".join(cmd))
         logger.info("Ran eval-maf joiner okay")
 
@@ -45,7 +50,7 @@ class MafJoinTests(unittest.TestCase):
         """
         system("diff -u %s %s" % (expected, recieved))
 
-    def mafJoinTest(self, ref, mafA, mafB, mafC):
+    def mafJoinTest(self, ref, mafA, mafB, mafC, treelessRoot1=None, treelessRoot2=None):
         """Writes out mafA and mafB to temp files.
         Runs mafJoin
         Parses the output and compares it to mafC.
@@ -55,7 +60,7 @@ class MafJoinTests(unittest.TestCase):
         tempFileC = self.writeMAF(mafC, "C.maf")
         tempOutputFile = self.getTestTempFile("out.maf")
         logger.info("Got inputs to test")
-        self.runEvalMafJoiner(ref, tempFileA, tempFileB, tempOutputFile)
+        self.runEvalMafJoiner(ref, tempFileA, tempFileB, tempOutputFile, treelessRoot1=treelessRoot1, treelessRoot2=treelessRoot2)
         self.compareExpectedAndRecieved(tempFileC, tempOutputFile)
         logger.info("Ran test apparently okay")
 
@@ -268,7 +273,7 @@ class MafJoinTests(unittest.TestCase):
         s mm4.chr6    53310102 13 - 151104725 ACAGCTGAAAATA
         s hg18.chr7   27707221 13 + 158545518 gcagctgaaaaca
         """
-        self.mafJoinTest("hg18", A, B, C)
+        self.mafJoinTest("hg18", A, B, C, treelessRoot1="hg18", treelessRoot2="hg18")
           
     def testJoin8(self):
         """simple duplication represented by two separate blocks, as with evolver
@@ -435,7 +440,7 @@ class MafJoinTests(unittest.TestCase):
         s mm4.chr6    53310102 13 - 151104725 ACAGCTGAAAATA
         s hg18.chr7   27707221 13 + 158545518 gcagctgaaaaca
         """
-        self.mafJoinTest("hg18", A, B, C)
+        self.mafJoinTest("hg18", A, B, C, treelessRoot1="hg18", treelessRoot2="hg18")
           
     def testJoin13(self):
         """MAFs with no trees and specified roots, and multiple reference sequences
@@ -462,7 +467,7 @@ class MafJoinTests(unittest.TestCase):
         s mm4.chr6    53310102 13 - 151104725 ACAGCTGAAAATA
         s hg18.chr7   27707221 13 + 158545518 gcagctgaaaaca
         """
-        self.mafJoinTest("hg18", A, B, C)
+        self.mafJoinTest("hg18", A, B, C, treelessRoot1="hg18", treelessRoot2="hg18")
           
     
 if __name__ == '__main__':

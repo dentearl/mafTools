@@ -169,8 +169,11 @@ static mafTree *mafTree_inferFromMaf(struct Genomes *genomes, struct mafAli *ali
 mafTree *mafTree_constructFromMaf(struct Genomes *genomes, struct mafAli *ali, double defaultBranchLength, struct Genome *treelessRootGenome) {
     if (ali->tree != NULL) {
         return mafTree_parseFromMaf(genomes, ali);
-    } else {
+    } else if (treelessRootGenome != NULL) {
         return mafTree_inferFromMaf(genomes, ali, defaultBranchLength, treelessRootGenome);
+    } else {
+        errAbort("no tree in mafAli block and no treelessRoot genome specified");
+        return NULL;
     }
 }
 
