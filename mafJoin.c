@@ -31,13 +31,18 @@ static char *usageMsg =
     "Options:\n"
     "  -branchLength=0.1 - branch length to use when generating\n"
     "   a trees for MAF. Defaults to 0.1.\n"
-    "  -treelessRoot1=genome - if a mafAli in inMaf1 doesn't have a tree,\n"
-    "   then one is created with this as its root genome and all others as\n"
-    "   the leaves.  An error is generated if there are treeless blocks and\n"
-    "   this option is not specified.\n"
-    "  -treelessRoot2=genome - treeless root genome for inMaf2.\n"
-    "  -maf1Out=maf1Copy - output maf1 for debugging\n"
-    "  -maf2Out=maf2Copy - output maf2 for debugging\n";
+    "  -treelessRoot1=genome - root genome for inMaf1 blocks\n"
+    "   that do not have trees (see below).\n"
+    "  -treelessRoot1=genome - root genome for inMaf2 blocks\n"
+    "   that do not have trees.\n"
+    "  -maf1Out=maf1Copy - output maf1 for debugging after adding trees.\n"
+    "  -maf2Out=maf2Copy - output maf2 for debugging after adding trees.\n"
+    "\n"
+    "If MAF blocks (mafAli) don't have a tree associated with them, one\n"
+    "will be created.  The root genome for the tree is chosen based on\n"
+    "the genome specified by the -treelessRoot1 or -treelessRoot2 options.\n"
+    "One sequence from that genome becomes the root and the remainder\n"
+    "become it's direct children.\n";
 
 /* usage msg and exit */
 static void usage(char *msg) {
