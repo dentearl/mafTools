@@ -33,7 +33,7 @@ static char *usageMsg =
     "   a trees for MAF. Defaults to 0.1.\n"
     "  -treelessRoot1=genome - root genome for inMaf1 blocks\n"
     "   that do not have trees (see below).\n"
-    "  -treelessRoot1=genome - root genome for inMaf2 blocks\n"
+    "  -treelessRoot2=genome - root genome for inMaf2 blocks\n"
     "   that do not have trees.\n"
     "  -maf1Out=maf1Copy - output maf1 for debugging after adding trees.\n"
     "  -maf2Out=maf2Copy - output maf2 for debugging after adding trees.\n"
