@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-static bool malnJoinBlksDebug = false;  // FIXME: tmp
+static bool malnJoinBlksDebug = false;  // FIXME: tmp, make a flag
 
 /*
  * join trees
@@ -123,8 +123,8 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     struct malnBlk *blk1 = refComp1->blk;
     struct malnBlk *blk2 = refComp2->blk;
     if (malnJoinBlksDebug) { // FIXME: tmp
-        malnBlk_dump(blk1, "blk1", stderr);
-        malnBlk_dump(blk2, "blk2", stderr);
+        malnBlk_dump(blk1, "inBlk1", stderr);
+        malnBlk_dump(blk2, "inBlk2", stderr);
     }
 
     // reverse complement if needed
@@ -134,7 +134,7 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
         refComp2 = malnBlk_findCompByChromRange(blk2, refComp2->seq, refComp2->chromStart, refComp2->chromEnd);
         assert(refComp2 != NULL);
         if (malnJoinBlksDebug) { // FIXME: tmp
-            malnBlk_dump(blk2, "blk2rc", stderr);
+            malnBlk_dump(blk2, "inBlk2rc", stderr);
         }
     }
 
@@ -158,6 +158,13 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     if (joinedCompRet != NULL) {
         *joinedCompRet = destComps1[0];
     }
+
+    if (malnJoinBlksDebug) {
+        fprintf(stderr, "refCommon: %s:%d-%d\n", refComp1->seq->orgSeqName, refCommonStart, refCommonEnd);
+        fprintf(stderr, "align1Commom:: %d-%d\n", aln1CommonStart, aln1CommonEnd);
+        fprintf(stderr, "align2Commom:: %d-%d\n", aln2CommonStart, aln2CommonEnd);
+    }
+
 
     // before common start
     copyUnsharedRefColumns(blkJoined, destComps1, blkCursor1, 0, aln1CommonStart);

@@ -3,7 +3,8 @@ include ../../../include.mk
 binPath = ../../../bin
 libPath = ../../../lib
 
-cflags = ${cflags_opt}
+#cflags = ${cflags_opt}
+cflags = ${cflags_dbg}
 
 cflags += -I${libPath}
 ifneq ($(wildcard ${kentLibWeb}),)

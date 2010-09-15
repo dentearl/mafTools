@@ -152,6 +152,9 @@ void malnBlk_assert(struct malnBlk *blk) {
         malnComp_assert(comp);
         // check for overlaps
         for (struct malnComp *comp2 = comp->next; comp2 != NULL; comp2 = comp2->next) {
+            if (malnComp_overlap(comp, comp2)) { // FIXME: tmp
+                malnBlk_dump(blk, "hash overlapping", stderr);
+            }
             assert(!malnComp_overlap(comp, comp2));
         }
     }

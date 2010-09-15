@@ -83,6 +83,11 @@ void malnComp_append(struct malnComp *comp, char *src, int len);
  * The component must extend the range of this component. */
 void malnComp_appendCompAln(struct malnComp *comp, struct malnComp *srcComp, int alnStart, int alnEnd);
 
+/* get number of bases in component, not including inserts */
+static inline bool malnComp_numBases(struct malnComp *comp) {
+    return (comp->chromEnd - comp->chromStart);
+}
+
 /* compare to component to see if they overlap */
 static inline bool malnComp_overlap(struct malnComp *comp, struct malnComp *comp2) {
     return (comp->seq == comp2->seq) && (comp->chromStart < comp2->chromEnd) && (comp->chromEnd > comp2->chromStart);
