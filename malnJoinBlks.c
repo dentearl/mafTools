@@ -168,12 +168,15 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
 
     // before common start
     copyUnsharedRefColumns(blkJoined, destComps1, blkCursor1, 0, aln1CommonStart);
+    if (malnJoinBlksDebug) {malnBlk_dump(blkJoined, "joined@1", stderr);}
     copyUnsharedRefColumns(blkJoined, destComps2, blkCursor2, 0, aln2CommonStart);
+    if (malnJoinBlksDebug) {malnBlk_dump(blkJoined, "joined@2", stderr);}
 
     // common
     assert(destComps1[0]->end == refCommonStart);
     joinSharedRefColumns(blkJoined, destComps1, blkCursor1, aln1CommonEnd, destComps2, blkCursor2, aln2CommonEnd);
     assert(destComps1[0]->end == refCommonEnd);
+    if (malnJoinBlksDebug) {malnBlk_dump(blkJoined, "joined@3", stderr);}
 
     // after common end
     copyUnsharedRefColumns(blkJoined, destComps1, blkCursor1, aln1CommonEnd, blk1->alnWidth);

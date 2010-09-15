@@ -57,6 +57,7 @@ static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMa
     struct Genome *refGenome = genomesObtainGenome(genomes, refGenomeName);
     struct Genome *treelessRoot1Genome = (treelessRoot1Name != NULL) ? genomesObtainGenome(genomes, treelessRoot1Name) : NULL;
     struct Genome *treelessRoot2Genome = (treelessRoot2Name != NULL) ? genomesObtainGenome(genomes, treelessRoot2Name) : NULL;
+
     struct malnSet *malnSet1 = malnSet_constructFromMaf(genomes, inMaf1, defaultBranchLength, treelessRoot1Genome);
     malnJoin_joinSetDups(malnSet1);
     if (maf1Copy != NULL) {

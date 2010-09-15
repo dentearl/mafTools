@@ -3,6 +3,6 @@
 struct malnSet;
 
 /* Join duplication blocks in a set, which evolver outputs as separate
- * block.  Duplications will only be joined at the root */
+ * blocks.  Duplications will only be joined at the root */
 void malnJoin_joinSetDups(struct malnSet *malnSet);
 #endif

@@ -26,6 +26,28 @@ static bool isDeletedComp(stHash *deleteBlksTbl, struct malnComp *comp) {
     return isDeletedBlk(deleteBlksTbl, comp->blk);
 }
 
+
+/* FIXME hack: malnJoinBlks was written assuming none of the non-reference
+ * blocks overlap.  Then the code was misused to join tandem dups in the
+ * same alignment set.  This broke things badly and means some major work
+ * in malnJoinBlks, so we introduced this hack.
+ * FIXME lots of debugging code just for this in malnJoinBlks.c. */
+static bool isNastyTandemDupCase(struct malnComp *joinComp, struct malnComp *dupComp) {
+    if (false) { // set for debugging
+        return false; 
+    }
+    for (struct malnComp *comp1 = joinComp->blk->comps; comp1 != NULL; comp1 = comp1->next) {
+        if (comp1 != joinComp) {
+            for (struct malnComp *comp2 = dupComp->blk->comps; comp2 != NULL; comp2 = comp2->next) {
+                if ((comp1 != comp2) && malnComp_overlap(comp1, comp2)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 /* join two blocks associated components, create and third block. Return that
  * blocks root component. Joined blocks are inserted into delete table */
 static struct malnComp *joinCompWithDup(struct malnSet *malnSet, struct malnComp *comp1, struct malnComp *comp2, stHash *deleteBlksTbl) {
@@ -46,7 +68,7 @@ static void joinCompWithDups(struct malnSet *malnSet, struct malnComp *joinComp,
     for (int i = 0; i < stList_length(overComps); i++) {
         struct malnComp *dupComp = stList_get(overComps, i);
         // ignore starting point and deleted
-        if ((dupComp != startComp) && !isDeletedComp(deleteBlksTbl, dupComp)) {
+        if ((dupComp != startComp) && (!isDeletedComp(deleteBlksTbl, dupComp)) && !isNastyTandemDupCase(joinComp, dupComp)) {
             joinComp = joinCompWithDup(malnSet, joinComp, dupComp, deleteBlksTbl);
             addCnt++;
         }
@@ -58,7 +80,7 @@ static void joinCompWithDups(struct malnSet *malnSet, struct malnComp *joinComp,
 }
 
 /* Join duplication blocks in a set, which evolver outputs as separate
- * block.  Duplications will only be joined at the root */
+ * blocks.  Duplications will only be joined at the root */
 void malnJoin_joinSetDups(struct malnSet *malnSet) {
     stHash *deleteBlksTbl = stHash_construct2(NULL, (void (*)(void *))malnBlk_destruct);
     stSortedSetIterator *iter = malnSet_getBlocks(malnSet);
