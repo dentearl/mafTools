@@ -136,7 +136,8 @@ static struct mafComp *findRootComp(struct mafAli *ali, struct Genome *treelessR
         }
     }
     if (rootComp == NULL) {
-        errAbort("treeless root genome %s not found in MAF block", treelessRootGenome->name);
+        struct mafComp *comp0 = ali->components;
+        errAbort("treeless root genome %s not found in MAF block: %s:%d", treelessRootGenome->name, comp0->src, comp0->start);
     }
     return rootComp;
 }
