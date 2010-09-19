@@ -56,6 +56,10 @@ static void assertJoinedComps(struct malnBlkCursor *blkCursor, struct malnComp *
 
 /* copy columns outside of the common reference sequence region to the joined maf */
 static void copyUnsharedRefColumns(struct malnBlk *blkJoined, struct malnComp **destComps, struct malnBlkCursor *blkCursor, int alnStart, int alnEnd) {
+    malnBlk_assert(blkJoined);  // FXIME
+    malnBlk_assert(blkCursor->blk);  // FXIME
+    malnBlk_dump(blkJoined, "blkJoined", stderr);  // FXIME
+    malnBlk_dump(blkCursor->blk, "blkCursor", stderr);  // FXIME
     for (int i = 0; i < blkCursor->numRows; i++) {
         malnComp_appendCompAln(destComps[i], blkCursor->rows[i].comp, alnStart, alnEnd);
     }
