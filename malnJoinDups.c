@@ -12,6 +12,9 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+// FIXME: tmp
+static const bool debug = false;
+
 /* add a component's block to the delete table */
 static void flagDeleted(stHash *deleteBlksTbl, struct malnComp *comp) {
     stHash_insert(deleteBlksTbl, comp->blk, comp->blk);
@@ -29,6 +32,10 @@ static bool isDeletedComp(stHash *deleteBlksTbl, struct malnComp *comp) {
 
 /* report a multiple parent, either to stderr or by aborting */
 static void reportMultiParent(struct malnComp *joinMultiComp, struct malnComp *dupMultiComp, bool discardTwoParents) {
+    if (debug) { // FIXME: tmp
+        malnBlk_dump(joinMultiComp->blk, "joinMultiComp", stderr);
+        malnBlk_dump(dupMultiComp->blk, "dupMultiComp", stderr);
+    }
     char *msg = stSafeCDynFmt("multiple parents detected in components %s:%d-%d (%c) and %s:%d-%d (%c)",
                               joinMultiComp->seq->orgSeqName, joinMultiComp->start, joinMultiComp->end, joinMultiComp->strand,
                               dupMultiComp->seq->orgSeqName, dupMultiComp->start, dupMultiComp->end, dupMultiComp->strand);

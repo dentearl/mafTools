@@ -58,7 +58,7 @@ static void assertJoinedComps(struct malnBlkCursor *blkCursor, struct malnComp *
 static void copyUnsharedRefColumns(struct malnBlk *blkJoined, struct malnComp **destComps, struct malnBlkCursor *blkCursor, int alnStart, int alnEnd) {
     malnBlk_assert(blkJoined);  // FXIME
     malnBlk_assert(blkCursor->blk);  // FXIME
-    if (false) {
+    if (malnJoinBlksDebug) {
         malnBlk_dump(blkJoined, "blkJoined", stderr);  // FXIME
         malnBlk_dump(blkCursor->blk, "blkCursor", stderr);  // FXIME
     }
