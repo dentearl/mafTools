@@ -48,6 +48,10 @@ struct malnBlk *malnBlk_reverseComplement(struct malnBlk *blk);
 /* pad all components so they are the same width as the overall alignment. */
 void malnBlk_pad(struct malnBlk *blk);
 
+/* check for consistency within a components of a MAF, generating an
+ * error if there are no consistent */
+void malnBlk_validate(struct malnBlk *blk);
+
 /* assert that the block is set-consistent */
 void malnBlk_assert(struct malnBlk *blk);
 

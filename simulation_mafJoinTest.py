@@ -2,10 +2,10 @@
 
 """
 
-import os,sys
+import os,sys,subprocess
 myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
 sys.path.append(myBinDir + "/../..")
-os.putenv("PATH", myBinDir + "/../../../bin:" + os.getenv("PATH"))
+os.environ["PATH"] = myBinDir + "/../../../bin:" + os.environ["PATH"]
 
 import unittest
 from sonLib.bioio import getTempFile 
@@ -15,6 +15,7 @@ from sonLib.bioio import system
 class MafJoinTests(unittest.TestCase):
 
     def getTestTempFile(self, suffix):
+        # FIXME: make this part of test framework
         tempDir = "tmp"
         if not os.path.exists(tempDir):
             os.makedirs(tempDir)
@@ -35,7 +36,7 @@ class MafJoinTests(unittest.TestCase):
         fileHandle.close()
         return tempFile
 
-    def runEvalMafJoiner(self, ref, mafFileA, mafFileB, outputMafFile, treelessRoot1=None, treelessRoot2=None, discardTwoParents=False):
+    def makeMafJoinCmd(self, refDb, mafFileA, mafFileB, outputMafFile, treelessRoot1=None, treelessRoot2=None, discardTwoParents=False):
         cmd = ["mafJoin"]
         if treelessRoot1 != None:
             cmd.append("-treelessRoot1="+treelessRoot1)
@@ -43,16 +44,25 @@ class MafJoinTests(unittest.TestCase):
             cmd.append("-treelessRoot2="+treelessRoot2)
         if discardTwoParents:
             cmd.append("-discardTwoParents")
-        cmd.extend([ref, mafFileA, mafFileB, outputMafFile])
-        system(" ".join(cmd))
-        logger.info("Ran eval-maf joiner okay")
+        cmd.extend([refDb, mafFileA, mafFileB, outputMafFile])
+        return cmd
+        
+    def runMafJoin(self, refDb, mafFileA, mafFileB, outputMafFile, expectExitCode=0, expectStderr="", treelessRoot1=None, treelessRoot2=None, discardTwoParents=False):
+        cmd = self.makeMafJoinCmd(refDb, mafFileA, mafFileB, outputMafFile, treelessRoot1, treelessRoot2, discardTwoParents)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (stdout, stderr) = proc.communicate()
+        exitCode = proc.wait()
+        self.assertEquals(exitCode, expectExitCode)
+        self.assertEquals(stdout, "")
+        self.assertEquals(stderr, expectStderr)
+        logger.info("okay: " + " ".join(cmd))
 
     def compareExpectedAndRecieved(self, expected, recieved):
         """Checks two MAFs are equivalent.
         """
         system("diff -u %s %s" % (expected, recieved))
 
-    def mafJoinTest(self, ref, mafA, mafB, mafC, treelessRoot1=None, treelessRoot2=None, discardTwoParents=False):
+    def mafJoinTest(self, ref, mafA, mafB, mafC, expectExitCode=0, expectStderr="", treelessRoot1=None, treelessRoot2=None, discardTwoParents=False):
         """Writes out mafA and mafB to temp files.
         Runs mafJoin
         Parses the output and compares it to mafC.
@@ -61,9 +71,9 @@ class MafJoinTests(unittest.TestCase):
         tempFileB = self.writeMAF(mafB, "B.maf")
         tempFileC = self.writeMAF(mafC, "C.maf")
         tempOutputFile = self.getTestTempFile("out.maf")
-        logger.info("Got inputs to test")
-        self.runEvalMafJoiner(ref, tempFileA, tempFileB, tempOutputFile, treelessRoot1=treelessRoot1, treelessRoot2=treelessRoot2, discardTwoParents=discardTwoParents)
-        self.compareExpectedAndRecieved(tempFileC, tempOutputFile)
+        self.runMafJoin(ref, tempFileA, tempFileB, tempOutputFile, expectExitCode=expectExitCode, expectStderr=expectStderr, treelessRoot1=treelessRoot1, treelessRoot2=treelessRoot2, discardTwoParents=discardTwoParents)
+        if expectExitCode == 0:  # only check MAF on success
+            self.compareExpectedAndRecieved(tempFileC, tempOutputFile)
         logger.info("Ran test apparently okay")
 
     def setUp(self):
@@ -474,7 +484,6 @@ class MafJoinTests(unittest.TestCase):
     def testJoin14(self):
         """check handling of duplicate parents
         """
-        # FIXME: should check warning msg too
         A = """
         a score=0.000000 tree="((simHuman.chr21:0.1)sHuman-sChimp.chr21:0.1,simGorilla.chr21:0.1)sG-sH-sC.chr21;"
         s simHuman.chr21      9270577 4109 + 9684689 CTCCCAATATTCTGCTTTCATCTCTACGTTTCTACTCTTTTGCCCATGGGCACACATTTGCTAGGTAGTGTCCTTGACATAAAAGTGCTGTAACCTGGAGATGCTCACATAGTTATCAGTTATGAAAGATTTGTAAGTAAAGGAAGTGACAATCCCTCAGGGTGGAAACCCAGCCTCTGTTTTTTTATATATTTATAGAAACATGTTTTTCTAAACGTGCTCCTTTTAGTCTGCAAGTTTCAGTATGCTCCTTTCAGTTTGAAGGTTCTCAACTATTAAGATTTTTCCTTGCAATTTCCTTTTTATACACTAGATAAAGGAAAAATTGCATACAATAGTAAGTTTTGGATTATTGTGTGCATTACATAATGTAGTAGGTTGACAAATGGAACCTCCAAATATAACCACATCCTAACCATGGAACCTGTGAGTGTTATCTTACATGGCATAAAAAGGGTTTGGAGATC----------------------------------ATGCAATCACATGTACCCATATAAGAAAGAGATTCAACACAGGCTACAGAAGAAGAAAACCATATGAAGGAATCAGTAGGAAACAATCAAAGAGTGAAGCTATGCTGTTGACTGGAAGATGCAGGAAGGGCTCATGGGTCAGGGAATGCAACCCCACAAGCTGAAACAATTCTCCCTAAGTGCCTCCAGAGGTAGCATAGCCCTTGGTTTCATCCCAAGGAAACTGATTTTTCACTTCTAGCTGCCAGAAATGTAAGAAAACATATTTGTCATGTTTGAAGCCATAGAATCTGTGGAAATTTGTTATAACAGCTATTAGAAACTAATATACTTGCTGAATAATAAATGAACACTGCAAATCCTTACAGTTCACAGAATATTCAGAGAATAAATTTTCATAATTTTGGTTTTAAGAAGTTCTTGTTGTTACCTTAGCTTTTCAGAGAGTACACAGTTAAATTCTGATAAACGAATTCTAGTATATACTCCAGACATCTCTACAGTACATGGAATAATTCTACATTAAAACACTAACTATAATAATCATTATTGCAGAAGGTCAATGTATCTGTGATTCTGGCACAAACAATTTAGGTACAATTTGCCCTCACATCATCCTTCTGATTGTTGTATATTATTTGCGTCTGAATGTTCTTAGAACTTCTTAAAAGATTCCATAAACATATGTTTTGTTAAAGCTCTACATTAAGTTTAGTTTGTATAGAAATGTAAAAAATTATAGGCTTACATTTCCCTAGTACTTTTTATGTACTTTGCAATGCCTAAATAAATTAGATGCTGCCAGAAGCAAATTTTAGTTGCTTTTTCTCGGTTTTAAATGATTTTCTTATTTTGTTTTCTGACAAAAGTTGTGTAGCCTATTTCGGACACTCCAGCATGTGGAAAATAGCTTCATAAGATAAAAATTAAA--AATTAAAACCGTGTAATTAGAAAAACTAAGTAAAATTTTTGAAAGTTAATTTGCAAAACCTATAATTGCCAATGTGTGATAAAGTAACAGTAAGATTCCCTACAGCCATTGAAACATTAATTGATGACAAATGATTCAGTGATTGACTTTATTGCCTTCTTGCAGCTCCAATGTAGATTATGGTAATTAATATTAAAAATCATTTCCTATTTAACATTTTATGCTGACACAAATCCTTTATTGGTTCATTTGAGAGCTCTTTCTTAAATTATGCCATTGACTGCCTACTTAGCACAACAAATAATGGAGCATCTAATAATTACGACAGTGAAACATGAGCCTTATTTTAAAAATTTTTAATGATGGAAATGATTAAAAACCATAATCTTACTTTAGATGACAAGCTGACCAATAGATACCACAGTCTTTATTGAAATGTTTCTCTTGCTGA-CCTCTGACACACTTCCTTGCATGGGCTATGCCATTTTTTTCAATATTTTCTTCCTGATACGGTTTGACTGTGTCCACACCCAAATCTCAAGGTGAAATATAACTCCCAAAATTCCAATTTGTTATGGGAGGGACCCAGAGGGA--TAATTGAATCATGGGGGGTTGGTCTTTCCCATCCTATTCTCATGATAGTGGATACGTCTCATGAGACCTGCTCAGTTTCTCGGGGGTTTCTGCTTTTGCTCTTCATT-------GCTGCCACCATGTAACAAGTGCCTTTCGCCTCGTGCCATTATTCTAAGGCCTCCTCAGCCACGTGGAACTGTAAGTCCAGTTAAAACTCTTTTCCTTCCCAGTCTTGGATATGTCTTTATCAGCAGTGTGAGGATGGACTAATACCATAAACTGGAACCAGTAGAGTGGGGCATTGATGAAAAGATACCCAAAAATGTGCAAGTGACTTTGGAACTAGGTAACAGGCAGGAATCGGAGTAGCTTGAAGGGCTCAGAAGAAGACAGGAAAATGTGGGAAAGTTTGGAATTTCCTAGAGACTTGTTGAATGGCTCCACCCAAAATGCTGAAAGTGATATGGACAA---------GGCTGAGATGATCTCAGATGAAGATGAGGAACTTGGGAACTGGAGCAAAGAGAGTGGTGACATTTTGCCCCTTCCCTAGGGACTTGTGGAATTTTGAACTTCAGAGAGATGATTTAGGGTATGTGGTGGAAGAAATTTCTAAGTAGCAAGGCATTCAAGAGGTGACTTGGGTGCTGTTAAAGGCATTCAGTTTAAAAAGGAAAGCTGAGCATGAAAGTTTGGAAAATTTGCAGCCTGACTATGTGATAGAAAAGAAGAAACCCATTTTCAGGGGAGAAATTCAAGCCAACTGCAGAAATGTTCATAGGTAGCAAGAAGCCTAATGTTAATCTCCATGACCTTGGAGAAAATGTCCCCAAGACCACAGGGAAAATGTTCTCCATGTCAGAGACCTTCGCAGCAGCCCCTCCCATCACTAGCCCTGAGGCCCAGGAGAAAAAAGCAGTTTTGTGGGCCGGGCCCAGGGTCCTCGT--TATGTGCAGCCTAGGAACTTGGTGCCCTAGGATCTTGTGTTCCAGGAACTTGGAACACAGCCTAGGAACTTGTGTCCCAGTTGTTCCAGCCATAGCTGTAAGGGACCAACATACAGCTCATGCTGTGGCTTCAGACAGTGGAAGCCCCGAGCCTTGGCAGCTTCCACATGGTGTTGAGCCCGTCGGTGCACAGAAGTCAAGAATTGAGGTTTGGGAACCTCCCCCTAGACTTCAGAAGATGTATGGAAACACGGGATGTGCTGGCAAATTTTGCTTCAGGGGCAGGGCTGTCATGAAGAACCTCTGCTAGGGCAGTGCAGAAGGGAAATGTGGGGTTGGAGCCCCCACACGGAGTCCCTACTGGGGCACTGCCTAGTGGAGCTGTGAGAAGAGGGCCATCATCTTCCAGAGCCCATAATGGTAGATCCACTGATAGCTTGCTTCAGGTGCCTGGGAAAGCCACAGACACTCAACACCACCACATGAAAGCAGTCAGGAGGGAGGCTGTACCTTTCAAAGCCACAGAGGCTGAGCTGCCCAAGACTATGGGAACCCACCTCTTGCATCAGCGTGACCTGGATTTGAGACATGGAGTCAAAGGAGATCATTTTGGAACTTTAAAATTCGACTGCCCTGCTGGATTTTGGACTCCCATGGGCCCGTAAACACTTTGTTTTGACCAATTTCTACCATTTGGAATGGCTGTATTTACTCAATACCTGTACCCCCATTGTATCTAGGAGGTAACTAGCTTGCTTTTGATTTTACAGGCTCATAAGCAGAAGGGA-TTGCCTTGTCTCAGGTGAGACTCTGGACTGTGGACTTTTGGGTTTATGCTAAAATGAGTTAAGACTTTGCGGGACTGTTGGGATGGCATGATTGGTTTTCAAATGTGAGAACATGAGATTTGGAGGGGCCTGGGTGGATCAATATGGTTTGGCTGTGTCCCTACTGAAATCTCAAATTGGATTGTGTCTCCCAGAGTTACTATGTGTTGTGGGAGGGACCCAGGGTAAGTAATTGAATCATGAGGGCTGGTCTTCCCTGTGCTATTCTCGTGATAGTGAATAAGTCTCACGAGATCCAATGGGCTTATCAGTGGTTTCCACTTTTACTTCTTCCTCATTTTCTCTTGCCACCACCATGTAAGAAGTG------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------TCATGCCATTGCACTTCAGCCTGGGTGACAAGAGCAAGA-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -495,8 +504,29 @@ class MafJoinTests(unittest.TestCase):
         s sHuman-sChimp.chr21 9223232 192 + 9923224 GGCTGAGGGAGGAGAAATGCTTGAACCCAGGAGGCAGAGGTTGCAGTGAGCCGAGATCATGCCATTGCACTTCAGCCTGGGTGACAAGAGCAAGAATCCATCTCAAAATAAGTAAATAAATAAATAAAGAAATAAAAATAAAATACAAATACAAATATTAGCTGGGTGTGTTGGTGCGTGCCTGTAATCCCA
         s sG-sH-sC.chr21      9199486 192 + 9901589 GGCTGAGGGAGGAGAAATGCTTGAACCCAGGAGGCAGAGGTTGCAGTGAGCCGAGATCATGCCATTGCACTTCAGCCTGGGTGACAAGAGCAAGAATCCATCTCAAAATAAGTAAATAAATAAATAAATAAATAAAAATAAAATACAAATACAAATATTAGCTGGGTGTGTTGGTGCGTGCCTGTAATCCCA
         """
-        self.mafJoinTest("sG-sH-sC", A, B, C, discardTwoParents=True)
+        self.mafJoinTest("sG-sH-sC", A, B, C, discardTwoParents=True, expectStderr="Warning: multiple parents detected in components sHuman-sChimp.chr21:9223232-9223424 (+) and sHuman-sChimp.chr21:9218723-9223327 (+)\n")
 
+    def testJoin15(self):
+        """check for detecting overlapping components in a block."""
+        A = """
+        a score=0
+        s simHuman.chr1 825 10 - 1024 ACGTACGTAC
+        s sHuman-sChimp.chr1 200 10 + 1024 ACGTACGTAC
+        s simHuman.chr1 200 10 + 1024 ACGTACGTAC
+        s sHuman-sChimp.chr1 200 10 + 1024 ACGTACGTAC
+        """
+        B = """
+        a score=0
+        s simChimp.chr1 830 5 - 1024 CGTAC
+        s sHuman-sChimp.chr1 200 5 + 1024 CGTAC
+        s simChimp.chr1 200 6 + 1024 ACG----TAC
+        s sHuman-sChimp.chr1 200 10 + 1024 ACGTACGTAC
+        s simChimp.chr1 204 4 + 1024 TACG
+        s sHuman-sChimp.chr1 204 4 + 1024 TACG
+        """
+        C = """
+        """
+        self.mafJoinTest("sHuman-sChimp", A, B, C, treelessRoot1="sHuman-sChimp", treelessRoot2="sHuman-sChimp", expectExitCode=255, expectStderr="overlapping components detected with in a block: sHuman-sChimp.chr1:200-210 (+) and sHuman-sChimp.chr1:200-210 (+)\n")
 
 if __name__ == '__main__':
     unittest.main()

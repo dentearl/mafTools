@@ -91,7 +91,8 @@ static void malnBlk_sortComps(struct malnBlk *blk) {
 void malnBlk_finish(struct malnBlk *blk) {
     malnBlk_sortComps(blk);
     malnBlk_setLocAttr(blk);
-    malnBlk_assert(blk);
+    malnBlk_validate(blk); // produces better error messages
+    malnBlk_assert(blk);   // really only to catch bugs in this code, not input
 }
 
 /* get the root component */
@@ -138,6 +139,21 @@ void malnBlk_pad(struct malnBlk *blk) {
         assert(malnComp_getWidth(comp) <= blk->alnWidth);
         if (malnComp_getWidth(comp) <= blk->alnWidth) {
             malnComp_pad(comp, blk->alnWidth);
+        }
+    }
+}
+
+/* check for consistency within a components of a MAF, generating an
+ * error if there are no consistent */
+void malnBlk_validate(struct malnBlk *blk) {
+    // check for overlapping components
+    for (struct malnComp *comp1 = blk->comps; comp1 != NULL; comp1 = comp1->next) {
+        for (struct malnComp *comp2 = comp1->next; comp2 != NULL; comp2 = comp2->next) {
+            if (malnComp_overlap(comp1, comp2)) {
+                errAbort("overlapping components detected with in a block: %s:%d-%d (%c) and %s:%d-%d (%c)",
+                              comp1->seq->orgSeqName, comp1->start, comp1->end, comp1->strand,
+                              comp2->seq->orgSeqName, comp2->start, comp2->end, comp2->strand);
+            }
         }
     }
 }

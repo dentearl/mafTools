@@ -230,6 +230,7 @@ static stList *buildRootSorted(struct malnSet *malnSet) {
 
 /* write a block to a MAF */
 static void writeBlkToMaf(struct malnBlk *blk, FILE *mafFh) {
+    malnBlk_validate(blk);
     struct mafAli *ma = malnAliToMafAli(blk);
     mafWrite(mafFh, ma);
     mafAliFree(&ma);
