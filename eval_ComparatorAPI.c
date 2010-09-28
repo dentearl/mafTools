@@ -783,7 +783,7 @@ void printNameHash(struct hashtable *h) {
     // Debug function to iterate through a hash and print the contents.
     char *k;
     int *v;
-    struct hashtable_itr *itr;
+    struct hashtable_itr *itr = NULL;
     if (hashtable_count(h) > 0) {
         itr = hashtable_iterator(h);
         do {
@@ -792,14 +792,16 @@ void printNameHash(struct hashtable *h) {
             fprintf(stderr,"%s\n", k);
         } while (hashtable_iterator_advance(itr));
     }
-    free(itr);
+    if(itr != NULL) {
+        free(itr);
+    }
 }
 
 void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3) {
     // intersects two hashes. (hash 1 \cap  hash 2) = hash 3.
     char *k;
     int *v;
-    struct hashtable_itr *itr;
+    struct hashtable_itr *itr = NULL;
     if (hashtable_count(h1) > 0) {
         itr = hashtable_iterator(h1);
         do {
@@ -810,7 +812,9 @@ void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtabl
             }
         } while (hashtable_iterator_advance(itr));
     }
-    free(itr);
+    if(itr != NULL) {
+        free(itr);
+    }
 }
 
 int32_t countNodes(ETree *node) {
