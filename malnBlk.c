@@ -6,19 +6,25 @@
 #include "common.h"
 
 /* constructor */
-struct malnBlk *malnBlk_construct(mafTree *mTree) {
+struct malnBlk *malnBlk_construct(void) {
     struct malnBlk *blk;
     AllocVar(blk);
-    blk->mTree = mTree;
     return blk;
+}
+
+/* set the tree on a block */
+void malnBlk_setTree(struct malnBlk *blk, mafTree *mTree) {
+    blk->mTree = mTree;
 }
 
 /* constructor clone */
 struct malnBlk *malnBlk_constructClone(struct malnBlk *srcBlk) {
-    struct malnBlk *blk = malnBlk_construct(mafTree_clone(srcBlk->mTree));
+    struct malnBlk *blk = malnBlk_construct();
     for (struct malnComp *srcComp = srcBlk->comps; srcComp != NULL; srcComp = srcComp->next) {
         malnBlk_addComp(blk, malnComp_constructClone(srcComp));
     }
+    slReverse(&blk->comps);
+    malnBlk_setTree(blk, mafTree_clone(srcBlk->mTree, blk));
     malnBlk_finish(blk);
     return blk;
 }
@@ -37,30 +43,6 @@ void malnBlk_destruct(struct malnBlk *blk) {
     }
 }
 
-/* set the tree location attribute for a component tree.  
- * FIXME: this feels hacky compared to saving links with tree and
- * check on the fly. */
-static void malnBlk_setCompLocAttr(struct malnBlk *blk, struct malnComp *comp) {
-    switch (mafTree_getLoc(blk->mTree, comp->seq->orgSeqName, comp->chromStart, comp->chromEnd)) {
-    case mafTreeRoot:
-        comp->treeLoc = malnCompTreeRoot;
-        break;
-    case mafTreeInternal:
-        comp->treeLoc = malnCompTreeInternal;
-        break;
-    case mafTreeLeaf:
-        comp->treeLoc = malnCompTreeLeaf;
-        break;
-    }
-}
-
-/* set location and type attributes from tree */
-static void malnBlk_setLocAttr(struct malnBlk *blk) {
-    for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
-        malnBlk_setCompLocAttr(blk, comp);
-    }
-}
-
 /* add a component */
 void malnBlk_addComp(struct malnBlk *blk, struct malnComp *comp) {
     comp->blk = blk;
@@ -75,7 +57,8 @@ static mafTree *cmpMTree = NULL;
 static int compTreeOrderCmp(const void *vcomp1, const void *vcomp2) {
     const struct malnComp *comp1 = *((const struct malnComp**)vcomp1);
     const struct malnComp *comp2 = *((const struct malnComp**)vcomp2);
-    return mafTree_treeOrderCmp(cmpMTree, comp1->seq->orgSeqName, comp1->chromStart, comp1->chromEnd, comp2->seq->orgSeqName, comp2->chromStart, comp2->chromEnd);
+    assert(comp1->ncLink->treeOrder != comp2->ncLink->treeOrder);
+    return comp1->ncLink->treeOrder - comp2->ncLink->treeOrder;
 }
 
 /* sort components by tree */
@@ -89,8 +72,7 @@ static void malnBlk_sortComps(struct malnBlk *blk) {
 /* finish construction a block, setting component attributes and sorting
  * components */
 void malnBlk_finish(struct malnBlk *blk) {
-    malnBlk_sortComps(blk);
-    malnBlk_setLocAttr(blk);
+    malnBlk_sortComps(blk); // FIXME: don't need to do this for all cases
     malnBlk_validate(blk); // produces better error messages
     malnBlk_assert(blk);   // really only to catch bugs in this code, not input
 }
@@ -98,7 +80,10 @@ void malnBlk_finish(struct malnBlk *blk) {
 /* get the root component */
 struct malnComp *malnBlk_getRootComp(struct malnBlk *blk) {
     struct malnComp *root = slLastEl(blk->comps);
-    assert((root->treeLoc & malnCompTreeRoot) != 0);
+    if ((malnComp_getLoc(root) & mafTreeLocRoot) == 0) {
+        malnBlk_dump(blk, "last component is not root", stderr);
+        errAbort("last component is not root");
+    }
     return root;
 }
 
@@ -125,10 +110,12 @@ struct malnComp *malnBlk_findCompByChromRange(struct malnBlk *blk, struct Seq *s
 /* block reverse complement */
 struct malnBlk *malnBlk_reverseComplement(struct malnBlk *srcBlk) {
     malnBlk_assert(srcBlk);
-    struct malnBlk *rcBlk = malnBlk_construct(mafTree_clone(srcBlk->mTree));
+    struct malnBlk *rcBlk = malnBlk_construct();
     for (struct malnComp *srcComp = srcBlk->comps; srcComp != NULL; srcComp = srcComp->next) {
         malnBlk_addComp(rcBlk, malnComp_reverseComplement(srcComp));
     }
+    slReverse(&rcBlk->comps);
+    malnBlk_setTree(rcBlk, mafTree_clone(srcBlk->mTree, rcBlk));
     malnBlk_finish(rcBlk);
     return rcBlk;
 }
@@ -144,16 +131,18 @@ void malnBlk_pad(struct malnBlk *blk) {
 }
 
 /* check for consistency within a components of a MAF, generating an
- * error if there are no consistent */
+ * error if there are not consistent */
 void malnBlk_validate(struct malnBlk *blk) {
-    // check for overlapping components
-    for (struct malnComp *comp1 = blk->comps; comp1 != NULL; comp1 = comp1->next) {
-        for (struct malnComp *comp2 = comp1->next; comp2 != NULL; comp2 = comp2->next) {
-            if (malnComp_overlap(comp1, comp2)) {
-                errAbort("overlapping components detected with in a block: %s:%d-%d (%c) and %s:%d-%d (%c)",
-                              comp1->seq->orgSeqName, comp1->start, comp1->end, comp1->strand,
-                              comp2->seq->orgSeqName, comp2->start, comp2->end, comp2->strand);
+    // check for overlapping root components
+    struct malnComp *rootComp = malnBlk_getRootComp(blk);
+    for (struct malnComp *comp2 = blk->comps; comp2 != NULL; comp2 = comp2->next) {
+        if ((comp2 != rootComp) && malnComp_overlap(rootComp, comp2)) {
+            if (true) { // FIXME: tmp debug
+                malnBlk_dump(blk, "overlapping components", stderr);
             }
+            errAbort("overlapping root components detected with in a block: %s:%d-%d (%c) and %s:%d-%d (%c)",
+                     rootComp->seq->orgSeqName, rootComp->start, rootComp->end, rootComp->strand,
+                     comp2->seq->orgSeqName, comp2->start, comp2->end, comp2->strand);
         }
     }
 }
@@ -166,6 +155,7 @@ void malnBlk_assert(struct malnBlk *blk) {
         assert(comp->blk == blk);
         assert(malnComp_getWidth(comp) == blk->alnWidth);
         malnComp_assert(comp);
+#if 0 // FIXME, I think this is bogus for tandem dups
         // check for overlaps
         for (struct malnComp *comp2 = comp->next; comp2 != NULL; comp2 = comp2->next) {
             if (malnComp_overlap(comp, comp2)) { // FIXME: tmp
@@ -173,13 +163,30 @@ void malnBlk_assert(struct malnBlk *blk) {
             }
             assert(!malnComp_overlap(comp, comp2));
         }
+#endif
     }
 #endif
 }
 
+/* compare two blocks for deterministic sorting */
+int malnBlk_cmp(struct malnBlk *blk1, struct malnBlk *blk2) {
+    int diff = malnComp_cmp(malnBlk_getRootComp(blk1), malnBlk_getRootComp(blk2));
+    if (diff == 0) {
+        diff = slCount(blk1->comps) - slCount(blk2->comps);
+        if (diff == 0) {
+            for (struct malnComp *comp1 = blk1->comps, *comp2 = blk2->comps; (diff == 0) && (comp1 != NULL); comp1 = comp1->next, comp2 = comp2->next) {
+                diff = malnComp_cmp(comp1, comp2);
+            }
+        }
+    }
+    return diff;
+}
+
 /* print a block for debugging purposes */
 void malnBlk_dump(struct malnBlk *blk, const char *label, FILE *fh) {
-    fprintf(fh, "%s %zx %d\n", label, (size_t)blk, blk->alnWidth);
+    char *nhTree = (blk->mTree != NULL) ? mafTree_format(blk->mTree) : cloneString("NULL");
+    fprintf(fh, "%s %zx %d: %s\n", label, (size_t)blk, blk->alnWidth, nhTree);
+    freeMem(nhTree);
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         malnComp_dump(comp, "    ", fh);
     }    

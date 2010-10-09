@@ -44,11 +44,17 @@ struct Genomes {
     struct hash *genomeMap;
 };
 
+/* compare two sequences for deterministic sorting */
+int seqCmp(struct Seq *seq1, struct Seq *seq2);
+
 /* obtain a new Seq object, creating if it doesn't exist */
 struct Seq *genomeObtainSeq(struct Genome *genome, char *name, int size);
 
 /* obtain get a Seq object, error doesn't exist */
 struct Seq *genomeGetSeq(struct Genome *genome, char *name);
+
+/* compare two genomes for deterministic sorting */
+int genomeCmp(struct Genome *genome1, struct Genome *genome2);
 
 /* constructor */
 struct Genomes *genomesNew(void);

@@ -8,7 +8,7 @@ cflags = ${cflags_dbg}
 
 cflags += -I${libPath}
 ifneq ($(wildcard ${kentLibWeb}),)
-objs = jkmaf.o genome.o mafTree.o malnComp.o malnBlk.o malnBlkCursor.o malnSet.o malnJoinBlks.o malnJoinDups.o malnJoinSets.o mafJoin.o
+objs = jkmaf.o genome.o mafTree.o malnComp.o malnBlk.o malnBlkCursor.o malnSet.o malnJoinBlks.o malnJoinDups.o malnJoinSets.o malnDeleteBlks.o malnMultiParents.o malnCompCompMap.o mafJoin.o
 cflags += -I ${kentInc}
 progs = ${binPath}/mafJoin
 endif
@@ -26,3 +26,6 @@ clean:
 	rm -f ${objs}
 
 ${objs}: *.h
+
+savebak:
+	savebak mafJoin *.[ch] simulation_mafJoinTest.py Makefile 

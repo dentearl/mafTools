@@ -18,7 +18,10 @@ struct malnBlk {
 };
 
 /* constructor */
-struct malnBlk *malnBlk_construct(mafTree *mTree);
+struct malnBlk *malnBlk_construct(void);
+
+/* set the tree on a block */
+void malnBlk_setTree(struct malnBlk *blk, mafTree *mTree);
 
 /* constructor clone */
 struct malnBlk *malnBlk_constructClone(struct malnBlk *srcBlk);
@@ -54,6 +57,9 @@ void malnBlk_validate(struct malnBlk *blk);
 
 /* assert that the block is set-consistent */
 void malnBlk_assert(struct malnBlk *blk);
+
+/* compare two blocks for deterministic sorting */
+int malnBlk_cmp(struct malnBlk *blk1, struct malnBlk *blk2);
 
 /* print a block for debugging purposes */
 void malnBlk_dump(struct malnBlk *blk, const char *label, FILE *fh);

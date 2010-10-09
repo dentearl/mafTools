@@ -5,6 +5,24 @@
 #include "dystring.h"
 #include "dnautil.h"
 
+/* get tree location for component */
+enum mafTreeLoc malnComp_getLoc(struct malnComp *comp) {
+    return mafTreeNodeCompLink_getLoc(comp->ncLink);
+}
+
+/* can a join be made at this component? */
+bool malnComp_joinable(struct malnComp *comp) {
+    return (malnComp_getLoc(comp) & (mafTreeLocRoot|mafTreeLocLeaf)) != 0;
+}
+
+/* can two components be joined? */
+bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *comp2) {
+    return malnComp_overlap(comp1, comp2)
+        && (((malnComp_getLoc(comp1) == mafTreeLocRoot) && (malnComp_getLoc(comp2) == mafTreeLocRoot))
+            || ((malnComp_getLoc(comp1) == mafTreeLocRoot) && (malnComp_getLoc(comp2) == mafTreeLocLeaf))
+            || ((malnComp_getLoc(comp1) == mafTreeLocLeaf) && (malnComp_getLoc(comp2) == mafTreeLocRoot)));
+}
+
 /* count aligned positions */
 static int countAligned(const struct malnComp *comp) {
     int c = 0;
@@ -153,10 +171,29 @@ void malnComp_assert(struct malnComp *comp) {
         assert(comp->end == (comp->seq->size - comp->chromStart));
     }
     assert(countAligned(comp) == (comp->end - comp->start));
+    if (comp->ncLink != NULL) {
+        assert(comp->ncLink->comp == comp);
+    }
 #endif
+}
+
+/* compare two components for deterministic sorting */
+int malnComp_cmp(struct malnComp *comp1, struct malnComp *comp2) {
+    int diff = seqCmp(comp1->seq, comp2->seq);
+    if (diff == 0) {
+        diff = comp1->strand - comp2->strand;
+        if (diff == 0) {
+            diff = comp1->start - comp2->start;
+        }
+        if (diff == 0) {
+            diff = comp1->end - comp2->end;
+        }
+    }
+    return diff;
 }
 
 /* print a component for debugging purposes */
 void malnComp_dump(struct malnComp *comp, const char *label, FILE *fh) {
-    fprintf(fh, "%s %s (%c) %d-%d %d-%d %s\n", label, comp->seq->orgSeqName, comp->strand, comp->start, comp->end, comp->chromStart, comp->chromEnd, comp->alnStr->string);
+    const char *loc = (comp->ncLink != NULL) ? mafTreeLoc_str(malnComp_getLoc(comp)) : "NULL";
+    fprintf(fh, "%s %s (%c) %d-%d %d-%d %s %s\n", label, comp->seq->orgSeqName, comp->strand, comp->start, comp->end, comp->chromStart, comp->chromEnd, loc, comp->alnStr->string);
 }

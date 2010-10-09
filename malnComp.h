@@ -4,15 +4,7 @@
 #include "genome.h"
 #include "common.h"
 #include "dystring.h"
-
-/* location of a component in the tree, can also be a bit-set for
- * selection. */
-enum malnCompTreeLoc {
-    malnCompTreeUnknown    = 0x0,
-    malnCompTreeRoot       = 0x1,
-    malnCompTreeInternal   = 0x2,
-    malnCompTreeLeaf       = 0x4
-};
+#include "mafTree.h"
 
 
 /* 
@@ -28,12 +20,17 @@ struct malnComp {
     int chromStart;        // start/end in chrom coordinates
     int chromEnd;
     struct dyString *alnStr;
-    enum malnCompTreeLoc treeLoc;  // location in tree.
+    struct mafTreeNodeCompLink *ncLink;
 };
 
 /* get a width of component */
 static inline int malnComp_getWidth(struct malnComp *comp) {
     return comp->alnStr->stringSize;
+}
+
+/* get number of aligned bases */
+static inline int malnComp_getAligned(struct malnComp *comp) {
+    return (comp->chromEnd - comp->chromStart);
 }
 
 /* get a column */
@@ -60,6 +57,9 @@ struct malnComp *malnComp_constructClone(struct malnComp *srcComp);
 
 /* destructor */
 void malnComp_destruct(struct malnComp *comp);
+
+/* get tree location for component */
+enum mafTreeLoc malnComp_getLoc(struct malnComp *comp);
 
 /* component reverse complement */
 struct malnComp *malnComp_reverseComplement(struct malnComp *comp);
@@ -99,20 +99,16 @@ static inline bool malnComp_overlapRange(struct malnComp *comp, struct Seq *seq,
 }
 
 /* can a join be made at this component? */
-static inline bool malnComp_joinable(struct malnComp *comp) {
-    return (comp->treeLoc & (malnCompTreeRoot|malnCompTreeLeaf)) != 0;
-}
+bool malnComp_joinable(struct malnComp *comp);
 
 /* can two components be joined? */
-static inline bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *comp2) {
-    return malnComp_overlap(comp1, comp2)
-        && (((comp1->treeLoc == malnCompTreeRoot) && (comp2->treeLoc == malnCompTreeRoot))
-            || ((comp1->treeLoc == malnCompTreeRoot) && (comp2->treeLoc == malnCompTreeLeaf))
-            || ((comp1->treeLoc == malnCompTreeLeaf) && (comp2->treeLoc == malnCompTreeRoot)));
-}
+bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *comp2);
 
 /* assert that the component is set-consistent */
 void malnComp_assert(struct malnComp *comp);
+
+/* compare two components for deterministic sorting */
+int malnComp_cmp(struct malnComp *comp1, struct malnComp *comp2);
 
 /* print a component for debugging purposes */
 void malnComp_dump(struct malnComp *comp, const char *label, FILE *fh);

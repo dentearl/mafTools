@@ -71,14 +71,65 @@ static struct malnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafCom
                               comp->strand, comp->start, comp->start+comp->size, comp->text);
 }
 
+#if 0 // FIXME
+static struct Genome *sortTreelessRootGenome = NULL;  // used by treeless sort
+
+/* compare components to sort the root genome components last, with the
+ * longest component the root. */
+static int orderTreelessCmp(const void *vcomp1, const void *vcomp2) {
+    struct malnComp *comp1 = *((struct malnComp **)vcomp1);
+    struct malnComp *comp2 = *((struct malnComp **)vcomp2);
+    if ((comp1->seq->genome != sortTreelessRootGenome) && (comp2->seq->genome != sortTreelessRootGenome)) {
+        return 0;
+    }
+    if ((comp1->seq->genome == sortTreelessRootGenome) && (comp2->seq->genome != sortTreelessRootGenome)) {
+        return 1;
+    }
+    if ((comp1->seq->genome != sortTreelessRootGenome) && (comp2->seq->genome == sortTreelessRootGenome)) {
+        return -1;
+    }
+    return -(malnComp_getAligned(comp1) - malnComp_getAligned(comp2));
+}
+
+/* set the ordering for block were tree must be constructed */
+static void orderTreeless(struct malnBlk *blk, struct Genome *treelessRootGenome) {
+    sortTreelessRootGenome = treelessRootGenome;
+    slSort(&(blk->comps), orderTreelessCmp);
+    sortTreelessRootGenome = NULL;
+}
+#else
+/* For a treeless block, verify that the first component in the MAF (now the
+ * last component in the block, is from the treeless root genome.
+ * FIXME: doc this in program if we keep it*/
+static void verifyTreeless(struct malnBlk *blk, struct Genome *treelessRootGenome) {
+    struct malnComp *comp = slLastEl(blk->comps);
+    if (comp->seq->genome != treelessRootGenome) {
+        errAbort("first component in MAF alignment block is not the treeless root genome");
+    }
+}
+#endif
+
 /* convert a mafAli to an malnBlk */
 static struct malnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct mafAli *ali, double defaultBranchLength, struct Genome *treelessRootGenome) {
-    struct malnBlk *blk = malnBlk_construct(mafTree_constructFromMaf(genomes, ali, defaultBranchLength, treelessRootGenome));
+    struct malnBlk *blk = malnBlk_construct();
     for (struct mafComp *comp = ali->components; comp != NULL; comp = comp->next) {
         malnBlk_addComp(blk, mafCompToMAlnComp(genomes, comp));
     }
+    if (ali->tree != NULL) {
+        slReverse(&blk->comps);
+        malnBlk_setTree(blk, mafTree_constructFromNewick(genomes, blk, ali->tree));
+    } else if (treelessRootGenome != NULL) {
+#if 0 // FIXME
+        orderTreeless(blk, treelessRootGenome);
+#else
+        verifyTreeless(blk, treelessRootGenome);
+#endif
+        malnBlk_setTree(blk, mafTree_constructFromAlignment(genomes, blk, defaultBranchLength));
+    } else {
+        errAbort("no tree in mafAli block and no treelessRoot genome specified");
+    }
     malnBlk_finish(blk);
-#if 0
+#if 1 // FIXME:
     malnBlk_assert(blk);
 #endif
     return blk;
@@ -118,12 +169,18 @@ void malnSet_deleteBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     malnBlk_destruct(blk);
 }
 
+/* compare function for sort set of blocks, just for deterministic results */
+static int blksCmp(const void *vblk1, const void *vblk2) {
+    struct malnBlk *blk1 = (struct malnBlk *)vblk1, *blk2 = (struct malnBlk *)vblk2;
+    return malnBlk_cmp(blk1, blk2);
+}
+
 /* construct an empty malnSet  */
 struct malnSet *malnSet_construct(struct Genomes *genomes) {
     struct malnSet *malnSet;
     AllocVar(malnSet);
     malnSet->genomes = genomes;
-    malnSet->blks = stSortedSet_construct2((void (*)(void *))malnBlk_destruct);
+    malnSet->blks = stSortedSet_construct3(blksCmp, (void (*)(void *))malnBlk_destruct);
     return malnSet;
 }
 
@@ -272,7 +329,7 @@ stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *
             struct malnComp *comp = compRef->val;
             // FIXME: not sure why the overlap check is needed, shouldn't return non-overlaping,
             // but it did!
-            if ((comp != NULL) && ((comp->treeLoc & treeLocFilter) != 0) && (!comp->blk->done)
+            if ((comp != NULL) && ((malnComp_getLoc(comp) & treeLocFilter) != 0) && (!comp->blk->done)
                 && malnComp_overlapRange(comp, seq, chromStart, chromEnd)) {
                 if (overBlks == NULL) { 
                     overBlks = stList_construct();

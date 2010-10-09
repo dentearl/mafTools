@@ -5,6 +5,7 @@
 #include "malnJoinDups.h"
 #include "malnJoinSets.h"
 #include "sonLibETree.h"
+#include "malnMultiParents.h"
 
 /*
  * Notes: 
@@ -13,7 +14,7 @@
  */
 
 /* set to true to cleanup all memory for memory leak checks */
-static bool memLeakDebugCleanup = false;
+static bool memLeakDebugCleanup = true;
 
 /* command line option specifications */
 static struct optionSpec optionSpecs[] = {
@@ -64,16 +65,22 @@ static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMa
     struct Genome *treelessRoot2Genome = (treelessRoot2Name != NULL) ? genomesObtainGenome(genomes, treelessRoot2Name) : NULL;
 
     struct malnSet *malnSet1 = malnSet_constructFromMaf(genomes, inMaf1, defaultBranchLength, treelessRoot1Genome);
-    malnJoin_joinSetDups(malnSet1, discardTwoParents);
+    malnMultiParents_check(malnSet1, discardTwoParents);
+    malnJoin_joinSetDups(malnSet1);
     if (maf1Copy != NULL) {
         malnSet_writeMaf(malnSet1, maf1Copy);
     }
+
     struct malnSet *malnSet2 = malnSet_constructFromMaf(genomes, inMaf2, defaultBranchLength, treelessRoot2Genome);
-    malnJoin_joinSetDups(malnSet2, discardTwoParents);
+    malnMultiParents_check(malnSet2, discardTwoParents);
+    malnJoin_joinSetDups(malnSet2);
     if (maf2Copy != NULL) {
         malnSet_writeMaf(malnSet2, maf2Copy);
     }
+
+    // join and then merge overlapping blocks that were created
     struct malnSet *malnSetJoined = malnJoinSets(refGenome, malnSet1, malnSet2);
+    malnJoin_joinSetDups(malnSetJoined);
     malnSet_writeMaf(malnSetJoined, outMaf);
 
     if (memLeakDebugCleanup) {

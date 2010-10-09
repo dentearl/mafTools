@@ -38,7 +38,7 @@ static void joinCompWithComp(struct joinBlkComp *joining, struct malnComp *comp2
  * true if any joined. */
 static bool joinCompWithSet(struct joinBlkComp *joining, struct malnSet *malnSet2) {
     bool joinedOne = false;
-    stList *overComps2 = malnSet_getOverlappingPendingComps(malnSet2, joining->comp->seq, joining->comp->chromStart, joining->comp->chromEnd, malnCompTreeRoot|malnCompTreeLeaf);
+    stList *overComps2 = malnSet_getOverlappingPendingComps(malnSet2, joining->comp->seq, joining->comp->chromStart, joining->comp->chromEnd, mafTreeLocRoot|mafTreeLocLeaf);
     for (int i = 0; i < stList_length(overComps2); i++) {
         struct malnComp *comp2 = stList_get(overComps2, i);
         if ((!comp2->blk->done) && malnComp_canJoin(joining->comp, comp2)) {

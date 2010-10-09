@@ -4,6 +4,8 @@
 #include "hash.h"
 #include "jkmaf.h"
 
+// FIXME: make naming consistent with other modules
+
 /* make db.seq name */
 static char *seqMkName(struct Seq *seq) {
     int bufSize = strlen(seq->genome->name) + strlen(seq->name) + 2;
@@ -28,6 +30,15 @@ static void seqFree(struct Seq *seq) {
     freeMem(seq->name);
     freeMem(seq->orgSeqName);
     freeMem(seq);
+}
+
+/* compare two sequences for deterministic sorting */
+int seqCmp(struct Seq *seq1, struct Seq *seq2) {
+    if (seq1->genome == seq2->genome) {
+        return strcmp(seq1->name, seq2->name);
+    } else {
+        return genomeCmp(seq1->genome, seq2->genome);
+    }
 }
 
 /* constructor */
@@ -68,6 +79,11 @@ struct Seq *genomeGetSeq(struct Genome *genome, char *name) {
         errAbort("can;t find seq \"%s\" in genome \"%s\"", name, genome->name);
     }
     return seq;
+}
+
+/* compare two genomes for deterministic sorting */
+int genomeCmp(struct Genome *genome1, struct Genome *genome2) {
+    return strcmp(genome1->name, genome2->name);
 }
 
 /* constructor */
