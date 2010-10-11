@@ -400,7 +400,6 @@ class MafJoinTests(unittest.TestCase):
         """
         self.mafJoinTest("hg18", A, B, C)
     
-    
     def testJoin11(self):
         """reverse of regression testJoin10, where second block got lost
         """
@@ -551,6 +550,38 @@ class MafJoinTests(unittest.TestCase):
         C = """
         """
         self.mafJoinTest("sHuman-sChimp", A, B, C, treelessRoot1="sHuman-sChimp", treelessRoot2="sHuman-sChimp", expectExitCode=255, expectStderr="Error: multiple parents detected in components simHuman.chr1:200-210 (+) and simHuman.chr1:205-215 (+)\n")
+
+    def FIXMEtestJoin18(self):
+        """Non-dup join, merging of blocks, adjacent references with no overlap.
+        """
+        A = """
+        a score=5.0 tree=\"(mm4.chr6:0.15)hg18.chr7;\"
+        s mm4.chr6     53310102 2 - 151104725 AC
+        s hg18.chr7    27707221 2 + 158545518 gc
+        
+        a score=5.0 tree=\"(mm4.chr6:0.15)hg18.chr7;\"
+        s mm4.chr6     53310104 11 - 151104725 AGCTGAAAATA
+        s hg18.chr7    27707223 11 + 158545518 agctgaaaaca
+        """
+        B = """
+        a score=2.0 tree=\"((panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;\"
+        s panTro1.chr6 28869787 2 + 161576975 gc
+        s baboon.chr6    249182 2 -   4622798 gc
+        s hg18.chr7    27707221 2 + 158545518 gc
+        
+        a score=2.0 tree=\"((panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;\"
+        s panTro1.chr6 28869789 10 + 161576975 agc-gaaaaca
+        s baboon.chr6    249184 10 -   4622798 agc-gaaaaca
+        s hg18.chr7    27707223 11 + 158545518 agctgaaaaca
+        """ 
+        C = """
+        a score=0.000000 tree="((panTro1.chr6:0.3)baboon.chr6:0.2,mm4.chr6:0.15)hg18.chr7;"
+        s panTro1.chr6 28869787 12 + 161576975 gcagc-gaaaaca
+        s baboon.chr6    249182 12 -   4622798 gcagc-gaaaaca
+        s mm4.chr6     53310102 13 - 151104725 ACAGCTGAAAATA
+        s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
+        """
+        self.mafJoinTest("hg18", A, B, C)
 
 import logging
 #logger.setLevel(logging.INFO)
