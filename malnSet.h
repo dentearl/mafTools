@@ -36,7 +36,16 @@ void malnSet_deleteBlk(struct malnSet *malnSet, struct malnBlk *blk);
 /* get iterator of the blocks. Don't remove or add blocks while in motion. */
 stSortedSetIterator *malnSet_getBlocks(struct malnSet *malnSet);
 
+/* Get a list of components that overlap the specified reference range and are
+ * in blocks not flagged as done and passing treeLoc filters.  Return NULL if
+ * no overlaps. */
 stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter);
+
+
+/* Get a list of components that overlaps or are adjacent to the specified
+ * reference range and are in blocks not flagged as done and passing treeLoc
+ * filters.  Return NULL if no overlaps. */
+stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter);
 
 /* assert some sanity checks on a set */
 void malnSet_assert(struct malnSet *malnSet);

@@ -17,7 +17,7 @@ bool malnComp_joinable(struct malnComp *comp) {
 
 /* can two components be joined? */
 bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *comp2) {
-    return malnComp_overlap(comp1, comp2)
+    return malnComp_overlapAdjacent(comp1, comp2)
         && (((malnComp_getLoc(comp1) == mafTreeLocRoot) && (malnComp_getLoc(comp2) == mafTreeLocRoot))
             || ((malnComp_getLoc(comp1) == mafTreeLocRoot) && (malnComp_getLoc(comp2) == mafTreeLocLeaf))
             || ((malnComp_getLoc(comp1) == mafTreeLocLeaf) && (malnComp_getLoc(comp2) == mafTreeLocRoot)));

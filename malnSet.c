@@ -308,9 +308,9 @@ static int sortCompListCmpFn(const void *a, const void *b) {
 }
 
 
-/* Get a list of components that overlaps the specified reference range
- * and are in blocks not flagged as done and passing treeLoc filters.
- * Return NULL if no overlaps. */
+/* Get a list of components that overlap the specified reference range and are
+ * in blocks not flagged as done and passing treeLoc filters.  Return NULL if
+ * no overlaps. */
 stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter) {
     if (malnSet->compRangeMap == NULL) {
         buildRangeTree(malnSet);
@@ -349,6 +349,13 @@ void malnSet_assert(struct malnSet *malnSet) {
     }
     stSortedSet_destructIterator(iter);
 #endif
+}
+
+/* Get a list of components that overlaps or are adjacent to the specified
+ * reference range and are in blocks not flagged as done and passing treeLoc
+ * filters.  Return NULL if no overlaps. */
+stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter) {
+    return malnSet_getOverlappingPendingComps(malnSet, seq, chromStart-1, chromEnd+1, treeLocFilter);
 }
 
 /* assert done flag is set on all blocks */

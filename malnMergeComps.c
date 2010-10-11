@@ -9,6 +9,9 @@
 
 static bool debug = false;  // FIXME: tmp
 
+/* FIXME: it would be more efficient to generalize malnJoinBlks to handle this.
+ */
+
 /* fast check for anything to merge */
 static bool anyToMerge(struct malnBlk *blk) {
     for (struct malnComp *comp1 = blk->comps; comp1 != NULL; comp1 = comp1->next) {

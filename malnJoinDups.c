@@ -33,10 +33,17 @@ static struct malnBlk *joinCompWithDups(struct malnSet *malnSet, struct malnBlk 
         malnComp_dump(joinComp, "joinCompWithDups", stderr);
     }
     joinComp->blk->done = true;
-    stList *overComps = malnSet_getOverlappingPendingComps(malnSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocAll);
+    stList *overComps = malnSet_getOverlappingAdjacentPendingComps(malnSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocAll);
     for (int i = 0; i < stList_length(overComps); i++) {
         struct malnComp *dupComp = stList_get(overComps, i);
-        if (!malnDeleteBlks_contains(delBlks, dupComp->blk)) {
+        if (debug) {
+            fprintf(stderr, "joinCompWithDups: %s:%d-%d  %s:%d-%d %s%s\n",
+                    joinComp->seq->orgSeqName, joinComp->start, joinComp->end,
+                    dupComp->seq->orgSeqName, dupComp->start, dupComp->end,
+                    (malnComp_canJoin(joinComp, dupComp) ? "join" : "noJoin"),
+                    (malnDeleteBlks_contains(delBlks, dupComp->blk) ? " deleted" : ""));
+        }
+        if (malnComp_canJoin(joinComp, dupComp) && !malnDeleteBlks_contains(delBlks, dupComp->blk)) {
             joinComp = joinCompWithDup(malnSet, joinComp, dupComp, delBlks);
             joinComp->blk->done = true;
         }

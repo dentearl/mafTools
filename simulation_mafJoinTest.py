@@ -551,7 +551,7 @@ class MafJoinTests(unittest.TestCase):
         """
         self.mafJoinTest("sHuman-sChimp", A, B, C, treelessRoot1="sHuman-sChimp", treelessRoot2="sHuman-sChimp", expectExitCode=255, expectStderr="Error: multiple parents detected in components simHuman.chr1:200-210 (+) and simHuman.chr1:205-215 (+)\n")
 
-    def FIXMEtestJoin18(self):
+    def testJoin18(self):
         """Non-dup join, merging of blocks, adjacent references with no overlap.
         """
         A = """
@@ -583,6 +583,7 @@ class MafJoinTests(unittest.TestCase):
         """
         self.mafJoinTest("hg18", A, B, C)
 
+# FIXME: should be controllable from the command line
 import logging
 #logger.setLevel(logging.INFO)
 if __name__ == '__main__':

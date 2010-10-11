@@ -25,7 +25,37 @@ struct malnJoinBlks {
     struct malnComp **dests2;
     struct malnCompCompMap *srcDestCompMap; // map of source to destination components for tree join
     struct malnBlk *freeBlk;   // block to free if not NULL (due to reverse-complement);
+
+    // coordinates of the two alignments
+    int refCommonStart;  // common reference sequence coordinates, zero length for adjacent
+    int refCommonEnd;
+    int aln1CommonStart; // mapping of the ref coordinates to input alignments
+    int aln1CommonEnd;
+    int aln2CommonStart;
+    int aln2CommonEnd;
 };
+
+/* compute alignment coordinates */
+static void calcAlignmentCoords(struct malnJoinBlks *jb) {
+    jb->refCommonStart = max(jb->ref1->start, jb->ref2->start);
+    jb->refCommonEnd = min(jb->ref1->end, jb->ref2->end);
+    if (jb->refCommonStart < jb->refCommonEnd) {
+        // overlapping
+        if (!(malnComp_seqRangeToAlnRange(jb->ref1, jb->refCommonStart, jb->refCommonEnd, &jb->aln1CommonStart, &jb->aln1CommonEnd)
+              && malnComp_seqRangeToAlnRange(jb->ref2, jb->refCommonStart, jb->refCommonEnd, &jb->aln2CommonStart, &jb->aln2CommonEnd))) {
+            errAbort("BUG: failure to get alignment ranges for common reference sequence range");
+        }
+    } else {
+        // adjacent
+        jb->aln1CommonStart = jb->aln1CommonEnd = jb->cursor1->alnWidth;
+        jb->aln2CommonStart = jb->aln2CommonEnd = jb->cursor2->alnWidth;
+    }
+    if (debug) {
+        fprintf(stderr, "refCommon: %s:%d-%d\n", jb->ref1->seq->orgSeqName, jb->refCommonStart, jb->refCommonEnd);
+        fprintf(stderr, "align1Commom:: %d-%d\n", jb->aln1CommonStart, jb->aln1CommonEnd);
+        fprintf(stderr, "align2Commom:: %d-%d\n", jb->aln2CommonStart, jb->aln2CommonEnd);
+    }
+}
 
 /* create new reference components from the two being joined */
 static struct malnComp *createJoinedRefComp(struct malnJoinBlks *jb) {
@@ -125,20 +155,20 @@ static void assertJoinedComps(struct malnBlkCursor *blkCursor, struct malnComp *
 }
 
 /* copy columns outside of the common reference sequence region to the joined maf */
-static void copyUnsharedRefColumns(struct malnBlk *blkJoined, struct malnComp **destComps, struct malnBlkCursor *blkCursor, int alnStart, int alnEnd) {
-    malnBlk_assert(blkJoined);  // FIXME
+static void copyUnsharedRefColumns(struct malnJoinBlks *jb, struct malnComp **destComps, struct malnBlkCursor *blkCursor, int alnStart, int alnEnd) {
+    malnBlk_assert(jb->joined);  // FIXME
     malnBlk_assert(blkCursor->blk);  // FIXME
     if (debug) {
-        malnBlk_dump(blkJoined, "blkJoined", stderr);  // FIXME
+        malnBlk_dump(jb->joined, "blkJoined", stderr);  // FIXME
         malnBlk_dump(blkCursor->blk, "blkCursor", stderr);  // FIXME
     }
     for (int i = 0; i < blkCursor->numRows; i++) {
         malnComp_appendCompAln(destComps[i], blkCursor->rows[i].comp, alnStart, alnEnd);
     }
     malnBlkCursor_setAlignCol(blkCursor, alnEnd);
-    blkJoined->alnWidth += (alnEnd - alnStart);  // FIXME should have append methods
-    malnBlk_pad(blkJoined);
-    malnBlk_assert(blkJoined);
+    jb->joined->alnWidth += (alnEnd - alnStart);  // FIXME should have append methods
+    malnBlk_pad(jb->joined);
+    malnBlk_assert(jb->joined);
 }
 
 /* is reference aligned? */
@@ -155,15 +185,13 @@ static void copyColumn(struct malnComp **destComps, struct malnBlkCursor *blkCur
 }
 
 /* copy contiguous shared alignment columns to join blk */
-static void copySharedRefColumns(struct malnBlk *blkJoined,
-                                 struct malnComp **destComps1, struct malnBlkCursor *blkCursor1, int aln1CommonEnd,
-                                 struct malnComp **destComps2, struct malnBlkCursor *blkCursor2, int aln2CommonEnd) {
-    assert(isRefAligned(blkCursor1));
-    assert(isRefAligned(blkCursor2));
-    while (isRefAligned(blkCursor1) && isRefAligned(blkCursor2) && (blkCursor1->alnIdx < aln1CommonEnd) && (blkCursor2->alnIdx < aln2CommonEnd)) {
-        copyColumn(destComps1, blkCursor1, false);
-        copyColumn(destComps2, blkCursor2, true);
-        blkJoined->alnWidth++;  // FIXME should have append methods
+static void copySharedRefColumns(struct malnJoinBlks *jb) {
+    assert(isRefAligned(jb->cursor1));
+    assert(isRefAligned(jb->cursor2));
+    while (isRefAligned(jb->cursor1) && isRefAligned(jb->cursor2) && (jb->cursor1->alnIdx < jb->aln1CommonEnd) && (jb->cursor2->alnIdx < jb->aln2CommonEnd)) {
+        copyColumn(jb->dests1, jb->cursor1, false);
+        copyColumn(jb->dests2, jb->cursor2, true);
+        jb->joined->alnWidth++;  // FIXME should have append methods
     }
 }
 
@@ -178,58 +206,45 @@ static void copyUnalignedSharedColumns(struct malnBlk *blkJoined, struct malnCom
 }
 
 /* join columns based on shared reference sequence regions */
-static void joinSharedRefColumns(struct malnBlk *blkJoined,
-                                 struct malnComp **destComps1, struct malnBlkCursor *blkCursor1, int aln1CommonEnd,
-                                 struct malnComp **destComps2, struct malnBlkCursor *blkCursor2, int aln2CommonEnd) {
-    assert(blkCursor1->rows[0].pos == blkCursor2->rows[0].pos);
-    while ((blkCursor1->alnIdx < aln1CommonEnd) && (blkCursor1->alnIdx < aln1CommonEnd)) {
-        copySharedRefColumns(blkJoined, destComps1, blkCursor1, aln1CommonEnd, destComps2, blkCursor2, aln2CommonEnd);
-        copyUnalignedSharedColumns(blkJoined, destComps1, blkCursor1, aln1CommonEnd);
-        copyUnalignedSharedColumns(blkJoined, destComps2, blkCursor2, aln2CommonEnd);
+static void joinSharedRefColumns(struct malnJoinBlks *jb) {
+    assert(jb->cursor1->rows[0].pos == jb->cursor2->rows[0].pos);
+    while ((jb->cursor1->alnIdx < jb->aln1CommonEnd) && (jb->cursor1->alnIdx < jb->aln1CommonEnd)) {
+        copySharedRefColumns(jb);
+        copyUnalignedSharedColumns(jb->joined, jb->dests1, jb->cursor1, jb->aln1CommonEnd);
+        copyUnalignedSharedColumns(jb->joined, jb->dests2, jb->cursor2, jb->aln2CommonEnd);
     }
-    assert(blkCursor1->alnIdx == aln1CommonEnd);
-    assert(blkCursor2->alnIdx == aln2CommonEnd);
-    malnBlk_assert(blkJoined); // FIXME debugging
+    assert(jb->cursor1->alnIdx == jb->aln1CommonEnd);
+    assert(jb->cursor2->alnIdx == jb->aln2CommonEnd);
+    malnBlk_assert(jb->joined); // FIXME debugging
 }
 
 /* join two blocks using their specified reference components.  Optionally return
  * resulting join component. */
 struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp2, struct malnComp **joinedCompRet) {
-    assert(malnComp_overlap(refComp1, refComp2));
+    assert(malnComp_overlapAdjacent(refComp1, refComp2));
     struct malnJoinBlks *jb = malnJoinBlks_construct(refComp1, refComp2);
-
-    int refCommonStart = max(jb->ref1->start, jb->ref2->start);
-    int refCommonEnd = min(jb->ref1->end, jb->ref2->end);
-    int aln1CommonStart, aln1CommonEnd, aln2CommonStart, aln2CommonEnd;
-    if (!(malnComp_seqRangeToAlnRange(jb->ref1, refCommonStart, refCommonEnd, &aln1CommonStart, &aln1CommonEnd)
-          && malnComp_seqRangeToAlnRange(jb->ref2, refCommonStart, refCommonEnd, &aln2CommonStart, &aln2CommonEnd))) {
-        errAbort("BUG: failure to get alignment ranges for common reference sequence range");
-    }
     if (joinedCompRet != NULL) {
         *joinedCompRet = jb->dests1[0];
     }
-
-    if (debug) {
-        fprintf(stderr, "refCommon: %s:%d-%d\n", jb->ref1->seq->orgSeqName, refCommonStart, refCommonEnd);
-        fprintf(stderr, "align1Commom:: %d-%d\n", aln1CommonStart, aln1CommonEnd);
-        fprintf(stderr, "align2Commom:: %d-%d\n", aln2CommonStart, aln2CommonEnd);
-    }
+    calcAlignmentCoords(jb);
 
     // before common start
-    copyUnsharedRefColumns(jb->joined, jb->dests1, jb->cursor1, 0, aln1CommonStart);
+    copyUnsharedRefColumns(jb, jb->dests1, jb->cursor1, 0, jb->aln1CommonStart);
     if (debug) {malnBlk_dump(jb->joined, "joined@1", stderr);}
-    copyUnsharedRefColumns(jb->joined, jb->dests2, jb->cursor2, 0, aln2CommonStart);
+    copyUnsharedRefColumns(jb, jb->dests2, jb->cursor2, 0, jb->aln2CommonStart);
     if (debug) {malnBlk_dump(jb->joined, "joined@2", stderr);}
 
     // common
-    assert(jb->dests1[0]->end == refCommonStart);
-    joinSharedRefColumns(jb->joined, jb->dests1, jb->cursor1, aln1CommonEnd, jb->dests2, jb->cursor2, aln2CommonEnd);
-    assert(jb->dests1[0]->end == refCommonEnd);
-    if (debug) {malnBlk_dump(jb->joined, "joined@3", stderr);}
+    if (jb->refCommonStart < jb->refCommonEnd) {
+        assert(jb->dests1[0]->end == jb->refCommonStart);
+        joinSharedRefColumns(jb);
+        assert(jb->dests1[0]->end == jb->refCommonEnd);
+        if (debug) {malnBlk_dump(jb->joined, "joined@3", stderr);}
+    }
 
     // after common end
-    copyUnsharedRefColumns(jb->joined, jb->dests1, jb->cursor1, aln1CommonEnd, jb->blk1->alnWidth);
-    copyUnsharedRefColumns(jb->joined, jb->dests2, jb->cursor2, aln2CommonEnd, jb->blk2->alnWidth);
+    copyUnsharedRefColumns(jb, jb->dests1, jb->cursor1, jb->aln1CommonEnd, jb->blk1->alnWidth);
+    copyUnsharedRefColumns(jb, jb->dests2, jb->cursor2, jb->aln2CommonEnd, jb->blk2->alnWidth);
     
     malnBlk_setTree(jb->joined, joinTrees(jb->cursor1, jb->cursor2, jb->srcDestCompMap));
 
