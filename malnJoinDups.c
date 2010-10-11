@@ -68,7 +68,6 @@ static void joinBlkWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, st
             joinedSome = true;
         }
     } while (newJoinBlk != NULL);
-
     if (joinedSome) {
         malnSet_addBlk(malnSet, joinBlk);
     }

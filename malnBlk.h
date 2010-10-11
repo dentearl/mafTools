@@ -36,6 +36,10 @@ void malnBlk_addComp(struct malnBlk *blk, struct malnComp *comp);
  * components */
 void malnBlk_finish(struct malnBlk *blk);
 
+/* Unlink a component from the block, also removing it from the tree and
+ * malnSet map, if its in a set.  Component is not freed. */
+void malnBlk_unlink(struct malnBlk *blk, struct malnComp *comp);
+
 /* get the root component */
 struct malnComp *malnBlk_getRootComp(struct malnBlk *blk);
 

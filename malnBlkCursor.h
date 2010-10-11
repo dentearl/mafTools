@@ -15,8 +15,10 @@ struct malnBlkCursor {
 };
 
 
-/* construct a new cursor, if refComp is not null, then force it to be 1first */
-struct malnBlkCursor *malnBlkCursor_construct(struct malnBlk *blk, struct malnComp *refComp);
+/* construct a new cursor, if refComp is not null, then force it to be first. If subsetComps
+ * is not NULL, it is a NULL terminated list of a subset of components to include
+ * in the order specified. */
+struct malnBlkCursor *malnBlkCursor_construct(struct malnBlk *blk, struct malnComp *refComp, struct malnComp **subsetComps);
 
 /* destructor */
 void malnBlkCursor_destruct(struct malnBlkCursor *bc);

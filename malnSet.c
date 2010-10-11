@@ -37,29 +37,6 @@ static void buildRangeTree(struct malnSet *malnSet) {
     stSortedSet_destructIterator(iter);
 }
 
-/* remove a single object from the range tree (missing genomeRangeTree functionality).
- * this just set reference to NULL, which must be handled when getting overlaps*/
-static void removeCompRange(struct malnSet *malnSet, struct malnBlk *blk, struct malnComp *comp) {
-    bool found = false;
-    for (struct range *rng = genomeRangeTreeAllOverlapping(malnSet->compRangeMap, comp->seq->orgSeqName, comp->chromStart, comp->chromEnd); (rng != NULL) && (!found); rng = rng->next) {
-        for (struct slRef *compRef = rng->val; (compRef != NULL) && (!found); compRef = compRef->next) {
-            struct malnComp *comp = compRef->val;
-            if ((comp !=NULL) && (comp->blk == blk)) {
-                compRef->val = NULL;
-                found = true;
-            }
-        }
-    }
-    assert(found);
-}
-
-/* remove all references to this blk from the rangeTree */
-static void removeBlkRanges(struct malnSet *malnSet, struct malnBlk *blk) {
-    for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
-        removeCompRange(malnSet, blk, comp);
-    }
-}
-
 /* convert a mafComp to an malnComp */
 static struct malnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafComp *comp) {
     char buf[128];
@@ -71,7 +48,6 @@ static struct malnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafCom
                               comp->strand, comp->start, comp->start+comp->size, comp->text);
 }
 
-#if 0 // FIXME
 static struct Genome *sortTreelessRootGenome = NULL;  // used by treeless sort
 
 /* compare components to sort the root genome components last, with the
@@ -97,17 +73,6 @@ static void orderTreeless(struct malnBlk *blk, struct Genome *treelessRootGenome
     slSort(&(blk->comps), orderTreelessCmp);
     sortTreelessRootGenome = NULL;
 }
-#else
-/* For a treeless block, verify that the first component in the MAF (now the
- * last component in the block, is from the treeless root genome.
- * FIXME: doc this in program if we keep it*/
-static void verifyTreeless(struct malnBlk *blk, struct Genome *treelessRootGenome) {
-    struct malnComp *comp = slLastEl(blk->comps);
-    if (comp->seq->genome != treelessRootGenome) {
-        errAbort("first component in MAF alignment block is not the treeless root genome");
-    }
-}
-#endif
 
 /* convert a mafAli to an malnBlk */
 static struct malnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct mafAli *ali, double defaultBranchLength, struct Genome *treelessRootGenome) {
@@ -119,11 +84,7 @@ static struct malnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct mafAli *a
         slReverse(&blk->comps);
         malnBlk_setTree(blk, mafTree_constructFromNewick(genomes, blk, ali->tree));
     } else if (treelessRootGenome != NULL) {
-#if 0 // FIXME
         orderTreeless(blk, treelessRootGenome);
-#else
-        verifyTreeless(blk, treelessRootGenome);
-#endif
         malnBlk_setTree(blk, mafTree_constructFromAlignment(genomes, blk, defaultBranchLength));
     } else {
         errAbort("no tree in mafAli block and no treelessRoot genome specified");
@@ -151,6 +112,35 @@ void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     }
 }
 
+/* remove a single object from the range tree (missing genomeRangeTree functionality).
+ * this just set reference to NULL, which must be handled when getting overlaps*/
+static void removeCompRange(struct malnSet *malnSet, struct malnComp *comp) {
+    bool found = false;
+    for (struct range *rng = genomeRangeTreeAllOverlapping(malnSet->compRangeMap, comp->seq->orgSeqName, comp->chromStart, comp->chromEnd); (rng != NULL) && (!found); rng = rng->next) {
+        for (struct slRef *compRef = rng->val; (compRef != NULL) && (!found); compRef = compRef->next) {
+            if (compRef->val == comp) {
+                compRef->val = NULL;
+                found = true;
+            }
+        }
+    }
+    assert(found);
+}
+
+/* remove all references to this blk from the rangeTree */
+static void removeBlkRanges(struct malnSet *malnSet, struct malnBlk *blk) {
+    for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
+        removeCompRange(malnSet, comp);
+    }
+}
+
+/* remove a single component from malnSet range map */
+void malnSet_removeComp(struct malnSet *malnSet, struct malnComp *comp) {
+    if (malnSet->compRangeMap != NULL) {
+        removeCompRange(malnSet, comp);
+    }
+}
+
 /* remove a block from malnSet */
 void malnSet_removeBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     assert(blk->malnSet == malnSet);
@@ -169,18 +159,14 @@ void malnSet_deleteBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     malnBlk_destruct(blk);
 }
 
-/* compare function for sort set of blocks, just for deterministic results */
-static int blksCmp(const void *vblk1, const void *vblk2) {
-    struct malnBlk *blk1 = (struct malnBlk *)vblk1, *blk2 = (struct malnBlk *)vblk2;
-    return malnBlk_cmp(blk1, blk2);
-}
-
 /* construct an empty malnSet  */
 struct malnSet *malnSet_construct(struct Genomes *genomes) {
     struct malnSet *malnSet;
     AllocVar(malnSet);
     malnSet->genomes = genomes;
-    malnSet->blks = stSortedSet_construct3(blksCmp, (void (*)(void *))malnBlk_destruct);
+    // n.b. don't try to sort on a key, just use addess key, otherwise
+    // deleting entries in merge will delete the wrong entries.
+    malnSet->blks = stSortedSet_construct2((void (*)(void *))malnBlk_destruct);
     return malnSet;
 }
 
@@ -316,6 +302,12 @@ stSortedSetIterator *malnSet_getBlocks(struct malnSet *malnSet) {
     return stSortedSet_getIterator(malnSet->blks);
 }
 
+/* compare function for component list */
+static int sortCompListCmpFn(const void *a, const void *b) {
+    return malnComp_cmp((struct malnComp*)a, (struct malnComp*)b); 
+}
+
+
 /* Get a list of components that overlaps the specified reference range
  * and are in blocks not flagged as done and passing treeLoc filters.
  * Return NULL if no overlaps. */
@@ -337,6 +329,11 @@ stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *
                 stList_append(overBlks, comp);
             }
         }
+    }
+
+    // sort so tests are reproducible
+    if (overBlks != NULL) {
+        stList_sort(overBlks, sortCompListCmpFn);
     }
     return overBlks;
 }
@@ -376,3 +373,7 @@ void malnSet_clearDone(struct malnSet *malnSet) {
     stSortedSet_destructIterator(iter);
 }
 
+/* return the number of blocks in the set */
+int malnSet_getNumBlocks(struct malnSet *malnSet) {
+    return stSortedSet_size(malnSet->blks);
+}

@@ -214,7 +214,7 @@ static ETree *joinAtNodes(ETree *root1, ETree *node1, ETree *root2, ETree *node2
     } else if ((eTree_getParent(node2) == NULL) && (eTree_getChildNumber(node1) == 0)) {
         return joinAtLeaf(root1, node1, node2, srcDestCompMap);
     } else {
-        errAbort("join nodes don't obey rules");
+        errAbort("join nodes don't obey rules: node1: %s node2: %s", eTree_getLabel(node1), eTree_getLabel(node2));
         return NULL;
     }
 }
@@ -267,4 +267,38 @@ enum mafTreeLoc mafTreeNodeCompLink_getLoc(struct mafTreeNodeCompLink *ncLink) {
     } else {
         return mafTreeLocInternal;
     }
+}
+
+/* Remove a node from the tree and free.  Can't delete the root node. */
+void mafTree_deleteNode(mafTree *mTree, struct mafTreeNodeCompLink *ncLink) {
+    ETree *node = ncLink->node;
+    ETree *parent = eTree_getParent(node);
+    if (parent == NULL) {
+        errAbort("BUG: can't remove tree root node");
+    }
+    eTree_setParent(node, NULL);
+    for (int i = 0; i < eTree_getChildNumber(node); i++) {
+        eTree_setParent(eTree_getChild(node, i), parent);
+    }
+    freeMafTreeNodeCompLinks(node);
+    eTree_destruct(node);
+}
+
+/* enforce order of children */
+static int sortChildrenCmpFn(ETree *a, ETree *b) {
+    int diff = strcmp(eTree_getLabel(a), eTree_getLabel(b));
+    if (diff == 0) {
+        // same names, sort by seq and location, if available
+        struct mafTreeNodeCompLink *ncLinkA = eTree_getClientData(a), *ncLinkB = eTree_getClientData(b);
+        if ((ncLinkA != NULL) && (ncLinkB != NULL)) {
+            diff = malnComp_cmp(ncLinkA->comp, ncLinkB->comp);
+        }
+    }
+    return diff;
+}
+
+/* sort children so tests are reproducible */
+void mafTree_sortChildren(mafTree *mTree) {
+    eTree_sortChildren(mTree->tree, sortChildrenCmpFn);
+    setTreeOrder(mTree);
 }

@@ -6,7 +6,6 @@
 #include "dystring.h"
 #include "mafTree.h"
 
-
 /* 
  * component of a multiple alignment block.
  */
@@ -37,6 +36,12 @@ static inline int malnComp_getAligned(struct malnComp *comp) {
 static inline char malnComp_getCol(struct malnComp *comp, int alnIdx) {
     assert((0 <= alnIdx) && (alnIdx < comp->alnStr->stringSize));
     return comp->alnStr->string[alnIdx];
+}
+
+/* set a column */
+static inline void malnComp_setCol(struct malnComp *comp, int alnIdx, char base) {
+    assert((0 <= alnIdx) && (alnIdx < comp->alnStr->stringSize));
+    comp->alnStr->string[alnIdx] = base;
 }
 
 /* get entire alignment string */
@@ -88,9 +93,19 @@ static inline bool malnComp_numBases(struct malnComp *comp) {
     return (comp->chromEnd - comp->chromStart);
 }
 
-/* compare to component to see if they overlap */
+/* compare two components to see if they overlap */
 static inline bool malnComp_overlap(struct malnComp *comp, struct malnComp *comp2) {
     return (comp->seq == comp2->seq) && (comp->chromStart < comp2->chromEnd) && (comp->chromEnd > comp2->chromStart);
+}
+
+/* compare two components to see if they overlap or are adjacent */
+static inline bool malnComp_overlapAdjacent(struct malnComp *comp, struct malnComp *comp2) {
+    return (comp->seq == comp2->seq) && (comp->chromStart <= comp2->chromEnd) && (comp->chromEnd >= comp2->chromStart);
+}
+
+/* compare two components to see if they overlap or are adjacent on the same strand */
+static inline bool malnComp_overlapAdjacentStrand(struct malnComp *comp, struct malnComp *comp2) {
+    return (comp->seq == comp2->seq) && (comp->strand == comp2->strand) && (comp->start <= comp2->end) && (comp->end >= comp2->start);
 }
 
 /* compare to a range to see if they overlap */

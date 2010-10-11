@@ -64,6 +64,7 @@ static int compTreeOrderCmp(const void *vcomp1, const void *vcomp2) {
 /* sort components by tree */
 static void malnBlk_sortComps(struct malnBlk *blk) {
     assert(blk->mTree != NULL);
+    mafTree_sortChildren(blk->mTree);
     cmpMTree = blk->mTree;
     slSort(&blk->comps, compTreeOrderCmp);
     cmpMTree = NULL;
@@ -75,6 +76,30 @@ void malnBlk_finish(struct malnBlk *blk) {
     malnBlk_sortComps(blk); // FIXME: don't need to do this for all cases
     malnBlk_validate(blk); // produces better error messages
     malnBlk_assert(blk);   // really only to catch bugs in this code, not input
+}
+
+/* unlink a comp from the list. */
+static void unlinkComp(struct malnBlk *blk, struct malnComp *comp) {
+    struct malnComp *prevComp = NULL, *scanComp = blk->comps;
+    while ((scanComp != comp) && (scanComp != NULL)) {
+        prevComp = scanComp;
+        scanComp = scanComp->next;
+    }
+    assert(scanComp != NULL);
+    if (prevComp == NULL) {
+        blk->comps = comp->next;
+    } else {
+        prevComp->next = comp->next;
+    }
+}
+
+/* Unlink a component from the block, also removing it from the tree and
+ * malnSet map, if its in a set.  Component is not freed. */
+void malnBlk_unlink(struct malnBlk *blk, struct malnComp *comp) {
+    unlinkComp(blk, comp);
+    if (blk->malnSet != NULL) {
+        malnSet_removeComp(blk->malnSet, comp);
+    }
 }
 
 /* get the root component */

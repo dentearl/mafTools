@@ -5,6 +5,7 @@ struct Genomes;
 struct Genome;
 struct malnSet;
 struct malnBlk;
+struct malnComp;
 struct Seq;
 
 /* construct an empty malnSet  */
@@ -22,6 +23,9 @@ struct Genomes *malnSet_getGenomes(struct malnSet *malnSet);
 
 /* add a block to a malnSet */
 void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk);
+
+/* remove a single component from malnSet range map */
+void malnSet_removeComp(struct malnSet *malnSet, struct malnComp *comp);
 
 /* remove a block from malnSet */
 void malnSet_removeBlk(struct malnSet *malnSet, struct malnBlk *blk);
@@ -45,5 +49,8 @@ void malnSet_clearDone(struct malnSet *malnSet);
 
 /* write a malnSet to a MAF file  */
 void malnSet_writeMaf(struct malnSet *malnSet, char *mafFileName);
+
+/* return the number of blocks in the set */
+int malnSet_getNumBlocks(struct malnSet *malnSet);
 
 #endif

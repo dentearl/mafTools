@@ -4,6 +4,7 @@
 #include "malnSet.h"
 #include "malnJoinDups.h"
 #include "malnJoinSets.h"
+#include "malnMergeComps.h"
 #include "sonLibETree.h"
 #include "malnMultiParents.h"
 
@@ -81,6 +82,7 @@ static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMa
     // join and then merge overlapping blocks that were created
     struct malnSet *malnSetJoined = malnJoinSets(refGenome, malnSet1, malnSet2);
     malnJoin_joinSetDups(malnSetJoined);
+    malnMergeComps_merge(malnSetJoined);
     malnSet_writeMaf(malnSetJoined, outMaf);
 
     if (memLeakDebugCleanup) {

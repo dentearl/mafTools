@@ -50,5 +50,10 @@ char *mafTreeLoc_str(enum mafTreeLoc loc);
 /* get location type in tree */
 enum mafTreeLoc mafTreeNodeCompLink_getLoc(struct mafTreeNodeCompLink *ncLink);
 
+/* Remove a node from the tree and free.  Can't delete the root node. */
+void mafTree_deleteNode(mafTree *mTree, struct mafTreeNodeCompLink *ncLink);
+
+/* sort children so tests are reproducible */
+void mafTree_sortChildren(mafTree *mTree);
 
 #endif
