@@ -117,19 +117,29 @@ static void mergeAllAdjacentComps(struct malnBlk *blk) {
 
 /* Merge adjacent components within the specified block, if possible.
  * This will replace block in the set. */
-static void mergeWithin(struct malnSet *malnSet, struct malnBlk *blk, stList *blksToDelete) {
+static void mergeWithin(struct malnSet *malnSet, struct malnBlk *blk, stList *blksToAdd, stList *blksToDelete) {
     if (anyToMerge(blk)) {
         struct malnBlk *mblk = malnBlk_constructClone(blk);
         if (debug) {
             malnBlk_dump(mblk, "mergeWithin:before", stderr);
         }
         mergeAllAdjacentComps(mblk);
-        malnSet_addBlk(malnSet, mblk);
+        stList_append(blksToAdd, mblk);
         stList_append(blksToDelete, blk);
         if (debug) {
             malnBlk_dump(mblk, "mergeWithin:after", stderr);
         }
     }
+}
+
+/* add blocks when safe */
+static void addBlks(struct malnSet *malnSet, stList *blksToAdd) {
+    stListIterator *iter = stList_getIterator(blksToAdd);
+    struct malnBlk *blk;
+    while ((blk = stList_getNext(iter)) != NULL) {
+        malnSet_addBlk(malnSet, blk);
+    }
+    stList_destructIterator(iter);
 }
 
 /* delete blocks when safe */
@@ -144,13 +154,16 @@ static void deleteBlks(struct malnSet *malnSet, stList *blksToDelete) {
 
 /* Merge adjacent components within the blocks of a set. */
 void malnMergeComps_merge(struct malnSet *malnSet) {
-    stList *blksToDelete = stList_construct(); // delay delete due to iterator
+    stList *blksToAdd = stList_construct(); // delay add and delete due to iterator
+    stList *blksToDelete = stList_construct();
     stSortedSetIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *blk;
     while ((blk = stSortedSet_getNext(iter)) != NULL) {
-        mergeWithin(malnSet, blk, blksToDelete);
+        mergeWithin(malnSet, blk, blksToAdd, blksToDelete);
     }
     stSortedSet_destructIterator(iter);
+    addBlks(malnSet, blksToAdd);
+    stList_destruct(blksToAdd);
     deleteBlks(malnSet, blksToDelete);
     stList_destruct(blksToDelete);
 }
