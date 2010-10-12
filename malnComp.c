@@ -1,5 +1,6 @@
 #include "malnComp.h"
 #include "malnCompCursor.h"
+#include "malnBlk.h"
 #include "genome.h"
 #include "common.h"
 #include "dystring.h"
@@ -169,6 +170,10 @@ void malnComp_assert(struct malnComp *comp) {
     } else {
         assert(comp->start == (comp->seq->size - comp->chromEnd));
         assert(comp->end == (comp->seq->size - comp->chromStart));
+    }
+    if (countAligned(comp) != (comp->end - comp->start)) {
+        malnComp_dump(comp, "bad comp", stderr);
+        malnBlk_dump(comp->blk, "bad comp blk", stderr);
     }
     assert(countAligned(comp) == (comp->end - comp->start));
     if (comp->ncLink != NULL) {

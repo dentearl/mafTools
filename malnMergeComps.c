@@ -30,7 +30,7 @@ static inline bool checkColConsistency(struct malnBlkCursor *cursor, int *prevPo
     struct malnCompCursor *cc1 = &(cursor->rows[1]);
     bool aligned0 = malnCompCursor_isAligned(cc0);
     bool aligned1 = malnCompCursor_isAligned(cc1);
-    if (!(aligned0 && aligned1)) {
+    if (!(aligned0 || aligned1)) {
         return true; // neither aligned
     }
     if (aligned0 && aligned1) {
