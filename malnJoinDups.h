@@ -5,5 +5,5 @@ struct malnSet;
 
 /* Join duplication blocks in a set, which evolver outputs as separate
  * blocks.*/
-void malnJoin_joinSetDups(struct malnSet *malnSet);
+void malnJoinDups_joinSetDups(struct malnSet *malnSet);
 #endif

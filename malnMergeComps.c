@@ -3,7 +3,7 @@
 #include "malnSet.h"
 #include "malnBlk.h"
 #include "malnComp.h"
-#include "sonLibSortedSet.h"
+#include "malnBlkMap.h"
 #include "sonLibList.h"
 #include <stdbool.h>
 
@@ -76,9 +76,6 @@ static void mergeCompSeqs(struct malnComp *comp1, struct malnComp *comp2) {
 /* Merge two adjacent components */
 static void mergeAdjacentComps(struct malnBlk *blk, struct malnComp *comp1, struct malnComp *comp2) {
     assert(malnComp_getWidth(comp1) == malnComp_getWidth(comp2));
-    // merge comp2 into comp1
-    mafTree_deleteNode(blk->mTree, comp2->ncLink);
-    malnBlk_unlink(blk, comp2);
 
     // copy contents
     comp1->start = min(comp1->start, comp2->start);
@@ -86,15 +83,20 @@ static void mergeAdjacentComps(struct malnBlk *blk, struct malnComp *comp1, stru
     comp1->chromStart = min(comp1->chromStart, comp2->chromStart);
     comp1->chromEnd = max(comp1->chromEnd, comp2->chromEnd);
     mergeCompSeqs(comp1, comp2);
+
+    // remove from structures
+    malnBlk_unlink(blk, comp2);
     malnComp_destruct(comp2);
 }
 
 /* one pass over components to merge a part */
 static bool mergeAdjacentCompsPass(struct malnBlk *blk) {
+    malnBlk_assert(blk); // FIXME: tmp
     for (struct malnComp *comp1 = blk->comps; comp1 != NULL; comp1 = comp1->next) {
         for (struct malnComp *comp2 = comp1->next; comp2 != NULL; comp2 = comp2->next) {
             if (consistentOverlapAdjacent(blk, comp1, comp2)) {
                 mergeAdjacentComps(blk, comp1, comp2);
+                malnBlk_assert(blk); // FIXME: tmp
                 return true;
             }
         }
@@ -120,6 +122,7 @@ static void mergeAllAdjacentComps(struct malnBlk *blk) {
 static void mergeWithin(struct malnSet *malnSet, struct malnBlk *blk, stList *blksToAdd, stList *blksToDelete) {
     if (anyToMerge(blk)) {
         struct malnBlk *mblk = malnBlk_constructClone(blk);
+        malnBlk_assert(mblk); // FIXME: tmp
         if (debug) {
             malnBlk_dump(mblk, "mergeWithin:before", stderr);
         }
@@ -156,12 +159,12 @@ static void deleteBlks(struct malnSet *malnSet, stList *blksToDelete) {
 void malnMergeComps_merge(struct malnSet *malnSet) {
     stList *blksToAdd = stList_construct(); // delay add and delete due to iterator
     stList *blksToDelete = stList_construct();
-    stSortedSetIterator *iter = malnSet_getBlocks(malnSet);
+    struct malnBlkMapIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *blk;
-    while ((blk = stSortedSet_getNext(iter)) != NULL) {
+    while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
         mergeWithin(malnSet, blk, blksToAdd, blksToDelete);
     }
-    stSortedSet_destructIterator(iter);
+    malnBlkMapIterator_destruct(iter);
     addBlks(malnSet, blksToAdd);
     stList_destruct(blksToAdd);
     deleteBlks(malnSet, blksToDelete);

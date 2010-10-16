@@ -56,4 +56,7 @@ void mafTree_deleteNode(mafTree *mTree, struct mafTreeNodeCompLink *ncLink);
 /* sort children so tests are reproducible */
 void mafTree_sortChildren(mafTree *mTree);
 
+/* assert sanity of nodeCompLink */
+void mafTreeNodeCompLink_assert(struct mafTreeNodeCompLink *ncLink);
+
 #endif

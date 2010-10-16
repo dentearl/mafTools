@@ -34,6 +34,12 @@ static struct mafTreeNodeCompLink *mafTreeNodeCompLink_construct(int treeOrder, 
 
 /* destructor */
 static void mafTreeNodeCompLink_destruct(struct mafTreeNodeCompLink *ncLink) {
+    if (ncLink->node != NULL) {
+        eTree_setClientData(ncLink->node, NULL);
+    }
+    if (ncLink->comp != NULL) {
+        ncLink->comp->ncLink = NULL;
+    }
     freeMem(ncLink);
 }
 
@@ -182,6 +188,15 @@ static ETree *cloneTree(ETree *srcNode, ETree *destParent, struct malnCompCompMa
     return destNode;
 }
 
+/* assert nodes are compatible for a join */
+static void assertJoinCompatible(ETree *node1, ETree *node2) {
+#ifndef NDEBUG
+    struct mafTreeNodeCompLink *ncLink1 = eTree_getClientData(node1);
+    struct mafTreeNodeCompLink *ncLink2 = eTree_getClientData(node2);
+    assert(ncLink1->comp->seq == ncLink2->comp->seq);
+#endif
+}
+
 /* clone child and append clones to a give parent node */
 static void cloneChildren(ETree *srcParent, ETree *destParent, struct malnCompCompMap *srcDestCompMap) {
     for (int i = 0; i < eTree_getChildNumber(srcParent); i++) {
@@ -189,18 +204,14 @@ static void cloneChildren(ETree *srcParent, ETree *destParent, struct malnCompCo
     }
 }
 
-/* join two trees at a shared root */
-static ETree *joinAtRoots(ETree *srcNode1, ETree *srcNode2, struct malnCompCompMap *srcDestCompMap) {
-    ETree *joinedRoot = cloneTree(srcNode1, NULL, srcDestCompMap);
-    cloneChildren(srcNode2, joinedRoot, srcDestCompMap);
-    return joinedRoot;
-}
-
-/* join two trees with a root being attached to a leaf */
-static ETree *joinAtLeaf(ETree *srcRoot1, ETree *srcLeaf1, ETree *srcRoot2, struct malnCompCompMap *srcDestCompMap) {
+/* Clone tree1 and then attach the children of tree2 at the copy of the
+ * specified attachment point. */
+static ETree *joinTrees(ETree *srcRoot1, ETree *srcAttach1, ETree *srcRoot2, struct malnCompCompMap *srcDestCompMap) {
+    assertJoinCompatible(srcAttach1, srcRoot2);
+    assert(eTree_getParent(srcRoot2) == NULL);
     ETree *joinedRoot = cloneTree(srcRoot1, NULL, srcDestCompMap);
-    struct mafTreeNodeCompLink *srcLeaf1NcLink = eTree_getClientData(srcLeaf1);
-    ETree *joinLeaf = searchByComp(joinedRoot, malnCompCompMap_get(srcDestCompMap, srcLeaf1NcLink->comp));
+    struct mafTreeNodeCompLink *srcAttach1NcLink = eTree_getClientData(srcAttach1);
+    ETree *joinLeaf = searchByComp(joinedRoot, malnCompCompMap_get(srcDestCompMap, srcAttach1NcLink->comp));
     cloneChildren(srcRoot2, joinLeaf, srcDestCompMap);
     return joinedRoot;
 }
@@ -208,11 +219,14 @@ static ETree *joinAtLeaf(ETree *srcRoot1, ETree *srcLeaf1, ETree *srcRoot2, stru
 /* Join at the specified components, returning new root */
 static ETree *joinAtNodes(ETree *root1, ETree *node1, ETree *root2, ETree *node2, struct malnCompCompMap *srcDestCompMap) {
     if ((eTree_getParent(node1) == NULL) && (eTree_getParent(node2) == NULL)) {
-        return joinAtRoots(node1, node2, srcDestCompMap);
-    } else if ((eTree_getParent(node1) == NULL) && (eTree_getChildNumber(node2) == 0)) {
-        return joinAtLeaf(root2, node2, node1, srcDestCompMap);
-    } else if ((eTree_getParent(node2) == NULL) && (eTree_getChildNumber(node1) == 0)) {
-        return joinAtLeaf(root1, node1, node2, srcDestCompMap);
+        assert((root1 == node1) && (root2 == node2));
+        return joinTrees(root1, node1, node2, srcDestCompMap);
+    } else if (eTree_getParent(node1) == NULL) {
+        assert(root1 == node1);
+        return joinTrees(root2, node2, node1, srcDestCompMap);
+    } else if (eTree_getParent(node2) == NULL) {
+        assert(root2 == node2);
+        return joinTrees(root1, node1, node2, srcDestCompMap);
     } else {
         errAbort("join nodes don't obey rules: node1: %s node2: %s", eTree_getLabel(node1), eTree_getLabel(node2));
         return NULL;
@@ -277,8 +291,9 @@ void mafTree_deleteNode(mafTree *mTree, struct mafTreeNodeCompLink *ncLink) {
         errAbort("BUG: can't remove tree root node");
     }
     eTree_setParent(node, NULL);
-    for (int i = 0; i < eTree_getChildNumber(node); i++) {
-        eTree_setParent(eTree_getChild(node, i), parent);
+    // setParent changes node children
+    while (eTree_getChildNumber(node) > 0) {
+        eTree_setParent(eTree_getChild(node, 0), parent);
     }
     freeMafTreeNodeCompLinks(node);
     eTree_destruct(node);
@@ -301,4 +316,13 @@ static int sortChildrenCmpFn(ETree *a, ETree *b) {
 void mafTree_sortChildren(mafTree *mTree) {
     eTree_sortChildren(mTree->tree, sortChildrenCmpFn);
     setTreeOrder(mTree);
+}
+
+/* assert sanity of nodeCompLink */
+void mafTreeNodeCompLink_assert(struct mafTreeNodeCompLink *ncLink) {
+#ifndef NDEBUG
+    if (ncLink != NULL) {
+        assert(stString_eq(eTree_getLabel(ncLink->node), ncLink->comp->seq->orgSeqName));
+    }
+#endif
 }

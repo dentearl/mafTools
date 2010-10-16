@@ -2,15 +2,16 @@
 #include "malnComp.h"
 #include "malnBlk.h"
 #include "mafTree.h"
-#include "sonLibSortedSet.h"
+#include "malnBlkMap.h"
 #include "sonLibList.h"
+#include "sonLibString.h"
 #include "common.h"
 #include "jkmaf.h"
 #include "genomeRangeTree.h"
 
 struct malnSet {
     struct Genomes *genomes;
-    stSortedSet *blks;
+    struct malnBlkMap *blks;
     struct genomeRangeTree *compRangeMap; /* range index slRefs of malnComp
                                            * objects.  chrom name is org.seq,
                                            * allowing indexing all components, not
@@ -29,12 +30,12 @@ static void addCompsToMap(struct malnSet *malnSet, struct malnBlk *blk) {
 /* build the range tree when needed */
 static void buildRangeTree(struct malnSet *malnSet) {
     malnSet->compRangeMap = genomeRangeTreeNew();
-    stSortedSetIterator *iter = stSortedSet_getIterator(malnSet->blks);
+    struct malnBlkMapIterator *iter = malnBlkMap_getIterator(malnSet->blks);
     struct malnBlk *blk;
-    while ((blk = stSortedSet_getNext(iter)) != NULL) {
+    while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
         addCompsToMap(malnSet, blk);
     }
-    stSortedSet_destructIterator(iter);
+    malnBlkMapIterator_destruct(iter);
 }
 
 /* convert a mafComp to an malnComp */
@@ -106,7 +107,7 @@ void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     assert(blk->malnSet == NULL);
     malnBlk_assert(blk);
     blk->malnSet = malnSet;
-    stSortedSet_insert(malnSet->blks, blk);
+    malnBlkMap_add(malnSet->blks, blk);
     if (malnSet->compRangeMap != NULL) {
         addCompsToMap(malnSet, blk);
     }
@@ -148,7 +149,7 @@ void malnSet_removeBlk(struct malnSet *malnSet, struct malnBlk *blk) {
         if (malnSet->compRangeMap != NULL) {
             removeBlkRanges(malnSet, blk);
         }
-        stSortedSet_remove(malnSet->blks, blk);
+        malnBlkMap_remove(malnSet->blks, blk);
     }
     blk->malnSet = NULL;
 }
@@ -166,7 +167,7 @@ struct malnSet *malnSet_construct(struct Genomes *genomes) {
     malnSet->genomes = genomes;
     // n.b. don't try to sort on a key, just use addess key, otherwise
     // deleting entries in merge will delete the wrong entries.
-    malnSet->blks = stSortedSet_construct2((void (*)(void *))malnBlk_destruct);
+    malnSet->blks = malnBlkMap_construct();
     return malnSet;
 }
 
@@ -206,7 +207,8 @@ void malnSet_destruct(struct malnSet *malnSet) {
     if (malnSet->compRangeMap != NULL) {
         destructCompRangeMap(malnSet);
     }
-    stSortedSet_destruct(malnSet->blks);
+    malnBlkMap_deleteAll(malnSet->blks);
+    malnBlkMap_destruct(malnSet->blks);
     freeMem(malnSet);
 }
 
@@ -261,12 +263,12 @@ static int blkCmpRootComp(const void *vblk1, const void *vblk2) {
 /* build a list of blocks, sorted by the root components */
 static stList *buildRootSorted(struct malnSet *malnSet) {
     stList *sorted = stList_construct();
-    stSortedSetIterator *iter = stSortedSet_getIterator(malnSet->blks);
+    struct malnBlkMapIterator *iter = malnBlkMap_getIterator(malnSet->blks);
     struct malnBlk *blk;
-    while ((blk = stSortedSet_getNext(iter)) != NULL) {
+    while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
         stList_append(sorted, blk);
     }
-    stSortedSet_destructIterator(iter);
+    malnBlkMapIterator_destruct(iter);
     stList_sort(sorted, blkCmpRootComp);
     return sorted;
 }
@@ -298,8 +300,8 @@ void malnSet_writeMaf(struct malnSet *malnSet, char *mafFileName) {
 }
 
 /* get iterator of the blocks. Don't remove or add blocks while in motion. */
-stSortedSetIterator *malnSet_getBlocks(struct malnSet *malnSet) {
-    return stSortedSet_getIterator(malnSet->blks);
+struct malnBlkMapIterator *malnSet_getBlocks(struct malnSet *malnSet) {
+    return malnBlkMap_getIterator(malnSet->blks);
 }
 
 /* compare function for component list */
@@ -341,13 +343,13 @@ stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *
 /* assert some sanity checks on a set */
 void malnSet_assert(struct malnSet *malnSet) {
 #ifndef NDEBUG
-    stSortedSetIterator *iter = stSortedSet_getIterator(malnSet->blks);
+    struct malnBlkMapIterator *iter = malnBlkMap_getIterator(malnSet->blks);
     struct malnBlk *blk;
-    while ((blk = stSortedSet_getNext(iter)) != NULL) {
+    while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
         assert(blk->malnSet == malnSet);
         malnBlk_assert(blk);
     }
-    stSortedSet_destructIterator(iter);
+    malnBlkMapIterator_destruct(iter);
 #endif
 }
 
@@ -361,26 +363,36 @@ stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, stru
 /* assert done flag is set on all blocks */
 void malnSet_assertDone(struct malnSet *malnSet) {
 #ifndef NDEBUG
-    stSortedSetIterator *iter = stSortedSet_getIterator(malnSet->blks);
+    struct malnBlkMapIterator *iter = malnBlkMap_getIterator(malnSet->blks);
     struct malnBlk *blk;
-    while ((blk = stSortedSet_getNext(iter)) != NULL) {
+    while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
         assert(blk->done);
     }
-    stSortedSet_destructIterator(iter);
+    malnBlkMapIterator_destruct(iter);
 #endif
 }
 
 /* clear done flag on all blocks */
 void malnSet_clearDone(struct malnSet *malnSet) {
-    stSortedSetIterator *iter = stSortedSet_getIterator(malnSet->blks);
+    struct malnBlkMapIterator *iter = malnBlkMap_getIterator(malnSet->blks);
     struct malnBlk *blk;
-    while ((blk = stSortedSet_getNext(iter)) != NULL) {
+    while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
         blk->done = false;
     }
-    stSortedSet_destructIterator(iter);
+    malnBlkMapIterator_destruct(iter);
 }
 
-/* return the number of blocks in the set */
-int malnSet_getNumBlocks(struct malnSet *malnSet) {
-    return stSortedSet_size(malnSet->blks);
+/* print set for debugging */
+void malnSet_dump(struct malnSet *malnSet, const char *label, FILE *fh) {
+    char *blkDesc = stString_print("blk:%s", label);
+    fprintf(fh, "malnSet: begin %s\n", label);
+    struct malnBlkMapIterator *iter = malnBlkMap_getIterator(malnSet->blks);
+    struct malnBlk *blk;
+    while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
+        fputs("  ", fh);
+        malnBlk_dump(blk, blkDesc, fh);
+    }
+    malnBlkMapIterator_destruct(iter);
+    fprintf(fh, "malnSet: end %s\n", label);
+    freeMem(blkDesc);
 }

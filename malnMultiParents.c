@@ -2,10 +2,16 @@
 #include "malnSet.h"
 #include "malnBlk.h"
 #include "malnComp.h"
-#include "malnDeleteBlks.h"
-#include "sonLibSortedSet.h"
+#include "malnBlkMap.h"
 #include "sonLibList.h"
 #include "stSafeC.h"
+
+static bool debug = false;  // FIXME: tmp
+
+/* should this block be checked? */
+static bool shouldCheck(struct malnBlk *blk, struct malnBlkMap *delBlks, struct malnBlkMap *deletedBlks) {
+    return !malnBlkMap_contains(delBlks, blk) && ((deletedBlks == NULL) || !malnBlkMap_contains(deletedBlks, blk));
+}
 
 /* report a multiple parent, either to stderr or by aborting */
 static void reportMultiParent(struct malnComp *comp, struct malnComp *overComp, bool discardTwoParents) {
@@ -15,6 +21,9 @@ static void reportMultiParent(struct malnComp *comp, struct malnComp *overComp, 
     if (discardTwoParents) {
         fprintf(stderr, "Warning: %s\n", msg);
     } else {
+        fprintf(stderr, "%s\n", msg);
+        malnBlk_dump(comp->blk, "compBlk",  stderr);
+        malnBlk_dump(overComp->blk, "overCompBlk",  stderr);
         errAbort("Error: %s", msg);
     }
     stSafeCFree(msg);
@@ -33,41 +42,41 @@ static bool checkMultiParent(struct malnComp *comp, struct malnComp *overComp, b
 }
 
 /* compare a component to other components */
-static void checkCompForMultiParents(struct malnSet *malnSet, struct malnComp *comp, struct malnDeleteBlks *delBlks, bool discardTwoParents) {
+static void checkCompForMultiParents(struct malnSet *malnSet, struct malnComp *comp, struct malnBlkMap *delBlks, struct malnBlkMap *deletedBlks, bool discardTwoParents) {
     stList *overComps = malnSet_getOverlappingPendingComps(malnSet, comp->seq, comp->chromStart, comp->chromEnd, mafTreeLocAll);
     for (int i = 0; i < stList_length(overComps); i++) {
         struct malnComp *overComp = stList_get(overComps, i);
-        if ((!malnDeleteBlks_contains(delBlks, overComp->blk))
-             && checkMultiParent(comp, overComp, discardTwoParents)) {
-            malnDeleteBlks_flag(delBlks, overComp->blk);
+        if (shouldCheck(overComp->blk, delBlks, deletedBlks) && checkMultiParent(comp, overComp, discardTwoParents)) {
+            malnBlkMap_add(delBlks, overComp->blk);
         }
     }
     stList_destruct(overComps);
 }
 
 /* check a block for components that have multiple parents  */
-static void checkBlkForMultiParents(struct malnSet *malnSet, struct malnBlk *blk, struct malnDeleteBlks *delBlks, bool discardTwoParents) {
+static void checkBlkForMultiParents(struct malnSet *malnSet, struct malnBlk *blk, struct malnBlkMap *delBlks, struct malnBlkMap *deletedBlks, bool discardTwoParents) {
     blk->done = true;
     for (struct malnComp *comp = blk->comps; (comp != NULL); comp = comp->next) {
         if (malnComp_getLoc(comp) != mafTreeLocRoot) {
-            checkCompForMultiParents(malnSet, comp, delBlks, discardTwoParents);
+            checkCompForMultiParents(malnSet, comp, delBlks, deletedBlks, discardTwoParents);
         }
     }
 }
 
 /* check for regions with multiple parents, deleting the blocks if requested,
- * otherwise aborting */
-void malnMultiParents_check(struct malnSet *malnSet, bool discardTwoParents) {
-    struct malnDeleteBlks *delBlks = malnDeleteBlks_construct();
-    stSortedSetIterator *iter = malnSet_getBlocks(malnSet);
+ * otherwise aborting.  If deletingMap is not, skip entries in it.  */
+void malnMultiParents_check(struct malnSet *malnSet, bool discardTwoParents, struct malnBlkMap *deletedBlks) {
+    struct malnBlkMap *delBlks = malnBlkMap_construct();
+    struct malnBlkMapIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *blk;
-    while ((blk = stSortedSet_getNext(iter)) != NULL) {
-        if (!malnDeleteBlks_contains(delBlks, blk)) {
-            checkBlkForMultiParents(malnSet, blk, delBlks, discardTwoParents);
+    while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
+        if (shouldCheck(blk, delBlks, deletedBlks)) {
+            checkBlkForMultiParents(malnSet, blk, delBlks, deletedBlks, discardTwoParents);
         }
     }
-    stSortedSet_destructIterator(iter);
-    malnDeleteBlks_destruct(delBlks);
+    malnBlkMapIterator_destruct(iter);
+    malnBlkMap_deleteAll(delBlks);
+    malnBlkMap_destruct(delBlks);
     malnSet_clearDone(malnSet);
 }
 

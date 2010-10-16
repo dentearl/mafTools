@@ -14,6 +14,8 @@
  *    it was done with block based rather than column based merges.
  */
 
+static bool debug = false;  // FIXME: tmp
+
 /* set to true to cleanup all memory for memory leak checks */
 static bool memLeakDebugCleanup = true;
 
@@ -66,23 +68,40 @@ static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMa
     struct Genome *treelessRoot2Genome = (treelessRoot2Name != NULL) ? genomesObtainGenome(genomes, treelessRoot2Name) : NULL;
 
     struct malnSet *malnSet1 = malnSet_constructFromMaf(genomes, inMaf1, defaultBranchLength, treelessRoot1Genome);
-    malnMultiParents_check(malnSet1, discardTwoParents);
-    malnJoin_joinSetDups(malnSet1);
+    malnMultiParents_check(malnSet1, discardTwoParents, NULL);
+    malnJoinDups_joinSetDups(malnSet1);
     if (maf1Copy != NULL) {
         malnSet_writeMaf(malnSet1, maf1Copy);
     }
+    if (debug) {
+        malnSet_dump(malnSet1, "set1", stderr);
+    }
 
     struct malnSet *malnSet2 = malnSet_constructFromMaf(genomes, inMaf2, defaultBranchLength, treelessRoot2Genome);
-    malnMultiParents_check(malnSet2, discardTwoParents);
-    malnJoin_joinSetDups(malnSet2);
+    malnMultiParents_check(malnSet2, discardTwoParents, NULL);
     if (maf2Copy != NULL) {
         malnSet_writeMaf(malnSet2, maf2Copy);
+    }
+    if (debug) {
+        malnSet_dump(malnSet2, "set2", stderr);
     }
 
     // join and then merge overlapping blocks that were created
     struct malnSet *malnSetJoined = malnJoinSets(refGenome, malnSet1, malnSet2);
-    malnJoin_joinSetDups(malnSetJoined);
+    if (debug) {
+        malnSet_dump(malnSetJoined, "BEFORE joinDups", stderr); // FIXME: tmp
+    }
+    malnJoinDups_joinSetDups(malnSetJoined);
+    if (debug) {
+        malnSet_dump(malnSetJoined, "BEFORE merge", stderr); // FIXME: tmp
+    }
     malnMergeComps_merge(malnSetJoined);
+    if (debug) {
+        malnSet_dump(malnSetJoined, "AFTER", stderr); // FIXME: tmp
+    }
+
+    malnSet_assert(malnSetJoined); // FIXME: tmp
+    malnMultiParents_check(malnSetJoined, FALSE, NULL); // expensive sanity check
     malnSet_writeMaf(malnSetJoined, outMaf);
 
     if (memLeakDebugCleanup) {

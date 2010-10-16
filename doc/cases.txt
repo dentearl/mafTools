@@ -1,0 +1,27 @@
+various corner cases that must be handled
+========================================================================
+- testJoin21 given MAFs a and b, joining on sHuman-sChimp (zero-based, 1/2
+  open coordinates)
+
+input MAFs:
+        a1 sHuman-sChimp.chr20 743840-754280 [10440] root
+           simHuman.chr20      757705-757749    [44] leaf
+
+        b1 sG-sH-sC.chr20      741388-751692 [10304] root
+           sHuman-sChimp.chr20 743840-754142 [10302] leaf
+
+        b2 sG-sH-sC.chr20      751693-751830 [137] root
+           sHuman-sChimp.chr20 754143-754280 [137] leaf
+
+after merge #1
+    a1+b1 sG-sH-sC.chr20      741388-751692 [10304] root
+          sHuman-sChimp.chr20 743840-754280 [10440] internal     
+          simHuman.chr20      757705-757749    [44] leaf
+
+       b2 sG-sH-sC.chr20      751693-751830 [137] root
+          sHuman-sChimp.chr20 754143-754280 [137] leaf
+
+at this point, sHuman-sChimp.chr20 751693-754280 is in both
+a1+b1 and b2 blocks  However they can't be joined because
+base sG-sH-sC.chr20 751692 isn't in any block in MAF b.
+-------------------------------------------------------------------------

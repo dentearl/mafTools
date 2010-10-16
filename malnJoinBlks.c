@@ -18,6 +18,7 @@ struct malnJoinBlks {
     struct malnComp *ref2;
     struct malnBlk *blk1;            // input blocks
     struct malnBlk *blk2;
+    struct malnBlk *inBlk2;          // original blk2, before reverse complement
     struct malnBlkCursor *cursor1;   // cursors into input block
     struct malnBlkCursor *cursor2;
     struct malnBlk *joined;          // joined block
@@ -50,11 +51,6 @@ static void calcAlignmentCoords(struct malnJoinBlks *jb) {
         jb->aln1CommonStart = jb->aln1CommonEnd = jb->cursor1->alnWidth;
         jb->aln2CommonStart = jb->aln2CommonEnd = jb->cursor2->alnWidth;
     }
-    if (debug) {
-        fprintf(stderr, "refCommon: %s:%d-%d\n", jb->ref1->seq->orgSeqName, jb->refCommonStart, jb->refCommonEnd);
-        fprintf(stderr, "align1Commom:: %d-%d\n", jb->aln1CommonStart, jb->aln1CommonEnd);
-        fprintf(stderr, "align2Commom:: %d-%d\n", jb->aln2CommonStart, jb->aln2CommonEnd);
-    }
 }
 
 /* create new reference components from the two being joined */
@@ -85,22 +81,13 @@ static struct malnJoinBlks *malnJoinBlks_construct(struct malnComp *refComp1, st
     jb->ref1 = refComp1;
     jb->ref2 = refComp2;
     jb->blk1 = refComp1->blk;
-    jb->blk2 = refComp2->blk;
-    if (debug) { // FIXME: tmp
-        malnComp_dump(jb->ref1, "refComp1", stderr);
-        malnBlk_dump(jb->blk1, "inBlk1", stderr);
-        malnComp_dump(jb->ref2, "refComp2", stderr);
-        malnBlk_dump(jb->blk2, "inBlk2", stderr);
-    }
+    jb->blk2 = jb->inBlk2 = refComp2->blk;
 
     // reverse complement if needed (must do before making cursors)
     if (jb->ref1->strand != jb->ref2->strand) {
         jb->blk2 = jb->freeBlk = malnBlk_reverseComplement(jb->blk2);
         jb->ref2 = malnBlk_findCompByChromRange(jb->blk2, jb->ref2->seq, jb->ref2->chromStart, jb->ref2->chromEnd);
         assert(jb->ref2 != NULL);
-        if (debug) { // FIXME: tmp
-            malnBlk_dump(jb->blk2, "inBlk2rc", stderr);
-        }
     }
 
     jb->cursor1 = malnBlkCursor_construct(jb->blk1, jb->ref1, NULL);
@@ -122,9 +109,9 @@ static void malnJoinBlks_destruct(struct malnJoinBlks *jb) {
     malnCompCompMap_destruct(jb->srcDestCompMap);
     malnBlkCursor_destruct(jb->cursor1);
     malnBlkCursor_destruct(jb->cursor2);
-    jb->blk1->done = true;  // must do before destruct, as blk1 might be freeBlk
-    jb->blk2->done = true;
     malnBlk_destruct(jb->freeBlk);
+    jb->blk1->done = true;
+    jb->inBlk2->done = true;
     freeMem(jb->dests1);
     freeMem(jb->dests2);
     freeMem(jb);
@@ -156,19 +143,12 @@ static void assertJoinedComps(struct malnBlkCursor *blkCursor, struct malnComp *
 
 /* copy columns outside of the common reference sequence region to the joined maf */
 static void copyUnsharedRefColumns(struct malnJoinBlks *jb, struct malnComp **destComps, struct malnBlkCursor *blkCursor, int alnStart, int alnEnd) {
-    malnBlk_assert(jb->joined);  // FIXME
-    malnBlk_assert(blkCursor->blk);  // FIXME
-    if (debug) {
-        malnBlk_dump(jb->joined, "blkJoined", stderr);  // FIXME
-        malnBlk_dump(blkCursor->blk, "blkCursor", stderr);  // FIXME
-    }
-    for (int i = 0; i < blkCursor->numRows; i++) {
+  for (int i = 0; i < blkCursor->numRows; i++) {
         malnComp_appendCompAln(destComps[i], blkCursor->rows[i].comp, alnStart, alnEnd);
     }
     malnBlkCursor_setAlignCol(blkCursor, alnEnd);
     jb->joined->alnWidth += (alnEnd - alnStart);  // FIXME should have append methods
     malnBlk_pad(jb->joined);
-    malnBlk_assert(jb->joined);
 }
 
 /* is reference aligned? */
@@ -202,7 +182,6 @@ static void copyUnalignedSharedColumns(struct malnBlk *blkJoined, struct malnCom
         blkJoined->alnWidth++;  // FIXME should have append methods
     }
     malnBlk_pad(blkJoined);
-    malnBlk_assert(blkJoined);
 }
 
 /* join columns based on shared reference sequence regions */
@@ -215,7 +194,6 @@ static void joinSharedRefColumns(struct malnJoinBlks *jb) {
     }
     assert(jb->cursor1->alnIdx == jb->aln1CommonEnd);
     assert(jb->cursor2->alnIdx == jb->aln2CommonEnd);
-    malnBlk_assert(jb->joined); // FIXME debugging
 }
 
 /* join two blocks using their specified reference components.  Optionally return
@@ -227,19 +205,26 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
         *joinedCompRet = jb->dests1[0];
     }
     calcAlignmentCoords(jb);
+    if (debug) { // FIXME: tmp
+        fprintf(stderr, "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n");
+        malnComp_dump(jb->ref1, "refComp1", stderr);
+        malnBlk_dump(jb->blk1, "inBlk1", stderr);
+        malnComp_dump(jb->ref2, "refComp2", stderr);
+        malnBlk_dump(jb->inBlk2, "inBlk2", stderr);
+        if (jb->blk2 != jb->inBlk2) {
+            malnBlk_dump(jb->blk2, "inBlk2rc", stderr);
+        }
+    }
 
     // before common start
     copyUnsharedRefColumns(jb, jb->dests1, jb->cursor1, 0, jb->aln1CommonStart);
-    if (debug) {malnBlk_dump(jb->joined, "joined@1", stderr);}
     copyUnsharedRefColumns(jb, jb->dests2, jb->cursor2, 0, jb->aln2CommonStart);
-    if (debug) {malnBlk_dump(jb->joined, "joined@2", stderr);}
 
     // common
     if (jb->refCommonStart < jb->refCommonEnd) {
         assert(jb->dests1[0]->end == jb->refCommonStart);
         joinSharedRefColumns(jb);
         assert(jb->dests1[0]->end == jb->refCommonEnd);
-        if (debug) {malnBlk_dump(jb->joined, "joined@3", stderr);}
     }
 
     // after common end
@@ -256,5 +241,9 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
 
     struct malnBlk *joined = jb->joined;
     malnJoinBlks_destruct(jb);
+    if (debug) { // FIXME: tmp
+        malnBlk_dump(joined, "joined", stderr);
+        fprintf(stderr, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+    }
     return joined;
 }

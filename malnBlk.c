@@ -7,8 +7,10 @@
 
 /* constructor */
 struct malnBlk *malnBlk_construct(void) {
+    static int nextObjId = 1;
     struct malnBlk *blk;
     AllocVar(blk);
+    blk->objId = nextObjId++;
     return blk;
 }
 
@@ -80,17 +82,11 @@ void malnBlk_finish(struct malnBlk *blk) {
 
 /* unlink a comp from the list. */
 static void unlinkComp(struct malnBlk *blk, struct malnComp *comp) {
-    struct malnComp *prevComp = NULL, *scanComp = blk->comps;
-    while ((scanComp != comp) && (scanComp != NULL)) {
-        prevComp = scanComp;
-        scanComp = scanComp->next;
+    slRemoveEl(&blk->comps, comp);
+    if (blk->malnSet != NULL) {
+        malnSet_removeComp(blk->malnSet, comp);
     }
-    assert(scanComp != NULL);
-    if (prevComp == NULL) {
-        blk->comps = comp->next;
-    } else {
-        prevComp->next = comp->next;
-    }
+    mafTree_deleteNode(blk->mTree, comp->ncLink);
 }
 
 /* Unlink a component from the block, also removing it from the tree and
@@ -162,9 +158,6 @@ void malnBlk_validate(struct malnBlk *blk) {
     struct malnComp *rootComp = malnBlk_getRootComp(blk);
     for (struct malnComp *comp2 = blk->comps; comp2 != NULL; comp2 = comp2->next) {
         if ((comp2 != rootComp) && malnComp_overlap(rootComp, comp2)) {
-            if (true) { // FIXME: tmp debug
-                malnBlk_dump(blk, "overlapping components", stderr);
-            }
             errAbort("overlapping root components detected with in a block: %s:%d-%d (%c) and %s:%d-%d (%c)",
                      rootComp->seq->orgSeqName, rootComp->start, rootComp->end, rootComp->strand,
                      comp2->seq->orgSeqName, comp2->start, comp2->end, comp2->strand);
@@ -178,17 +171,11 @@ void malnBlk_assert(struct malnBlk *blk) {
     assert(blk->comps != NULL);
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         assert(comp->blk == blk);
+        if (malnComp_getWidth(comp) != blk->alnWidth) {
+            malnBlk_dump(blk, "invalid component width", stderr);
+        }
         assert(malnComp_getWidth(comp) == blk->alnWidth);
         malnComp_assert(comp);
-#if 0 // FIXME, I think this is bogus for tandem dups
-        // check for overlaps
-        for (struct malnComp *comp2 = comp->next; comp2 != NULL; comp2 = comp2->next) {
-            if (malnComp_overlap(comp, comp2)) { // FIXME: tmp
-                malnBlk_dump(blk, "hash overlapping", stderr);
-            }
-            assert(!malnComp_overlap(comp, comp2));
-        }
-#endif
     }
 #endif
 }
@@ -210,7 +197,7 @@ int malnBlk_cmp(struct malnBlk *blk1, struct malnBlk *blk2) {
 /* print a block for debugging purposes */
 void malnBlk_dump(struct malnBlk *blk, const char *label, FILE *fh) {
     char *nhTree = (blk->mTree != NULL) ? mafTree_format(blk->mTree) : cloneString("NULL");
-    fprintf(fh, "%s %zx %d: %s\n", label, (size_t)blk, blk->alnWidth, nhTree);
+    fprintf(fh, "%s #%d %d %s %s\n", label, blk->objId, blk->alnWidth, (blk->done ? "done" : "pend"), nhTree);
     freeMem(nhTree);
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         malnComp_dump(comp, "    ", fh);

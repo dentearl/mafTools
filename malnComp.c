@@ -1,27 +1,22 @@
 #include "malnComp.h"
 #include "malnCompCursor.h"
 #include "malnBlk.h"
+#include "mafTree.h"
 #include "genome.h"
 #include "common.h"
 #include "dystring.h"
 #include "dnautil.h"
+#include "sonLibString.h"
 
 /* get tree location for component */
 enum mafTreeLoc malnComp_getLoc(struct malnComp *comp) {
     return mafTreeNodeCompLink_getLoc(comp->ncLink);
 }
 
-/* can a join be made at this component? */
-bool malnComp_joinable(struct malnComp *comp) {
-    return (malnComp_getLoc(comp) & (mafTreeLocRoot|mafTreeLocLeaf)) != 0;
-}
-
 /* can two components be joined? */
 bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *comp2) {
-    return malnComp_overlapAdjacent(comp1, comp2)
-        && (((malnComp_getLoc(comp1) == mafTreeLocRoot) && (malnComp_getLoc(comp2) == mafTreeLocRoot))
-            || ((malnComp_getLoc(comp1) == mafTreeLocRoot) && (malnComp_getLoc(comp2) == mafTreeLocLeaf))
-            || ((malnComp_getLoc(comp1) == mafTreeLocLeaf) && (malnComp_getLoc(comp2) == mafTreeLocRoot)));
+    // need to be overlapping or adjacent and one component must be a root to join
+    return malnComp_overlapAdjacent(comp1, comp2) && ((malnComp_getLoc(comp1) == mafTreeLocRoot) || (malnComp_getLoc(comp2) == mafTreeLocRoot));
 }
 
 /* count aligned positions */
@@ -73,6 +68,9 @@ struct malnComp *malnComp_constructClone(struct malnComp *srcComp) {
 /* destructor */
 void malnComp_destruct(struct malnComp *comp) {
     if (comp != NULL) {
+        if (comp->ncLink != NULL) {
+            comp->ncLink->comp = NULL;
+        }
         dyStringFree(&comp->alnStr);
         freeMem(comp);
     }
@@ -176,9 +174,12 @@ void malnComp_assert(struct malnComp *comp) {
         malnBlk_dump(comp->blk, "bad comp blk", stderr);
     }
     assert(countAligned(comp) == (comp->end - comp->start));
-    if (comp->ncLink != NULL) {
-        assert(comp->ncLink->comp == comp);
+    if (comp->ncLink == NULL) {
+        malnBlk_dump(comp->blk, "NULL ncLink", stderr);
     }
+    assert(comp->ncLink != NULL);
+    assert(comp->ncLink->comp == comp);
+    mafTreeNodeCompLink_assert(comp->ncLink);
 #endif
 }
 
@@ -200,5 +201,5 @@ int malnComp_cmp(struct malnComp *comp1, struct malnComp *comp2) {
 /* print a component for debugging purposes */
 void malnComp_dump(struct malnComp *comp, const char *label, FILE *fh) {
     const char *loc = (comp->ncLink != NULL) ? mafTreeLoc_str(malnComp_getLoc(comp)) : "NULL";
-    fprintf(fh, "%s %s (%c) %d-%d %d-%d %s %s\n", label, comp->seq->orgSeqName, comp->strand, comp->start, comp->end, comp->chromStart, comp->chromEnd, loc, comp->alnStr->string);
+    fprintf(fh, "%s %s (%c) %d-%d %d-%d [%d] %s %s\n", label, comp->seq->orgSeqName, comp->strand, comp->start, comp->end, comp->chromStart, comp->chromEnd, malnComp_getAligned(comp), loc, comp->alnStr->string);
 }

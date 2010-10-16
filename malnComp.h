@@ -118,9 +118,6 @@ static inline bool malnComp_overlapAdjacentRange(struct malnComp *comp, struct S
     return (comp->seq == seq) && (comp->chromStart <= chromEnd) && (comp->chromEnd >= chromStart);
 }
 
-/* can a join be made at this component? */
-bool malnComp_joinable(struct malnComp *comp);
-
 /* can two components be joined? */
 bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *comp2);
 

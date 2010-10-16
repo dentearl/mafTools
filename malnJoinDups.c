@@ -2,7 +2,7 @@
 #include "malnSet.h"
 #include "malnBlk.h"
 #include "malnComp.h"
-#include "malnDeleteBlks.h"
+#include "malnBlkMap.h"
 #include "malnJoinBlks.h"
 #include "sonLibSortedSet.h"
 #include "sonLibList.h"
@@ -11,24 +11,23 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-// FIXME: tmp
-static const bool debug = false;
+static const bool debug = false; // FIXME: tmp
 
 /* join two blocks associated components, create and third block. Return that
  * blocks root component. Joined blocks are inserted into delete table */
-static struct malnComp *joinCompWithDup(struct malnSet *malnSet, struct malnComp *comp1, struct malnComp *comp2, struct malnDeleteBlks *delBlks) {
+static struct malnComp *joinCompWithDup(struct malnSet *malnSet, struct malnComp *comp1, struct malnComp *comp2, struct malnBlkMap *delBlks) {
     if (debug) {
         malnComp_dump(comp2, "joinCompWithDup comp2", stderr);
     }
     struct malnBlk *joinedBlk = malnJoinBlks(comp1, comp2, NULL);
-    malnDeleteBlks_flag(delBlks, comp1->blk);
-    malnDeleteBlks_flag(delBlks, comp2->blk);
+    malnBlkMap_add(delBlks, comp1->blk);
+    malnBlkMap_add(delBlks, comp2->blk);
     return malnBlk_getRootComp(joinedBlk);
 }
 
 /* attempt to join a block with other blocks using the specified component.
  * Return updated block when one join is achieved, or NULL if no join was done. */
-static struct malnBlk *joinCompWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, struct malnComp *joinComp, struct malnDeleteBlks *delBlks) {
+static struct malnBlk *joinCompWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, struct malnComp *joinComp, struct malnBlkMap *delBlks) {
     if (debug) {
         malnComp_dump(joinComp, "joinCompWithDups", stderr);
     }
@@ -41,9 +40,9 @@ static struct malnBlk *joinCompWithDups(struct malnSet *malnSet, struct malnBlk 
                     joinComp->seq->orgSeqName, joinComp->start, joinComp->end,
                     dupComp->seq->orgSeqName, dupComp->start, dupComp->end,
                     (malnComp_canJoin(joinComp, dupComp) ? "join" : "noJoin"),
-                    (malnDeleteBlks_contains(delBlks, dupComp->blk) ? " deleted" : ""));
+                    (malnBlkMap_contains(delBlks, dupComp->blk) ? " deleted" : ""));
         }
-        if (malnComp_canJoin(joinComp, dupComp) && !malnDeleteBlks_contains(delBlks, dupComp->blk)) {
+        if (malnComp_canJoin(joinComp, dupComp) && !malnBlkMap_contains(delBlks, dupComp->blk)) {
             joinComp = joinCompWithDup(malnSet, joinComp, dupComp, delBlks);
             joinComp->blk->done = true;
         }
@@ -55,7 +54,7 @@ static struct malnBlk *joinCompWithDups(struct malnSet *malnSet, struct malnBlk 
 /* Join one block with any duplications of that block in the same
  * set. Duplicates are added to a table and skipped so that iterators are not
  * invalidated. */
-static void joinBlkWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, struct malnDeleteBlks *delBlks) {
+static void joinBlkWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, struct malnBlkMap *delBlks) {
     // iterate over each component in joinBlk, looking for overlapping components
     // in other blocks.  A join creates a new block, so we start over until no
     // block is joined with this block.
@@ -82,17 +81,18 @@ static void joinBlkWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, st
 
 /* Join duplication blocks in a set, which evolver outputs as separate
  * blocks. */
-void malnJoin_joinSetDups(struct malnSet *malnSet) {
-    struct malnDeleteBlks *delBlks = malnDeleteBlks_construct();
-    stSortedSetIterator *iter = malnSet_getBlocks(malnSet);
+void malnJoinDups_joinSetDups(struct malnSet *malnSet) {
+    struct malnBlkMap *delBlks = malnBlkMap_construct();
+    struct malnBlkMapIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *joinBlk;
-    while ((joinBlk = stSortedSet_getNext(iter)) != NULL) {
-        if (!malnDeleteBlks_contains(delBlks, joinBlk)) {
+    while ((joinBlk = malnBlkMapIterator_getNext(iter)) != NULL) {
+        if (!malnBlkMap_contains(delBlks, joinBlk)) {
             joinBlkWithDups(malnSet, joinBlk, delBlks);
         }
     }
-    stSortedSet_destructIterator(iter);
-    malnDeleteBlks_destruct(delBlks);
+    malnBlkMapIterator_destruct(iter);
+    malnBlkMap_deleteAll(delBlks);
+    malnBlkMap_destruct(delBlks);
     malnSet_assert(malnSet);
     malnSet_clearDone(malnSet);
 }

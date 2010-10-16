@@ -7,6 +7,7 @@ struct malnSet;
 struct malnBlk;
 struct malnComp;
 struct Seq;
+struct malnBlkMap;
 
 /* construct an empty malnSet  */
 struct malnSet *malnSet_construct(struct Genomes *genomes);
@@ -34,7 +35,7 @@ void malnSet_removeBlk(struct malnSet *malnSet, struct malnBlk *blk);
 void malnSet_deleteBlk(struct malnSet *malnSet, struct malnBlk *blk);
 
 /* get iterator of the blocks. Don't remove or add blocks while in motion. */
-stSortedSetIterator *malnSet_getBlocks(struct malnSet *malnSet);
+struct malnBlkMapIterator *malnSet_getBlocks(struct malnSet *malnSet);
 
 /* Get a list of components that overlap the specified reference range and are
  * in blocks not flagged as done and passing treeLoc filters.  Return NULL if
@@ -59,7 +60,7 @@ void malnSet_clearDone(struct malnSet *malnSet);
 /* write a malnSet to a MAF file  */
 void malnSet_writeMaf(struct malnSet *malnSet, char *mafFileName);
 
-/* return the number of blocks in the set */
-int malnSet_getNumBlocks(struct malnSet *malnSet);
+/* print set for debugging */
+void malnSet_dump(struct malnSet *malnSet, const char *label, FILE *fh);
 
 #endif

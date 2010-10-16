@@ -10,9 +10,10 @@ struct Genome;
  * Multiple alignment block.
  */
 struct malnBlk {
+    int objId;                // unique, deterministic id.  Need because address space isn't deterministic
     struct malnSet *malnSet;  // set block is in, or NULL if not in a set.
     int alnWidth;
-    struct malnComp *comps;   // components
+    struct malnComp *comps;   // components, root last
     mafTree *mTree;           // tree associated with block
     bool done;                // finished some kind of processing
 };
