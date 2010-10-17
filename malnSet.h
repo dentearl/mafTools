@@ -7,7 +7,7 @@ struct malnSet;
 struct malnBlk;
 struct malnComp;
 struct Seq;
-struct malnBlkMap;
+struct malnBlkSet;
 
 /* construct an empty malnSet  */
 struct malnSet *malnSet_construct(struct Genomes *genomes);
@@ -32,18 +32,18 @@ void malnSet_removeComp(struct malnSet *malnSet, struct malnComp *comp);
 void malnSet_removeBlk(struct malnSet *malnSet, struct malnBlk *blk);
 
 /* get iterator of the blocks. Don't remove or add blocks while in motion. */
-struct malnBlkMapIterator *malnSet_getBlocks(struct malnSet *malnSet);
+struct malnBlkSetIterator *malnSet_getBlocks(struct malnSet *malnSet);
 
 /* Get a list of components that overlap the specified reference range and are
  * in blocks not flagged as done or dying, passing treeLoc filters, and not in
  * option doneBlks.  Return NULL if no overlaps. */
-stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkMap *doneBlks);
+stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkSet *doneBlks);
 
 /* Get a list of components that overlap or are adjacent to the specified
  * reference range and are in blocks not flagged as done or dying, passing
  * treeLoc filters, and not in option doneBlks.  Return NULL if no
  * overlaps. */
-stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkMap *doneBlks);
+stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkSet *doneBlks);
 
 /* assert some sanity checks on a set */
 void malnSet_assert(struct malnSet *malnSet);

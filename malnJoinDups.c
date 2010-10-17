@@ -2,7 +2,7 @@
 #include "malnSet.h"
 #include "malnBlk.h"
 #include "malnComp.h"
-#include "malnBlkMap.h"
+#include "malnBlkSet.h"
 #include "malnJoinBlks.h"
 #include "sonLibSortedSet.h"
 #include "sonLibList.h"
@@ -27,18 +27,18 @@ static struct malnComp *joinCompWithDup(struct malnSet *malnSet, struct malnComp
 
 /* attempt to join a block with other blocks using the specified component.
  * Return updated block when one join is achieved, or NULL if no join was done. */
-static struct malnBlk *joinCompWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, struct malnComp *joinComp, struct malnBlkMap *doneBlks) {
+static struct malnBlk *joinCompWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, struct malnComp *joinComp, struct malnBlkSet *doneBlks) {
     if (debug) {
         malnComp_dump(joinComp, "joinCompWithDups", stderr);
     }
-    malnBlkMap_add(doneBlks, joinComp->blk);
+    malnBlkSet_add(doneBlks, joinComp->blk);
 
     stList *overComps = malnSet_getOverlappingAdjacentPendingComps(malnSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocAll, doneBlks);
     for (int i = 0; i < stList_length(overComps); i++) {
         struct malnComp *dupComp = stList_get(overComps, i);
         if (malnComp_canJoin(joinComp, dupComp) && !dupComp->blk->deleted) {
             joinComp = joinCompWithDup(malnSet, joinComp, dupComp);
-            malnBlkMap_add(doneBlks, joinComp->blk);
+            malnBlkSet_add(doneBlks, joinComp->blk);
         }
     }
     stList_destruct(overComps);
@@ -48,7 +48,7 @@ static struct malnBlk *joinCompWithDups(struct malnSet *malnSet, struct malnBlk 
 /* Join one block with any duplications of that block in the same
  * set. Duplicates are added to a table and skipped so that iterators are not
  * invalidated. */
-static void joinBlkWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, struct malnBlkMap *doneBlks) {
+static void joinBlkWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, struct malnBlkSet *doneBlks) {
     // iterate over each component in joinBlk, looking for overlapping components
     // in other blocks.  A join creates a new block, so we start over until no
     // block is joined with this block.
@@ -76,17 +76,17 @@ static void joinBlkWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, st
 /* Join duplication blocks in a set, which evolver outputs as separate
  * blocks. */
 void malnJoinDups_joinSetDups(struct malnSet *malnSet) {
-    struct malnBlkMap *doneBlks = malnBlkMap_construct();
-    struct malnBlkMapIterator *iter = malnSet_getBlocks(malnSet);
+    struct malnBlkSet *doneBlks = malnBlkSet_construct();
+    struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *joinBlk;
-    while ((joinBlk = malnBlkMapIterator_getNext(iter)) != NULL) {
+    while ((joinBlk = malnBlkSetIterator_getNext(iter)) != NULL) {
         if (!joinBlk->deleted) {
             joinBlkWithDups(malnSet, joinBlk, doneBlks);
         }
     }
-    malnBlkMapIterator_destruct(iter);
+    malnBlkSetIterator_destruct(iter);
     malnSet_deleteDying(malnSet);
     malnSet_assert(malnSet);
-    malnBlkMap_destruct(doneBlks);
+    malnBlkSet_destruct(doneBlks);
 }
 

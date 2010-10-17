@@ -3,7 +3,7 @@
 #include "malnSet.h"
 #include "malnBlk.h"
 #include "malnComp.h"
-#include "malnBlkMap.h"
+#include "malnBlkSet.h"
 #include "sonLibList.h"
 #include <stdbool.h>
 
@@ -148,12 +148,12 @@ static void addBlks(struct malnSet *malnSet, stList *blksToAdd) {
 /* Merge adjacent components within the blocks of a set. */
 void malnMergeComps_merge(struct malnSet *malnSet) {
     stList *blksToAdd = stList_construct(); // delay add and delete due to iterator
-    struct malnBlkMapIterator *iter = malnSet_getBlocks(malnSet);
+    struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *blk;
-    while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
+    while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
         mergeWithin(malnSet, blk, blksToAdd);
     }
-    malnBlkMapIterator_destruct(iter);
+    malnBlkSetIterator_destruct(iter);
     addBlks(malnSet, blksToAdd);
     stList_destruct(blksToAdd);
     malnSet_deleteDying(malnSet);

@@ -1,13 +1,13 @@
-#include "malnBlkMap.h"
+#include "malnBlkSet.h"
 #include "sonLibSortedSet.h"
 #include "malnBlk.h"
 #include "common.h"
 
-struct malnBlkMap {
+struct malnBlkSet {
     stSortedSet *map;
 };
 
-struct malnBlkMapIterator {
+struct malnBlkSetIterator {
     stSortedSetIterator *iter;
 };
 
@@ -19,33 +19,33 @@ static int objIdCmp(const void *vblk1, const void *vblk2) {
 }
 
 
-struct malnBlkMap *malnBlkMap_construct(void) {
-    struct malnBlkMap *blks;
+struct malnBlkSet *malnBlkSet_construct(void) {
+    struct malnBlkSet *blks;
     AllocVar(blks);
     blks->map = stSortedSet_construct3(objIdCmp, NULL);
     return blks;
 }
 
-void malnBlkMap_destruct(struct malnBlkMap *blks) {
+void malnBlkSet_destruct(struct malnBlkSet *blks) {
     if (blks != NULL) {
         stSortedSet_destruct(blks->map);
         freeMem(blks);
     }
 }
 
-void malnBlkMap_add(struct malnBlkMap *blks, struct malnBlk *blk) {
+void malnBlkSet_add(struct malnBlkSet *blks, struct malnBlk *blk) {
     stSortedSet_insert(blks->map, blk);
 }
 
-void malnBlkMap_remove(struct malnBlkMap *blks, struct malnBlk *blk) {
+void malnBlkSet_remove(struct malnBlkSet *blks, struct malnBlk *blk) {
     stSortedSet_remove(blks->map, blk);
 }
 
-bool malnBlkMap_contains(struct malnBlkMap *blks, struct malnBlk *blk) {
+bool malnBlkSet_contains(struct malnBlkSet *blks, struct malnBlk *blk) {
     return stSortedSet_search(blks->map, blk) != NULL; 
 }
 
-struct malnBlk *malnBlkMap_pop(struct malnBlkMap *blks) {
+struct malnBlk *malnBlkSet_pop(struct malnBlkSet *blks) {
     struct malnBlk *blk = stSortedSet_getFirst(blks->map);
     if (blk != NULL) {
         stSortedSet_remove(blks->map, blk);
@@ -53,18 +53,18 @@ struct malnBlk *malnBlkMap_pop(struct malnBlkMap *blks) {
     return blk;
 }
 
-struct malnBlkMapIterator *malnBlkMap_getIterator(struct malnBlkMap *blks) {
-    struct malnBlkMapIterator *iter;
+struct malnBlkSetIterator *malnBlkSet_getIterator(struct malnBlkSet *blks) {
+    struct malnBlkSetIterator *iter;
     AllocVar(iter);
     iter->iter = stSortedSet_getIterator(blks->map);
     return iter;
 }
 
-struct malnBlk *malnBlkMapIterator_getNext(struct malnBlkMapIterator *iter) {
+struct malnBlk *malnBlkSetIterator_getNext(struct malnBlkSetIterator *iter) {
     return stSortedSet_getNext(iter->iter);
 }
 
-void malnBlkMapIterator_destruct(struct malnBlkMapIterator *iter) {
+void malnBlkSetIterator_destruct(struct malnBlkSetIterator *iter) {
     stSortedSet_destructIterator(iter->iter);
     freeMem(iter);
 }

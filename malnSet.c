@@ -2,7 +2,7 @@
 #include "malnComp.h"
 #include "malnBlk.h"
 #include "mafTree.h"
-#include "malnBlkMap.h"
+#include "malnBlkSet.h"
 #include "sonLibList.h"
 #include "sonLibString.h"
 #include "common.h"
@@ -11,14 +11,14 @@
 
 struct malnSet {
     struct Genomes *genomes;
-    struct malnBlkMap *blks;
+    struct malnBlkSet *blks;
     struct genomeRangeTree *compRangeMap; /* range index slRefs of malnComp
                                            * objects.  chrom name is org.seq,
                                            * allowing indexing all components, not
                                            * just reference, need to join dups */
     bool dying;   /* indicates set is in the process of being deleted; used
                    * to prevent circular deletes */
-    struct malnBlkMap *dyingBlks;  // bocks flaged for deletion
+    struct malnBlkSet *dyingBlks;  // bocks flaged for deletion
 };
 
 /* Add all components to range map. */
@@ -31,12 +31,12 @@ static void addCompsToMap(struct malnSet *malnSet, struct malnBlk *blk) {
 /* build the range tree when needed */
 static void buildRangeTree(struct malnSet *malnSet) {
     malnSet->compRangeMap = genomeRangeTreeNew();
-    struct malnBlkMapIterator *iter = malnBlkMap_getIterator(malnSet->blks);
+    struct malnBlkSetIterator *iter = malnBlkSet_getIterator(malnSet->blks);
     struct malnBlk *blk;
-    while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
+    while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
         addCompsToMap(malnSet, blk);
     }
-    malnBlkMapIterator_destruct(iter);
+    malnBlkSetIterator_destruct(iter);
 }
 
 /* convert a mafComp to an malnComp */
@@ -108,7 +108,7 @@ void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     assert(blk->malnSet == NULL);
     malnBlk_assert(blk);
     blk->malnSet = malnSet;
-    malnBlkMap_add(malnSet->blks, blk);
+    malnBlkSet_add(malnSet->blks, blk);
     if (malnSet->compRangeMap != NULL) {
         addCompsToMap(malnSet, blk);
     }
@@ -150,7 +150,7 @@ void malnSet_removeBlk(struct malnSet *malnSet, struct malnBlk *blk) {
         if (malnSet->compRangeMap != NULL) {
             removeBlkRanges(malnSet, blk);
         }
-        malnBlkMap_remove(malnSet->blks, blk);
+        malnBlkSet_remove(malnSet->blks, blk);
     }
     blk->malnSet = NULL;
 }
@@ -169,8 +169,8 @@ struct malnSet *malnSet_construct(struct Genomes *genomes) {
     malnSet->genomes = genomes;
     // n.b. don't try to sort on a key, just use addess key, otherwise
     // deleting entries in merge will delete the wrong entries.
-    malnSet->blks = malnBlkMap_construct();
-    malnSet->dyingBlks = malnBlkMap_construct();
+    malnSet->blks = malnBlkSet_construct();
+    malnSet->dyingBlks = malnBlkSet_construct();
     return malnSet;
 }
 
@@ -203,9 +203,9 @@ static void destructCompRangeMap(struct malnSet *malnSet) {
 }
 
 /* delete all blocks in a set */
-static void deleteAllBlks(struct malnSet *malnSet, struct malnBlkMap *blkMap) {
+static void deleteAllBlks(struct malnSet *malnSet, struct malnBlkSet *blkMap) {
     struct malnBlk *blk;
-    while ((blk = malnBlkMap_pop(blkMap)) != NULL) {
+    while ((blk = malnBlkSet_pop(blkMap)) != NULL) {
         malnSet_deleteBlk(malnSet, blk);
     }
 }
@@ -219,8 +219,8 @@ void malnSet_destruct(struct malnSet *malnSet) {
         destructCompRangeMap(malnSet);
     }
     deleteAllBlks(malnSet, malnSet->blks);
-    malnBlkMap_destruct(malnSet->blks);
-    malnBlkMap_destruct(malnSet->dyingBlks);
+    malnBlkSet_destruct(malnSet->blks);
+    malnBlkSet_destruct(malnSet->dyingBlks);
     freeMem(malnSet);
 }
 
@@ -275,12 +275,12 @@ static int blkCmpRootComp(const void *vblk1, const void *vblk2) {
 /* build a list of blocks, sorted by the root components */
 static stList *buildRootSorted(struct malnSet *malnSet) {
     stList *sorted = stList_construct();
-    struct malnBlkMapIterator *iter = malnBlkMap_getIterator(malnSet->blks);
+    struct malnBlkSetIterator *iter = malnBlkSet_getIterator(malnSet->blks);
     struct malnBlk *blk;
-    while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
+    while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
         stList_append(sorted, blk);
     }
-    malnBlkMapIterator_destruct(iter);
+    malnBlkSetIterator_destruct(iter);
     stList_sort(sorted, blkCmpRootComp);
     return sorted;
 }
@@ -312,8 +312,8 @@ void malnSet_writeMaf(struct malnSet *malnSet, char *mafFileName) {
 }
 
 /* get iterator of the blocks. Don't remove or add blocks while in motion. */
-struct malnBlkMapIterator *malnSet_getBlocks(struct malnSet *malnSet) {
-    return malnBlkMap_getIterator(malnSet->blks);
+struct malnBlkSetIterator *malnSet_getBlocks(struct malnSet *malnSet) {
+    return malnBlkSet_getIterator(malnSet->blks);
 }
 
 /* compare function for component list */
@@ -322,18 +322,18 @@ static int sortCompListCmpFn(const void *a, const void *b) {
 }
 
 /* check is a component in the overlap list should be included */
-static bool keepOverlap(struct malnComp *comp, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkMap *doneBlks) {
+static bool keepOverlap(struct malnComp *comp, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkSet *doneBlks) {
     // FIXME: not sure why the overlap check is needed, shouldn't return non-overlaping,
     // but it did!
     return ((comp != NULL) && ((malnComp_getLoc(comp) & treeLocFilter) != 0) && (!comp->blk->deleted)
-            && ((doneBlks == NULL) || !malnBlkMap_contains(doneBlks, comp->blk))
+            && ((doneBlks == NULL) || !malnBlkSet_contains(doneBlks, comp->blk))
             && malnComp_overlapRange(comp, seq, chromStart, chromEnd));
 }        
 
 /* Get a list of components that overlap the specified reference range and are
  * in blocks not flagged as done or dying, passing treeLoc filters, and not in
  * option doneBlks.  Return NULL if no overlaps. */
-stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkMap *doneBlks) {
+stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkSet *doneBlks) {
     if (malnSet->compRangeMap == NULL) {
         buildRangeTree(malnSet);
     }
@@ -360,13 +360,13 @@ stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *
 /* assert some sanity checks on a set */
 void malnSet_assert(struct malnSet *malnSet) {
 #ifndef NDEBUG
-    struct malnBlkMapIterator *iter = malnBlkMap_getIterator(malnSet->blks);
+    struct malnBlkSetIterator *iter = malnBlkSet_getIterator(malnSet->blks);
     struct malnBlk *blk;
-    while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
+    while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
         assert(blk->malnSet == malnSet);
         malnBlk_assert(blk);
     }
-    malnBlkMapIterator_destruct(iter);
+    malnBlkSetIterator_destruct(iter);
 #endif
 }
 
@@ -374,7 +374,7 @@ void malnSet_assert(struct malnSet *malnSet) {
  * reference range and are in blocks not flagged as done or dying, passing
  * treeLoc filters, and not in option doneBlks.  Return NULL if no
  * overlaps. */
-stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkMap *doneBlks) {
+stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkSet *doneBlks) {
     return malnSet_getOverlappingPendingComps(malnSet, seq, chromStart-1, chromEnd+1, treeLocFilter, doneBlks);
 }
 
@@ -382,7 +382,7 @@ stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, stru
 void malnSet_markAsDeleted(struct malnSet *malnSet, struct malnBlk *blk) {
     assert(blk->malnSet == malnSet);
     blk->deleted = true;
-    malnBlkMap_add(malnSet->dyingBlks, blk);
+    malnBlkSet_add(malnSet->dyingBlks, blk);
 }
 
 /* delete blocks marked as dying */
@@ -394,13 +394,13 @@ void malnSet_deleteDying(struct malnSet *malnSet) {
 void malnSet_dump(struct malnSet *malnSet, const char *label, FILE *fh) {
     char *blkDesc = stString_print("blk:%s", label);
     fprintf(fh, "malnSet: begin %s\n", label);
-    struct malnBlkMapIterator *iter = malnBlkMap_getIterator(malnSet->blks);
+    struct malnBlkSetIterator *iter = malnBlkSet_getIterator(malnSet->blks);
     struct malnBlk *blk;
-    while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
+    while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
         fputs("  ", fh);
         malnBlk_dump(blk, blkDesc, fh);
     }
-    malnBlkMapIterator_destruct(iter);
+    malnBlkSetIterator_destruct(iter);
     fprintf(fh, "malnSet: end %s\n", label);
     freeMem(blkDesc);
 }
