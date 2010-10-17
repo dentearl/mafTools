@@ -11,10 +11,13 @@ struct malnCompCompMap *malnCompCompMap_construct(void);
 /* destructor */
 void malnCompCompMap_destruct(struct malnCompCompMap *mccm);
 
-/* insert a mapping */
-void malnCompCompMap_insert(struct malnCompCompMap *mccm, struct malnComp *srcComp, struct malnComp *destComp);
+/* add a mapping */
+void malnCompCompMap_add(struct malnCompCompMap *mccm, struct malnComp *srcComp, struct malnComp *destComp);
 
 /* lookup a mapping, error if not found */
 struct malnComp *malnCompCompMap_get(struct malnCompCompMap *mccm, struct malnComp *srcComp);
+
+/* lookup a mapping, NULL in not found */
+struct malnComp *malnCompCompMap_find(struct malnCompCompMap *mccm, struct malnComp *srcComp);
 
 #endif

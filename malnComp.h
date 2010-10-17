@@ -130,4 +130,8 @@ int malnComp_cmp(struct malnComp *comp1, struct malnComp *comp2);
 /* print a component for debugging purposes */
 void malnComp_dump(struct malnComp *comp, const char *label, FILE *fh);
 
+/* construct an component from a subrange of this component. Return NULL if
+ * the subrange does not contain any aligned bases. */
+struct malnComp *malnComp_subrange(struct malnComp *comp, int alnStart, int alnEnd);
+
 #endif

@@ -31,31 +31,28 @@ void malnSet_removeComp(struct malnSet *malnSet, struct malnComp *comp);
 /* remove a block from malnSet */
 void malnSet_removeBlk(struct malnSet *malnSet, struct malnBlk *blk);
 
-/* remove a block from malnSet and free the block */
-void malnSet_deleteBlk(struct malnSet *malnSet, struct malnBlk *blk);
-
 /* get iterator of the blocks. Don't remove or add blocks while in motion. */
 struct malnBlkMapIterator *malnSet_getBlocks(struct malnSet *malnSet);
 
 /* Get a list of components that overlap the specified reference range and are
- * in blocks not flagged as done and passing treeLoc filters.  Return NULL if
- * no overlaps. */
-stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter);
+ * in blocks not flagged as done or dying, passing treeLoc filters, and not in
+ * option doneBlks.  Return NULL if no overlaps. */
+stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkMap *doneBlks);
 
-
-/* Get a list of components that overlaps or are adjacent to the specified
- * reference range and are in blocks not flagged as done and passing treeLoc
- * filters.  Return NULL if no overlaps. */
-stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter);
+/* Get a list of components that overlap or are adjacent to the specified
+ * reference range and are in blocks not flagged as done or dying, passing
+ * treeLoc filters, and not in option doneBlks.  Return NULL if no
+ * overlaps. */
+stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkMap *doneBlks);
 
 /* assert some sanity checks on a set */
 void malnSet_assert(struct malnSet *malnSet);
 
-/* assert done flag is set on all blocks */
-void malnSet_assertDone(struct malnSet *malnSet);
+/* record a block as deleted */
+void malnSet_markAsDeleted(struct malnSet *malnSet, struct malnBlk *blk);
 
-/* clear done flag on all blocks */
-void malnSet_clearDone(struct malnSet *malnSet);
+/* delete blocks marked as dying */
+void malnSet_deleteDying(struct malnSet *malnSet);
 
 /* write a malnSet to a MAF file  */
 void malnSet_writeMaf(struct malnSet *malnSet, char *mafFileName);

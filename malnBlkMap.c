@@ -45,12 +45,12 @@ bool malnBlkMap_contains(struct malnBlkMap *blks, struct malnBlk *blk) {
     return stSortedSet_search(blks->map, blk) != NULL; 
 }
 
-void malnBlkMap_deleteAll(struct malnBlkMap *blks) {
-    struct malnBlk *blk;
-    while ((blk = stSortedSet_getFirst(blks->map)) != NULL) {
+struct malnBlk *malnBlkMap_pop(struct malnBlkMap *blks) {
+    struct malnBlk *blk = stSortedSet_getFirst(blks->map);
+    if (blk != NULL) {
         stSortedSet_remove(blks->map, blk);
-        malnBlk_destruct(blk);
     }
+    return blk;
 }
 
 struct malnBlkMapIterator *malnBlkMap_getIterator(struct malnBlkMap *blks) {

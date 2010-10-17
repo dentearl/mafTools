@@ -3,6 +3,7 @@
 #include "mafJoinTypes.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include <assert.h>
 struct Seq;
 struct Genome;
 
@@ -15,7 +16,7 @@ struct malnBlk {
     int alnWidth;
     struct malnComp *comps;   // components, root last
     mafTree *mTree;           // tree associated with block
-    bool done;                // finished some kind of processing
+    bool deleted;             // block is deleted, but not removed from structures yet.
 };
 
 /* constructor */
@@ -65,6 +66,9 @@ void malnBlk_assert(struct malnBlk *blk);
 
 /* compare two blocks for deterministic sorting */
 int malnBlk_cmp(struct malnBlk *blk1, struct malnBlk *blk2);
+
+/* If a block is in a set, mark it for deletion, otherwise just delete it */
+void malnBlk_markOrDelete(struct malnBlk *blk);
 
 /* print a block for debugging purposes */
 void malnBlk_dump(struct malnBlk *blk, const char *label, FILE *fh);

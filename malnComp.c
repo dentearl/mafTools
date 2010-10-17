@@ -198,6 +198,21 @@ int malnComp_cmp(struct malnComp *comp1, struct malnComp *comp2) {
     return diff;
 }
 
+/* construct an component from a subrange of this component. Return NULL if
+ * the subrange does not contain any aligned bases. */
+struct malnComp *malnComp_subrange(struct malnComp *comp, int alnStart, int alnEnd) {
+    struct malnCompCursor cursor = malnCompCursor_make(comp);
+    malnCompCursor_setAlignCol(&cursor, alnStart);
+    int compStart = cursor.pos;
+    malnCompCursor_setAlignCol(&cursor, alnEnd);
+    int compEnd = cursor.pos;
+    struct malnComp *subComp = NULL;
+    if (compStart < compEnd) {
+        subComp = malnComp_make(comp->seq, comp->strand, compStart, compEnd, comp->alnStr->string, alnStart, alnEnd);
+    }
+    return subComp;
+}
+
 /* print a component for debugging purposes */
 void malnComp_dump(struct malnComp *comp, const char *label, FILE *fh) {
     const char *loc = (comp->ncLink != NULL) ? mafTreeLoc_str(malnComp_getLoc(comp)) : "NULL";

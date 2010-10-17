@@ -68,7 +68,7 @@ static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMa
     struct Genome *treelessRoot2Genome = (treelessRoot2Name != NULL) ? genomesObtainGenome(genomes, treelessRoot2Name) : NULL;
 
     struct malnSet *malnSet1 = malnSet_constructFromMaf(genomes, inMaf1, defaultBranchLength, treelessRoot1Genome);
-    malnMultiParents_check(malnSet1, discardTwoParents, NULL);
+    malnMultiParents_check(malnSet1, discardTwoParents);
     malnJoinDups_joinSetDups(malnSet1);
     if (maf1Copy != NULL) {
         malnSet_writeMaf(malnSet1, maf1Copy);
@@ -78,7 +78,7 @@ static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMa
     }
 
     struct malnSet *malnSet2 = malnSet_constructFromMaf(genomes, inMaf2, defaultBranchLength, treelessRoot2Genome);
-    malnMultiParents_check(malnSet2, discardTwoParents, NULL);
+    malnMultiParents_check(malnSet2, discardTwoParents);
     if (maf2Copy != NULL) {
         malnSet_writeMaf(malnSet2, maf2Copy);
     }
@@ -101,7 +101,7 @@ static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMa
     }
 
     malnSet_assert(malnSetJoined); // FIXME: tmp
-    malnMultiParents_check(malnSetJoined, FALSE, NULL); // expensive sanity check
+    malnMultiParents_check(malnSetJoined, FALSE); // expensive sanity check
     malnSet_writeMaf(malnSetJoined, outMaf);
 
     if (memLeakDebugCleanup) {

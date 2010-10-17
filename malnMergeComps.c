@@ -119,7 +119,7 @@ static void mergeAllAdjacentComps(struct malnBlk *blk) {
 
 /* Merge adjacent components within the specified block, if possible.
  * This will replace block in the set. */
-static void mergeWithin(struct malnSet *malnSet, struct malnBlk *blk, stList *blksToAdd, stList *blksToDelete) {
+static void mergeWithin(struct malnSet *malnSet, struct malnBlk *blk, stList *blksToAdd) {
     if (anyToMerge(blk)) {
         struct malnBlk *mblk = malnBlk_constructClone(blk);
         malnBlk_assert(mblk); // FIXME: tmp
@@ -128,7 +128,7 @@ static void mergeWithin(struct malnSet *malnSet, struct malnBlk *blk, stList *bl
         }
         mergeAllAdjacentComps(mblk);
         stList_append(blksToAdd, mblk);
-        stList_append(blksToDelete, blk);
+        malnBlk_markOrDelete(blk);
         if (debug) {
             malnBlk_dump(mblk, "mergeWithin:after", stderr);
         }
@@ -145,28 +145,16 @@ static void addBlks(struct malnSet *malnSet, stList *blksToAdd) {
     stList_destructIterator(iter);
 }
 
-/* delete blocks when safe */
-static void deleteBlks(struct malnSet *malnSet, stList *blksToDelete) {
-    stListIterator *iter = stList_getIterator(blksToDelete);
-    struct malnBlk *blk;
-    while ((blk = stList_getNext(iter)) != NULL) {
-        malnSet_deleteBlk(malnSet, blk);
-    }
-    stList_destructIterator(iter);
-}
-
 /* Merge adjacent components within the blocks of a set. */
 void malnMergeComps_merge(struct malnSet *malnSet) {
     stList *blksToAdd = stList_construct(); // delay add and delete due to iterator
-    stList *blksToDelete = stList_construct();
     struct malnBlkMapIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *blk;
     while ((blk = malnBlkMapIterator_getNext(iter)) != NULL) {
-        mergeWithin(malnSet, blk, blksToAdd, blksToDelete);
+        mergeWithin(malnSet, blk, blksToAdd);
     }
     malnBlkMapIterator_destruct(iter);
     addBlks(malnSet, blksToAdd);
     stList_destruct(blksToAdd);
-    deleteBlks(malnSet, blksToDelete);
-    stList_destruct(blksToDelete);
+    malnSet_deleteDying(malnSet);
 }

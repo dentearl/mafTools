@@ -23,8 +23,8 @@ void malnBlkMap_remove(struct malnBlkMap *blks, struct malnBlk *blk);
 /* is a block in the map */
 bool malnBlkMap_contains(struct malnBlkMap *blks, struct malnBlk *blk);
 
-/* Delete all blocks in map */
-void malnBlkMap_deleteAll(struct malnBlkMap *blks);
+/* remove the first block from the map */
+struct malnBlk *malnBlkMap_pop(struct malnBlkMap *blks);
 
 /* get an iterator over the items in the map */
 struct malnBlkMapIterator *malnBlkMap_getIterator(struct malnBlkMap *blks);

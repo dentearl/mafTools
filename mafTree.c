@@ -22,13 +22,19 @@ struct mafTree {
     struct Genomes *genomes;
 };
 
-/* constructor */
+/* constructor, link with node and comp  */
 static struct mafTreeNodeCompLink *mafTreeNodeCompLink_construct(int treeOrder, ETree *node, struct malnComp *comp) {
     struct mafTreeNodeCompLink *ncLink;
     AllocVar(ncLink);
     ncLink->treeOrder = treeOrder;
-    ncLink->node = node;
-    ncLink->comp = comp;
+    if (node != NULL) {
+        ncLink->node = node;
+        eTree_setClientData(node, ncLink);
+    }
+    if (comp != NULL) {
+        ncLink->comp = comp;
+        ncLink->comp->ncLink = ncLink;
+    }
     return ncLink;
 }
 
@@ -64,9 +70,6 @@ static void fillNodeCompLinksDFS(mafTree *mTree, ETree *node, int *treeOrder, st
         fillNodeCompLinksDFS(mTree, eTree_getChild(node, i), treeOrder, treeComps);
     }
     struct mafTreeNodeCompLink *ncLink = mafTreeNodeCompLink_construct(*treeOrder, node, treeComps[*treeOrder]);
-    ncLink->treeOrder = *treeOrder;
-    eTree_setClientData(node, ncLink);
-    ncLink->comp->ncLink = ncLink;
     (*treeOrder)++;
     if (!sameString(ncLink->comp->seq->orgSeqName, eTree_getLabel(node))) {
         errAbort("tree component name \"%s\" doesn't match tree node name \"%s\"", ncLink->comp->seq->orgSeqName, eTree_getLabel(node));
@@ -172,9 +175,7 @@ static ETree *cloneNode(ETree *srcNode, struct malnCompCompMap *srcDestCompMap) 
     ETree *destNode = eTree_cloneNode(srcNode);
     struct mafTreeNodeCompLink *srcNcLink = eTree_getClientData(srcNode);
     struct malnComp *destComp = malnCompCompMap_get(srcDestCompMap, srcNcLink->comp);
-    struct mafTreeNodeCompLink *destNcLink = mafTreeNodeCompLink_construct(-1, destNode, destComp);
-    eTree_setClientData(destNode, destNcLink);
-    destNcLink->comp->ncLink = destNcLink;
+    mafTreeNodeCompLink_construct(-1, destNode, destComp);
     return destNode;
 }
 
@@ -316,6 +317,43 @@ static int sortChildrenCmpFn(ETree *a, ETree *b) {
 void mafTree_sortChildren(mafTree *mTree) {
     eTree_sortChildren(mTree->tree, sortChildrenCmpFn);
     setTreeOrder(mTree);
+}
+
+/* forward declaration */
+static void cloneForSubRangeBlk(ETree *srcParent, ETree *destParent, struct malnCompCompMap *srcDestCompMap);
+
+/* recursive clone a node for subrange block */
+static void cloneNodeSubRangeBlk(ETree *srcParent, ETree *srcNode, ETree *destParent, struct malnCompCompMap *srcDestCompMap) {
+    struct mafTreeNodeCompLink *srcNcLink = eTree_getClientData(srcNode);
+    struct malnComp *destComp = malnCompCompMap_find(srcDestCompMap, srcNcLink->comp);
+    if (destComp == NULL) {
+        // drop this node
+        cloneForSubRangeBlk(srcNode, destParent, srcDestCompMap);
+    } else {
+        // clone this node
+        ETree *destNode = malnCompToETreeNode(destComp);
+        mafTreeNodeCompLink_construct(-1, destNode, destComp);
+        cloneForSubRangeBlk(srcNode, destNode, srcDestCompMap);
+    }
+}
+
+/* recursive clone for subrange block */
+static void cloneForSubRangeBlk(ETree *srcParent, ETree *destParent, struct malnCompCompMap *srcDestCompMap) {
+    for (int i = 0; i < eTree_getChildNumber(srcParent); i++) {
+        cloneNodeSubRangeBlk(srcParent, eTree_getChild(srcParent, i), destParent, srcDestCompMap);
+    }
+}
+
+/*
+ * Clone a tree for addition to a subrange block. If if components are in srcDestCompMap
+ * clone them, otherwise drop the node and merge the children.
+ */
+mafTree *mafTree_cloneForSubRangeBlk(mafTree *mTree, struct malnCompCompMap *srcDestCompMap) {
+    ETree *destRoot = cloneNode(mTree->tree, srcDestCompMap);
+    cloneForSubRangeBlk(mTree->tree, destRoot, srcDestCompMap);
+    mafTree *destMTree = mafTree_construct(mTree->genomes,  destRoot);
+    setTreeOrder(destMTree);
+    return destMTree;
 }
 
 /* assert sanity of nodeCompLink */

@@ -58,8 +58,8 @@ static struct malnComp *createJoinedRefComp(struct malnJoinBlks *jb) {
     int start = min(jb->ref1->start, jb->ref2->start);
     struct malnComp *comp = malnComp_construct(jb->ref1->seq, jb->ref1->strand, start, start, "");
     malnBlk_addComp(jb->joined, comp);
-    malnCompCompMap_insert(jb->srcDestCompMap, jb->ref1, comp);
-    malnCompCompMap_insert(jb->srcDestCompMap, jb->ref2, comp);
+    malnCompCompMap_add(jb->srcDestCompMap, jb->ref1, comp);
+    malnCompCompMap_add(jb->srcDestCompMap, jb->ref2, comp);
     return comp;
 }
 
@@ -70,7 +70,7 @@ static void addCompsToJoined(struct malnJoinBlks *jb, struct malnBlkCursor *blkC
     for (int i = 1; i < blkCursor->numRows; i++) {
         destComps[i] = malnComp_construct(blkCursor->rows[i].comp->seq, blkCursor->rows[i].comp->strand, blkCursor->rows[i].comp->start, blkCursor->rows[i].comp->start, "");
         malnBlk_addComp(jb->joined, destComps[i]);
-        malnCompCompMap_insert(jb->srcDestCompMap, blkCursor->rows[i].comp, destComps[i]);
+        malnCompCompMap_add(jb->srcDestCompMap, blkCursor->rows[i].comp, destComps[i]);
     }
 }
 
@@ -110,8 +110,6 @@ static void malnJoinBlks_destruct(struct malnJoinBlks *jb) {
     malnBlkCursor_destruct(jb->cursor1);
     malnBlkCursor_destruct(jb->cursor2);
     malnBlk_destruct(jb->freeBlk);
-    jb->blk1->done = true;
-    jb->inBlk2->done = true;
     freeMem(jb->dests1);
     freeMem(jb->dests2);
     freeMem(jb);

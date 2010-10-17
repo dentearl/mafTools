@@ -2,6 +2,7 @@
 #include "malnSet.h"
 #include "malnComp.h"
 #include "mafTree.h"
+#include "malnCompCompMap.h"
 #include "genome.h"
 #include "common.h"
 
@@ -76,8 +77,8 @@ static void malnBlk_sortComps(struct malnBlk *blk) {
  * components */
 void malnBlk_finish(struct malnBlk *blk) {
     malnBlk_sortComps(blk); // FIXME: don't need to do this for all cases
-    malnBlk_validate(blk); // produces better error messages
-    malnBlk_assert(blk);   // really only to catch bugs in this code, not input
+    malnBlk_validate(blk);  // produces better error messages
+    malnBlk_assert(blk);    // really only to catch bugs in this code, not input
 }
 
 /* unlink a comp from the list. */
@@ -194,10 +195,42 @@ int malnBlk_cmp(struct malnBlk *blk1, struct malnBlk *blk2) {
     return diff;
 }
 
+/* If a block is in a set, mark it for deletion, otherwise just delete it */
+void malnBlk_markOrDelete(struct malnBlk *blk) {
+    blk->deleted = true;
+    if (blk->malnSet != NULL) {
+        malnSet_markAsDeleted(blk->malnSet, blk);
+    } else {
+        malnBlk_destruct(blk);
+    }
+}
+
+/* take subrange of a component */
+static void compSubRange(struct malnBlk *subBlk, struct malnComp *comp, int alnStart, int alnEnd, struct malnCompCompMap *srcDestCompMap) {
+    struct malnComp *subComp = malnComp_subrange(comp, alnStart, alnEnd);
+    if (subComp != NULL) {
+        malnBlk_addComp(subBlk, subComp);
+    }
+    malnCompCompMap_add(srcDestCompMap, comp, subComp);
+}
+
+/* construct an alignment block from a subrange of this block */
+struct malnBlk *malnBlk_subrange(struct malnBlk *blk, int alnStart, int alnEnd) {
+    assert((alnStart < alnEnd) && (alnStart >= 0) && (alnEnd <= blk->alnWidth));
+    struct malnBlk *subBlk = malnBlk_construct();
+    struct malnCompCompMap *srcDestCompMap = malnCompCompMap_construct();
+    for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
+        compSubRange(subBlk, comp, alnStart, alnEnd, srcDestCompMap);
+    }
+    malnBlk_finish(subBlk);
+    malnCompCompMap_destruct(srcDestCompMap);
+    return subBlk;
+}
+
 /* print a block for debugging purposes */
 void malnBlk_dump(struct malnBlk *blk, const char *label, FILE *fh) {
     char *nhTree = (blk->mTree != NULL) ? mafTree_format(blk->mTree) : cloneString("NULL");
-    fprintf(fh, "%s #%d %d %s %s\n", label, blk->objId, blk->alnWidth, (blk->done ? "done" : "pend"), nhTree);
+    fprintf(fh, "%s #%d %d%s %s\n", label, blk->objId, blk->alnWidth, (blk->deleted ? " deleted" : ""), nhTree);
     freeMem(nhTree);
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         malnComp_dump(comp, "    ", fh);

@@ -4,7 +4,7 @@
 struct malnSet;
 struct malnBlkMap;
 
-/* check for regions with multiple parents, deleting the blocks if requested,
- * otherwise aborting.  If deletingMap is not, skip entries in it.  */
-void malnMultiParents_check(struct malnSet *malnSet, bool discardTwoParents, struct malnBlkMap *deletedBlks);
+/* check for regions with multiple parents, deleting blocks if if requested.
+ * otherwise aborting.   */
+void malnMultiParents_check(struct malnSet *malnSet, bool discardTwoParents);
 #endif

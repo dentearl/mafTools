@@ -23,8 +23,8 @@ void malnCompCompMap_destruct(struct malnCompCompMap *mccm) {
     }
 }
 
-/* insert a mapping */
-void malnCompCompMap_insert(struct malnCompCompMap *mccm, struct malnComp *srcComp, struct malnComp *destComp) {
+/* add a mapping */
+void malnCompCompMap_add(struct malnCompCompMap *mccm, struct malnComp *srcComp, struct malnComp *destComp) {
     stHash_insert(mccm->map, srcComp, destComp);
 }
 
@@ -35,4 +35,9 @@ struct malnComp *malnCompCompMap_get(struct malnCompCompMap *mccm, struct malnCo
         errAbort("no mapping found for component");
     }
     return destComp;
+}
+
+/* lookup a mapping, NULL in not found */
+struct malnComp *malnCompCompMap_find(struct malnCompCompMap *mccm, struct malnComp *srcComp) {
+    return stHash_search(mccm->map, srcComp);
 }
