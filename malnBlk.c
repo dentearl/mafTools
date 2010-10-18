@@ -1,8 +1,10 @@
 #include "malnBlk.h"
 #include "malnSet.h"
 #include "malnComp.h"
+#include "malnCompCursor.h"
 #include "mafTree.h"
 #include "malnCompCompMap.h"
+#include "stSafeC.h"
 #include "genome.h"
 #include "common.h"
 
@@ -81,29 +83,23 @@ void malnBlk_finish(struct malnBlk *blk) {
     malnBlk_assert(blk);    // really only to catch bugs in this code, not input
 }
 
-/* unlink a comp from the list. */
-static void unlinkComp(struct malnBlk *blk, struct malnComp *comp) {
-    slRemoveEl(&blk->comps, comp);
-    if (blk->malnSet != NULL) {
-        malnSet_removeComp(blk->malnSet, comp);
-    }
-    mafTree_deleteNode(blk->mTree, comp->ncLink);
-}
-
 /* Unlink a component from the block, also removing it from the tree and
  * malnSet map, if its in a set.  Component is not freed. */
 void malnBlk_unlink(struct malnBlk *blk, struct malnComp *comp) {
-    unlinkComp(blk, comp);
+    assert(comp->blk == blk);
+    slRemoveEl(&blk->comps, comp);
+    mafTree_deleteNode(blk->mTree, comp->ncLink);
     if (blk->malnSet != NULL) {
         malnSet_removeComp(blk->malnSet, comp);
     }
+    comp->blk = NULL;
 }
 
 /* get the root component */
 struct malnComp *malnBlk_getRootComp(struct malnBlk *blk) {
     struct malnComp *root = slLastEl(blk->comps);
     if ((malnComp_getLoc(root) & mafTreeLocRoot) == 0) {
-        malnBlk_dump(blk, "last component is not root", stderr);
+        malnBlk_dump(blk, stderr, "last component is not root");
         errAbort("last component is not root");
     }
     return root;
@@ -173,7 +169,7 @@ void malnBlk_assert(struct malnBlk *blk) {
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         assert(comp->blk == blk);
         if (malnComp_getWidth(comp) != blk->alnWidth) {
-            malnBlk_dump(blk, "invalid component width", stderr);
+            malnBlk_dump(blk, stderr, "invalid component width");
         }
         assert(malnComp_getWidth(comp) == blk->alnWidth);
         malnComp_assert(comp);
@@ -207,7 +203,7 @@ void malnBlk_markOrDelete(struct malnBlk *blk) {
 
 /* take subrange of a component */
 static void compSubRange(struct malnBlk *subBlk, struct malnComp *comp, int alnStart, int alnEnd, struct malnCompCompMap *srcDestCompMap) {
-    struct malnComp *subComp = malnComp_subrange(comp, alnStart, alnEnd);
+    struct malnComp *subComp = malnComp_constructSubrange(comp, alnStart, alnEnd);
     if (subComp != NULL) {
         malnBlk_addComp(subBlk, subComp);
     }
@@ -215,7 +211,7 @@ static void compSubRange(struct malnBlk *subBlk, struct malnComp *comp, int alnS
 }
 
 /* construct an alignment block from a subrange of this block */
-struct malnBlk *malnBlk_subrange(struct malnBlk *blk, int alnStart, int alnEnd) {
+struct malnBlk *malnBlk_constrctSubrange(struct malnBlk *blk, int alnStart, int alnEnd) {
     assert((alnStart < alnEnd) && (alnStart >= 0) && (alnEnd <= blk->alnWidth));
     struct malnBlk *subBlk = malnBlk_construct();
     struct malnCompCompMap *srcDestCompMap = malnCompCompMap_construct();
@@ -227,12 +223,69 @@ struct malnBlk *malnBlk_subrange(struct malnBlk *blk, int alnStart, int alnEnd) 
     return subBlk;
 }
 
+/* shorten comp sequence by overwriting bases */
+static void shortenCompSeq(struct malnComp *comp, int newStart, int newEnd)  {
+    struct malnCompCursor cursor = malnCompCursor_make(comp);
+    malnCompCursor_setSeqPos(&cursor, newStart);
+    assert(malnCompCursor_isAligned(&cursor));
+
+    while (cursor.pos < newEnd) {
+        if (malnCompCursor_isAligned(&cursor)) {
+            comp->alnStr->string[cursor.alnIdx] = '-';
+        }
+        if (!malnCompCursor_incr(&cursor)) {
+            break;
+        }
+    } 
+    assert(cursor.pos == newEnd);
+}
+
+/* shorten bounds of a component in a blk */
+static void shortenComp(struct malnBlk *blk, struct malnComp *comp, int newChromStart, int newChromEnd)  {
+    int newStart, newEnd;
+    malnComp_chromRangeToStrandRange(comp, newChromStart, newChromEnd, &newStart, &newEnd);
+
+    if (blk->malnSet != NULL) {
+        malnSet_removeComp(blk->malnSet, comp);
+    }
+    shortenCompSeq(comp, newStart, newEnd);
+    comp->chromStart = newChromStart;
+    comp->chromEnd = newChromEnd;
+    comp->start = newStart;
+    comp->end = newEnd;
+    if (blk->malnSet != NULL) {
+        malnSet_addComp(blk->malnSet, comp);
+    }
+}
+
+/* Shorten the range of a component in the block.  If the component is left
+ * with no aligned bases, remove it.  Range must be at start or end of the
+ * component. */
+void malnBlk_shortenComp(struct malnBlk *blk, struct malnComp *comp, int newChromStart, int newChromEnd) {
+    assert((newChromStart == comp->chromStart) || (newChromEnd == comp->chromEnd));
+    if ((newChromStart == comp->chromStart) && (newChromEnd == comp->chromEnd)) {
+        malnBlk_unlink(blk, comp);
+        malnComp_destruct(comp);
+    } else {
+        shortenComp(blk, comp, newChromStart, newChromEnd);
+    }
+}
+
 /* print a block for debugging purposes */
-void malnBlk_dump(struct malnBlk *blk, const char *label, FILE *fh) {
+void malnBlk_dumpv(struct malnBlk *blk, FILE *fh, const char *label, va_list args) {
     char *nhTree = (blk->mTree != NULL) ? mafTree_format(blk->mTree) : cloneString("NULL");
-    fprintf(fh, "%s #%d %d%s %s\n", label, blk->objId, blk->alnWidth, (blk->deleted ? " deleted" : ""), nhTree);
+    char *fmtLabel = stSafeCDynFmtv(label, args);
+    fprintf(fh, "%s #%d %d%s %s\n", fmtLabel, blk->objId, blk->alnWidth, (blk->deleted ? " deleted" : ""), nhTree);
+    freeMem(fmtLabel);
     freeMem(nhTree);
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
-        malnComp_dump(comp, "    ", fh);
+        malnComp_dump(comp, fh, "    ");
     }    
+}
+/* print a block for debugging purposes */
+void malnBlk_dump(struct malnBlk *blk, FILE *fh, const char *label, ...) {
+    va_list args;
+    va_start(args, label);
+    malnBlk_dumpv(blk, fh, label, args);
+    va_end(args);
 }

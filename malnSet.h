@@ -1,5 +1,6 @@
 #ifndef malnSet_h
 #define malnSet_h
+#include <stdarg.h>
 #include "sonLibTypes.h"
 struct Genomes;
 struct Genome;
@@ -24,6 +25,12 @@ struct Genomes *malnSet_getGenomes(struct malnSet *malnSet);
 
 /* add a block to a malnSet */
 void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk);
+
+/* add all blocks in to a malnSet */
+void malnSet_addBlks(struct malnSet *malnSet, struct malnBlkSet *blks);
+
+/* add a component to the range map. */
+void malnSet_addComp(struct malnSet *malnSet, struct malnComp *comp);
 
 /* remove a single component from malnSet range map */
 void malnSet_removeComp(struct malnSet *malnSet, struct malnComp *comp);
@@ -58,6 +65,13 @@ void malnSet_deleteDying(struct malnSet *malnSet);
 void malnSet_writeMaf(struct malnSet *malnSet, char *mafFileName);
 
 /* print set for debugging */
-void malnSet_dump(struct malnSet *malnSet, const char *label, FILE *fh);
+void malnSet_dumpv(struct malnSet *malnSet, FILE *fh, const char *label, va_list args);
+
+/* print set for debugging */
+void malnSet_dump(struct malnSet *malnSet, FILE *fh, const char *label, ...)
+#if defined(__GNUC__)
+__attribute__((format(printf, 3, 4)))
+#endif
+;
 
 #endif

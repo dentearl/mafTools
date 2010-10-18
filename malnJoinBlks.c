@@ -205,12 +205,12 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     calcAlignmentCoords(jb);
     if (debug) { // FIXME: tmp
         fprintf(stderr, "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n");
-        malnComp_dump(jb->ref1, "refComp1", stderr);
-        malnBlk_dump(jb->blk1, "inBlk1", stderr);
-        malnComp_dump(jb->ref2, "refComp2", stderr);
-        malnBlk_dump(jb->inBlk2, "inBlk2", stderr);
+        malnComp_dump(jb->ref1, stderr, "refComp1");
+        malnBlk_dump(jb->blk1, stderr, "inBlk1");
+        malnComp_dump(jb->ref2, stderr, "refComp2");
+        malnBlk_dump(jb->inBlk2, stderr, "inBlk2");
         if (jb->blk2 != jb->inBlk2) {
-            malnBlk_dump(jb->blk2, "inBlk2rc", stderr);
+            malnBlk_dump(jb->blk2, stderr, "inBlk2rc");
         }
     }
 
@@ -240,7 +240,7 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     struct malnBlk *joined = jb->joined;
     malnJoinBlks_destruct(jb);
     if (debug) { // FIXME: tmp
-        malnBlk_dump(joined, "joined", stderr);
+        malnBlk_dump(joined, stderr, "joined");
         fprintf(stderr, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
     }
     return joined;

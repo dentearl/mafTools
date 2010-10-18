@@ -24,9 +24,6 @@ static struct optionSpec optionSpecs[] = {
     {"branchLength", OPTION_DOUBLE},
     {"treelessRoot1", OPTION_STRING},
     {"treelessRoot2", OPTION_STRING},
-    {"maf1Copy", OPTION_STRING},
-    {"maf2Copy", OPTION_STRING},
-    {"discardTwoParents", OPTION_BOOLEAN},
     {"help", OPTION_BOOLEAN},
     {NULL, 0}
 };
@@ -42,10 +39,6 @@ static char *usageMsg =
     "   that do not have trees (see below).\n"
     "  -treelessRoot2=genome - root genome for inMaf2 blocks\n"
     "   that do not have trees.\n"
-    "  -maf1Out=maf1Copy - output maf1 for debugging after adding trees.\n"
-    "  -maf2Out=maf2Copy - output maf2 for debugging after adding trees.\n"
-    "  -discardTwoParents - if a block with two parents is detected when\n"
-    "    joining dups, then discard an arbitrary one. Otherwise it's an error.\n"
     "\n"
     "If MAF blocks (mafAli) don't have a tree associated with them, one\n"
     "will be created.  The root genome for the tree is chosen based on\n"
@@ -58,50 +51,55 @@ static void usage(char *msg) {
     errAbort("Error: %s\n%s", msg, usageMsg);
 }
 
+/* load a MAF and do internal joining.  */
+static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, double defaultBranchLength,
+                               char *treelessRootName, char *setName) {
+    struct Genome *treelessRootGenome = (treelessRootName != NULL) ? genomesObtainGenome(genomes, treelessRootName) : NULL;
+    struct malnSet *malnSet = malnSet_constructFromMaf(genomes, inMaf, defaultBranchLength, treelessRootGenome);
+    if (debug) {
+        malnSet_dump(malnSet, stderr, "%s input", setName);
+    }
+    malnJoinDups_joinSetDups(malnSet);
+    if (debug) {
+        malnSet_dump(malnSet, stderr, "%s: joined dups", setName);
+    }
+    // this must be done after joinSetDups, otherwise it will drop things that
+    // can be joined
+    malnMultiParents_resolve(malnSet);
+    if (debug) {
+        malnSet_dump(malnSet, stderr, "%s: set resolved", setName);
+    }
+    malnMultiParents_check(malnSet);
+    return malnSet;
+}
+
 /* join two mafs */
 static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMaf, double defaultBranchLength,
-                    char *treelessRoot1Name, char *treelessRoot2Name,
-                    char *maf1Copy, char *maf2Copy, bool discardTwoParents) {
+                    char *treelessRoot1Name, char *treelessRoot2Name) {
     struct Genomes *genomes = genomesNew();
     struct Genome *refGenome = genomesObtainGenome(genomes, refGenomeName);
-    struct Genome *treelessRoot1Genome = (treelessRoot1Name != NULL) ? genomesObtainGenome(genomes, treelessRoot1Name) : NULL;
-    struct Genome *treelessRoot2Genome = (treelessRoot2Name != NULL) ? genomesObtainGenome(genomes, treelessRoot2Name) : NULL;
 
-    struct malnSet *malnSet1 = malnSet_constructFromMaf(genomes, inMaf1, defaultBranchLength, treelessRoot1Genome);
-    malnMultiParents_check(malnSet1, discardTwoParents);
-    malnJoinDups_joinSetDups(malnSet1);
-    if (maf1Copy != NULL) {
-        malnSet_writeMaf(malnSet1, maf1Copy);
-    }
-    if (debug) {
-        malnSet_dump(malnSet1, "set1", stderr);
-    }
-
-    struct malnSet *malnSet2 = malnSet_constructFromMaf(genomes, inMaf2, defaultBranchLength, treelessRoot2Genome);
-    malnMultiParents_check(malnSet2, discardTwoParents);
-    if (maf2Copy != NULL) {
-        malnSet_writeMaf(malnSet2, maf2Copy);
-    }
-    if (debug) {
-        malnSet_dump(malnSet2, "set2", stderr);
-    }
+    struct malnSet *malnSet1 = loadMaf(genomes, inMaf1, defaultBranchLength, treelessRoot1Name, "set1");
+    struct malnSet *malnSet2 = loadMaf(genomes, inMaf2, defaultBranchLength, treelessRoot2Name, "set2");
 
     // join and then merge overlapping blocks that were created
     struct malnSet *malnSetJoined = malnJoinSets(refGenome, malnSet1, malnSet2);
     if (debug) {
-        malnSet_dump(malnSetJoined, "BEFORE joinDups", stderr); // FIXME: tmp
+        malnSet_dump(malnSetJoined, stderr, "out joined");
     }
     malnJoinDups_joinSetDups(malnSetJoined);
     if (debug) {
-        malnSet_dump(malnSetJoined, "BEFORE merge", stderr); // FIXME: tmp
+        malnSet_dump(malnSetJoined, stderr, "out: joined dups");
     }
     malnMergeComps_merge(malnSetJoined);
     if (debug) {
-        malnSet_dump(malnSetJoined, "AFTER", stderr); // FIXME: tmp
+        malnSet_dump(malnSetJoined, stderr, "out: merged");
     }
-
-    malnSet_assert(malnSetJoined); // FIXME: tmp
-    malnMultiParents_check(malnSetJoined, FALSE); // expensive sanity check
+    malnMultiParents_resolve(malnSetJoined);
+    if (debug) {
+        malnSet_dump(malnSetJoined, stderr, "out: set resolved");
+    }
+    malnMultiParents_check(malnSetJoined);
     malnSet_writeMaf(malnSetJoined, outMaf);
 
     if (memLeakDebugCleanup) {
@@ -122,8 +120,6 @@ int main(int argc, char *argv[]) {
         usage("Error: wrong number of arguments");
     }
     mafJoin(argv[1], argv[2], argv[3], argv[4], optionDouble("branchLength", 0.1), 
-            optionVal("treelessRoot1", NULL), optionVal("treelessRoot2", NULL),
-            optionVal("maf1Copy", NULL), optionVal("maf2Copy", NULL),
-            optionExists("discardTwoParents"));
+            optionVal("treelessRoot1", NULL), optionVal("treelessRoot2", NULL));
     return 0;
 }

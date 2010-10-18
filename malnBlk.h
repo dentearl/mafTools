@@ -3,6 +3,7 @@
 #include "mafJoinTypes.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <assert.h>
 struct Seq;
 struct Genome;
@@ -54,6 +55,11 @@ struct malnComp *malnBlk_findCompByChromRange(struct malnBlk *blk, struct Seq *s
 /* block reverse complement */
 struct malnBlk *malnBlk_reverseComplement(struct malnBlk *blk);
 
+/* Shorten the range of a component in the block.  If the component is left
+ * with no aligned bases, remove it.  Range must be at start or end of the
+ * component. */
+void malnBlk_shortenComp(struct malnBlk *blk, struct malnComp *comp, int newChromStart, int newChromEnd);
+
 /* pad all components so they are the same width as the overall alignment. */
 void malnBlk_pad(struct malnBlk *blk);
 
@@ -70,7 +76,17 @@ int malnBlk_cmp(struct malnBlk *blk1, struct malnBlk *blk2);
 /* If a block is in a set, mark it for deletion, otherwise just delete it */
 void malnBlk_markOrDelete(struct malnBlk *blk);
 
+/* construct an alignment block from a subrange of this block */
+struct malnBlk *malnBlk_constrctSubrange(struct malnBlk *blk, int alnStart, int alnEnd);
+
 /* print a block for debugging purposes */
-void malnBlk_dump(struct malnBlk *blk, const char *label, FILE *fh);
+void malnBlk_dumpv(struct malnBlk *blk, FILE *fh, const char *label, va_list args);
+
+/* print a block for debugging purposes */
+void malnBlk_dump(struct malnBlk *blk, FILE *fh, const char *label, ...)
+#if defined(__GNUC__)
+__attribute__((format(printf, 3, 4)))
+#endif
+;
 
 #endif

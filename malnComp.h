@@ -69,6 +69,9 @@ enum mafTreeLoc malnComp_getLoc(struct malnComp *comp);
 /* component reverse complement */
 struct malnComp *malnComp_reverseComplement(struct malnComp *comp);
 
+/* convert a chrom range to a strand range for this component */
+void malnComp_chromRangeToStrandRange(struct malnComp *comp, int chromStart, int chromEnd, int *start, int *end);
+
 /* convert an alignment range to a sequence range, set range to 0-0 and return
  * false if none aligned */
 bool malnComp_alnRangeToSeqRange(struct malnComp *comp, int alnStart, int alnEnd, int *start, int *end) ;
@@ -76,6 +79,10 @@ bool malnComp_alnRangeToSeqRange(struct malnComp *comp, int alnStart, int alnEnd
 /* convert a sequence range to an alignment range, set range to 0-0 and return
  * false if none aligned */
 bool malnComp_seqRangeToAlnRange(struct malnComp *comp, int start, int end, int *alnStart, int *alnEnd);
+
+/* convert a sequence chrom range to an alignment range, set range to 0-0 and
+ * return false if none aligned */
+bool malnComp_seqChromRangeToAlnRange(struct malnComp *comp, int chromStart, int chromEnd, int *alnStart, int *alnEnd);
 
 /* pad component to the specified alignment width */
 void malnComp_pad(struct malnComp *comp, int width);
@@ -127,11 +134,21 @@ void malnComp_assert(struct malnComp *comp);
 /* compare two components for deterministic sorting */
 int malnComp_cmp(struct malnComp *comp1, struct malnComp *comp2);
 
-/* print a component for debugging purposes */
-void malnComp_dump(struct malnComp *comp, const char *label, FILE *fh);
-
 /* construct an component from a subrange of this component. Return NULL if
  * the subrange does not contain any aligned bases. */
-struct malnComp *malnComp_subrange(struct malnComp *comp, int alnStart, int alnEnd);
+struct malnComp *malnComp_constructSubrange(struct malnComp *comp, int alnStart, int alnEnd);
+
+/* print base information describing a comp, newline not included */
+void malnComp_prInfo(struct malnComp *comp, FILE *fh);
+
+/* print a component for debugging purposes */
+void malnComp_dumpv(struct malnComp *comp, FILE *fh, const char *label, va_list args);
+
+/* print a component for debugging purposes */
+void malnComp_dump(struct malnComp *comp, FILE *fh, const char *label, ...)
+#if defined(__GNUC__)
+__attribute__((format(printf, 3, 4)))
+#endif
+;
 
 #endif

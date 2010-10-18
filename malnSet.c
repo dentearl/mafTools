@@ -5,6 +5,7 @@
 #include "malnBlkSet.h"
 #include "sonLibList.h"
 #include "sonLibString.h"
+#include "stSafeC.h"
 #include "common.h"
 #include "jkmaf.h"
 #include "genomeRangeTree.h"
@@ -21,10 +22,17 @@ struct malnSet {
     struct malnBlkSet *dyingBlks;  // bocks flaged for deletion
 };
 
+/* add a component to the range map. */
+void malnSet_addComp(struct malnSet *malnSet, struct malnComp *comp) {
+    if (malnSet->compRangeMap != NULL) {
+        genomeRangeTreeAddValList(malnSet->compRangeMap, comp->seq->orgSeqName, comp->chromStart, comp->chromEnd, slRefNew(comp));
+    }
+}
+
 /* Add all components to range map. */
 static void addCompsToMap(struct malnSet *malnSet, struct malnBlk *blk) {
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
-        genomeRangeTreeAddValList(malnSet->compRangeMap, comp->seq->orgSeqName, comp->chromStart, comp->chromEnd, slRefNew(comp));
+        malnSet_addComp(malnSet, comp);
     }
 }
 
@@ -114,6 +122,17 @@ void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     }
 }
 
+/* add all blocks in to a malnSet */
+void malnSet_addBlks(struct malnSet *malnSet, struct malnBlkSet *blks) {
+    struct malnBlkSetIterator *iter = malnBlkSet_getIterator(blks);
+    struct malnBlk *blk;
+    while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
+        malnSet_addBlk(malnSet, blk);
+    }
+    malnBlkSetIterator_destruct(iter);
+}
+
+
 /* remove a single object from the range tree (missing genomeRangeTree functionality).
  * this just set reference to NULL, which must be handled when getting overlaps*/
 static void removeCompRange(struct malnSet *malnSet, struct malnComp *comp) {
@@ -129,16 +148,16 @@ static void removeCompRange(struct malnSet *malnSet, struct malnComp *comp) {
     assert(found);
 }
 
-/* remove all references to this blk from the rangeTree */
-static void removeBlkRanges(struct malnSet *malnSet, struct malnBlk *blk) {
-    for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
+/* remove a single component from malnSet range map */
+void malnSet_removeComp(struct malnSet *malnSet, struct malnComp *comp) {
+    if (malnSet->compRangeMap != NULL) {
         removeCompRange(malnSet, comp);
     }
 }
 
-/* remove a single component from malnSet range map */
-void malnSet_removeComp(struct malnSet *malnSet, struct malnComp *comp) {
-    if (malnSet->compRangeMap != NULL) {
+/* remove all references to this blk from the rangeTree */
+static void removeBlkRanges(struct malnSet *malnSet, struct malnBlk *blk) {
+    for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         removeCompRange(malnSet, comp);
     }
 }
@@ -391,16 +410,24 @@ void malnSet_deleteDying(struct malnSet *malnSet) {
 }
 
 /* print set for debugging */
-void malnSet_dump(struct malnSet *malnSet, const char *label, FILE *fh) {
-    char *blkDesc = stString_print("blk:%s", label);
-    fprintf(fh, "malnSet: begin %s\n", label);
+void malnSet_dumpv(struct malnSet *malnSet, FILE *fh, const char *label, va_list args) {
+    char *fmtLabel = stSafeCDynFmtv(label, args);
+    fprintf(fh, "malnSet: begin %s\n", fmtLabel);
     struct malnBlkSetIterator *iter = malnBlkSet_getIterator(malnSet->blks);
     struct malnBlk *blk;
     while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
         fputs("  ", fh);
-        malnBlk_dump(blk, blkDesc, fh);
+        malnBlk_dump(blk, fh, "  blk:%s", fmtLabel);
     }
     malnBlkSetIterator_destruct(iter);
-    fprintf(fh, "malnSet: end %s\n", label);
-    freeMem(blkDesc);
+    fprintf(fh, "malnSet: end %s\n", fmtLabel);
+    freeMem(fmtLabel);
+}
+
+/* print set for debugging */
+void malnSet_dump(struct malnSet *malnSet, FILE *fh, const char *label, ...) {
+    va_list args;
+    va_start(args, label);
+    malnSet_dumpv(malnSet, fh, label, args);
+    va_end(args);
 }

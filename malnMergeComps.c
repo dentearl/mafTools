@@ -119,42 +119,33 @@ static void mergeAllAdjacentComps(struct malnBlk *blk) {
 
 /* Merge adjacent components within the specified block, if possible.
  * This will replace block in the set. */
-static void mergeWithin(struct malnSet *malnSet, struct malnBlk *blk, stList *blksToAdd) {
+static void mergeWithin(struct malnSet *malnSet, struct malnBlk *blk, struct malnBlkSet *newBlks) {
     if (anyToMerge(blk)) {
         struct malnBlk *mblk = malnBlk_constructClone(blk);
         malnBlk_assert(mblk); // FIXME: tmp
         if (debug) {
-            malnBlk_dump(mblk, "mergeWithin:before", stderr);
+            malnBlk_dump(mblk, stderr, "mergeWithin:before");
         }
         mergeAllAdjacentComps(mblk);
-        stList_append(blksToAdd, mblk);
+        malnBlkSet_add(newBlks, mblk);
         malnBlk_markOrDelete(blk);
         if (debug) {
-            malnBlk_dump(mblk, "mergeWithin:after", stderr);
+            malnBlk_dump(mblk, stderr, "mergeWithin:after");
         }
     }
-}
-
-/* add blocks when safe */
-static void addBlks(struct malnSet *malnSet, stList *blksToAdd) {
-    stListIterator *iter = stList_getIterator(blksToAdd);
-    struct malnBlk *blk;
-    while ((blk = stList_getNext(iter)) != NULL) {
-        malnSet_addBlk(malnSet, blk);
-    }
-    stList_destructIterator(iter);
 }
 
 /* Merge adjacent components within the blocks of a set. */
 void malnMergeComps_merge(struct malnSet *malnSet) {
-    stList *blksToAdd = stList_construct(); // delay add and delete due to iterator
+    // delay add and delete due to iterator
+    struct malnBlkSet *newBlks = malnBlkSet_construct();
     struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *blk;
     while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
-        mergeWithin(malnSet, blk, blksToAdd);
+        mergeWithin(malnSet, blk, newBlks);
     }
     malnBlkSetIterator_destruct(iter);
-    addBlks(malnSet, blksToAdd);
-    stList_destruct(blksToAdd);
+    malnSet_addBlks(malnSet, newBlks);
+    malnBlkSet_destruct(newBlks);
     malnSet_deleteDying(malnSet);
 }

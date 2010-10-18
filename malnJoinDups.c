@@ -17,7 +17,7 @@ static const bool debug = false; // FIXME: tmp
  * blocks root component. Joined blocks are inserted into delete table */
 static struct malnComp *joinCompWithDup(struct malnSet *malnSet, struct malnComp *comp1, struct malnComp *comp2) {
     if (debug) {
-        malnComp_dump(comp2, "joinCompWithDup comp2", stderr);
+        malnComp_dump(comp2, stderr, "joinCompWithDup comp2");
     }
     struct malnBlk *joinedBlk = malnJoinBlks(comp1, comp2, NULL);
     malnBlk_markOrDelete(comp1->blk);
@@ -29,7 +29,7 @@ static struct malnComp *joinCompWithDup(struct malnSet *malnSet, struct malnComp
  * Return updated block when one join is achieved, or NULL if no join was done. */
 static struct malnBlk *joinCompWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, struct malnComp *joinComp, struct malnBlkSet *doneBlks) {
     if (debug) {
-        malnComp_dump(joinComp, "joinCompWithDups", stderr);
+        malnComp_dump(joinComp, stderr, "joinCompWithDups");
     }
     malnBlkSet_add(doneBlks, joinComp->blk);
 
@@ -54,7 +54,7 @@ static void joinBlkWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, st
     // block is joined with this block.
 
     if (debug) { // FIXME: tmp
-        malnBlk_dump(joinBlk, "joinBlkWithDups", stderr);
+        malnBlk_dump(joinBlk, stderr, "joinBlkWithDups");
     }
     bool joinedSome = FALSE;
     struct malnBlk *newJoinBlk;

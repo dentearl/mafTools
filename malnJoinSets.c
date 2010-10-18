@@ -84,8 +84,8 @@ static bool joinCompWithSet(struct joinBlkComp *joining, struct malnSet *malnSet
     for (int i = 0; i < stList_length(overComps2); i++) {
         struct malnComp *comp2 = stList_get(overComps2, i);
         if (debug) {
-            malnComp_dump(joining->comp, "OVER", stderr);
-            fprintf(stderr, "\t%d & %d: ", (!malnBlkSet_contains(doneBlks, comp2->blk)), malnComp_canJoin(joining->comp, comp2)); malnComp_dump(comp2, "comp2", stderr);
+            malnComp_dump(joining->comp, stderr, "OVER");
+            fprintf(stderr, "\t%d & %d: ", (!malnBlkSet_contains(doneBlks, comp2->blk)), malnComp_canJoin(joining->comp, comp2)); malnComp_dump(comp2, stderr, "comp2");
         }
         if ((!malnBlkSet_contains(doneBlks, comp2->blk)) && malnComp_canJoin(joining->comp, comp2)) {
             joinCompWithComp(joining, comp2, doneBlks);

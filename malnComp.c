@@ -4,6 +4,7 @@
 #include "mafTree.h"
 #include "genome.h"
 #include "common.h"
+#include "stSafeC.h"
 #include "dystring.h"
 #include "dnautil.h"
 #include "sonLibString.h"
@@ -85,6 +86,17 @@ struct malnComp *malnComp_reverseComplement(struct malnComp *comp) {
     return rc;
 }
 
+/* convert a chrom range to a strand range for this component */
+void malnComp_chromRangeToStrandRange(struct malnComp *comp, int chromStart, int chromEnd, int *start, int *end) {
+    assert(chromStart <= chromEnd);
+    assert((comp->chromStart <= chromStart) && (chromEnd <= comp->chromEnd));
+    *start = chromStart;
+    *end = chromEnd;
+    if (comp->strand == '-') {
+        reverseIntRange(start, end, comp->seq->size);
+    }
+}
+
 /* convert an alignment range to a sequence range, set range to 0-0 and return
  * false if none aligned */
 bool malnComp_alnRangeToSeqRange(struct malnComp *comp, int alnStart, int alnEnd, int *start, int *end) {
@@ -128,6 +140,20 @@ bool malnComp_seqRangeToAlnRange(struct malnComp *comp, int start, int end, int 
     return true;
 }
 
+/* convert a sequence chrom range to an alignment range, set range to 0-0 and
+ * return false if none aligned */
+bool malnComp_seqChromRangeToAlnRange(struct malnComp *comp, int chromStart, int chromEnd, int *alnStart, int *alnEnd) {
+    int start = chromStart, end = chromEnd;
+    if (comp->strand == '-') {
+        reverseIntRange(&start, &end, comp->seq->size);
+    }
+    bool anyAligned = malnComp_seqRangeToAlnRange(comp, start, end, alnStart, alnEnd);
+    if (anyAligned && (comp->strand == '-')) {
+        reverseIntRange(alnStart, alnEnd, comp->alnStr->stringSize);
+    }
+    return anyAligned;
+}
+
 /* pad component to the specified alignment width */
 void malnComp_pad(struct malnComp *comp, int width) {
     assert(malnComp_getWidth(comp) <= width);
@@ -169,13 +195,9 @@ void malnComp_assert(struct malnComp *comp) {
         assert(comp->start == (comp->seq->size - comp->chromEnd));
         assert(comp->end == (comp->seq->size - comp->chromStart));
     }
-    if (countAligned(comp) != (comp->end - comp->start)) {
-        malnComp_dump(comp, "bad comp", stderr);
-        malnBlk_dump(comp->blk, "bad comp blk", stderr);
-    }
     assert(countAligned(comp) == (comp->end - comp->start));
     if (comp->ncLink == NULL) {
-        malnBlk_dump(comp->blk, "NULL ncLink", stderr);
+        malnBlk_dump(comp->blk, stderr, "NULL ncLink");
     }
     assert(comp->ncLink != NULL);
     assert(comp->ncLink->comp == comp);
@@ -200,7 +222,7 @@ int malnComp_cmp(struct malnComp *comp1, struct malnComp *comp2) {
 
 /* construct an component from a subrange of this component. Return NULL if
  * the subrange does not contain any aligned bases. */
-struct malnComp *malnComp_subrange(struct malnComp *comp, int alnStart, int alnEnd) {
+struct malnComp *malnComp_constructSubrange(struct malnComp *comp, int alnStart, int alnEnd) {
     struct malnCompCursor cursor = malnCompCursor_make(comp);
     malnCompCursor_setAlignCol(&cursor, alnStart);
     int compStart = cursor.pos;
@@ -213,8 +235,25 @@ struct malnComp *malnComp_subrange(struct malnComp *comp, int alnStart, int alnE
     return subComp;
 }
 
-/* print a component for debugging purposes */
-void malnComp_dump(struct malnComp *comp, const char *label, FILE *fh) {
+/* print base information describing a comp, newline not included */
+void malnComp_prInfo(struct malnComp *comp, FILE *fh) {
     const char *loc = (comp->ncLink != NULL) ? mafTreeLoc_str(malnComp_getLoc(comp)) : "NULL";
-    fprintf(fh, "%s %s (%c) %d-%d %d-%d [%d] %s %s\n", label, comp->seq->orgSeqName, comp->strand, comp->start, comp->end, comp->chromStart, comp->chromEnd, malnComp_getAligned(comp), loc, comp->alnStr->string);
+    fprintf(fh, "%s (%c) %d-%d %d-%d [%d] %s", comp->seq->orgSeqName, comp->strand, comp->start, comp->end, comp->chromStart, comp->chromEnd, malnComp_getAligned(comp), loc);
+}
+
+/* print a component for debugging purposes */
+void malnComp_dumpv(struct malnComp *comp, FILE *fh, const char *label, va_list args) {
+    char *fmtLabel = stSafeCDynFmtv(label, args);
+    fprintf(fh, "%s ", fmtLabel);
+    malnComp_prInfo(comp, fh);
+    fprintf(fh, " %s\n", comp->alnStr->string);
+    freeMem(fmtLabel);
+}
+
+/* print a component for debugging purposes */
+void malnComp_dump(struct malnComp *comp, FILE *fh, const char *label, ...) {
+    va_list args;
+    va_start(args, label);
+    malnComp_dumpv(comp, fh, label, args);
+    va_end(args);
 }
