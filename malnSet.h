@@ -41,6 +41,10 @@ void malnSet_removeBlk(struct malnSet *malnSet, struct malnBlk *blk);
 /* get iterator of the blocks. Don't remove or add blocks while in motion. */
 struct malnBlkSetIterator *malnSet_getBlocks(struct malnSet *malnSet);
 
+/* Get a table with the set of blocks. Useful when one needs to add remove or
+ * add blocks while scanning. */
+struct malnBlkSet *malnSet_getBlockSetCopy(struct malnSet *malnSet);
+
 /* Get a list of components that overlap the specified reference range and are
  * in blocks not flagged as done or dying, passing treeLoc filters, and not in
  * option doneBlks.  Return NULL if no overlaps. */
@@ -55,7 +59,8 @@ stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, stru
 /* assert some sanity checks on a set */
 void malnSet_assert(struct malnSet *malnSet);
 
-/* record a block as deleted */
+/* record a block as deleted.  It is allowed to add blocks with are not
+ * associated with a malnSet, as a way of cleaning up intermediate blocks. */
 void malnSet_markAsDeleted(struct malnSet *malnSet, struct malnBlk *blk);
 
 /* delete blocks marked as dying */

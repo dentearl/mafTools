@@ -864,7 +864,7 @@ class MafJoinTests(unittest.TestCase):
         self.mafJoinTest("sHuman-sChimp", A, B, C, treelessRoot2="sG-sH-sC")
 
 # FIXME: should be controllable from the command line
-import logging
-logger.setLevel(logging.INFO)
+#import logging
+#logger.setLevel(logging.INFO)
 if __name__ == '__main__':
     unittest.main()

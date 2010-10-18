@@ -225,7 +225,11 @@ static void destructCompRangeMap(struct malnSet *malnSet) {
 static void deleteAllBlks(struct malnSet *malnSet, struct malnBlkSet *blkMap) {
     struct malnBlk *blk;
     while ((blk = malnBlkSet_pop(blkMap)) != NULL) {
-        malnSet_deleteBlk(malnSet, blk);
+        if (blk->malnSet == NULL) {
+            malnBlk_destruct(blk);
+        } else {
+            malnSet_deleteBlk(malnSet, blk);
+        }
     }
 }
 
@@ -335,6 +339,12 @@ struct malnBlkSetIterator *malnSet_getBlocks(struct malnSet *malnSet) {
     return malnBlkSet_getIterator(malnSet->blks);
 }
 
+/* Get a table with the set of blocks. Useful when one needs to add remove or
+ * add blocks while scanning. */
+struct malnBlkSet *malnSet_getBlockSetCopy(struct malnSet *malnSet) {
+    return malnBlkSet_constructClone(malnSet->blks);
+}
+
 /* compare function for component list */
 static int sortCompListCmpFn(const void *a, const void *b) {
     return malnComp_cmp((struct malnComp*)a, (struct malnComp*)b); 
@@ -397,9 +407,12 @@ stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, stru
     return malnSet_getOverlappingPendingComps(malnSet, seq, chromStart-1, chromEnd+1, treeLocFilter, doneBlks);
 }
 
-/* record a block as deleted */
+/* record a block as deleted.  It is allowed to add blocks with are not
+ * associated with a malnSet, as a way of cleaning up intermediate blocks.
+ * FIXME: this NULL set is a hack.
+ */
 void malnSet_markAsDeleted(struct malnSet *malnSet, struct malnBlk *blk) {
-    assert(blk->malnSet == malnSet);
+    assert((blk->malnSet == malnSet) || (blk->malnSet == NULL));
     blk->deleted = true;
     malnBlkSet_add(malnSet->dyingBlks, blk);
 }

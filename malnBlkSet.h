@@ -11,6 +11,9 @@ struct malnBlkSet;
 /* constructor */
 struct malnBlkSet *malnBlkSet_construct(void);
 
+/* make a clone of a block set */
+struct malnBlkSet *malnBlkSet_constructClone(struct malnBlkSet *srcBlks);
+
 /* destructor*/
 void malnBlkSet_destruct(struct malnBlkSet *blks);
 

@@ -80,7 +80,9 @@ static void malnBlk_sortComps(struct malnBlk *blk) {
 void malnBlk_finish(struct malnBlk *blk) {
     malnBlk_sortComps(blk); // FIXME: don't need to do this for all cases
     malnBlk_validate(blk);  // produces better error messages
+#if 0 // FIXME: very expensive
     malnBlk_assert(blk);    // really only to catch bugs in this code, not input
+#endif
 }
 
 /* Unlink a component from the block, also removing it from the tree and
@@ -189,16 +191,6 @@ int malnBlk_cmp(struct malnBlk *blk1, struct malnBlk *blk2) {
         }
     }
     return diff;
-}
-
-/* If a block is in a set, mark it for deletion, otherwise just delete it */
-void malnBlk_markOrDelete(struct malnBlk *blk) {
-    blk->deleted = true;
-    if (blk->malnSet != NULL) {
-        malnSet_markAsDeleted(blk->malnSet, blk);
-    } else {
-        malnBlk_destruct(blk);
-    }
 }
 
 /* take subrange of a component */

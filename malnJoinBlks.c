@@ -235,7 +235,6 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     assertJoinedComps(jb->cursor1, jb->dests1);
     assertJoinedComps(jb->cursor2, jb->dests2);
     malnBlk_finish(jb->joined);
-    malnBlk_assert(jb->joined);
 
     struct malnBlk *joined = jb->joined;
     malnJoinBlks_destruct(jb);

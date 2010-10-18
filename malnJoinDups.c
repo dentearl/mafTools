@@ -11,6 +11,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+// FIXME: this would have been much simpler if blocks were immutable
+
 static const bool debug = false; // FIXME: tmp
 
 /* join two blocks associated components, create and third block. Return that
@@ -20,8 +22,8 @@ static struct malnComp *joinCompWithDup(struct malnSet *malnSet, struct malnComp
         malnComp_dump(comp2, stderr, "joinCompWithDup comp2");
     }
     struct malnBlk *joinedBlk = malnJoinBlks(comp1, comp2, NULL);
-    malnBlk_markOrDelete(comp1->blk);
-    malnBlk_markOrDelete(comp2->blk);
+    malnSet_markAsDeleted(malnSet, comp1->blk);
+    malnSet_markAsDeleted(malnSet, comp2->blk);
     return malnBlk_getRootComp(joinedBlk);
 }
 
@@ -59,6 +61,10 @@ static void joinBlkWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, st
     bool joinedSome = FALSE;
     struct malnBlk *newJoinBlk;
     do {
+        static bool debug2 = false;// FIXME: set with debugger
+        if (debug2) { // FIXME: tmp
+            malnBlk_dump(joinBlk, stderr, "joinBlkWithDups loop");
+        }
         newJoinBlk = NULL;
         for (struct malnComp *joinComp = joinBlk->comps; (joinComp != NULL) && (newJoinBlk == NULL); joinComp = joinComp->next) {
             newJoinBlk = joinCompWithDups(malnSet, joinBlk, joinComp, doneBlks);
@@ -77,7 +83,8 @@ static void joinBlkWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, st
  * blocks. */
 void malnJoinDups_joinSetDups(struct malnSet *malnSet) {
     struct malnBlkSet *doneBlks = malnBlkSet_construct();
-    struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet);
+    struct malnBlkSet *blks = malnSet_getBlockSetCopy(malnSet);
+    struct malnBlkSetIterator *iter = malnBlkSet_getIterator(blks);
     struct malnBlk *joinBlk;
     while ((joinBlk = malnBlkSetIterator_getNext(iter)) != NULL) {
         if (!joinBlk->deleted) {
@@ -85,6 +92,7 @@ void malnJoinDups_joinSetDups(struct malnSet *malnSet) {
         }
     }
     malnBlkSetIterator_destruct(iter);
+    malnBlkSet_destruct(blks);
     malnSet_deleteDying(malnSet);
     malnSet_assert(malnSet);
     malnBlkSet_destruct(doneBlks);

@@ -128,7 +128,7 @@ static void mergeWithin(struct malnSet *malnSet, struct malnBlk *blk, struct mal
         }
         mergeAllAdjacentComps(mblk);
         malnBlkSet_add(newBlks, mblk);
-        malnBlk_markOrDelete(blk);
+        malnSet_markAsDeleted(malnSet, blk);
         if (debug) {
             malnBlk_dump(mblk, stderr, "mergeWithin:after");
         }

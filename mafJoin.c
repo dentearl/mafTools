@@ -119,6 +119,7 @@ int main(int argc, char *argv[]) {
     if (argc != 5)  {
         usage("Error: wrong number of arguments");
     }
+
     mafJoin(argv[1], argv[2], argv[3], argv[4], optionDouble("branchLength", 0.1), 
             optionVal("treelessRoot1", NULL), optionVal("treelessRoot2", NULL));
     return 0;

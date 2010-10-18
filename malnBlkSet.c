@@ -18,11 +18,21 @@ static int objIdCmp(const void *vblk1, const void *vblk2) {
     return blk1->objId - blk2->objId;
 }
 
-
 struct malnBlkSet *malnBlkSet_construct(void) {
     struct malnBlkSet *blks;
     AllocVar(blks);
     blks->map = stSortedSet_construct3(objIdCmp, NULL);
+    return blks;
+}
+
+struct malnBlkSet *malnBlkSet_constructClone(struct malnBlkSet *srcBlks) {
+    struct malnBlkSet *blks = malnBlkSet_construct();
+    struct malnBlkSetIterator *iter = malnBlkSet_getIterator(srcBlks);
+    struct malnBlk *blk;
+    while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
+        malnBlkSet_add(blks, blk);
+    }
+    malnBlkSetIterator_destruct(iter);
     return blks;
 }
 

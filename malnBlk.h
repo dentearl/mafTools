@@ -73,9 +73,6 @@ void malnBlk_assert(struct malnBlk *blk);
 /* compare two blocks for deterministic sorting */
 int malnBlk_cmp(struct malnBlk *blk1, struct malnBlk *blk2);
 
-/* If a block is in a set, mark it for deletion, otherwise just delete it */
-void malnBlk_markOrDelete(struct malnBlk *blk);
-
 /* construct an alignment block from a subrange of this block */
 struct malnBlk *malnBlk_constrctSubrange(struct malnBlk *blk, int alnStart, int alnEnd);
 
