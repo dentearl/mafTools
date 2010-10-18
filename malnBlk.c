@@ -242,17 +242,25 @@ static void shortenCompSeq(struct malnComp *comp, int newStart, int newEnd)  {
 
 /* shorten bounds of a component in a blk */
 static void shortenComp(struct malnBlk *blk, struct malnComp *comp, int newChromStart, int newChromEnd)  {
+    // FIXME: should be in comp
     int newStart, newEnd;
     malnComp_chromRangeToStrandRange(comp, newChromStart, newChromEnd, &newStart, &newEnd);
 
     if (blk->malnSet != NULL) {
         malnSet_removeComp(blk->malnSet, comp);
     }
-    shortenCompSeq(comp, newStart, newEnd);
+    // erase regions being dropped from start and/or end of component
+    if (newStart > comp->start) {
+        shortenCompSeq(comp, comp->start, newStart);
+    }
+    if (newEnd < comp->end) {
+        shortenCompSeq(comp, newEnd, comp->end);
+    }
     comp->chromStart = newChromStart;
     comp->chromEnd = newChromEnd;
     comp->start = newStart;
     comp->end = newEnd;
+
     if (blk->malnSet != NULL) {
         malnSet_addComp(blk->malnSet, comp);
     }

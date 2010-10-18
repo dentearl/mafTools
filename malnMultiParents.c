@@ -43,7 +43,11 @@ static void shortenComp(struct malnComp *comp, int cutChromStart, int cutChromEn
     // need to cut to one end, as middle cut isn't support (and maybe not desired)
     // leave the most sequence
     int chromStart, chromEnd;
-    if ((cutChromStart - chromStart) > (chromEnd - cutChromEnd)) {
+    if ((cutChromStart == comp->chromStart) && (comp->chromEnd == cutChromEnd)) {
+        // covers whole comp
+        chromStart = comp->chromStart;
+        chromEnd = comp->chromEnd;
+    } else if ((cutChromStart - comp->chromStart) > (comp->chromEnd - cutChromEnd)) {
         // keep region at start
         chromStart = comp->chromStart;
         chromEnd = cutChromStart;
@@ -101,8 +105,9 @@ static bool resolveBlkComp(struct malnSet *malnSet, struct malnBlk *blk, struct 
 static void resolveBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     // must start over each time something is resolved, since the block could
     // be updated.
-    bool didSomething = false;
+    bool didSomething;
     do {
+        didSomething = false;
         for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
             if (malnComp_getLoc(comp) != mafTreeLocRoot) {
                 didSomething = resolveBlkComp(malnSet, blk, comp);

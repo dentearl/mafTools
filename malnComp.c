@@ -157,7 +157,7 @@ bool malnComp_seqChromRangeToAlnRange(struct malnComp *comp, int chromStart, int
 /* pad component to the specified alignment width */
 void malnComp_pad(struct malnComp *comp, int width) {
     assert(malnComp_getWidth(comp) <= width);
-    dyStringAppendMultiC(comp->alnStr, '-', width-malnComp_getWidth(comp));
+   dyStringAppendMultiC(comp->alnStr, '-', width-malnComp_getWidth(comp));
 }
 
 /* append the specified number of characters from the string, adjusting component
@@ -194,6 +194,9 @@ void malnComp_assert(struct malnComp *comp) {
     } else {
         assert(comp->start == (comp->seq->size - comp->chromEnd));
         assert(comp->end == (comp->seq->size - comp->chromStart));
+    }
+    if (countAligned(comp) != (comp->end - comp->start)) { // FIXME
+        malnBlk_dump(comp->blk, stderr, "countAligned(comp) != (comp->end - comp->start)");
     }
     assert(countAligned(comp) == (comp->end - comp->start));
     if (comp->ncLink == NULL) {
