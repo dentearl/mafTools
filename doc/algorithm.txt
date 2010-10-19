@@ -1,0 +1,52 @@
+
+
+# join duplications blocks in a MAF
+joinDups(malnSet)
+  - foreach block-A in malnSet:
+    - foreach block-B in malnSet where the root component overlaps
+              the block A root component:
+      - merge block-B into block-A
+      - delete block-B.
+
+# deal with non-root component parent conflicts.  that is bases that are
+# claimed to have have evolved to two different sequences.  These will be
+# in different blocks.
+multiParentResolve(malnSet)
+  - until there no more multi-parent regions
+    - foreach non-root component-A:
+      - foreach non-root component-B in a different block that component-A
+         and that has a region in common with component-A,
+        - pick one of component-A or component-B from which to erase
+          multi-parent bases. Picking one that will leave the most bases aligned
+        - erase the region, going to either the start or end of
+          the component (implication to avoid splitting).
+        - if no more bases are left in the component, delete it.
+
+# load a MAF file into an malnSet
+loadMaf(mafFile)
+  - convert MAF to an malnSet
+  - joinDups(malnSet)
+  - multiParentResolve(malnSet)
+
+# Join two malnSet objects based on a reference genome
+malnJoinSets(refGenome, malnSet1, malnSet2, maxBlkWidth)
+  - create empty malnSetJoin
+  - foreach block-A in malnSet1:
+    - foreach refGenome component-A in block-A:
+      - foreach component-B in malnSet2 with overlaps or is
+        adjacent with component-A:
+        - if component-A and component-B can be merged (one is a root):
+          merge block-A and block-B into new block-C
+        - continue scanning for others to merge into block-C
+
+# merge components in blocks that could be one component
+mergeComps(malnSet)
+  - <FILL IN>
+
+- mafJoin(refGenone, maf1File, maf2File, mafOutFile):
+  - malnSet1 = loadMaf(maf1)
+  - malnSet2 = loadMaf(maf2)
+  - malnSetJoin = malnJoinSets(refGenome, malnSet1, malnSet2, maxBlkWidth)
+  - joinDups(malnSet)  # this should not be needed, but shouldn't do anything??
+  - mergeComps(malnSet)
+  - multiParentResolve(malnSet)
