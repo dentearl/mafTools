@@ -31,7 +31,7 @@ static struct optionSpec optionSpecs[] = {
 };
 
 static char *usageMsg =
-    "mafJoin [options] refGenome inMaf1 inMaf2 outMaf\n"
+    "mafJoin [options] guideGenome inMaf1 inMaf2 outMaf\n"
     "\n"
     "Options:\n"
     "  -help\n"
@@ -74,16 +74,16 @@ static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, double defa
 }
 
 /* join two mafs */
-static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMaf, double defaultBranchLength,
+static void mafJoin(char *guideGenomeName, char *inMaf1, char *inMaf2, char *outMaf, double defaultBranchLength,
                     char *treelessRoot1Name, char *treelessRoot2Name, int maxBlkWidth) {
     struct Genomes *genomes = genomesNew();
-    struct Genome *refGenome = genomesObtainGenome(genomes, refGenomeName);
+    struct Genome *guideGenome = genomesObtainGenome(genomes, guideGenomeName);
 
     struct malnSet *malnSet1 = loadMaf(genomes, inMaf1, defaultBranchLength, treelessRoot1Name, maxBlkWidth, "set1");
     struct malnSet *malnSet2 = loadMaf(genomes, inMaf2, defaultBranchLength, treelessRoot2Name, maxBlkWidth, "set2");
 
     // join and then merge overlapping blocks that were created
-    struct malnSet *malnSetJoined = malnJoinSets(refGenome, malnSet1, malnSet2, maxBlkWidth);
+    struct malnSet *malnSetJoined = malnJoinSets(guideGenome, malnSet1, malnSet2, maxBlkWidth);
     if (debug) {
         malnSet_dump(malnSetJoined, stderr, "out: joined");
     }

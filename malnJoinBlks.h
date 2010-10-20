@@ -2,7 +2,7 @@
 #define malnJoinBlks_h
 struct malnComp;
 
-/* join two blocks using their specified reference components.  Optionally return
+/* join two blocks using their specified guide components.  Optionally return
  * resulting join component. */
-struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp2, struct malnComp **joinedCompRet);
+struct malnBlk *malnJoinBlks(struct malnComp *guideComp1, struct malnComp *guideComp2, struct malnComp **joinedCompRet);
 #endif

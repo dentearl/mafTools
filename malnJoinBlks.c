@@ -14,8 +14,8 @@ static bool debug = false;  // FIXME: tmp
 
 /* Object use to keep state */
 struct malnJoinBlks {
-    struct malnComp *ref1;           // reference components
-    struct malnComp *ref2;
+    struct malnComp *guide1;         // guide components
+    struct malnComp *guide2;
     struct malnBlk *blk1;            // input blocks
     struct malnBlk *blk2;
     struct malnBlk *inBlk2;          // original blk2, before reverse complement
@@ -28,9 +28,9 @@ struct malnJoinBlks {
     struct malnBlk *freeBlk;   // block to free if not NULL (due to reverse-complement);
 
     // coordinates of the two alignments
-    int refCommonStart;  // common reference sequence coordinates, zero length for adjacent
-    int refCommonEnd;
-    int aln1CommonStart; // mapping of the ref coordinates to input alignments
+    int guideCommonStart;  // common guide sequence coordinates, zero length for adjacent
+    int guideCommonEnd;
+    int aln1CommonStart; // mapping of the guide coordinates to input alignments
     int aln1CommonEnd;
     int aln2CommonStart;
     int aln2CommonEnd;
@@ -38,13 +38,13 @@ struct malnJoinBlks {
 
 /* compute alignment coordinates */
 static void calcAlignmentCoords(struct malnJoinBlks *jb) {
-    jb->refCommonStart = max(jb->ref1->start, jb->ref2->start);
-    jb->refCommonEnd = min(jb->ref1->end, jb->ref2->end);
-    if (jb->refCommonStart < jb->refCommonEnd) {
+    jb->guideCommonStart = max(jb->guide1->start, jb->guide2->start);
+    jb->guideCommonEnd = min(jb->guide1->end, jb->guide2->end);
+    if (jb->guideCommonStart < jb->guideCommonEnd) {
         // overlapping
-        if (!(malnComp_seqRangeToAlnRange(jb->ref1, jb->refCommonStart, jb->refCommonEnd, &jb->aln1CommonStart, &jb->aln1CommonEnd)
-              && malnComp_seqRangeToAlnRange(jb->ref2, jb->refCommonStart, jb->refCommonEnd, &jb->aln2CommonStart, &jb->aln2CommonEnd))) {
-            errAbort("BUG: failure to get alignment ranges for common reference sequence range");
+        if (!(malnComp_seqRangeToAlnRange(jb->guide1, jb->guideCommonStart, jb->guideCommonEnd, &jb->aln1CommonStart, &jb->aln1CommonEnd)
+              && malnComp_seqRangeToAlnRange(jb->guide2, jb->guideCommonStart, jb->guideCommonEnd, &jb->aln2CommonStart, &jb->aln2CommonEnd))) {
+            errAbort("BUG: failure to get alignment ranges for common guide sequence range");
         }
     } else {
         // adjacent
@@ -53,20 +53,20 @@ static void calcAlignmentCoords(struct malnJoinBlks *jb) {
     }
 }
 
-/* create new reference components from the two being joined */
-static struct malnComp *createJoinedRefComp(struct malnJoinBlks *jb) {
-    int start = min(jb->ref1->start, jb->ref2->start);
-    struct malnComp *comp = malnComp_construct(jb->ref1->seq, jb->ref1->strand, start, start, "");
+/* create new guide components from the two being joined */
+static struct malnComp *createJoinedGuideComp(struct malnJoinBlks *jb) {
+    int start = min(jb->guide1->start, jb->guide2->start);
+    struct malnComp *comp = malnComp_construct(jb->guide1->seq, jb->guide1->strand, start, start, "");
     malnBlk_addComp(jb->joined, comp);
-    malnCompCompMap_add(jb->srcDestCompMap, jb->ref1, comp);
-    malnCompCompMap_add(jb->srcDestCompMap, jb->ref2, comp);
+    malnCompCompMap_add(jb->srcDestCompMap, jb->guide1, comp);
+    malnCompCompMap_add(jb->srcDestCompMap, jb->guide2, comp);
     return comp;
 }
 
-/* add non-reference components to the joined blk and destination component
+/* add non-guide components to the joined blk and destination component
  * array */
 static void addCompsToJoined(struct malnJoinBlks *jb, struct malnBlkCursor *blkCursor, struct malnComp **destComps) {
-    // skip rows[0], which is the reference
+    // skip rows[0], which is the guide
     for (int i = 1; i < blkCursor->numRows; i++) {
         destComps[i] = malnComp_construct(blkCursor->rows[i].comp->seq, blkCursor->rows[i].comp->strand, blkCursor->rows[i].comp->start, blkCursor->rows[i].comp->start, "");
         malnBlk_addComp(jb->joined, destComps[i]);
@@ -75,30 +75,30 @@ static void addCompsToJoined(struct malnJoinBlks *jb, struct malnBlkCursor *blkC
 }
 
 /* construct malnJoinBlks state object for the join */
-static struct malnJoinBlks *malnJoinBlks_construct(struct malnComp *refComp1, struct malnComp *refComp2) {
+static struct malnJoinBlks *malnJoinBlks_construct(struct malnComp *guideComp1, struct malnComp *guideComp2) {
     struct malnJoinBlks *jb;
     AllocVar(jb);
-    jb->ref1 = refComp1;
-    jb->ref2 = refComp2;
-    jb->blk1 = refComp1->blk;
-    jb->blk2 = jb->inBlk2 = refComp2->blk;
+    jb->guide1 = guideComp1;
+    jb->guide2 = guideComp2;
+    jb->blk1 = guideComp1->blk;
+    jb->blk2 = jb->inBlk2 = guideComp2->blk;
 
     // reverse complement if needed (must do before making cursors)
-    if (jb->ref1->strand != jb->ref2->strand) {
+    if (jb->guide1->strand != jb->guide2->strand) {
         jb->blk2 = jb->freeBlk = malnBlk_reverseComplement(jb->blk2);
-        jb->ref2 = malnBlk_findCompByChromRange(jb->blk2, jb->ref2->seq, jb->ref2->chromStart, jb->ref2->chromEnd);
-        assert(jb->ref2 != NULL);
+        jb->guide2 = malnBlk_findCompByChromRange(jb->blk2, jb->guide2->seq, jb->guide2->chromStart, jb->guide2->chromEnd);
+        assert(jb->guide2 != NULL);
     }
 
-    jb->cursor1 = malnBlkCursor_construct(jb->blk1, jb->ref1, NULL);
-    jb->cursor2 = malnBlkCursor_construct(jb->blk2, jb->ref2, NULL);
+    jb->cursor1 = malnBlkCursor_construct(jb->blk1, jb->guide1, NULL);
+    jb->cursor2 = malnBlkCursor_construct(jb->blk2, jb->guide2, NULL);
     jb->joined = malnBlk_construct();
     jb->dests1 = needMem(jb->cursor1->numRows * sizeof(struct malnComp *));
     jb->dests2 = needMem(jb->cursor2->numRows * sizeof(struct malnComp *));
     jb->srcDestCompMap = malnCompCompMap_construct();
     jb->freeBlk = NULL;
 
-    jb->dests1[0] = jb->dests2[0] = createJoinedRefComp(jb);
+    jb->dests1[0] = jb->dests2[0] = createJoinedGuideComp(jb);
     addCompsToJoined(jb, jb->cursor1, jb->dests1);
     addCompsToJoined(jb, jb->cursor2, jb->dests2);
     return jb;
@@ -124,23 +124,23 @@ static mafTree *joinTrees(struct malnBlkCursor *blkCursor1, struct malnBlkCursor
     return mafTree_join(blkCursor1->blk->mTree, comp1, blkCursor2->blk->mTree, comp2, srcDestCompMap);
 }
 
-/* assert new reference component covers the entire range */
-static void assertJoinedRefComp(struct malnComp *destRefComp, struct malnComp *refComp1, struct malnComp *refComp2) {
-    assert(destRefComp->start == min(refComp1->start, refComp2->start));
-    assert(destRefComp->end == max(refComp1->end, refComp2->end));
+/* assert new guide component covers the entire range */
+static void assertJoinedGuideComp(struct malnComp *destGuideComp, struct malnComp *guideComp1, struct malnComp *guideComp2) {
+    assert(destGuideComp->start == min(guideComp1->start, guideComp2->start));
+    assert(destGuideComp->end == max(guideComp1->end, guideComp2->end));
 }
 
-/* assert new non-reference components cover entire range  */
+/* assert new non-guide components cover entire range  */
 static void assertJoinedComps(struct malnBlkCursor *blkCursor, struct malnComp **destComps) {
-    // skip rows[0], which is the reference
+    // skip rows[0], which is the guide
     for (int i = 1; i < blkCursor->numRows; i++) {
         assert(destComps[i]->start == blkCursor->rows[i].comp->start);
         assert(destComps[i]->end == blkCursor->rows[i].comp->end);
     }
 }
 
-/* copy columns outside of the common reference sequence region to the joined maf */
-static void copyUnsharedRefColumns(struct malnJoinBlks *jb, struct malnComp **destComps, struct malnBlkCursor *blkCursor, int alnStart, int alnEnd) {
+/* copy columns outside of the common guide sequence region to the joined maf */
+static void copyUnsharedGuideColumns(struct malnJoinBlks *jb, struct malnComp **destComps, struct malnBlkCursor *blkCursor, int alnStart, int alnEnd) {
   for (int i = 0; i < blkCursor->numRows; i++) {
         malnComp_appendCompAln(destComps[i], blkCursor->rows[i].comp, alnStart, alnEnd);
     }
@@ -149,44 +149,44 @@ static void copyUnsharedRefColumns(struct malnJoinBlks *jb, struct malnComp **de
     malnBlk_pad(jb->joined);
 }
 
-/* is reference aligned? */
-static bool isRefAligned(struct malnBlkCursor *blkCursor) {
+/* is guide aligned? */
+static bool isGuideAligned(struct malnBlkCursor *blkCursor) {
     return malnCompCursor_isAligned(&(blkCursor->rows[0]));
 }
 
-/* copy column from one source, optionally skipping reference */
-static void copyColumn(struct malnComp **destComps, struct malnBlkCursor *blkCursor, bool skipRef) {
-    for (int i = (skipRef ? 1 : 0); i < blkCursor->numRows; i++) {
+/* copy column from one source, optionally skipping guide */
+static void copyColumn(struct malnComp **destComps, struct malnBlkCursor *blkCursor, bool skipGuide) {
+    for (int i = (skipGuide ? 1 : 0); i < blkCursor->numRows; i++) {
         malnComp_appendCompAln(destComps[i], blkCursor->rows[i].comp, blkCursor->alnIdx, blkCursor->alnIdx+1);
     }
     malnBlkCursor_incr(blkCursor);
 }
 
 /* copy contiguous shared alignment columns to join blk */
-static void copySharedRefColumns(struct malnJoinBlks *jb) {
-    assert(isRefAligned(jb->cursor1));
-    assert(isRefAligned(jb->cursor2));
-    while (isRefAligned(jb->cursor1) && isRefAligned(jb->cursor2) && (jb->cursor1->alnIdx < jb->aln1CommonEnd) && (jb->cursor2->alnIdx < jb->aln2CommonEnd)) {
+static void copySharedGuideColumns(struct malnJoinBlks *jb) {
+    assert(isGuideAligned(jb->cursor1));
+    assert(isGuideAligned(jb->cursor2));
+    while (isGuideAligned(jb->cursor1) && isGuideAligned(jb->cursor2) && (jb->cursor1->alnIdx < jb->aln1CommonEnd) && (jb->cursor2->alnIdx < jb->aln2CommonEnd)) {
         copyColumn(jb->dests1, jb->cursor1, false);
         copyColumn(jb->dests2, jb->cursor2, true);
         jb->joined->alnWidth++;
     }
 }
 
-/* copy contiguous unaligned-to-reference columns to join blk */
+/* copy contiguous unaligned-to-guide columns to join blk */
 static void copyUnalignedSharedColumns(struct malnBlk *blkJoined, struct malnComp **destComps, struct malnBlkCursor *blkCursor, int alnCommonEnd) {
-    while ((!isRefAligned(blkCursor)) && (blkCursor->alnIdx < alnCommonEnd)) {
+    while ((!isGuideAligned(blkCursor)) && (blkCursor->alnIdx < alnCommonEnd)) {
         copyColumn(destComps, blkCursor, false);
         blkJoined->alnWidth++;
     }
     malnBlk_pad(blkJoined);
 }
 
-/* join columns based on shared reference sequence regions */
-static void joinSharedRefColumns(struct malnJoinBlks *jb) {
+/* join columns based on shared guide sequence regions */
+static void joinSharedGuideColumns(struct malnJoinBlks *jb) {
     assert(jb->cursor1->rows[0].pos == jb->cursor2->rows[0].pos);
     while ((jb->cursor1->alnIdx < jb->aln1CommonEnd) && (jb->cursor1->alnIdx < jb->aln1CommonEnd)) {
-        copySharedRefColumns(jb);
+        copySharedGuideColumns(jb);
         copyUnalignedSharedColumns(jb->joined, jb->dests1, jb->cursor1, jb->aln1CommonEnd);
         copyUnalignedSharedColumns(jb->joined, jb->dests2, jb->cursor2, jb->aln2CommonEnd);
     }
@@ -194,20 +194,20 @@ static void joinSharedRefColumns(struct malnJoinBlks *jb) {
     assert(jb->cursor2->alnIdx == jb->aln2CommonEnd);
 }
 
-/* join two blocks using their specified reference components.  Optionally return
+/* join two blocks using their specified guide components.  Optionally return
  * resulting join component. */
-struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp2, struct malnComp **joinedCompRet) {
-    assert(malnComp_overlapAdjacent(refComp1, refComp2));
-    struct malnJoinBlks *jb = malnJoinBlks_construct(refComp1, refComp2);
+struct malnBlk *malnJoinBlks(struct malnComp *guideComp1, struct malnComp *guideComp2, struct malnComp **joinedCompRet) {
+    assert(malnComp_overlapAdjacent(guideComp1, guideComp2));
+    struct malnJoinBlks *jb = malnJoinBlks_construct(guideComp1, guideComp2);
     if (joinedCompRet != NULL) {
         *joinedCompRet = jb->dests1[0];
     }
     calcAlignmentCoords(jb);
     if (debug) { // FIXME: tmp
         fprintf(stderr, "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n");
-        malnComp_dump(jb->ref1, stderr, "refComp1");
+        malnComp_dump(jb->guide1, stderr, "guideComp1");
         malnBlk_dump(jb->blk1, stderr, "inBlk1");
-        malnComp_dump(jb->ref2, stderr, "refComp2");
+        malnComp_dump(jb->guide2, stderr, "guideComp2");
         malnBlk_dump(jb->inBlk2, stderr, "inBlk2");
         if (jb->blk2 != jb->inBlk2) {
             malnBlk_dump(jb->blk2, stderr, "inBlk2rc");
@@ -215,23 +215,23 @@ struct malnBlk *malnJoinBlks(struct malnComp *refComp1, struct malnComp *refComp
     }
 
     // before common start
-    copyUnsharedRefColumns(jb, jb->dests1, jb->cursor1, 0, jb->aln1CommonStart);
-    copyUnsharedRefColumns(jb, jb->dests2, jb->cursor2, 0, jb->aln2CommonStart);
+    copyUnsharedGuideColumns(jb, jb->dests1, jb->cursor1, 0, jb->aln1CommonStart);
+    copyUnsharedGuideColumns(jb, jb->dests2, jb->cursor2, 0, jb->aln2CommonStart);
 
     // common
-    if (jb->refCommonStart < jb->refCommonEnd) {
-        assert(jb->dests1[0]->end == jb->refCommonStart);
-        joinSharedRefColumns(jb);
-        assert(jb->dests1[0]->end == jb->refCommonEnd);
+    if (jb->guideCommonStart < jb->guideCommonEnd) {
+        assert(jb->dests1[0]->end == jb->guideCommonStart);
+        joinSharedGuideColumns(jb);
+        assert(jb->dests1[0]->end == jb->guideCommonEnd);
     }
 
     // after common end
-    copyUnsharedRefColumns(jb, jb->dests1, jb->cursor1, jb->aln1CommonEnd, jb->blk1->alnWidth);
-    copyUnsharedRefColumns(jb, jb->dests2, jb->cursor2, jb->aln2CommonEnd, jb->blk2->alnWidth);
+    copyUnsharedGuideColumns(jb, jb->dests1, jb->cursor1, jb->aln1CommonEnd, jb->blk1->alnWidth);
+    copyUnsharedGuideColumns(jb, jb->dests2, jb->cursor2, jb->aln2CommonEnd, jb->blk2->alnWidth);
     
     malnBlk_setTree(jb->joined, joinTrees(jb->cursor1, jb->cursor2, jb->srcDestCompMap));
 
-    assertJoinedRefComp(jb->dests1[0], jb->ref1, jb->ref2);
+    assertJoinedGuideComp(jb->dests1[0], jb->guide1, jb->guide2);
     assertJoinedComps(jb->cursor1, jb->dests1);
     assertJoinedComps(jb->cursor2, jb->dests2);
     malnBlk_finish(jb->joined);

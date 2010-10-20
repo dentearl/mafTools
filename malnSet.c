@@ -16,7 +16,7 @@ struct malnSet {
     struct genomeRangeTree *compRangeMap; /* range index slRefs of malnComp
                                            * objects.  chrom name is org.seq,
                                            * allowing indexing all components, not
-                                           * just reference, need to join dups */
+                                           * just guide, need to join dups */
     bool dying;   /* indicates set is in the process of being deleted; used
                    * to prevent circular deletes */
     struct malnBlkSet *dyingBlks;  // bocks flaged for deletion
@@ -136,7 +136,7 @@ void malnSet_addBlks(struct malnSet *malnSet, struct malnBlkSet *blks) {
 
 
 /* remove a single object from the range tree (missing genomeRangeTree functionality).
- * this just set reference to NULL, which must be handled when getting overlaps*/
+ * this just set guide to NULL, which must be handled when getting overlaps*/
 static void removeCompRange(struct malnSet *malnSet, struct malnComp *comp) {
     bool found = false;
     for (struct range *rng = genomeRangeTreeAllOverlapping(malnSet->compRangeMap, comp->seq->orgSeqName, comp->chromStart, comp->chromEnd); (rng != NULL) && (!found); rng = rng->next) {
@@ -157,7 +157,7 @@ void malnSet_removeComp(struct malnSet *malnSet, struct malnComp *comp) {
     }
 }
 
-/* remove all references to this blk from the rangeTree */
+/* remove all guides to this blk from the rangeTree */
 static void removeBlkRanges(struct malnSet *malnSet, struct malnBlk *blk) {
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         removeCompRange(malnSet, comp);
@@ -361,7 +361,7 @@ static bool keepOverlap(struct malnComp *comp, struct Seq *seq, int chromStart, 
             && malnComp_overlapRange(comp, seq, chromStart, chromEnd));
 }        
 
-/* Get a list of components that overlap the specified reference range and are
+/* Get a list of components that overlap the specified guide range and are
  * in blocks not flagged as done or dying, passing treeLoc filters, and not in
  * option doneBlks.  Return NULL if no overlaps. */
 stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkSet *doneBlks) {
@@ -402,7 +402,7 @@ void malnSet_assert(struct malnSet *malnSet) {
 }
 
 /* Get a list of components that overlap or are adjacent to the specified
- * reference range and are in blocks not flagged as done or dying, passing
+ * guide range and are in blocks not flagged as done or dying, passing
  * treeLoc filters, and not in option doneBlks.  Return NULL if no
  * overlaps. */
 stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkSet *doneBlks) {

@@ -45,13 +45,13 @@ struct malnBlkSetIterator *malnSet_getBlocks(struct malnSet *malnSet);
  * add blocks while scanning. */
 struct malnBlkSet *malnSet_getBlockSetCopy(struct malnSet *malnSet);
 
-/* Get a list of components that overlap the specified reference range and are
+/* Get a list of components that overlap the specified guide range and are
  * in blocks not flagged as done or dying, passing treeLoc filters, and not in
  * option doneBlks.  Return NULL if no overlaps. */
 stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkSet *doneBlks);
 
 /* Get a list of components that overlap or are adjacent to the specified
- * reference range and are in blocks not flagged as done or dying, passing
+ * guide range and are in blocks not flagged as done or dying, passing
  * treeLoc filters, and not in option doneBlks.  Return NULL if no
  * overlaps. */
 stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkSet *doneBlks);

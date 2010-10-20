@@ -11,42 +11,10 @@
 #include <unistd.h>
 
 /*
- * Initial join happens at the specified join genome, however subsequent joins
- * can happen on other nodes, due to join genome becoming internal.  In this
- * case, two root nodes are actually joined into one.  
- * This is a* hack around the join not being tree based and the merge not happening
- * as part of the join.
- * 
- *
- * join on sHuman-sChimp
- * initial:
- *   set a:
- *     a1  sHuman-sChimp.chr20 743840-754280 [10440] root
- *         simHuman.chr20      757705-757749    [44] leaf
- * 
- *   set b
- *     b1  sG-sH-sC.chr20      741388-751692 [10304] root
- *         sHuman-sChimp.chr20 743840-754142 [10302] leaf
- * 
- *     b2  sG-sH-sC.chr20      751693-751830 [137] root
- *         sHuman-sChimp.chr20 754143-754280 [137] leaf
- * 
- * 
- * merge1: 
- *    ab1 sG-sH-sC.chr20      741388-751692 [10304] root
- *        sHuman-sChimp.chr20 743840-754280 [10440] internal     
- *        simHuman.chr20      757705-757749    [44] leaf
- * 
- *     b2 sG-sH-sC.chr20      751693-751830 [137] root
- *        sHuman-sChimp.chr20 754143-754280 [137] leaf
- * 
- * merge2: 
- *    ab1 sG-sH-sC.chr20      741388-751692 [10304] root
- *        sHuman-sChimp.chr20 743840-754280 [10440] internal     
- *        simHuman.chr20      757705-757749    [44] leaf
- * 
- *     b2 sG-sH-sC.chr20      751693-751830 [137] root
- *        sHuman-sChimp.chr20 754143-754280 [137] leaf
+ * Notes:
+ * - Initial join happens at the specified join genome, however subsequent joins
+ *   can happen on other nodes, due to join genome becoming internal.  In this
+ *   case, two root nodes are actually joined into one.  
  */
 
 static bool debug = false;  // FIXME: tmp
@@ -100,7 +68,7 @@ static bool joinCompWithSet(struct joinBlkComp *joining, struct malnSet *malnSet
 
 /* join blocks overlapping a block of another set. If none are joined,
  * add blk1, copy blk1 to new set */
-static void joinBlkWithSet(struct malnSet *malnSetJoined, struct Genome *refGenome, struct malnBlk *blk1, struct malnSet *malnSet2, int maxBlkWidth, struct malnBlkSet *doneBlks) {
+static void joinBlkWithSet(struct malnSet *malnSetJoined, struct Genome *guideGenome, struct malnBlk *blk1, struct malnSet *malnSet2, int maxBlkWidth, struct malnBlkSet *doneBlks) {
     struct joinBlkComp joining = {blk1, NULL};
     // since joining creates a new block and we want to continue to search other components,
     // we start over with the first component when we create a new block.  We do this until
@@ -109,7 +77,7 @@ static void joinBlkWithSet(struct malnSet *malnSetJoined, struct Genome *refGeno
     do {
         joinedOne = false;
         for (joining.comp = joining.blk->comps; joining.comp != NULL; joining.comp = joining.comp->next) {
-            if (joining.comp->seq->genome == refGenome) {
+            if (joining.comp->seq->genome == guideGenome) {
                 if (joinCompWithSet(&joining, malnSet2, doneBlks)) {
                     joinedOne = true;
                 }
@@ -129,6 +97,7 @@ static void joinBlkWithSet(struct malnSet *malnSetJoined, struct Genome *refGeno
 
 /* add blocks that were not joined into the alignment */
 static void addUndone(struct malnSet *malnSetJoined, struct malnSet *malnSet, struct malnBlkSet *doneBlks) {
+    // FIXME: is this really needed any more?
     struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *blk;
     while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
@@ -141,14 +110,14 @@ static void addUndone(struct malnSet *malnSetJoined, struct malnSet *malnSet, st
 }
 
 /* join two sets, generating a third */
-struct malnSet *malnJoinSets(struct Genome *refGenome, struct malnSet *malnSet1, struct malnSet *malnSet2, int maxBlkWidth) {
+struct malnSet *malnJoinSets(struct Genome *guideGenome, struct malnSet *malnSet1, struct malnSet *malnSet2, int maxBlkWidth) {
     struct malnBlkSet *doneBlks = malnBlkSet_construct();
     struct malnSet *malnSetJoined = malnSet_construct(malnSet_getGenomes(malnSet1));
     struct malnBlkSetIterator *iter1 = malnSet_getBlocks(malnSet1);
     struct malnBlk *blk1;
     while ((blk1 = malnBlkSetIterator_getNext(iter1)) != NULL) {
         if (!malnBlkSet_contains(doneBlks, blk1)) {
-            joinBlkWithSet(malnSetJoined, refGenome, blk1, malnSet2, maxBlkWidth, doneBlks);
+            joinBlkWithSet(malnSetJoined, guideGenome, blk1, malnSet2, maxBlkWidth, doneBlks);
         }
     }
     malnBlkSetIterator_destruct(iter1);

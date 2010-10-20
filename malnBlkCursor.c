@@ -3,15 +3,15 @@
 #include "common.h"
 
 /* build cursor with all components */
-static void constructWithAllComps(struct malnBlkCursor *bc, struct malnComp *refComp) {
-    // optionally force refComp first
-    if (refComp != NULL) {
-        bc->alnWidth = malnComp_getWidth(refComp);
-        bc->rows[bc->numRows++] = malnCompCursor_make(refComp);
+static void constructWithAllComps(struct malnBlkCursor *bc, struct malnComp *guideComp) {
+    // optionally force guideComp first
+    if (guideComp != NULL) {
+        bc->alnWidth = malnComp_getWidth(guideComp);
+        bc->rows[bc->numRows++] = malnCompCursor_make(guideComp);
     }
     
     for (struct malnComp *comp = bc->blk->comps; comp != NULL; comp = comp->next) {
-        if (comp != refComp) {
+        if (comp != guideComp) {
             if (bc->numRows == 0) {
                 bc->alnWidth = malnComp_getWidth(comp);
             }
@@ -34,18 +34,18 @@ static void constructWithSubsetComps(struct malnBlkCursor *bc, struct malnComp *
     }
 }
 
-/* construct a new cursor, if refComp is not null, then force it to be first. If subsetComps
+/* construct a new cursor, if guideComp is not null, then force it to be first. If subsetComps
  * is not NULL, it is a NULL terminated list of a subset of components to include
  * in the order specified. */
-struct malnBlkCursor *malnBlkCursor_construct(struct malnBlk *blk, struct malnComp *refComp, struct malnComp **subsetComps) {
-    assert((refComp == NULL) || (subsetComps == NULL) || (refComp == subsetComps[0]));
+struct malnBlkCursor *malnBlkCursor_construct(struct malnBlk *blk, struct malnComp *guideComp, struct malnComp **subsetComps) {
+    assert((guideComp == NULL) || (subsetComps == NULL) || (guideComp == subsetComps[0]));
 
     // allocate as one memory block, assume all components are included
     struct malnBlkCursor *bc = needMem(sizeof(struct malnBlkCursor) + slCount(blk->comps)*sizeof(struct malnCompCursor));
     bc->blk = blk;
     bc->rows = (struct malnCompCursor*)(((int8_t*)bc) + sizeof(struct malnBlkCursor));
     if (subsetComps == NULL) {
-        constructWithAllComps(bc, refComp);
+        constructWithAllComps(bc, guideComp);
     } else {
         constructWithSubsetComps(bc, subsetComps);
     }

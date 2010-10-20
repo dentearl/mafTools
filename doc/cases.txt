@@ -1,27 +1,70 @@
 various corner cases that must be handled
 ========================================================================
-- testJoin21 given MAFs a and b, joining on sHuman-sChimp (zero-based, 1/2
-  open coordinates)
-
-input MAFs:
-        a1 sHuman-sChimp.chr20 743840-754280 [10440] root
-           simHuman.chr20      757705-757749    [44] leaf
-
-        b1 sG-sH-sC.chr20      741388-751692 [10304] root
-           sHuman-sChimp.chr20 743840-754142 [10302] leaf
-
-        b2 sG-sH-sC.chr20      751693-751830 [137] root
-           sHuman-sChimp.chr20 754143-754280 [137] leaf
-
-after merge #1
-    a1+b1 sG-sH-sC.chr20      741388-751692 [10304] root
-          sHuman-sChimp.chr20 743840-754280 [10440] internal     
-          simHuman.chr20      757705-757749    [44] leaf
-
-       b2 sG-sH-sC.chr20      751693-751830 [137] root
-          sHuman-sChimp.chr20 754143-754280 [137] leaf
-
-at this point, sHuman-sChimp.chr20 751693-754280 is in both
-a1+b1 and b2 blocks  However they can't be joined because
-base sG-sH-sC.chr20 751692 isn't in any block in MAF b.
 -------------------------------------------------------------------------
+example of why longer root blocks join to short leaf blocks must be
+split into multiple blocks and joined later.
+
+treelessRoot2=sG-sH-sC 
+joinGenome=sHuman-sChimp
+
+multiple parents detected in components 
+   sHuman-sChimp.chr20:475093-475313 and 
+   sHuman-sChimp.chr20:475211-475296 (+)
+range is sHuman-sChimp.chr20:475211-475296
+
+malnSet: set1: joined-dups
+    blk:set1: joined-dups #1 220 
+         sHuman-sChimp.chr20 475093-475313 [220] root <1> {475211-475296}
+             simChimp.chr20 476453-476673 [220] leaf  <1>
+             simHuman.chr20 478764-478984 [220] leaf  <1>
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+malnSet: begin set2: joined-dups
+    blk:set2: joined-dups #2 118 
+         sG-sH-sC.chr20 472913-473031 [118] root
+         sHuman-sChimp.chr20 475093-475211 [118] leaf  <----------- 
+    blk:set2: joined-dups #3 85 
+         sG-sH-sC.chr20 473031-473116 [85] root
+         sHuman-sChimp.chr20 475211-475296 [85] leaf   {475211-475296}
+=======================================================================
+malnSet: begin out: joined
+    blk:out: joined #5 220 
+         sG-sH-sC.chr20 472913-473031 [118] root
+             sHuman-sChimp.chr20 475093-475313 [220] internal <1>  {475211-475296}
+                 simChimp.chr20 476453-476673 [220] leaf      <1>
+                 simHuman.chr20 478764-478984 [220] leaf      <1>
+    blk:out: joined #6 85 
+         sG-sH-sC.chr20 473031-473116 [85] root
+             sHuman-sChimp.chr20 475211-475296 [85] leaf           {475211-475296}
+malnSet: end out: joined
+
+
+multiple parents detected in components 
+sHuman-sChimp.chr20:475093-475313 and 
+sHuman-sChimp.chr20:475211-475296 (+)
+
+region: sHuman-sChimp.chr20:475211-475296 (+)
+
+compBlk #5 220 
+         simChimp.chr20 476453-476673 [220] leaf
+         simHuman.chr20 478764-478984 [220] leaf
+         sHuman-sChimp.chr20 475093-475313 [220] internal
+         sG-sH-sC.chr20 472913-473031 [118] root
+overCompBlk #6 85 
+         sHuman-sChimp.chr20 475211-475296 [85] leaf
+         sG-sH-sC.chr20 473031-473116 [85] root
+Error: multiple parents detected in components sHuman-sChimp.chr20:475093-475313 
+and sHuman-sChimp.chr20:475211-475296 (+)
+
+----------------------
+
+
+      sG-sH-sC.chr20 473031-473116 [85] root
+         sHuman-sChimp.chr20 475211-475296 [85] leaf   {475211-475296}
+         sHuman-sChimp.chr20 475093-475313 [220] root <1> {475211-475296}
+             simChimp.chr20 476453-476673 [220] leaf  <1>
+
+    blk:out: joined #6 85 
+         sG-sH-sC.chr20 473031-473116 [85] root
+             sHuman-sChimp.chr20 475211-475296 [85] leaf           {475211-475296}
+
+---
