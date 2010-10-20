@@ -203,7 +203,7 @@ static void compSubRange(struct malnBlk *subBlk, struct malnComp *comp, int alnS
 }
 
 /* construct an alignment block from a subrange of this block */
-struct malnBlk *malnBlk_constrctSubrange(struct malnBlk *blk, int alnStart, int alnEnd) {
+struct malnBlk *malnBlk_constructSubrange(struct malnBlk *blk, int alnStart, int alnEnd) {
     assert((alnStart < alnEnd) && (alnStart >= 0) && (alnEnd <= blk->alnWidth));
     struct malnBlk *subBlk = malnBlk_construct();
     struct malnCompCompMap *srcDestCompMap = malnCompCompMap_construct();

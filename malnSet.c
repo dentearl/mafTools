@@ -48,14 +48,16 @@ static void buildRangeTree(struct malnSet *malnSet) {
 }
 
 /* convert a mafComp to an malnComp */
-static struct malnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafComp *comp) {
+static struct malnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafComp *mafComp) {
     char buf[128];
-    char *srcDb = mafCompGetSrcDb(comp, buf, sizeof(buf));
+    char *srcDb = mafCompGetSrcDb(mafComp, buf, sizeof(buf));
     if (srcDb == NULL) {
-        errAbort("Error: no org name in MAF component, source must be org.seq: %s", comp->src);
+        errAbort("Error: no org name in MAF component, source must be org.seq: %s", mafComp->src);
     }
-    return malnComp_construct(genomesObtainSeq(genomes, srcDb, mafCompGetSrcName(comp), comp->srcSize),
-                              comp->strand, comp->start, comp->start+comp->size, comp->text);
+    struct malnComp *comp = malnComp_construct(genomesObtainSeq(genomes, srcDb, mafCompGetSrcName(mafComp), mafComp->srcSize),
+                                               mafComp->strand, mafComp->start, mafComp->start+mafComp->size, mafComp->text);
+    
+    return comp;
 }
 
 static struct Genome *sortTreelessRootGenome = NULL;  // used by treeless sort

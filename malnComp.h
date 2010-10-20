@@ -105,6 +105,11 @@ static inline bool malnComp_overlap(struct malnComp *comp, struct malnComp *comp
     return (comp->seq == comp2->seq) && (comp->chromStart < comp2->chromEnd) && (comp->chromEnd > comp2->chromStart);
 }
 
+/* compare two components to see if they overlap or are adjacent on the same strand */
+static inline bool malnComp_overlapStrand(struct malnComp *comp, struct malnComp *comp2) {
+    return (comp->seq == comp2->seq) && (comp->strand == comp2->strand) && (comp->start < comp2->end) && (comp->end > comp2->start);
+}
+
 /* compare two components to see if they overlap or are adjacent */
 static inline bool malnComp_overlapAdjacent(struct malnComp *comp, struct malnComp *comp2) {
     return (comp->seq == comp2->seq) && (comp->chromStart <= comp2->chromEnd) && (comp->chromEnd >= comp2->chromStart);
@@ -113,6 +118,11 @@ static inline bool malnComp_overlapAdjacent(struct malnComp *comp, struct malnCo
 /* compare two components to see if they overlap or are adjacent on the same strand */
 static inline bool malnComp_overlapAdjacentStrand(struct malnComp *comp, struct malnComp *comp2) {
     return (comp->seq == comp2->seq) && (comp->strand == comp2->strand) && (comp->start <= comp2->end) && (comp->end >= comp2->start);
+}
+
+/* compare two components to see if they are adjacent but not overlapped on the same strand */
+static inline bool malnComp_adjacentStrand(struct malnComp *comp, struct malnComp *comp2) {
+    return (comp->seq == comp2->seq) && (comp->strand == comp2->strand) && ((comp->start == comp2->end) || (comp->end == comp2->start));
 }
 
 /* compare to a range to see if they overlap */
@@ -127,6 +137,9 @@ static inline bool malnComp_overlapAdjacentRange(struct malnComp *comp, struct S
 
 /* can two components be joined? */
 bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *comp2);
+
+/* count aligned positions */
+int malnComp_countAligned(const struct malnComp *comp);
 
 /* assert that the component is set-consistent */
 void malnComp_assert(struct malnComp *comp);

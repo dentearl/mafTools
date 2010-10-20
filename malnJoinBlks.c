@@ -169,7 +169,7 @@ static void copySharedRefColumns(struct malnJoinBlks *jb) {
     while (isRefAligned(jb->cursor1) && isRefAligned(jb->cursor2) && (jb->cursor1->alnIdx < jb->aln1CommonEnd) && (jb->cursor2->alnIdx < jb->aln2CommonEnd)) {
         copyColumn(jb->dests1, jb->cursor1, false);
         copyColumn(jb->dests2, jb->cursor2, true);
-        jb->joined->alnWidth++;  // FIXME should have append methods
+        jb->joined->alnWidth++;
     }
 }
 
@@ -177,7 +177,7 @@ static void copySharedRefColumns(struct malnJoinBlks *jb) {
 static void copyUnalignedSharedColumns(struct malnBlk *blkJoined, struct malnComp **destComps, struct malnBlkCursor *blkCursor, int alnCommonEnd) {
     while ((!isRefAligned(blkCursor)) && (blkCursor->alnIdx < alnCommonEnd)) {
         copyColumn(destComps, blkCursor, false);
-        blkJoined->alnWidth++;  // FIXME should have append methods
+        blkJoined->alnWidth++;
     }
     malnBlk_pad(blkJoined);
 }

@@ -171,7 +171,6 @@ static void checkBlkForMultiParents(struct malnSet *malnSet, struct malnBlk *blk
 /* check for regions with multiple parents, deleting the blocks if requested,
  * otherwise aborting. */
 void malnMultiParents_check(struct malnSet *malnSet) {
-    // FIXME: drop once resolution of conflicts is done
     struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *blk;
     while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {

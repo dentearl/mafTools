@@ -59,7 +59,7 @@ stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, stru
 /* assert some sanity checks on a set */
 void malnSet_assert(struct malnSet *malnSet);
 
-/* record a block as deleted.  It is allowed to add blocks with are not
+/* Record a block as deleted.  It is allowed to add blocks with are not
  * associated with a malnSet, as a way of cleaning up intermediate blocks. */
 void malnSet_markAsDeleted(struct malnSet *malnSet, struct malnBlk *blk);
 

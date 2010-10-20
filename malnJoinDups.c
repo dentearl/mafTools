@@ -11,90 +11,73 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-// FIXME: this would have been much simpler if blocks were immutable
-
 static const bool debug = false; // FIXME: tmp
 
-/* join two blocks associated components, create and third block. Return that
- * blocks root component. Joined blocks are inserted into delete table */
-static struct malnComp *joinCompWithDup(struct malnSet *malnSet, struct malnComp *comp1, struct malnComp *comp2) {
-    if (debug) {
-        malnComp_dump(comp2, stderr, "joinCompWithDup comp2");
-    }
-    struct malnBlk *joinedBlk = malnJoinBlks(comp1, comp2, NULL);
-    malnSet_markAsDeleted(malnSet, comp1->blk);
-    malnSet_markAsDeleted(malnSet, comp2->blk);
-    return malnBlk_getRootComp(joinedBlk);
+/* join two blocks by associated root components, create and third
+ * block. Return that new blocks root component. Joined blocks are inserted into
+ * delete table */
+static struct malnBlk *joinCompWithDup(struct malnSet *malnSet, struct malnBlk *blk1, struct malnBlk *blk2) {
+    struct malnBlk *joinBlk = malnJoinBlks(malnBlk_getRootComp(blk1), malnBlk_getRootComp(blk2), NULL);
+    malnSet_markAsDeleted(malnSet, blk1);
+    malnSet_markAsDeleted(malnSet, blk2);
+    return joinBlk;
 }
 
-/* attempt to join a block with other blocks using the specified component.
- * Return updated block when one join is achieved, or NULL if no join was done. */
-static struct malnBlk *joinCompWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, struct malnComp *joinComp, struct malnBlkSet *doneBlks) {
-    if (debug) {
-        malnComp_dump(joinComp, stderr, "joinCompWithDups");
-    }
-    malnBlkSet_add(doneBlks, joinComp->blk);
+/* Attempt to join a block with other blocks. Return updated block when one
+ * join is achieved, or NULL if no join was done. */
+static struct malnBlk *joinBlkWithDupsPass(struct malnSet *malnSet, struct malnBlk *joinBlk) {
+    // n.b. don't include adjacent, as that can causes very large blocks at
+    // the root.
 
-    stList *overComps = malnSet_getOverlappingAdjacentPendingComps(malnSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocAll, doneBlks);
+    struct malnBlk *newJoinBlk =  NULL;
+    struct malnComp *joinComp = malnBlk_getRootComp(joinBlk);
+    stList *overComps = malnSet_getOverlappingPendingComps(malnSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocRoot, NULL);
     for (int i = 0; i < stList_length(overComps); i++) {
-        struct malnComp *dupComp = stList_get(overComps, i);
-        if (malnComp_canJoin(joinComp, dupComp) && !dupComp->blk->deleted) {
-            joinComp = joinCompWithDup(malnSet, joinComp, dupComp);
-            malnBlkSet_add(doneBlks, joinComp->blk);
+        struct malnComp *overComp = stList_get(overComps, i);
+        if (malnComp_canJoin(joinComp, overComp) && (overComp->blk != joinBlk) && !overComp->blk->deleted) {
+            joinBlk = newJoinBlk = joinCompWithDup(malnSet, joinBlk, overComp->blk);
         }
     }
     stList_destruct(overComps);
-    return (joinComp->blk != joinBlk) ? joinComp->blk : NULL;
+    return newJoinBlk;
 }
 
-/* Join one block with any duplications of that block in the same
- * set. Duplicates are added to a table and skipped so that iterators are not
- * invalidated. */
-static void joinBlkWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, struct malnBlkSet *doneBlks) {
+/* Join one block with any duplications of that block in the same set. Blocks
+ * that are consumed marked as deleted and new blocks added to newBlks */
+static void joinBlkWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, struct malnBlkSet *newBlks) {
     // iterate over each component in joinBlk, looking for overlapping components
     // in other blocks.  A join creates a new block, so we start over until no
     // block is joined with this block.
 
-    if (debug) { // FIXME: tmp
-        malnBlk_dump(joinBlk, stderr, "joinBlkWithDups");
-    }
     bool joinedSome = FALSE;
     struct malnBlk *newJoinBlk;
     do {
-        static bool debug2 = false;// FIXME: set with debugger
-        if (debug2) { // FIXME: tmp
-            malnBlk_dump(joinBlk, stderr, "joinBlkWithDups loop");
-        }
-        newJoinBlk = NULL;
-        for (struct malnComp *joinComp = joinBlk->comps; (joinComp != NULL) && (newJoinBlk == NULL); joinComp = joinComp->next) {
-            newJoinBlk = joinCompWithDups(malnSet, joinBlk, joinComp, doneBlks);
-        }
+        newJoinBlk = joinBlkWithDupsPass(malnSet, joinBlk);
         if (newJoinBlk != NULL) {
             joinBlk = newJoinBlk;
             joinedSome = true;
         }
     } while (newJoinBlk != NULL);
     if (joinedSome) {
-        malnSet_addBlk(malnSet, joinBlk);
+        malnBlkSet_add(newBlks, joinBlk);
     }
 }
 
 /* Join duplication blocks in a set, which evolver outputs as separate
  * blocks. */
 void malnJoinDups_joinSetDups(struct malnSet *malnSet) {
-    struct malnBlkSet *doneBlks = malnBlkSet_construct();
-    struct malnBlkSet *blks = malnSet_getBlockSetCopy(malnSet);
-    struct malnBlkSetIterator *iter = malnBlkSet_getIterator(blks);
+    struct malnBlkSet *newBlks = malnBlkSet_construct();
+    struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *joinBlk;
     while ((joinBlk = malnBlkSetIterator_getNext(iter)) != NULL) {
         if (!joinBlk->deleted) {
-            joinBlkWithDups(malnSet, joinBlk, doneBlks);
+            joinBlkWithDups(malnSet, joinBlk, newBlks);
         }
     }
     malnBlkSetIterator_destruct(iter);
-    malnBlkSet_destruct(blks);
     malnSet_deleteDying(malnSet);
+    malnSet_addBlks(malnSet, newBlks);
+    malnBlkSet_destruct(newBlks);
     malnSet_assert(malnSet);
-    malnBlkSet_destruct(doneBlks);
 }
 

@@ -74,7 +74,7 @@ void malnBlk_assert(struct malnBlk *blk);
 int malnBlk_cmp(struct malnBlk *blk1, struct malnBlk *blk2);
 
 /* construct an alignment block from a subrange of this block */
-struct malnBlk *malnBlk_constrctSubrange(struct malnBlk *blk, int alnStart, int alnEnd);
+struct malnBlk *malnBlk_constructSubrange(struct malnBlk *blk, int alnStart, int alnEnd);
 
 /* print a block for debugging purposes */
 void malnBlk_dumpv(struct malnBlk *blk, FILE *fh, const char *label, va_list args);

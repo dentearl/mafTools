@@ -7,6 +7,7 @@
 #include "malnMergeComps.h"
 #include "sonLibETree.h"
 #include "malnMultiParents.h"
+#include <limits.h>
 
 /*
  * Notes: 
@@ -24,6 +25,7 @@ static struct optionSpec optionSpecs[] = {
     {"branchLength", OPTION_DOUBLE},
     {"treelessRoot1", OPTION_STRING},
     {"treelessRoot2", OPTION_STRING},
+    {"maxBlkWidth", OPTION_INT},
     {"help", OPTION_BOOLEAN},
     {NULL, 0}
 };
@@ -39,6 +41,10 @@ static char *usageMsg =
     "   that do not have trees (see below).\n"
     "  -treelessRoot2=genome - root genome for inMaf2 blocks\n"
     "   that do not have trees.\n"
+    "  -maxBlkWidth=n - set a cutoff on the maximum width of an alignment\n"
+    "   block when join blocks.  This is used to limit joining of blocks\n"
+    "   near the Evolover root were long, contiguous overlapping regions\n"
+    "   can cause exponential growth in run time and memory requirements\n"
     "\n"
     "If MAF blocks (mafAli) don't have a tree associated with them, one\n"
     "will be created.  The root genome for the tree is chosen based on\n"
@@ -53,7 +59,7 @@ static void usage(char *msg) {
 
 /* load a MAF and do internal joining.  */
 static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, double defaultBranchLength,
-                               char *treelessRootName, char *setName) {
+                               char *treelessRootName, int maxBlkWidth, char *setName) {
     struct Genome *treelessRootGenome = (treelessRootName != NULL) ? genomesObtainGenome(genomes, treelessRootName) : NULL;
     struct malnSet *malnSet = malnSet_constructFromMaf(genomes, inMaf, defaultBranchLength, treelessRootGenome);
     if (debug) {
@@ -63,27 +69,21 @@ static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, double defa
     if (debug) {
         malnSet_dump(malnSet, stderr, "%s: joined dups", setName);
     }
-    // this must be done after joinSetDups, otherwise it will drop things that
-    // can be joined
-    malnMultiParents_resolve(malnSet);
-    if (debug) {
-        malnSet_dump(malnSet, stderr, "%s: set resolved", setName);
-    }
     malnMultiParents_check(malnSet);
     return malnSet;
 }
 
 /* join two mafs */
 static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMaf, double defaultBranchLength,
-                    char *treelessRoot1Name, char *treelessRoot2Name) {
+                    char *treelessRoot1Name, char *treelessRoot2Name, int maxBlkWidth) {
     struct Genomes *genomes = genomesNew();
     struct Genome *refGenome = genomesObtainGenome(genomes, refGenomeName);
 
-    struct malnSet *malnSet1 = loadMaf(genomes, inMaf1, defaultBranchLength, treelessRoot1Name, "set1");
-    struct malnSet *malnSet2 = loadMaf(genomes, inMaf2, defaultBranchLength, treelessRoot2Name, "set2");
+    struct malnSet *malnSet1 = loadMaf(genomes, inMaf1, defaultBranchLength, treelessRoot1Name, maxBlkWidth, "set1");
+    struct malnSet *malnSet2 = loadMaf(genomes, inMaf2, defaultBranchLength, treelessRoot2Name, maxBlkWidth, "set2");
 
     // join and then merge overlapping blocks that were created
-    struct malnSet *malnSetJoined = malnJoinSets(refGenome, malnSet1, malnSet2);
+    struct malnSet *malnSetJoined = malnJoinSets(refGenome, malnSet1, malnSet2, maxBlkWidth);
     if (debug) {
         malnSet_dump(malnSetJoined, stderr, "out joined");
     }
@@ -92,13 +92,6 @@ static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMa
         malnSet_dump(malnSetJoined, stderr, "out: joined dups");
     }
     malnMergeComps_merge(malnSetJoined);
-    if (debug) {
-        malnSet_dump(malnSetJoined, stderr, "out: merged");
-    }
-    malnMultiParents_resolve(malnSetJoined);
-    if (debug) {
-        malnSet_dump(malnSetJoined, stderr, "out: set resolved");
-    }
     malnMultiParents_check(malnSetJoined);
     malnSet_writeMaf(malnSetJoined, outMaf);
 
@@ -121,6 +114,7 @@ int main(int argc, char *argv[]) {
     }
 
     mafJoin(argv[1], argv[2], argv[3], argv[4], optionDouble("branchLength", 0.1), 
-            optionVal("treelessRoot1", NULL), optionVal("treelessRoot2", NULL));
+            optionVal("treelessRoot1", NULL), optionVal("treelessRoot2", NULL),
+            optionInt("maxBlkWidth", INT_MAX));
     return 0;
 }

@@ -21,7 +21,7 @@ bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *comp2) {
 }
 
 /* count aligned positions */
-static int countAligned(const struct malnComp *comp) {
+int malnComp_countAligned(const struct malnComp *comp) {
     int c = 0;
     for (const char *p = comp->alnStr->string; *p != '\0'; p++) {
         if (isBase(*p)) {
@@ -49,9 +49,9 @@ static struct malnComp *malnComp_make(struct Seq *seq, char strand, int start, i
     dyStringAppendN(comp->alnStr, alnStr+strStart, strEnd-strStart);
 
     // sanity check, as bad sequence can really break things
-    int n = countAligned(comp);
-    if (n != (comp->end - comp->start)) {
-        errAbort("component %s %d-%d(%c): aligned positions (%d) != range (%d)", seq->orgSeqName, start, end, strand, n, end-start);
+    if (malnComp_countAligned(comp) != (comp->end - comp->start)) {
+        malnComp_dump(comp, stderr, "bases in component (%d) doesn't match range (%d)",malnComp_countAligned(comp) , end-start);
+        errAbort("invalid MAF");
     }
     return comp;
 }
@@ -195,10 +195,10 @@ void malnComp_assert(struct malnComp *comp) {
         assert(comp->start == (comp->seq->size - comp->chromEnd));
         assert(comp->end == (comp->seq->size - comp->chromStart));
     }
-    if (countAligned(comp) != (comp->end - comp->start)) { // FIXME
+    if (malnComp_countAligned(comp) != (comp->end - comp->start)) { // FIXME
         malnBlk_dump(comp->blk, stderr, "countAligned(comp) != (comp->end - comp->start)");
     }
-    assert(countAligned(comp) == (comp->end - comp->start));
+    assert(malnComp_countAligned(comp) == (comp->end - comp->start));
     if (comp->ncLink == NULL) {
         malnBlk_dump(comp->blk, stderr, "NULL ncLink");
     }
