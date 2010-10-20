@@ -18,14 +18,17 @@ malnJoinSets(refGenome, malnSet1, malnSet2, maxBlkWidth)
   - create empty malnSetJoin
   - foreach block-A in malnSet1:
     - foreach refGenome component-A in block-A:
-      - foreach component-B in malnSet2 with overlaps or is
-        adjacent with component-A:
+      - foreach component-B in malnSet2 with overlaps with component-A:
+          # while adjacent components could be merge here, this can lead to an
+            exponential grown in the cost of merges when there are long root
+            sequences and also create very large MAF blocks, connect only by
+            the root.
         - if component-A and component-B can be merged (one is a root):
-          merge block-A and block-B into new block-C
+          merge block-A and block-B into new block-C.  
+            # While the input will only have merges of root components to leaf
+             components, a merge makes the root an internal node and so
+             transitive merges can be root to internal component.
         - continue scanning for others to merge into block-C
-### FIXME: discuse root vs leaf join
-### Split at gaps, cutoff at gaps other that root
-
 
 
 # merge components in blocks that could be one component

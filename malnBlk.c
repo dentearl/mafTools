@@ -279,7 +279,7 @@ void malnBlk_dumpv(struct malnBlk *blk, FILE *fh, const char *label, va_list arg
     freeMem(fmtLabel);
     freeMem(nhTree);
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
-        malnComp_dump(comp, fh, "    ");
+        malnComp_dump(comp, fh, "\t");
     }    
 }
 /* print a block for debugging purposes */

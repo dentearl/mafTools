@@ -67,7 +67,7 @@ static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, double defa
     }
     malnJoinDups_joinSetDups(malnSet);
     if (debug) {
-        malnSet_dump(malnSet, stderr, "%s: joined dups", setName);
+        malnSet_dump(malnSet, stderr, "%s: joined-dups", setName);
     }
     malnMultiParents_check(malnSet);
     return malnSet;
@@ -85,13 +85,16 @@ static void mafJoin(char *refGenomeName, char *inMaf1, char *inMaf2, char *outMa
     // join and then merge overlapping blocks that were created
     struct malnSet *malnSetJoined = malnJoinSets(refGenome, malnSet1, malnSet2, maxBlkWidth);
     if (debug) {
-        malnSet_dump(malnSetJoined, stderr, "out joined");
+        malnSet_dump(malnSetJoined, stderr, "out: joined");
     }
     malnJoinDups_joinSetDups(malnSetJoined);
     if (debug) {
-        malnSet_dump(malnSetJoined, stderr, "out: joined dups");
+        malnSet_dump(malnSetJoined, stderr, "out: joined-dups");
     }
     malnMergeComps_merge(malnSetJoined);
+    if (debug) {
+        malnSet_dump(malnSetJoined, stderr, "out: merged");
+    }
     malnMultiParents_check(malnSetJoined);
     malnSet_writeMaf(malnSetJoined, outMaf);
 
@@ -111,6 +114,10 @@ int main(int argc, char *argv[]) {
     }
     if (argc != 5)  {
         usage("Error: wrong number of arguments");
+    }
+
+    if (optionExists("maxBlkWidth")) {
+        errAbort("-maxBlkWidth not implemented");
     }
 
     mafJoin(argv[1], argv[2], argv[3], argv[4], optionDouble("branchLength", 0.1), 

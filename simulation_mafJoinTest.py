@@ -558,25 +558,26 @@ class MafJoinTests(unittest.TestCase):
         """
         self.mafJoinTest("sHuman-sChimp", A, B, C, treelessRoot2="sG-sH-sC", expectExitCode=255, expectStderrRe="^inconsistent sequences components being merged at column 8.*")
 
-    # testJoin17* tests for -maxBlkWidth
-    join26A = """
-    a score=10.0 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
-    s hg18.chr7    27699739 3 + 158545518 T---GA
-    s mm4.chr6     53303881 6 + 151104725 TAAAGA
-    s rn3.chr4     81444246 6 + 187371129 taagga
+    def getTestJoin17A(self):
+        "get MAF a for testJoin17* tests for -maxBlkWidth"
+        return """
+        a score=10.0 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
+        s hg18.chr7    27699739 3 + 158545518 T---GA
+        s mm4.chr6     53303881 6 + 151104725 TAAAGA
+        s rn3.chr4     81444246 6 + 187371129 taagga
 
-    a score=10.0 tree="(mm4.chr6:0.15)rn3.chr4;"
-    s mm4.chr6     54303882 5 + 151104725 AAAG-A
-    s rn3.chr4     81444247 6 + 187371129 aaggaa
+        a score=10.0 tree="(mm4.chr6:0.15)rn3.chr4;"
+        s mm4.chr6     54303882 5 + 151104725 AAAG-A
+        s rn3.chr4     81444247 6 + 187371129 aaggaa
 
-    a score=10.0 tree="(mm4.chr6:0.15)rn3.chr4;"
-    s mm4.chr6     54303885 10 + 151104725 AAAAAAgggg
-    s rn3.chr4     81444250 10 + 187371129 aaaaaagggg
+        a score=10.0 tree="(mm4.chr6:0.15)rn3.chr4;"
+        s mm4.chr6     54303885 10 + 151104725 AAAAAAgggg
+        s rn3.chr4     81444250 10 + 187371129 aaaaaagggg
 
-    a score=10.0 tree="(mm4.chr6:0.15)rn3.chr4;"
-    s mm4.chr6     54303893 12 + 151104725 ggggAAAAAAgg
-    s rn3.chr4     81444258 12 + 187371129 ggggaaaaaagg
-    """
+        a score=10.0 tree="(mm4.chr6:0.15)rn3.chr4;"
+        s mm4.chr6     54303893 12 + 151104725 ggggAAAAAAgg
+        s rn3.chr4     81444258 12 + 187371129 ggggaaaaaagg
+        """
 
     def testJoin17a(self):
         """ test growing from overlapping blocks: no limit
@@ -591,7 +592,7 @@ class MafJoinTests(unittest.TestCase):
         s mm4.chr6  54303885 20 + 151104725 ----AAAAAAggggggAAAAAAgg
         s rn3.chr4  81444246 24 + 187371129 taaggaaaaaggggggaaaaaagg
         """
-        self.mafJoinTest("sHuman-sChimp", self.join26A, B, C, treelessRoot2="sG-sH-sC")
+        self.mafJoinTest("sHuman-sChimp", self.getTestJoin17A(), B, C, treelessRoot2="sG-sH-sC")
     
     def FIXME_testJoin17b(self):
         """ test growing from overlapping blocks: 12 column limit
@@ -610,7 +611,7 @@ class MafJoinTests(unittest.TestCase):
         s mm4.chr6 54303893 12 + 151104725 ggggAAAAAAgg
         s rn3.chr4 81444258 12 + 187371129 ggggaaaaaagg
         """
-        self.mafJoinTest("sHuman-sChimp", self.join26A, B, C, treelessRoot2="sG-sH-sC", maxBlkWidth=12)
+        self.mafJoinTest("sHuman-sChimp", self.getTestJoin17A(), B, C, treelessRoot2="sG-sH-sC", maxBlkWidth=12)
 
     def testJoin18(self):
         """Merge of components in a block that went very wrong
