@@ -169,6 +169,14 @@ static ETree *searchByComp(ETree *node, struct malnComp *comp) {
     return NULL;
 }
 
+/* assert nodes are compatible for a join */
+static void assertJoinCompatible(ETree *node1, ETree *node2) {
+#ifndef NDEBUG
+    struct mafTreeNodeCompLink *ncLink1 = eTree_getClientData(node1);
+    struct mafTreeNodeCompLink *ncLink2 = eTree_getClientData(node2);
+    assert(ncLink1->comp->seq == ncLink2->comp->seq);
+#endif
+}
 
 /* clone a node, linking in new mafTreeNodeCompLink object */
 static ETree *cloneNode(ETree *srcNode, struct malnCompCompMap *srcDestCompMap) {
@@ -189,21 +197,13 @@ static ETree *cloneTree(ETree *srcNode, ETree *destParent, struct malnCompCompMa
     return destNode;
 }
 
-/* assert nodes are compatible for a join */
-static void assertJoinCompatible(ETree *node1, ETree *node2) {
-#ifndef NDEBUG
-    struct mafTreeNodeCompLink *ncLink1 = eTree_getClientData(node1);
-    struct mafTreeNodeCompLink *ncLink2 = eTree_getClientData(node2);
-    assert(ncLink1->comp->seq == ncLink2->comp->seq);
-#endif
-}
-
 /* clone child and append clones to a give parent node */
 static void cloneChildren(ETree *srcParent, ETree *destParent, struct malnCompCompMap *srcDestCompMap) {
     for (int i = 0; i < eTree_getChildNumber(srcParent); i++) {
         eTree_setParent(cloneTree(eTree_getChild(srcParent, i), destParent, srcDestCompMap), destParent);
     }
 }
+
 
 /* Clone tree1 and then attach the children of tree2 at the copy of the
  * specified attachment point. */
@@ -332,6 +332,8 @@ static void cloneNodeSubRangeBlk(ETree *srcParent, ETree *srcNode, ETree *destPa
     } else {
         // clone this node
         ETree *destNode = malnCompToETreeNode(destComp);
+        eTree_setParent(destNode, destParent);
+        eTree_setBranchLength(destNode, eTree_getBranchLength(srcNode));
         mafTreeNodeCompLink_construct(-1, destNode, destComp);
         cloneForSubRangeBlk(srcNode, destNode, srcDestCompMap);
     }

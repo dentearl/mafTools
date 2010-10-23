@@ -28,13 +28,12 @@ static struct malnBlk *joinCompWithDup(struct malnSet *malnSet, struct malnBlk *
 static struct malnBlk *joinBlkWithDupsPass(struct malnSet *malnSet, struct malnBlk *joinBlk) {
     // n.b. don't include adjacent, as that can causes very large blocks at
     // the root.
-
     struct malnBlk *newJoinBlk =  NULL;
     struct malnComp *joinComp = malnBlk_getRootComp(joinBlk);
     stList *overComps = malnSet_getOverlappingPendingComps(malnSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocRoot, NULL);
     for (int i = 0; i < stList_length(overComps); i++) {
         struct malnComp *overComp = stList_get(overComps, i);
-        if (malnComp_canJoin(joinComp, overComp) && (overComp->blk != joinBlk) && !overComp->blk->deleted) {
+        if ((malnComp_getLoc(overComp) == mafTreeLocRoot) && (overComp->blk != joinBlk) && !overComp->blk->deleted) {
             joinBlk = newJoinBlk = joinCompWithDup(malnSet, joinBlk, overComp->blk);
         }
     }

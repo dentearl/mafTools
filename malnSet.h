@@ -38,6 +38,9 @@ void malnSet_removeComp(struct malnSet *malnSet, struct malnComp *comp);
 /* remove a block from malnSet */
 void malnSet_removeBlk(struct malnSet *malnSet, struct malnBlk *blk);
 
+/* pop a block from the set.  order block are returned is arbitrary */
+struct malnBlk *malnSet_popBlk(struct malnSet *malnSet);
+
 /* get iterator of the blocks. Don't remove or add blocks while in motion. */
 struct malnBlkSetIterator *malnSet_getBlocks(struct malnSet *malnSet);
 

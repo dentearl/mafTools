@@ -25,7 +25,6 @@ static struct optionSpec optionSpecs[] = {
     {"branchLength", OPTION_DOUBLE},
     {"treelessRoot1", OPTION_STRING},
     {"treelessRoot2", OPTION_STRING},
-    {"maxBlkWidth", OPTION_INT},
     {"help", OPTION_BOOLEAN},
     {NULL, 0}
 };
@@ -41,16 +40,14 @@ static char *usageMsg =
     "   that do not have trees (see below).\n"
     "  -treelessRoot2=genome - root genome for inMaf2 blocks\n"
     "   that do not have trees.\n"
-    "  -maxBlkWidth=n - set a cutoff on the maximum width of an alignment\n"
-    "   block when join blocks.  This is used to limit joining of blocks\n"
-    "   near the Evolover root were long, contiguous overlapping regions\n"
-    "   can cause exponential growth in run time and memory requirements\n"
     "\n"
     "If MAF blocks (mafAli) don't have a tree associated with them, one\n"
     "will be created.  The root genome for the tree is chosen based on\n"
     "the genome specified by the -treelessRoot1 or -treelessRoot2 options.\n"
     "One sequence from that genome becomes the root and the remainder\n"
-    "become it's direct children.\n";
+    "become it's direct children.  If  -treelessRoot option is specified, it\n"
+    "also triggers merging of the duplication blocks that Evolver outputs.\n";
+
 
 /* usage msg and exit */
 static void usage(char *msg) {
@@ -59,15 +56,17 @@ static void usage(char *msg) {
 
 /* load a MAF and do internal joining.  */
 static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, double defaultBranchLength,
-                               char *treelessRootName, int maxBlkWidth, char *setName) {
+                               char *treelessRootName, char *setName) {
     struct Genome *treelessRootGenome = (treelessRootName != NULL) ? genomesObtainGenome(genomes, treelessRootName) : NULL;
     struct malnSet *malnSet = malnSet_constructFromMaf(genomes, inMaf, defaultBranchLength, treelessRootGenome);
     if (debug) {
         malnSet_dump(malnSet, stderr, "%s input", setName);
     }
-    malnJoinDups_joinSetDups(malnSet);
-    if (debug) {
-        malnSet_dump(malnSet, stderr, "%s: joined-dups", setName);
+    if (treelessRootGenome != NULL) {
+        malnJoinDups_joinSetDups(malnSet);
+        if (debug) {
+            malnSet_dump(malnSet, stderr, "%s: joined-dups", setName);
+        }
     }
     malnMultiParents_check(malnSet);
     return malnSet;
@@ -75,18 +74,19 @@ static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, double defa
 
 /* join two mafs */
 static void mafJoin(char *guideGenomeName, char *inMaf1, char *inMaf2, char *outMaf, double defaultBranchLength,
-                    char *treelessRoot1Name, char *treelessRoot2Name, int maxBlkWidth) {
+                    char *treelessRoot1Name, char *treelessRoot2Name) {
     struct Genomes *genomes = genomesNew();
     struct Genome *guideGenome = genomesObtainGenome(genomes, guideGenomeName);
 
-    struct malnSet *malnSet1 = loadMaf(genomes, inMaf1, defaultBranchLength, treelessRoot1Name, maxBlkWidth, "set1");
-    struct malnSet *malnSet2 = loadMaf(genomes, inMaf2, defaultBranchLength, treelessRoot2Name, maxBlkWidth, "set2");
+    struct malnSet *malnSet1 = loadMaf(genomes, inMaf1, defaultBranchLength, treelessRoot1Name, "set1");
+    struct malnSet *malnSet2 = loadMaf(genomes, inMaf2, defaultBranchLength, treelessRoot2Name, "set2");
 
     // join and then merge overlapping blocks that were created
-    struct malnSet *malnSetJoined = malnJoinSets(guideGenome, malnSet1, malnSet2, maxBlkWidth);
+    struct malnSet *malnSetJoined = malnJoinSets(guideGenome, malnSet1, malnSet2);
     if (debug) {
         malnSet_dump(malnSetJoined, stderr, "out: joined");
     }
+    // FIXME: is this right, why would there be dups here?
     malnJoinDups_joinSetDups(malnSetJoined);
     if (debug) {
         malnSet_dump(malnSetJoined, stderr, "out: joined-dups");
@@ -116,12 +116,7 @@ int main(int argc, char *argv[]) {
         usage("Error: wrong number of arguments");
     }
 
-    if (optionExists("maxBlkWidth")) {
-        errAbort("-maxBlkWidth not implemented");
-    }
-
     mafJoin(argv[1], argv[2], argv[3], argv[4], optionDouble("branchLength", 0.1), 
-            optionVal("treelessRoot1", NULL), optionVal("treelessRoot2", NULL),
-            optionInt("maxBlkWidth", INT_MAX));
+            optionVal("treelessRoot1", NULL), optionVal("treelessRoot2", NULL));
     return 0;
 }

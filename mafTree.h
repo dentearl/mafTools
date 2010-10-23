@@ -41,6 +41,12 @@ void mafTree_destruct(mafTree *mTree);
 /* join two trees at nodes specified by components */
 mafTree *mafTree_join(mafTree *mTree1, struct malnComp *comp1, mafTree *mTree2, struct malnComp *comp2, struct malnCompCompMap *srcDestCompMap);
 
+/*
+ * Clone a tree for addition to a subrange block. If if components are in srcDestCompMap
+ * clone them, otherwise drop the node and merge the children.
+ */
+mafTree *mafTree_cloneForSubRangeBlk(mafTree *mTree, struct malnCompCompMap *srcDestCompMap);
+
 /* format tree as a newick string */
 char *mafTree_format(mafTree *mTree);
 

@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <assert.h>
 
+// FIXME: cursor should start out before the first position
+
 /*
  * Column Cursor on a row of an alignment.
  */
@@ -37,7 +39,8 @@ static inline bool malnCompCursor_atEnd(struct malnCompCursor *cc) {
     return cc->alnIdx == malnComp_getWidth(cc->comp);
 }
 
-/* increment the alignment cursor, return false at the end  */
+/* increment the alignment cursor, return false at the end.
+ * WARNING: cursor starts set at first position, not before */
 static inline bool malnCompCursor_incr(struct malnCompCursor *cc) {
     assert(cc->alnIdx < malnComp_getWidth(cc->comp));
     if (cc->isAligned) {

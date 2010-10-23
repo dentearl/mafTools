@@ -210,6 +210,7 @@ struct malnBlk *malnBlk_constructSubrange(struct malnBlk *blk, int alnStart, int
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         compSubRange(subBlk, comp, alnStart, alnEnd, srcDestCompMap);
     }
+    subBlk->mTree = mafTree_cloneForSubRangeBlk(blk->mTree, srcDestCompMap);
     malnBlk_finish(subBlk);
     malnCompCompMap_destruct(srcDestCompMap);
     return subBlk;

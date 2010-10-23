@@ -31,8 +31,14 @@ static inline void malnBlkCursor_setAlignCol(struct malnBlkCursor *bc, int alnId
     bc->alnIdx = alnIdx;
 }
 
-/* increment cursor, return false at the end */
-static inline boolean malnBlkCursor_incr(struct malnBlkCursor *bc) {
+/* is the current position at the end (after alignment) */
+static inline bool malnBlkCursor_atEnd(struct malnBlkCursor *bc) {
+    return bc->alnIdx == bc->alnWidth;
+}
+
+/* increment cursor, return false at the end.
+ *  WARNING: cursor starts set at first position, not before */
+static inline bool malnBlkCursor_incr(struct malnBlkCursor *bc) {
     bc->alnIdx++;
     for (int i = 0; i < bc->numRows; i++) {
         malnCompCursor_incr(&(bc->rows[i]));

@@ -162,6 +162,8 @@ static void removeBlkRanges(struct malnSet *malnSet, struct malnBlk *blk) {
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         removeCompRange(malnSet, comp);
     }
+    malnBlkSet_remove(malnSet->blks, blk);
+    blk->malnSet = NULL;
 }
 
 /* remove a block from malnSet */
@@ -174,6 +176,18 @@ void malnSet_removeBlk(struct malnSet *malnSet, struct malnBlk *blk) {
         malnBlkSet_remove(malnSet->blks, blk);
     }
     blk->malnSet = NULL;
+}
+
+/* pop a block from the set.  order block are returned is arbitrary */
+struct malnBlk *malnSet_popBlk(struct malnSet *malnSet) {
+    struct malnBlk *blk = malnBlkSet_pop(malnSet->blks);
+    if (blk != NULL) {
+        if ((malnSet->compRangeMap != NULL) && !malnSet->dying) {
+            removeBlkRanges(malnSet, blk);
+        }
+        blk->malnSet = NULL;
+    }
+    return blk;
 }
 
 /* remove a block from malnSet and free the block */
@@ -409,9 +423,8 @@ stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, stru
     return malnSet_getOverlappingPendingComps(malnSet, seq, chromStart-1, chromEnd+1, treeLocFilter, doneBlks);
 }
 
-/* record a block as deleted.  It is allowed to add blocks with are not
+/* Record a block as deleted.  It is allowed to add blocks with are not
  * associated with a malnSet, as a way of cleaning up intermediate blocks.
- * FIXME: this NULL set is a hack.
  */
 void malnSet_markAsDeleted(struct malnSet *malnSet, struct malnBlk *blk) {
     assert((blk->malnSet == malnSet) || (blk->malnSet == NULL));

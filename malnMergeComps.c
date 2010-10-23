@@ -34,8 +34,9 @@ static bool scanConsistentOverlapAlignment(struct malnBlk *blk, struct malnComp 
     struct malnComp *subsetComps[] = {comp1, comp2, NULL};
     struct malnBlkCursor *cursor = malnBlkCursor_construct(blk, NULL, subsetComps);
     bool isOk = true;
-    while (isOk && malnBlkCursor_incr(cursor)) {
+    while (isOk && !malnBlkCursor_atEnd(cursor)) {
         isOk = checkColConsistency(cursor);
+        malnBlkCursor_incr(cursor);
     }
     malnBlkCursor_destruct(cursor);
     return isOk;
