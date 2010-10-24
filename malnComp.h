@@ -135,6 +135,10 @@ static inline bool malnComp_overlapAdjacentRange(struct malnComp *comp, struct S
     return (comp->seq == seq) && (comp->chromStart <= chromEnd) && (comp->chromEnd >= chromStart);
 }
 
+/* compare two components to see if they overlap or are adjacent when the second 
+ * component is in the specified relative orientation (-1 == reverse complemented) */
+bool malnComp_overlapAdjacentOrient(struct malnComp *comp, struct malnComp *comp2, int orient);
+
 /* can two components be joined? */
 bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *comp2);
 
@@ -146,6 +150,9 @@ void malnComp_assert(struct malnComp *comp);
 
 /* compare two components for deterministic sorting */
 int malnComp_cmp(struct malnComp *comp1, struct malnComp *comp2);
+
+/* compare two components in chrom order */
+int malnComp_chromCmp(struct malnComp *comp1, struct malnComp *comp2);
 
 /* construct an component from a subrange of this component. Return NULL if
  * the subrange does not contain any aligned bases. */

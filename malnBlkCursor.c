@@ -43,6 +43,7 @@ struct malnBlkCursor *malnBlkCursor_construct(struct malnBlk *blk, struct malnCo
     // allocate as one memory block, assume all components are included
     struct malnBlkCursor *bc = needMem(sizeof(struct malnBlkCursor) + slCount(blk->comps)*sizeof(struct malnCompCursor));
     bc->blk = blk;
+    bc->alnIdx = -1;
     bc->rows = (struct malnCompCursor*)(((int8_t*)bc) + sizeof(struct malnBlkCursor));
     if (subsetComps == NULL) {
         constructWithAllComps(bc, guideComp);

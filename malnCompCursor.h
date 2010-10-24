@@ -12,7 +12,7 @@
  */
 struct malnCompCursor {
     struct malnComp *comp; 
-    int alnIdx;             // alignment index, maybe set to end
+    int alnIdx;             // alignment index, maybe set to before start or at end
     int pos;                // position, or next position if not aligned, or end
     char base;              // base at positon
     bool isAligned;         // is it aligned
@@ -22,10 +22,10 @@ struct malnCompCursor {
 static inline struct malnCompCursor malnCompCursor_make(struct malnComp *comp) {
     struct malnCompCursor cc;
     cc.comp = comp;
-    cc.alnIdx = 0;
+    cc.alnIdx = -1;
     cc.pos = comp->start;
-    cc.base = malnComp_getCol(comp, 0);
-    cc.isAligned = isBase(cc.base);
+    cc.base = '\0';
+    cc.isAligned = false;
     return cc;
 }
 
@@ -39,8 +39,7 @@ static inline bool malnCompCursor_atEnd(struct malnCompCursor *cc) {
     return cc->alnIdx == malnComp_getWidth(cc->comp);
 }
 
-/* increment the alignment cursor, return false at the end.
- * WARNING: cursor starts set at first position, not before */
+/* increment the alignment cursor, return false at the end. */
 static inline bool malnCompCursor_incr(struct malnCompCursor *cc) {
     assert(cc->alnIdx < malnComp_getWidth(cc->comp));
     if (cc->isAligned) {
@@ -78,8 +77,10 @@ static inline void malnCompCursor_setSeqPos(struct malnCompCursor *cc, int pos) 
     if (cc->pos > pos) {
         *cc = malnCompCursor_make(cc->comp);  // reset to start
     }
-    while (!((cc->pos == pos) && (malnCompCursor_atEnd(cc) || malnCompCursor_isAligned(cc)))) {
-        malnCompCursor_incr(cc);
+    while (!((cc->pos == pos) && malnCompCursor_isAligned(cc))) {
+        if (!malnCompCursor_incr(cc)) {
+            break;
+        }
     }
     assert(cc->pos == pos);
     assert(malnCompCursor_atEnd(cc) || malnCompCursor_isAligned(cc));

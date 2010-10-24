@@ -40,6 +40,10 @@ malnJoinSets(guideGenome, malnSet1, malnSet2, maxBlkWidth)
               transitive merges can be root to internal component.
         - continue scanning for others to merge into block-C
 
+# join blocks with overlapping or adjacent root components.  Only join
+# adjacent roots if there are components that cross the block.  Always join
+# overlapping
+joinOverlapAdjacent(malnSet)
 
 # merge components in blocks that could be one component
 mergeComps(malnSet)
@@ -49,6 +53,5 @@ mergeComps(malnSet)
   - malnSet1 = loadMaf(maf1)
   - malnSet2 = loadMaf(maf2)
   - malnSetJoin = malnJoinSets(guideGenome, malnSet1, malnSet2, maxBlkWidth)
-  - joinDups(malnSet)  # this should not be needed, but shouldn't do anything??
+  - joinOverlapAdjacent(malnSet)
   - mergeComps(malnSet)
-  - multiParentResolve(malnSet)

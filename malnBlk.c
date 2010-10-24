@@ -176,6 +176,7 @@ void malnBlk_assert(struct malnBlk *blk) {
         assert(malnComp_getWidth(comp) == blk->alnWidth);
         malnComp_assert(comp);
     }
+    mafTree_assert(blk->mTree, blk);
 #endif
 }
 
@@ -222,7 +223,7 @@ static void shortenCompSeq(struct malnComp *comp, int newStart, int newEnd)  {
     malnCompCursor_setSeqPos(&cursor, newStart);
     assert(malnCompCursor_isAligned(&cursor));
 
-    while (cursor.pos < newEnd) {
+    while ((cursor.pos < newEnd) ) {
         if (malnCompCursor_isAligned(&cursor)) {
             comp->alnStr->string[cursor.alnIdx] = '-';
         }

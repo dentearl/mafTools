@@ -20,6 +20,17 @@ bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *comp2) {
     return malnComp_overlapAdjacent(comp1, comp2) && ((malnComp_getLoc(comp1) == mafTreeLocRoot) || (malnComp_getLoc(comp2) == mafTreeLocRoot));
 }
 
+/* compare two components to see if they overlap or are adjacent when the second 
+ * component is in the specified relative orientation (-1 == reverse complemented) */
+bool malnComp_overlapAdjacentOrient(struct malnComp *comp, struct malnComp *comp2, int orient) {
+    int start2 = comp2->start, end2 = comp2->end;
+    if (orient < 0) {
+        reverseIntRange(&start2, &end2, comp2->seq->size);
+    }
+    return (comp->seq == comp2->seq) && (comp->start <= end2) && (comp->end >= start2);
+}
+
+
 /* count aligned positions */
 int malnComp_countAligned(const struct malnComp *comp) {
     int c = 0;
@@ -220,6 +231,18 @@ int malnComp_cmp(struct malnComp *comp1, struct malnComp *comp2) {
         if (diff == 0) {
             diff = comp1->end - comp2->end;
         }
+    }
+    return diff;
+}
+
+/* compare two components in chrom order */
+int malnComp_chromCmp(struct malnComp *comp1, struct malnComp *comp2) {
+    int diff = seqCmp(comp1->seq, comp2->seq);
+    if (diff == 0) {
+        diff = comp1->chromStart - comp2->chromStart;
+    }
+    if (diff == 0) {
+        diff = comp1->chromEnd - comp2->chromEnd;
     }
     return diff;
 }

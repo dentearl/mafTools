@@ -36,9 +36,9 @@ static inline bool malnBlkCursor_atEnd(struct malnBlkCursor *bc) {
     return bc->alnIdx == bc->alnWidth;
 }
 
-/* increment cursor, return false at the end.
- *  WARNING: cursor starts set at first position, not before */
+/* increment cursor, return false at the end. */
 static inline bool malnBlkCursor_incr(struct malnBlkCursor *bc) {
+    assert(bc->alnIdx < bc->alnWidth);
     bc->alnIdx++;
     for (int i = 0; i < bc->numRows; i++) {
         malnCompCursor_incr(&(bc->rows[i]));

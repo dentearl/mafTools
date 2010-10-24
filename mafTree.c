@@ -49,19 +49,26 @@ static void mafTreeNodeCompLink_destruct(struct mafTreeNodeCompLink *ncLink) {
     freeMem(ncLink);
 }
 
-/* DFS to set tree order after a join. */
-static void setTreeOrderDFS(mafTree *mTree, ETree *node, int *treeOrder) {
+/* DFS to set or check tree order after a join. */
+static void setCheckTreeOrderDFS(mafTree *mTree, ETree *node, bool check, int *treeOrder) {
     for (int i = 0; i < eTree_getChildNumber(node); i++) {
-        setTreeOrderDFS(mTree, eTree_getChild(node, i), treeOrder);
+        setCheckTreeOrderDFS(mTree, eTree_getChild(node, i), check, treeOrder);
     }
     struct mafTreeNodeCompLink *ncLink = eTree_getClientData(node);
-    ncLink->treeOrder = *treeOrder;
+    if (!sameString(ncLink->comp->seq->orgSeqName, eTree_getLabel(node))) {
+        errAbort("tree component name \"%s\" doesn't match tree node name \"%s\"", ncLink->comp->seq->orgSeqName, eTree_getLabel(node));
+    }
+    if (!check) {
+        ncLink->treeOrder = *treeOrder;
+    } else if (ncLink->treeOrder != *treeOrder) {
+        errAbort("expected tree order (%d) doesn't match actual tree node order (%d) for \"%s\"", *treeOrder, ncLink->treeOrder, eTree_getLabel(node));
+    }
     (*treeOrder)++;
 }
 /* Set tree order after in nodeCompLinks after a join. */
-static void setTreeOrder(mafTree *mTree) {
+static void setCheckTreeOrder(mafTree *mTree, bool check) {
     int treeOrder = 0;
-    setTreeOrderDFS(mTree, mTree->tree, &treeOrder);
+    setCheckTreeOrderDFS(mTree, mTree->tree, check, &treeOrder);
 }
 
 /* DFS to fill in table of node links and link back with clientData */
@@ -248,7 +255,7 @@ mafTree *mafTree_join(mafTree *mTree1, struct malnComp *comp1, mafTree *mTree2, 
 
     ETree *joinedRoot = joinAtNodes(mTree1->tree, node1, mTree2->tree, node2, srcDestCompMap);
     mafTree *mTreeJoined = mafTree_construct(mTree1->genomes, joinedRoot);
-    setTreeOrder(mTreeJoined);
+    setCheckTreeOrder(mTreeJoined, false);
     return mTreeJoined;
 }
 
@@ -316,7 +323,7 @@ static int sortChildrenCmpFn(ETree *a, ETree *b) {
 /* sort children so tests are reproducible */
 void mafTree_sortChildren(mafTree *mTree) {
     eTree_sortChildren(mTree->tree, sortChildrenCmpFn);
-    setTreeOrder(mTree);
+    setCheckTreeOrder(mTree, false);
 }
 
 /* forward declaration */
@@ -354,8 +361,16 @@ mafTree *mafTree_cloneForSubRangeBlk(mafTree *mTree, struct malnCompCompMap *src
     ETree *destRoot = cloneNode(mTree->tree, srcDestCompMap);
     cloneForSubRangeBlk(mTree->tree, destRoot, srcDestCompMap);
     mafTree *destMTree = mafTree_construct(mTree->genomes,  destRoot);
-    setTreeOrder(destMTree);
+    setCheckTreeOrder(destMTree, false);
     return destMTree;
+}
+
+/* assert sanity of the tree */
+void mafTree_assert(mafTree *mTree, struct malnBlk *blk) {
+#ifndef NDEBUG
+    setCheckTreeOrder(mTree, true);
+    assert(eTree_getNumNodes(mTree->tree) == slCount(blk->comps));
+#endif
 }
 
 /* assert sanity of nodeCompLink */

@@ -8,7 +8,7 @@ cflags = ${cflags_dbg}
 
 cflags += -I${libPath}
 ifneq ($(wildcard ${kentLibWeb}),)
-mafJoinObjs = mafJoin.o jkmaf.o genome.o mafTree.o malnComp.o malnBlk.o malnBlkCursor.o malnBlkSet.o malnSet.o malnJoinBlks.o malnJoinDups.o malnJoinSets.o malnMergeComps.o malnMultiParents.o malnCompCompMap.o
+mafJoinObjs = mafJoin.o jkmaf.o genome.o mafTree.o malnComp.o malnBlk.o malnBlkCursor.o malnBlkSet.o malnSet.o malnJoinBlks.o malnJoinWithinSet.o malnJoinSets.o malnMergeComps.o malnMultiParents.o malnCompCompMap.o
 mafOverlapObjs = mafOverlap.o jkmaf.o
 cflags += -I ${kentInc}
 progs = ${binPath}/mafJoin ${binPath}/mafOverlap

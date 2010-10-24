@@ -228,7 +228,7 @@ struct malnBlk *malnJoinBlks(struct malnComp *guideComp1, struct malnComp *guide
     // after common end
     copyUnsharedGuideColumns(jb, jb->dests1, jb->cursor1, jb->aln1CommonEnd, jb->blk1->alnWidth);
     copyUnsharedGuideColumns(jb, jb->dests2, jb->cursor2, jb->aln2CommonEnd, jb->blk2->alnWidth);
-    
+
     malnBlk_setTree(jb->joined, joinTrees(jb->cursor1, jb->cursor2, jb->srcDestCompMap));
 
     assertJoinedGuideComp(jb->dests1[0], jb->guide1, jb->guide2);

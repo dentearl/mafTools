@@ -129,6 +129,7 @@ static void mergeAllAdjacentComps(struct malnBlk *blk) {
     do {
         foundPair = mergeAdjacentCompsPass(blk);
     } while (foundPair);
+    malnBlk_finish(blk);
 }
 
 /* Merge adjacent components within the specified block, if possible.

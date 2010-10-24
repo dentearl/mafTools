@@ -1,6 +1,7 @@
 #include "malnCompCompMap.h"
 #include "common.h"
 #include "sonLibHash.h"
+#include "malnComp.h"
 
 
 struct malnCompCompMap {
@@ -40,4 +41,20 @@ struct malnComp *malnCompCompMap_get(struct malnCompCompMap *mccm, struct malnCo
 /* lookup a mapping, NULL in not found */
 struct malnComp *malnCompCompMap_find(struct malnCompCompMap *mccm, struct malnComp *srcComp) {
     return stHash_search(mccm->map, srcComp);
+}
+
+/* dump for debugging purposes */
+void malnCompCompMap_dump(struct malnCompCompMap *mccm, FILE *fh, char *label) {
+    fprintf(fh, "compCompMap: %s:\n", label);
+    stHashIterator *keyIter = stHash_getIterator(mccm->map);
+    struct malnComp *srcComp;
+    while ((srcComp = stHash_getNext(keyIter)) != NULL) {
+        struct malnComp *destComp = malnCompCompMap_get(mccm, srcComp);
+        fputc('\t', fh);
+        malnComp_prInfo(srcComp, fh);
+        fputs(" ==> ", fh);
+        malnComp_prInfo(destComp, fh);
+        fputc('\n', fh);
+    }
+    stHash_destructIterator(keyIter);
 }

@@ -2,7 +2,7 @@
 #include "options.h"
 #include "genome.h"
 #include "malnSet.h"
-#include "malnJoinDups.h"
+#include "malnJoinWithinSet.h"
 #include "malnJoinSets.h"
 #include "malnMergeComps.h"
 #include "sonLibETree.h"
@@ -63,7 +63,7 @@ static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, double defa
         malnSet_dump(malnSet, stderr, "%s input", setName);
     }
     if (treelessRootGenome != NULL) {
-        malnJoinDups_joinSetDups(malnSet);
+        malnJoinWithinSet_joinDups(malnSet);
         if (debug) {
             malnSet_dump(malnSet, stderr, "%s: joined-dups", setName);
         }
@@ -86,11 +86,18 @@ static void mafJoin(char *guideGenomeName, char *inMaf1, char *inMaf2, char *out
     if (debug) {
         malnSet_dump(malnSetJoined, stderr, "out: joined");
     }
+#if 0
     // FIXME: is this right, why would there be dups here?
-    malnJoinDups_joinSetDups(malnSetJoined);
+    malnJoinWithinSet_joinDups(malnSetJoined);
     if (debug) {
         malnSet_dump(malnSetJoined, stderr, "out: joined-dups");
     }
+#else
+    malnJoinWithinSet_joinOverlapAdjacent(malnSetJoined);
+    if (debug) {
+        malnSet_dump(malnSetJoined, stderr, "out: joined-adjacent");
+    }
+#endif
     malnMergeComps_merge(malnSetJoined);
     if (debug) {
         malnSet_dump(malnSetJoined, stderr, "out: merged");

@@ -65,4 +65,7 @@ void mafTree_sortChildren(mafTree *mTree);
 /* assert sanity of nodeCompLink */
 void mafTreeNodeCompLink_assert(struct mafTreeNodeCompLink *ncLink);
 
+/* assert sanity of the tree */
+void mafTree_assert(mafTree *mTree, struct malnBlk *blk);
+
 #endif

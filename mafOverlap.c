@@ -49,7 +49,7 @@ static bool keepMafBlk(struct bed *selectBeds, struct mafAli *blk) {
 
 /* select overlapping MAF records */
 static void mafOverlap(char *inMafFile, char *selectBedFile, char *outMafFile) {
-    struct bed *selectBeds = bedLoadAll(selectBedFile);
+    struct bed *selectBeds = bedLoadNAll(selectBedFile, 3);
     struct mafFile *inMafFh = mafOpen(inMafFile);
     FILE *outMafFh = mustOpen(outMafFile, "w");
     mafWriteStart(outMafFh, NULL);
