@@ -59,6 +59,12 @@ stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *
  * overlaps. */
 stList *malnSet_getOverlappingAdjacentPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkSet *doneBlks);
 
+/* get the root genome */
+struct Genome *malnSet_getRootGenome(struct malnSet *malnSet);
+
+/* validate set for consistency */
+void malnSet_validate(struct malnSet *malnSet);
+
 /* assert some sanity checks on a set */
 void malnSet_assert(struct malnSet *malnSet);
 

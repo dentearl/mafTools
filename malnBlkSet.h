@@ -11,7 +11,7 @@ struct malnBlkSet;
 /* constructor */
 struct malnBlkSet *malnBlkSet_construct(void);
 
-/* make a clone of a block set */
+/* make a clone of a block set, excluding ones marked as deleted */
 struct malnBlkSet *malnBlkSet_constructClone(struct malnBlkSet *srcBlks);
 
 /* destructor*/
@@ -26,10 +26,10 @@ void malnBlkSet_remove(struct malnBlkSet *blks, struct malnBlk *blk);
 /* is a block in the map */
 bool malnBlkSet_contains(struct malnBlkSet *blks, struct malnBlk *blk);
 
-/* remove the first block from the map */
+/* remove the first block from the map, which will include deleted blocks */
 struct malnBlk *malnBlkSet_pop(struct malnBlkSet *blks);
 
-/* get an iterator over the items in the map */
+/* get an iterator over non-deleted blocked in the map */
 struct malnBlkSetIterator *malnBlkSet_getIterator(struct malnBlkSet *blks);
 
 /* get the next block, NULL if no more */

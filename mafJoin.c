@@ -87,6 +87,10 @@ static void mafJoin(char *guideGenomeName, char *inMaf1, char *inMaf2, char *out
     struct malnSet *malnSet1 = loadMaf(genomes, inMaf1, defaultBranchLength, treelessRoot1Name, "set1");
     struct malnSet *malnSet2 = loadMaf(genomes, inMaf2, defaultBranchLength, treelessRoot2Name, "set2");
 
+    if (!((malnSet_getRootGenome(malnSet1) == guideGenome) || (malnSet_getRootGenome(malnSet2) == guideGenome))) {
+        errAbort("neither MAF root genome matches guide genome");
+    }
+
     // join and then merge overlapping blocks that were created
     struct malnSet *malnSetJoined = malnJoinSets(guideGenome, malnSet1, malnSet2);
     if (debug) {

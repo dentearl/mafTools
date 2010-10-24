@@ -30,7 +30,9 @@ struct malnBlkSet *malnBlkSet_constructClone(struct malnBlkSet *srcBlks) {
     struct malnBlkSetIterator *iter = malnBlkSet_getIterator(srcBlks);
     struct malnBlk *blk;
     while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
-        malnBlkSet_add(blks, blk);
+        if (!blk->deleted) {
+            malnBlkSet_add(blks, blk);
+        }
     }
     malnBlkSetIterator_destruct(iter);
     return blks;
@@ -71,7 +73,11 @@ struct malnBlkSetIterator *malnBlkSet_getIterator(struct malnBlkSet *blks) {
 }
 
 struct malnBlk *malnBlkSetIterator_getNext(struct malnBlkSetIterator *iter) {
-    return stSortedSet_getNext(iter->iter);
+    struct malnBlk *blk;
+    while (((blk = stSortedSet_getNext(iter->iter)) != NULL) && blk->deleted) {
+        continue;
+    }
+    return blk;
 }
 
 void malnBlkSetIterator_destruct(struct malnBlkSetIterator *iter) {

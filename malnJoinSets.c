@@ -20,9 +20,10 @@
 /* Object use to track the state of blocks that have been process or have been created due
  * to splitting blocks. */
 struct blkState {
-    struct malnSet *pending1;   // blocks create by splitting blocks from MAF1 that need to be processed
-    struct malnSet *pending2;   // blocks create by splitting blocks from MAF2 that need to be processed
-    struct malnBlkSet *done2;   // blocks in MAF 2 that have been processed
+    struct malnSet *pending1;    // blocks create by splitting blocks from MAF1 that need to be processed
+    struct malnBlkSet *done1;    // blocks in MAF 1 that have been processed
+    struct malnSet *pending2;    // blocks create by splitting blocks from MAF2 that need to be processed
+    struct malnBlkSet *done2;    // blocks in MAF 2 that have been processed
 };
    
 
@@ -31,8 +32,8 @@ static struct blkState* blkState_construct(struct Genomes *genomes) {
     struct blkState *state;
     AllocVar(state);
     state->pending1 = malnSet_construct(genomes);
-    state->done2 = malnBlkSet_construct();
     state->pending2 = malnSet_construct(genomes);
+    state->done2 = malnBlkSet_construct();
     return state;
 }
 
@@ -40,8 +41,8 @@ static struct blkState* blkState_construct(struct Genomes *genomes) {
 /* destructor */
 static void blkState_destruct(struct blkState* state) {
     malnSet_destruct(state->pending1);
-    malnBlkSet_destruct(state->done2);
     malnSet_destruct(state->pending2);
+    malnBlkSet_destruct(state->done2);
     freeMem(state);
 }
 
@@ -68,9 +69,9 @@ static void splitOutOfBounds(struct malnComp *belowComp, int chromStart, int chr
     malnSet_addBlk(belowPending, blk);
 }
 
-/* Split out region of a block and return corresponding component. in done set
- * is not NULL, add old block to that set, otherwise delete the old block. Return
- * the equivalent component. */
+/* Split out region of a block and return corresponding component. If in done
+ * is not NULL, add old block to that set, otherwise delete the old
+ * block. Return the equivalent component. */
 static struct malnComp *splitInBounds(struct malnComp *belowComp, int chromStart, int chromEnd, struct malnBlkSet *done) {
     assert(malnComp_getLoc(belowComp) == mafTreeLocRoot);
     struct malnBlk *newBlk = splitRegion(belowComp, chromStart, chromEnd);

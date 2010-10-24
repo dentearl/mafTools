@@ -42,6 +42,13 @@ ${simDir}/sG-sH-sC/root.maf:  ${simDir}/sG-sH-sC/sG-sH-sC.maf ${simDir}/sG-sH-sC
 ${simDir}/root/root.maf: ${simDir}/simOrang/root.maf ${simDir}/sG-sH-sC/root.maf 
 	${mafJoin} -maxBlkWidth=${maxBlkWidth} -treelessRoot1=root 'root' ${simDir}/simOrang/root.maf ${simDir}/sG-sH-sC/root.maf ${simDir}/root/root.maf
 
+save:
+ifeq (${saveDir},)
+	@echo Must specifify saveDir=dir on the command line >&2
+	@exit 1
+endif
+	mkdir -p ${saveDir}
+	tar -C ${simDir} -cf - $(foreach f,${createdMafs},$(subst ${simDir}/,,$f)) | tar -C ${saveDir} -xf -
 
 clean:
 	rm -f ${createdMafs}
