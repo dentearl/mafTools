@@ -10,6 +10,6 @@ void malnJoinWithinSet_joinDups(struct malnSet *malnSet);
 /* Join adjacent and overlapping blocks in a set.  Stop joining at columns
  * where only the root component crosses that column and the root is adjacent
  * and not overlapping. */
-void malnJoinWithinSet_joinOverlapAdjacent(struct malnSet *malnSet);
+void malnJoinWithinSet_joinOverlapAdjacent(struct malnSet *malnSet, int maxBlkWidth);
 
 #endif

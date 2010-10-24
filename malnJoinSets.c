@@ -17,8 +17,6 @@
  *   case, two root nodes are actually joined into one.  
  */
 
-//static bool debug = false;  // FIXME: tmp
-
 /* Object use to track the state of blocks that have been process or have been created due
  * to splitting blocks. */
 struct blkState {
@@ -149,7 +147,6 @@ static bool joinCompWithSet(struct joinBlkComp *joining, struct malnSet *malnSet
     stList *overComps2 = malnSet_getOverlappingPendingComps(malnSet2, joining->comp->seq, joining->comp->chromStart, joining->comp->chromEnd, mafTreeLocRoot|mafTreeLocLeaf, state->done2);
     for (int i = 0; i < (stList_length(overComps2) && !joinedOne); i++) {
         struct malnComp *comp2 = stList_get(overComps2, i);
-        assert(malnComp_overlap(joining->comp, comp2)); // FIXME: tmp
         if ((!malnBlkSet_contains(state->done2, comp2->blk)) && malnComp_canJoin(joining->comp, comp2)) {
             joinCompWithComp(joining, comp2, state);
             joinedOne = true;

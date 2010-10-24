@@ -25,6 +25,7 @@ static struct optionSpec optionSpecs[] = {
     {"branchLength", OPTION_DOUBLE},
     {"treelessRoot1", OPTION_STRING},
     {"treelessRoot2", OPTION_STRING},
+    {"maxBlkWidth", OPTION_INT},
     {"help", OPTION_BOOLEAN},
     {NULL, 0}
 };
@@ -40,6 +41,11 @@ static char *usageMsg =
     "   that do not have trees (see below).\n"
     "  -treelessRoot2=genome - root genome for inMaf2 blocks\n"
     "   that do not have trees.\n"
+    "  -maxBlkWidth=n - set a cutoff on the maximum width of an alignment\n"
+    "   block when doing the final join blocks in the output MAF.  This is\n"
+    "   used to limit size of blocks, near the Evolover root were long,\n"
+    "   contiguous overlapping regions can cause exponential growth in run\n"
+    "   time and memory requirements\n"
     "\n"
     "If MAF blocks (mafAli) don't have a tree associated with them, one\n"
     "will be created.  The root genome for the tree is chosen based on\n"
@@ -74,7 +80,7 @@ static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, double defa
 
 /* join two mafs */
 static void mafJoin(char *guideGenomeName, char *inMaf1, char *inMaf2, char *outMaf, double defaultBranchLength,
-                    char *treelessRoot1Name, char *treelessRoot2Name) {
+                    char *treelessRoot1Name, char *treelessRoot2Name, int maxBlkWidth) {
     struct Genomes *genomes = genomesNew();
     struct Genome *guideGenome = genomesObtainGenome(genomes, guideGenomeName);
 
@@ -86,18 +92,10 @@ static void mafJoin(char *guideGenomeName, char *inMaf1, char *inMaf2, char *out
     if (debug) {
         malnSet_dump(malnSetJoined, stderr, "out: joined");
     }
-#if 0
-    // FIXME: is this right, why would there be dups here?
-    malnJoinWithinSet_joinDups(malnSetJoined);
-    if (debug) {
-        malnSet_dump(malnSetJoined, stderr, "out: joined-dups");
-    }
-#else
-    malnJoinWithinSet_joinOverlapAdjacent(malnSetJoined);
+    malnJoinWithinSet_joinOverlapAdjacent(malnSetJoined, maxBlkWidth);
     if (debug) {
         malnSet_dump(malnSetJoined, stderr, "out: joined-adjacent");
     }
-#endif
     malnMergeComps_merge(malnSetJoined);
     if (debug) {
         malnSet_dump(malnSetJoined, stderr, "out: merged");
@@ -124,6 +122,7 @@ int main(int argc, char *argv[]) {
     }
 
     mafJoin(argv[1], argv[2], argv[3], argv[4], optionDouble("branchLength", 0.1), 
-            optionVal("treelessRoot1", NULL), optionVal("treelessRoot2", NULL));
+            optionVal("treelessRoot1", NULL), optionVal("treelessRoot2", NULL),
+            optionInt("maxBlkWidth", INT_MAX));
     return 0;
 }

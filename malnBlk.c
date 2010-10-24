@@ -80,7 +80,7 @@ static void malnBlk_sortComps(struct malnBlk *blk) {
 void malnBlk_finish(struct malnBlk *blk) {
     malnBlk_sortComps(blk); // FIXME: don't need to do this for all cases
     malnBlk_validate(blk);  // produces better error messages
-#if 0 // FIXME: very expensive
+#if 0 // very expensive
     malnBlk_assert(blk);    // really only to catch bugs in this code, not input
 #endif
 }

@@ -10,8 +10,6 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-static bool debug = false;  // FIXME: tmp
-
 /* Object use to keep state */
 struct malnJoinBlks {
     struct malnComp *guide1;         // guide components
@@ -203,16 +201,6 @@ struct malnBlk *malnJoinBlks(struct malnComp *guideComp1, struct malnComp *guide
         *joinedCompRet = jb->dests1[0];
     }
     calcAlignmentCoords(jb);
-    if (debug) { // FIXME: tmp
-        fprintf(stderr, "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n");
-        malnComp_dump(jb->guide1, stderr, "guideComp1");
-        malnBlk_dump(jb->blk1, stderr, "inBlk1");
-        malnComp_dump(jb->guide2, stderr, "guideComp2");
-        malnBlk_dump(jb->inBlk2, stderr, "inBlk2");
-        if (jb->blk2 != jb->inBlk2) {
-            malnBlk_dump(jb->blk2, stderr, "inBlk2rc");
-        }
-    }
 
     // before common start
     copyUnsharedGuideColumns(jb, jb->dests1, jb->cursor1, 0, jb->aln1CommonStart);
@@ -238,9 +226,5 @@ struct malnBlk *malnJoinBlks(struct malnComp *guideComp1, struct malnComp *guide
 
     struct malnBlk *joined = jb->joined;
     malnJoinBlks_destruct(jb);
-    if (debug) { // FIXME: tmp
-        malnBlk_dump(joined, stderr, "joined");
-        fprintf(stderr, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
-    }
     return joined;
 }

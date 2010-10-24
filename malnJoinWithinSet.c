@@ -11,8 +11,6 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-static const bool debug = false; // FIXME: tmp
-
 /* join two blocks by associated root components, create a third
  * block. Return that new block. Joined blocks marked as deleted */
 static struct malnBlk *joinBlksAtRoot(struct malnSet *malnSet, struct malnBlk *blk1, struct malnBlk *blk2) {
@@ -149,36 +147,40 @@ static int findAdjacentToJoin(stList *rootSortBlks, int startIdx) {
     return nextIdx;
 }
 
-static void joinAdjacents(struct malnSet *malnSet, struct malnBlkSet *newBlks, stList *rootSortBlks, int startIdx, int nextIdx) {
+/* join a set of adjacent blocks.  return the actually next index, as the number
+ * joined might be limited by maxBlkWidth */
+static int joinAdjacents(struct malnSet *malnSet, struct malnBlkSet *newBlks, stList *rootSortBlks, int startIdx, int nextIdx, int maxBlkWidth) {
     struct malnBlk *joinedBlk = stList_get(rootSortBlks, startIdx);
-    for (int i = startIdx+1; i < nextIdx; i++) {
-        joinedBlk = joinBlksAtRoot(malnSet, joinedBlk, stList_get(rootSortBlks, i));
+    int iBlk;
+    for (iBlk = startIdx+1; (iBlk < nextIdx) && (joinedBlk->alnWidth <= maxBlkWidth); iBlk++) {
+        joinedBlk = joinBlksAtRoot(malnSet, joinedBlk, stList_get(rootSortBlks, iBlk));
     }
     if (joinedBlk->malnSet == NULL) {
-        // create this block
+        // created this block
         malnBlkSet_add(newBlks, joinedBlk);
     }
+    return iBlk;
 }
 
 /* join adjacent blocks into a single block, up to the next root gap, or place
  * where there are no components except the root.  Return index of next
  * starting point. */
-static int joinSomeAdjacent(struct malnSet *malnSet, struct malnBlkSet *newBlks, stList *rootSortBlks, int startIdx) {
+static int joinSomeAdjacent(struct malnSet *malnSet, struct malnBlkSet *newBlks, stList *rootSortBlks, int startIdx, int maxBlkWidth) {
     int nextIdx = findAdjacentToJoin(rootSortBlks, startIdx);
-    joinAdjacents(malnSet, newBlks, rootSortBlks, startIdx, nextIdx);
+    nextIdx = joinAdjacents(malnSet, newBlks, rootSortBlks, startIdx, nextIdx, maxBlkWidth);
     return nextIdx;
 }
 
 /* Join adjacent and overlapping blocks in a set.  Stop joining at columns
  * where only the root component crosses that column and the root is adjacent
  * and not overlapping. */
-void malnJoinWithinSet_joinOverlapAdjacent(struct malnSet *malnSet) {
+void malnJoinWithinSet_joinOverlapAdjacent(struct malnSet *malnSet, int maxBlkWidth) {
     stList *rootSortBlks = buildRootSortedBlks(malnSet);
     struct malnBlkSet *newBlks = malnBlkSet_construct();
 
     int nextIdx = 0;
     while (nextIdx < stList_length(rootSortBlks)) {
-        nextIdx = joinSomeAdjacent(malnSet, newBlks, rootSortBlks, nextIdx);
+        nextIdx = joinSomeAdjacent(malnSet, newBlks, rootSortBlks, nextIdx, maxBlkWidth);
     }
 
     malnSet_deleteDying(malnSet);

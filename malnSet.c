@@ -102,9 +102,6 @@ static struct malnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct mafAli *a
         errAbort("no tree in mafAli block and no treelessRoot genome specified");
     }
     malnBlk_finish(blk);
-#if 1 // FIXME:
-    malnBlk_assert(blk);
-#endif
     return blk;
 }
 
@@ -369,7 +366,7 @@ static int sortCompListCmpFn(const void *a, const void *b) {
 /* check is a component in the overlap list should be included */
 static bool keepOverlap(struct malnComp *comp, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkSet *doneBlks) {
     // FIXME: not sure why the overlap check is needed, shouldn't return non-overlaping,
-    // but it did!
+    // but it did!  Need to very this.
     return ((comp != NULL) && ((malnComp_getLoc(comp) & treeLocFilter) != 0) && (!comp->blk->deleted)
             && ((doneBlks == NULL) || !malnBlkSet_contains(doneBlks, comp->blk))
             && malnComp_overlapRange(comp, seq, chromStart, chromEnd));

@@ -17,6 +17,7 @@ endif
 # holy didn't read the make manual batman
 CFLAGS=${cflags} -std=c99 -pedantic
 
+
 all: ${mafJoinObjs} ${progs}
 
 ${binPath}/mafJoin: ${mafJoinObjs}
