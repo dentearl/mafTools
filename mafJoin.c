@@ -9,12 +9,6 @@
 #include "malnMultiParents.h"
 #include <limits.h>
 
-/*
- * Notes: 
- *  - this would probably be simpler (and for sure more efficient) if
- *    it was done with block based rather than column based merges.
- */
-
 static bool debug = false;  // FIXME: tmp
 
 /* set to true to cleanup all memory for memory leak checks */

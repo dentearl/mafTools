@@ -372,7 +372,7 @@ static int sortCompListCmpFn(const void *a, const void *b) {
 /* check is a component in the overlap list should be included */
 static bool keepOverlap(struct malnComp *comp, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkSet *doneBlks) {
     // FIXME: not sure why the overlap check is needed, shouldn't return non-overlaping,
-    // but it did!  Need to very this.
+    // but it did!  Need to verify this.
     return ((comp != NULL) && ((malnComp_getLoc(comp) & treeLocFilter) != 0) && (!comp->blk->deleted)
             && ((doneBlks == NULL) || !malnBlkSet_contains(doneBlks, comp->blk))
             && malnComp_overlapRange(comp, seq, chromStart, chromEnd));
@@ -382,6 +382,7 @@ static bool keepOverlap(struct malnComp *comp, struct Seq *seq, int chromStart, 
  * in blocks not flagged as done or dying, passing treeLoc filters, and not in
  * option doneBlks.  Return NULL if no overlaps. */
 stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *seq, int chromStart, int chromEnd, unsigned treeLocFilter, struct malnBlkSet *doneBlks) {
+    // FIXME is done arg still needed??
     if (malnSet->compRangeMap == NULL) {
         buildRangeTree(malnSet);
     }

@@ -19,26 +19,44 @@ loadMaf(mafFile)
   - convert MAF to an malnSet
   - joinDups(malnSet)
 
-# Join two malnSet objects based on a guide genome
-malnJoinSets(guideGenome, malnSet1, malnSet2, maxBlkWidth)
-  - create empty malnSetJoin
-  - foreach block-A in malnSet1:
-    - foreach guideGenome component-A in block-A:
-      - foreach component-B in malnSet2 with overlaps with component-A:
-          # while adjacent components could be merge here, this can lead to an
-            exponential grown in the cost of merges when there are long root
-            sequences and also create very large MAF blocks, connect only by
-            the root.
-        - if component-A and component-B can be merged (one is a root):
-          - if root component extends beyond the bound of the target leaf component,
-            then the block with the root component into multiple block before setting
-            the parent.  This prevents incorrect inferences of the parents of the
-            extended bases.
-          - merge block-A and block-B into new block-C.  
-            # While the input will only have merges of root components to leaf
-              components, a merge makes the root an internal node and so
-              transitive merges can be root to internal component.
-        - continue scanning for others to merge into block-C
+# join two components where the children of belowComp are added to aboveComp
+# if belowComp extends beyond the bounds of aboveComp the component, the
+# ends are trimmed and added as blocks to pending
+joinPair(aboveComp, belowComp, pending)
+  - trimToAboveBounds(aboveComp, belowComp, pending)
+  - joinBlk = joinBlks(aboveComp, belowComp)
+  - aboveComp.markdDeleted()
+  - belowComp.markdDeleted()
+  - return joinBlk
+  
+
+# on pass to join joinBlk with targetSet. block can be derived from the
+# joinSet or targetSet, it should not be active in a set.  If a block must be
+# split to do the join, the unjoined pieces are added to the pending set.
+# Returns updated joinBlk if modified.
+joinBlkWithSetPass(guideGenome, joinBlk, targetSet, pending):
+  - foreach joinGuideComp in joinBlk:
+    - foreach targetGuideComp in targetSet.overlapping(joinGuideComp):
+      - if joinGuideComp is root:
+        - joinBlk = joinPair(targetGuideComp, joinGuideComp, pending)
+      - else 
+        - joinBlk = joinPair(joinGuideComp, targetGuideComp, pending)
+ - return joinBlk
+
+# make multiple pass over input sets until no more blocks can be joined
+# with joinBlk
+joinBlkWithSet(guideGenome, joinBlk, malnSet1, malnSet2)
+  - until nothing joined:
+    - joinBlk = joinBlkWithSetPass(guideGenome, joinBlk, malnSet1, pending):
+    - joinBlk = joinBlkWithSetPass(guideGenome, joinBlk, malnSet2, pending):
+    - move pending back to approriate sets
+
+# join two sets at guideGenome, prodicing a third
+malnJoinSets(guideGenome, malnSet1, malnSet2)
+  - foreach blk1 in malnSet1
+      joinBlock = blk1.close()
+      blk1.markDeleted()
+      joinedSet.add(joinBlock);
 
 # join blocks with overlapping or adjacent root components.  Only join
 # adjacent roots if there are components that cross the block.  Always join

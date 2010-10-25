@@ -10,48 +10,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-/*
- * Notes:
- * - Initial join happens at the specified join genome, however subsequent joins
- *   can happen on other nodes, due to join genome becoming internal.  In this
- *   case, two root nodes are actually joined into one.  
- */
-
-/* Object use to track the state of blocks that have been process or have been created due
- * to splitting blocks. */
-struct blkState {
-    struct malnSet *pending1;    // blocks create by splitting blocks from MAF1 that need to be processed
-    struct malnBlkSet *done1;    // blocks in MAF 1 that have been processed
-    struct malnSet *pending2;    // blocks create by splitting blocks from MAF2 that need to be processed
-    struct malnBlkSet *done2;    // blocks in MAF 2 that have been processed
-};
-   
-
-/* constructor */
-static struct blkState* blkState_construct(struct Genomes *genomes) {
-    struct blkState *state;
-    AllocVar(state);
-    state->pending1 = malnSet_construct(genomes);
-    state->pending2 = malnSet_construct(genomes);
-    state->done2 = malnBlkSet_construct();
-    return state;
-}
-
-
-/* destructor */
-static void blkState_destruct(struct blkState* state) {
-    malnSet_destruct(state->pending1);
-    malnSet_destruct(state->pending2);
-    malnBlkSet_destruct(state->done2);
-    freeMem(state);
-}
-
-/* object used to store current join block/component, which changes when new blocks are
- * merged. */
-struct joinBlkComp {
-    struct malnBlk *blk;
-    struct malnComp *comp;
-};
+static bool debug = false;  // FIXME: tmp
 
 /* split out a region of a block */
 static struct malnBlk *splitRegion(struct malnComp *comp, int chromStart, int chromEnd) {
@@ -64,28 +23,23 @@ static struct malnBlk *splitRegion(struct malnComp *comp, int chromStart, int ch
 }
 
 /* split off region of a block and save for future processing */
-static void splitOutOfBounds(struct malnComp *belowComp, int chromStart, int chromEnd, struct malnSet *belowPending) {
+static void splitOutOfBounds(struct malnComp *belowComp, int chromStart, int chromEnd, struct malnBlkSet *pending) {
     struct malnBlk *blk = splitRegion(belowComp, chromStart, chromEnd);
-    malnSet_addBlk(belowPending, blk);
+    malnBlkSet_add(pending, blk);
+    if (debug) {
+        malnBlk_dump(blk, stderr, "add to pending");
+    }
 }
 
 /* Split out region of a block and return corresponding component. If in done
  * is not NULL, add old block to that set, otherwise delete the old
  * block. Return the equivalent component. */
-static struct malnComp *splitInBounds(struct malnComp *belowComp, int chromStart, int chromEnd, struct malnBlkSet *done) {
+static struct malnComp *splitInBounds(struct malnComp *belowComp, int chromStart, int chromEnd) {
     assert(malnComp_getLoc(belowComp) == mafTreeLocRoot);
     struct malnBlk *newBlk = splitRegion(belowComp, chromStart, chromEnd);
     struct malnComp *newComp = malnBlk_findCompByChromRange(newBlk, belowComp->seq, chromStart, chromEnd);
     assert(newComp != NULL);
-
-    // dispose of old block
-    if (done != NULL) {
-        malnBlkSet_add(done, belowComp->blk);
-    } else if (belowComp->blk->malnSet != NULL) {
-        malnSet_markAsDeleted(belowComp->blk->malnSet, belowComp->blk);
-    } else {
-        malnBlk_destruct(belowComp->blk);
-    }
+    malnBlk_markOrDelete(belowComp->blk);
     return newComp;
 }
 
@@ -95,148 +49,163 @@ static struct malnComp *splitInBounds(struct malnComp *belowComp, int chromStart
  * the pending set.  If done is not NULL, blocks to no longer use are added to
  * this list, otherwise they are marked for deletion or deleted. No blocks are
  * derived from aboveComp. */
-static struct malnComp *splitToBounds(struct malnComp *aboveComp, struct malnComp *belowComp, struct malnSet *belowPending, struct malnBlkSet *done) {
+static struct malnComp *splitToBounds(struct malnComp *aboveComp, struct malnComp *belowComp, struct malnBlkSet *pending) {
     assert(malnComp_overlap(aboveComp, belowComp));
     assert(malnComp_getLoc(belowComp) == mafTreeLocRoot);
     bool splitSome = false;
     if (belowComp->chromStart < aboveComp->chromStart) {
         // before aboveComp
-        splitOutOfBounds(belowComp, belowComp->chromStart, aboveComp->chromStart, belowPending);
+        splitOutOfBounds(belowComp, belowComp->chromStart, aboveComp->chromStart, pending);
         splitSome = true;
     }
     if (belowComp->chromEnd > aboveComp->chromEnd) {
         // after aboveComp
-        splitOutOfBounds(belowComp, aboveComp->chromEnd, belowComp->chromEnd, belowPending);
+        splitOutOfBounds(belowComp, aboveComp->chromEnd, belowComp->chromEnd, pending);
         splitSome = true;
     }
     if (splitSome) {
-        return splitInBounds(belowComp, max(belowComp->chromStart, aboveComp->chromStart), min(belowComp->chromEnd, aboveComp->chromEnd), done);
+        return splitInBounds(belowComp, max(belowComp->chromStart, aboveComp->chromStart), min(belowComp->chromEnd, aboveComp->chromEnd));
     } else {
         return belowComp;
     }
 }
 
-/* join two components updating joining object */
-static void joinCompWithComp(struct joinBlkComp *joining, struct malnComp *comp2, struct blkState *state) {
+/* join two blocks at the specified components, returning resulting block */
+static struct malnBlk *joinCompWithComp(struct malnComp *comp1, struct malnComp *comp2, struct malnBlkSet *pending) {
+    if (debug) {
+        malnBlk_dump(comp1->blk, stderr, "blk1 before split");
+        malnBlk_dump(comp2->blk, stderr, "blk2 before split");
+    }
+    assert(comp1 != comp2);
     // trimmed block being attached from below
-    if (malnComp_getLoc(joining->comp) == mafTreeLocRoot) {
-        joining->comp = splitToBounds(comp2, joining->comp, state->pending1, NULL);
-        joining->blk = joining->comp->blk;
+    if (malnComp_getLoc(comp1) == mafTreeLocRoot) {
+        comp1 = splitToBounds(comp2, comp1, pending);
     } else {
-        comp2 = splitToBounds(joining->comp, comp2, state->pending2, state->done2);
+        comp2 = splitToBounds(comp1, comp2, pending);
     }
 
-    struct malnComp *joinedComp = NULL;
-    struct malnBlk *joinedBlk = malnJoinBlks(joining->comp, comp2, &joinedComp);
-    
-    // if joining block is not in a set, just free it.
-    if (joining->blk->malnSet == NULL) {
-        malnBlk_destruct(joining->blk);
+    if (debug) {
+        malnBlk_dump(comp1->blk, stderr, "blk1 after split");
+        malnBlk_dump(comp2->blk, stderr, "blk2 after split");
     }
-    malnBlkSet_add(state->done2, comp2->blk);
-
-    // return resulting block for more additions
-    joining->blk = joinedBlk;
-    joining->comp = joinedComp;
+    struct malnBlk *newBlk = malnJoinBlks(comp1, comp2, NULL);
+    malnBlk_markOrDelete(comp1->blk);
+    malnBlk_markOrDelete(comp2->blk);
+    return newBlk;
 }
 
 /* join for specified joinable component, returning the potentially new joinedBlk.  Return
- * true if any joined.  This  will be restarted if any join happens  */
-static bool joinCompWithSet(struct joinBlkComp *joining, struct malnSet *malnSet2, struct blkState *state) {
-    // must stop if we join any, as bounds might be changed by trimming
-    bool joinedOne = false;
-    stList *overComps2 = malnSet_getOverlappingPendingComps(malnSet2, joining->comp->seq, joining->comp->chromStart, joining->comp->chromEnd, mafTreeLocRoot|mafTreeLocLeaf, state->done2);
-    for (int i = 0; i < (stList_length(overComps2) && !joinedOne); i++) {
-        struct malnComp *comp2 = stList_get(overComps2, i);
-        if ((!malnBlkSet_contains(state->done2, comp2->blk)) && malnComp_canJoin(joining->comp, comp2)) {
-            joinCompWithComp(joining, comp2, state);
-            joinedOne = true;
-        }
+ * new joinBlk if any joined, otherwise NULL.  */
+static struct malnBlk *joinCompWithSet(struct malnComp *joinComp, struct malnSet *targetSet, struct malnBlkSet *pending) {
+    if (debug) {
+        malnComp_dump(joinComp, stderr, "joinCompWithSet");
+        malnBlk_dump(joinComp->blk, stderr, "  joinComp->blk");
     }
-    stList_destruct(overComps2);
-    return joinedOne;
-}
-
-/* one pass over guideGenome components attempt to join with the specified set */
-static bool joinBlkWithSetPass( struct joinBlkComp *joining, struct Genome *guideGenome, struct malnBlk *blk1, struct malnSet *malnSet2, struct blkState *state) {
-    for (joining->comp = joining->blk->comps; joining->comp != NULL; joining->comp = joining->comp->next) {
-        if (joining->comp->seq->genome == guideGenome) {
-            if (joinCompWithSet(joining, malnSet2, state)) {
-                return true;
+    // must stop if we join any, as bounds might be changed by trimming
+    struct malnBlk *newJoinBlk = NULL;
+    stList *overComps = malnSet_getOverlappingPendingComps(targetSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocRoot|mafTreeLocLeaf, NULL);
+    for (int i = 0; i < (stList_length(overComps) && (newJoinBlk == NULL)); i++) {
+        struct malnComp *targetComp = stList_get(overComps, i);
+        if (debug) {
+            malnComp_dump(targetComp, stderr, " overlap:");
+        }
+        if (malnComp_canJoin(joinComp, targetComp)) {
+            if (debug) {
+                malnBlk_dump(targetComp->blk, stderr, " joinwith:");
+            }
+            newJoinBlk = joinCompWithComp(joinComp, targetComp, pending);
+            if (debug) {
+                malnBlk_dump(newJoinBlk, stderr, " newBlk:");
             }
         }
     }
-    return false;
+    stList_destruct(overComps);
+    return newJoinBlk;
 }
 
-/* join blocks overlapping a block of another set, including any fragments. If none are joined,
- * add blk1, copy blk1 to new set */
-static void joinBlkWithSet(struct malnSet *malnSetJoined, struct Genome *guideGenome, struct malnBlk *blk1, struct malnSet *malnSet2, struct blkState *state) {
-    struct joinBlkComp joining = {blk1, NULL};
-    // Since joining creates a new block and we want to continue to search other components,
-    // we start over with the first component when we create a new block.  We do this until
-    // we go through all of the joinable components without actually merging a block.
-    bool joinedOne = false;
-    do {
-        joinedOne = joinBlkWithSetPass(&joining, guideGenome, blk1, malnSet2, state);
-        if (!joinedOne) {
-            joinedOne = joinBlkWithSetPass(&joining, guideGenome, blk1, state->pending2, state);
+/* One pass over guideGenome components attempt to join with the specified set.  Return new joinBlk
+ * if joined, otherwise return NULL if not changed. */
+static struct malnBlk *joinBlkWithSetPass(struct Genome *guideGenome, struct malnBlk *joinBlk, struct malnSet *targetSet, struct malnBlkSet *pending) {
+    for (struct malnComp *joinComp = joinBlk->comps; joinComp != NULL; joinComp = joinComp->next) {
+        if (joinComp->seq->genome == guideGenome) {
+            struct malnBlk *newJoinBlk = joinCompWithSet(joinComp, targetSet, pending);
+            if (newJoinBlk != NULL) {
+                return newJoinBlk;
+            }
         }
-    } while (joinedOne);
-        
-    if (joining.blk->malnSet == NULL) {
-        // new block, something was joined
-        malnSet_addBlk(malnSetJoined, joining.blk);
-    } else {
-        // nothing joined, copy it.
-        assert(joining.blk == blk1);
-        malnSet_addBlk(malnSetJoined, malnBlk_constructClone(joining.blk));
+    }
+    return NULL;
+}
+
+/* add pending blocks create by split back into appropriate sets */
+static void addPending(struct malnBlkSet *pending, struct malnSet *malnSet1, struct malnSet *malnSet2) {
+    struct Genome *root1 = malnSet_getRootGenome(malnSet1);
+    struct malnBlk *blk;
+    while ((blk = malnBlkSet_pop(pending)) != NULL) {
+        if (malnBlk_getRootComp(blk)->seq->genome == root1) {
+            malnSet_addBlk(malnSet1, blk);
+        } else {
+            assert(malnBlk_getRootComp(blk)->seq->genome == malnSet_getRootGenome(malnSet2));
+            malnSet_addBlk(malnSet2, blk);
+        }
     }
 }
 
-/* join all pending blocks that have been created by splitting blocks */
-static void joinPendingWithSet(struct malnSet *malnSetJoined, struct Genome *guideGenome, struct malnSet *malnSet2, struct blkState *state) {
-    // this may create more pending blocks to join
-    struct malnBlk *blk1;
-    while ((blk1 = malnSet_popBlk(state->pending1)) != NULL) {
-        joinBlkWithSet(malnSetJoined, guideGenome, blk1, malnSet2, state);
-    }
+/* join a join a blk with overlapping components, making multiple passes until no more blocks can be
+ * joined with it */
+static void joinBlkWithSet(struct malnSet *malnSetJoined, struct Genome *guideGenome, struct malnBlk *joinBlk, struct malnSet *malnSet1, struct malnSet *malnSet2, struct malnBlkSet *pending) {
+    struct malnBlk *newJoinBlk = NULL;
+    do {
+        // try both ways due to transitive joins across the sets
+        newJoinBlk = joinBlkWithSetPass(guideGenome, joinBlk, malnSet2, pending);
+        if (newJoinBlk == NULL) {
+            newJoinBlk = joinBlkWithSetPass(guideGenome, joinBlk, malnSet1, pending);
+        }
+        if (newJoinBlk != NULL) {
+            addPending(pending, malnSet1, malnSet2);
+            joinBlk = newJoinBlk;
+        }
+    } while (newJoinBlk != NULL);
+    assert(joinBlk->malnSet == NULL);
+    malnSet_addBlk(malnSetJoined, joinBlk);
 }
 
 /* join blocks between sets */
-static void joinBlksWithSet(struct malnSet *malnSetJoined, struct Genome *guideGenome, struct malnSet *malnSet1, struct malnSet *malnSet2, struct blkState *state) {
-    struct malnBlkSetIterator *iter1 = malnSet_getBlocks(malnSet1);
-    struct malnBlk *blk1;
-    while ((blk1 = malnBlkSetIterator_getNext(iter1)) != NULL) {
-        joinBlkWithSet(malnSetJoined, guideGenome, blk1, malnSet2, state);
-        joinPendingWithSet(malnSetJoined, guideGenome, malnSet2, state);
+static void joinBlksWithSet(struct malnSet *malnSetJoined, struct Genome *guideGenome, struct malnSet *malnSet1, struct malnSet *malnSet2) {
+    // make copy of set of blocks so underlying set can be modified during loop
+    struct malnBlkSet *pending = malnBlkSet_construct();
+    struct malnBlkSet *set1Blks = malnSet_getBlockSetCopy(malnSet1);
+    struct malnBlkSetIterator *iter1 = malnBlkSet_getIterator(set1Blks);
+    struct malnBlk *nextBlk;
+    while ((nextBlk = malnBlkSetIterator_getNext(iter1)) != NULL) {
+        // make copy and delete from set so it's not overlapped
+        struct malnBlk *joinBlk = malnBlk_constructClone(nextBlk);
+        malnBlk_markOrDelete(nextBlk);
+        joinBlkWithSet(malnSetJoined, guideGenome, joinBlk, malnSet1, malnSet2, pending);
     }
     malnBlkSetIterator_destruct(iter1);
+    malnBlkSet_destruct(set1Blks);
+    malnBlkSet_destruct(pending);
 }
 
-/* add blocks from second set there  were not joined into the alignment */
-static void addUndone(struct malnSet *malnSetJoined, struct malnSet *malnSet2, struct blkState *state) {
-    struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet2);
-    struct malnBlk *blk2;
-    while ((blk2 = malnBlkSetIterator_getNext(iter)) != NULL) {
-        if (!malnBlkSet_contains(state->done2, blk2)) {
-            malnSet_addBlk(malnSetJoined, malnBlk_constructClone(blk2));
-        }
+/* add blocks from set that were not joined into the alignment */
+static void addUndone(struct malnSet *malnSetJoined, struct malnSet *malnSet) {
+    // ones marked deleted are automatically skipped
+    struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet);
+    struct malnBlk *blk;
+    while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
+        malnSet_addBlk(malnSetJoined, malnBlk_constructClone(blk));
     }
     malnBlkSetIterator_destruct(iter);
 }
 
 /* join two sets, generating a third */
 struct malnSet *malnJoinSets(struct Genome *guideGenome, struct malnSet *malnSet1, struct malnSet *malnSet2) {
-    struct blkState *state = blkState_construct(malnSet_getGenomes(malnSet1));
-    struct malnSet *malnSetJoined = malnSet_construct(malnSet_getGenomes(malnSet1));
+   struct malnSet *malnSetJoined = malnSet_construct(malnSet_getGenomes(malnSet1));
 
-    joinBlksWithSet(malnSetJoined, guideGenome, malnSet1, malnSet2, state);
-    addUndone(malnSetJoined, malnSet2, state);
-    addUndone(malnSetJoined, state->pending2, state);
-
-    assert(malnSet_popBlk(state->pending1) == NULL);
-    blkState_destruct(state);
+    joinBlksWithSet(malnSetJoined, guideGenome, malnSet1, malnSet2);
+    addUndone(malnSetJoined, malnSet1);
+    addUndone(malnSetJoined, malnSet2);
     malnSet_assert(malnSetJoined);
     return malnSetJoined;
 }

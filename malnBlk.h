@@ -32,6 +32,10 @@ struct malnBlk *malnBlk_constructClone(struct malnBlk *srcBlk);
 /* destructor */
 void malnBlk_destruct(struct malnBlk *blk);
 
+/* If a block is part of a set, mark it for deletion in that set,
+ * otherwise deleted immediately*/
+void malnBlk_markOrDelete(struct malnBlk *blk);
+
 /* add a component */
 void malnBlk_addComp(struct malnBlk *blk, struct malnComp *comp);
 

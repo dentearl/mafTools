@@ -195,6 +195,7 @@ static void joinSharedGuideColumns(struct malnJoinBlks *jb) {
 /* join two blocks using their specified guide components.  Optionally return
  * resulting join component. */
 struct malnBlk *malnJoinBlks(struct malnComp *guideComp1, struct malnComp *guideComp2, struct malnComp **joinedCompRet) {
+    // FIXME: is joinedCompRet needed??
     assert(malnComp_overlapAdjacent(guideComp1, guideComp2));
     struct malnJoinBlks *jb = malnJoinBlks_construct(guideComp1, guideComp2);
     if (joinedCompRet != NULL) {

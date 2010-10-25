@@ -20,6 +20,9 @@ CFLAGS=${cflags} -std=c99 -pedantic
 
 all: ${mafJoinObjs} ${progs}
 
+${mafJoinObjs} ${mafOverlapObjs}: $(wildcard *.h)
+
+
 ${binPath}/mafJoin: ${mafJoinObjs}
 	${CC} ${cflags} -I ${libPath} -I ${kentInc} -o $@ $^ ${kentLibWeb} ${libPath}/sonLib.a
 
