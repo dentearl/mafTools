@@ -6,6 +6,10 @@
 #include "dnautil.h"
 #include <stdbool.h>
 
+// FIXME: this is too simplistic due to indels, really needed
+// to check that a bases continues to be aligned to the
+// same sequences in the output, but that is very expensive
+
 /* command line option specifications */
 static struct optionSpec optionSpecs[] = {
     {NULL, 0}
@@ -26,8 +30,7 @@ static void usage(char *msg) {
 
 /* per-bases stats */
 struct Stat {
-    int16_t baseCnt;  // number of bases this bases is aligned to
-    int16_t blkCnt;   // number of blocks containing this base
+    bool aligned;  // was this base aligned
 };
 
 struct SeqCounts {
@@ -44,17 +47,16 @@ static struct SeqCounts *seqCounts_construct(struct Seq *seq) {
     return sc;
 }
 
-/* increment a column */
-static void seqCounts_incr(struct SeqCounts *sc, int iSeq, int amt) {
+/* flag a column as aligned */
+static void seqCounts_markAligned(struct SeqCounts *sc, int iSeq) {
     assert((0 <= iSeq) && (iSeq < sc->seq->size));
-    sc->stats[iSeq].baseCnt += amt;
-    sc->stats[iSeq].blkCnt++;
+    sc->stats[iSeq].aligned = true;
 }
 
-/* get total counts for a column */
-static int seqCounts_getTotal(struct SeqCounts *sc, int iSeq) {
+/* is a column aligned */
+static bool seqCounts_isAligned(struct SeqCounts *sc, int iSeq) {
     assert((0 <= iSeq) && (iSeq < sc->seq->size));
-    return sc->stats[iSeq].baseCnt *sc->stats[iSeq].blkCnt;
+    return sc->stats[iSeq].aligned;
 }
 
 /* counts over one or more alignments */
@@ -87,17 +89,6 @@ static int alignCounts_getNumSeqs(struct AlignCounts *ac) {
     return stHash_size(ac->bySeq);
 }
 
-/* count aligned bases in a col */
-static int countAligned(struct mafAli *blk, int iCol) {
-    int cnt = 0;
-    for (struct mafComp *comp = blk->components; comp != NULL; comp = comp->next) {
-        if (isBase(comp->text[iCol])) {
-            cnt++;
-        }
-    }
-    return cnt;
-}
-
 /* count a mafAli component */
 static void alignCounts_countComp(struct AlignCounts *ac, struct mafAli *blk, struct mafComp *comp) {
     struct Seq *seq = genomesObtainSeqForOrgSeqName(ac->genomes, comp->src, comp->srcSize);
@@ -109,7 +100,7 @@ static void alignCounts_countComp(struct AlignCounts *ac, struct mafAli *blk, st
     int iSeq = chromStart;
     for (int iCol = 0; iCol < blk->textSize; iCol++) {
         if (isBase(comp->text[iCol])) {
-            seqCounts_incr(sc, iSeq, countAligned(blk, iCol)-1);
+            seqCounts_markAligned(sc, iSeq);
             iSeq++;
         }
     }
@@ -134,29 +125,34 @@ static void alignCounts_countMaf(struct AlignCounts *ac, char *mafFile) {
     
 }
 
-/* advance to the next position where the counts are not the same */
-static int advanceToDiffCounts(struct SeqCounts *inSc, struct SeqCounts *joinedSc, int iSeq) {
-    while ((iSeq < inSc->seq->size) && (seqCounts_getTotal(inSc, iSeq) == seqCounts_getTotal(joinedSc, iSeq))) {
+/* advance to the next position where the aligned states is are not the same */
+static int advanceToDiffState(struct SeqCounts *inSc, struct SeqCounts *joinedSc, int iSeq) {
+    while ((iSeq < inSc->seq->size) && (seqCounts_isAligned(inSc, iSeq) == seqCounts_isAligned(joinedSc, iSeq))) {
         iSeq++;
     }
     return iSeq;
 }
 
-/* advance to the next position were the counts change */
-static int advanceToChangedCounts(struct SeqCounts *inSc, struct SeqCounts *joinedSc, int iSeq) {
-    int inCnt = seqCounts_getTotal(inSc, iSeq);
-    int joinedCnt = seqCounts_getTotal(joinedSc, iSeq);
+/* advance to the next position were the state changes */
+static int advanceToChangedState(struct SeqCounts *inSc, struct SeqCounts *joinedSc, int iSeq) {
+    bool inState = seqCounts_isAligned(inSc, iSeq);
+    bool joinedState = seqCounts_isAligned(joinedSc, iSeq);
     iSeq++;
-    while ((iSeq < inSc->seq->size) && (seqCounts_getTotal(inSc, iSeq) == inCnt) && (seqCounts_getTotal(joinedSc, iSeq) == joinedCnt)) {
+    while ((iSeq < inSc->seq->size) && (seqCounts_isAligned(inSc, iSeq) == inState) && (seqCounts_isAligned(joinedSc, iSeq) == joinedState)) {
         iSeq++;
     }
     return iSeq;
+}
+
+/* return t for aligned, f for not aligned */
+static char stateToChar(bool state) {
+    return (state) ? 't' : 'f';
 }
 
 /* compare a range of a sequence that has the same counts */
 static bool reportSeqRangeDiffs(struct SeqCounts *inSc, struct SeqCounts *joinedSc, int iSeq, int iSeqNext, FILE *outBedFh) {
     bool isOk = true;
-    fprintf(outBedFh, "%s\t%d\t%d\t%d~%d\n", inSc->seq->orgSeqName, iSeq, iSeqNext, seqCounts_getTotal(inSc, iSeq), seqCounts_getTotal(joinedSc, iSeq));
+    fprintf(outBedFh, "%s\t%d\t%d\t%c/%c\n", inSc->seq->orgSeqName, iSeq, iSeqNext, stateToChar(seqCounts_isAligned(inSc, iSeq)), stateToChar(seqCounts_isAligned(joinedSc, iSeq)));
     return isOk;
 }
 
@@ -165,9 +161,9 @@ static bool compareSeqCounts(struct SeqCounts *inSc, struct SeqCounts *joinedSc,
     bool isOk = true;
     int iSeq = 0;
     while (iSeq < inSc->seq->size) {
-        iSeq = advanceToDiffCounts(inSc, joinedSc, iSeq);
+        iSeq = advanceToDiffState(inSc, joinedSc, iSeq);
         if (iSeq < inSc->seq->size) {
-            int iSeqNext = advanceToChangedCounts(inSc, joinedSc, iSeq);
+            int iSeqNext = advanceToChangedState(inSc, joinedSc, iSeq);
             reportSeqRangeDiffs(inSc, joinedSc, iSeq, iSeqNext, outBedFh);
             isOk = false;
             iSeq = iSeqNext;
