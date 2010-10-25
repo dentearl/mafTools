@@ -12,7 +12,6 @@
 
 struct malnSet {
     struct Genomes *genomes;
-    struct Genome *rootGenome;            /* set automatically */
     struct malnBlkSet *blks;
     struct genomeRangeTree *compRangeMap; /* range index slRefs of malnComp
                                            * objects.  chrom name is org.seq,
@@ -120,9 +119,6 @@ void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     if (malnSet->compRangeMap != NULL) {
         addCompsToMap(malnSet, blk);
     }
-    if (malnSet->rootGenome == NULL) {
-        malnSet->rootGenome = malnBlk_getRootComp(blk)->seq->genome;
-    }
 }
 
 /* add all blocks in to a malnSet */
@@ -221,7 +217,6 @@ struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, char *mafFileN
         mafAliFree(&ali);
     }
     malnSet_assert(malnSet);
-    malnSet_validate(malnSet);
     mafFileFree(&mafFile);
     return malnSet;
 }
@@ -337,7 +332,6 @@ static void writeBlkToMaf(struct malnBlk *blk, FILE *mafFh) {
 /* write a malnSet to a MAF file  */
 void malnSet_writeMaf(struct malnSet *malnSet, char *mafFileName) {
     malnSet_assert(malnSet);
-    malnSet_validate(malnSet);
     stList *sorted = buildRootSorted(malnSet);
 
     FILE *mafFh = mustOpen(mafFileName, "w");
@@ -404,24 +398,6 @@ stList *malnSet_getOverlappingPendingComps(struct malnSet *malnSet, struct Seq *
         stList_sort(overBlks, sortCompListCmpFn);
     }
     return overBlks;
-}
-
-/* get the root genome */
-struct Genome *malnSet_getRootGenome(struct malnSet *malnSet) {
-    return malnSet->rootGenome;
-}
-
-/* validate set for consistency */
-void malnSet_validate(struct malnSet *malnSet) {
-    struct malnBlkSetIterator *iter = malnBlkSet_getIterator(malnSet->blks);
-    struct malnBlk *blk;
-    while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
-        if (malnBlk_getRootComp(blk)->seq->genome != malnSet->rootGenome) {
-            malnBlk_dump(blk, stderr, "incomplete join");
-            errAbort("Not all blocks it set have the same root genome: %s and %s", malnSet->rootGenome->name, malnBlk_getRootComp(blk)->seq->genome->name);
-        }
-    }
-    malnBlkSetIterator_destruct(iter);
 }
 
 /* assert some sanity checks on a set */

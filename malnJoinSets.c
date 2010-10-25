@@ -103,7 +103,7 @@ static struct malnBlk *joinCompWithSet(struct malnComp *joinComp, struct malnSet
     }
     // must stop if we join any, as bounds might be changed by trimming
     struct malnBlk *newJoinBlk = NULL;
-    stList *overComps = malnSet_getOverlappingPendingComps(targetSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocRoot|mafTreeLocLeaf, NULL);
+    stList *overComps = malnSet_getOverlappingPendingComps(targetSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocAll, NULL);
     for (int i = 0; i < (stList_length(overComps) && (newJoinBlk == NULL)); i++) {
         struct malnComp *targetComp = stList_get(overComps, i);
         if (debug) {
@@ -137,23 +137,21 @@ static struct malnBlk *joinBlkWithSetPass(struct Genome *guideGenome, struct mal
     return NULL;
 }
 
-/* add pending blocks create by split back into appropriate sets */
-static void addPending(struct malnBlkSet *pending, struct malnSet *malnSet1, struct malnSet *malnSet2) {
-    struct Genome *root1 = malnSet_getRootGenome(malnSet1);
+/* add pending blocks back to an arbitrary set */
+static void addPending(struct malnBlkSet *pending, struct malnSet *malnSet) {
     struct malnBlk *blk;
     while ((blk = malnBlkSet_pop(pending)) != NULL) {
-        if (malnBlk_getRootComp(blk)->seq->genome == root1) {
-            malnSet_addBlk(malnSet1, blk);
-        } else {
-            assert(malnBlk_getRootComp(blk)->seq->genome == malnSet_getRootGenome(malnSet2));
-            malnSet_addBlk(malnSet2, blk);
-        }
+        malnSet_addBlk(malnSet, blk);
     }
 }
 
 /* join a join a blk with overlapping components, making multiple passes until no more blocks can be
  * joined with it */
-static void joinBlkWithSet(struct malnSet *malnSetJoined, struct Genome *guideGenome, struct malnBlk *joinBlk, struct malnSet *malnSet1, struct malnSet *malnSet2, struct malnBlkSet *pending) {
+static bool joinBlkWithSet(struct malnSet *malnSetJoined, struct Genome *guideGenome, struct malnBlk *blk, struct malnSet *malnSet1, struct malnSet *malnSet2, struct malnBlkSet *pending) {
+    bool anyJoined = false;
+    // make copy and delete from set so it's not overlapped
+    struct malnBlk *joinBlk = malnBlk_constructClone(blk);
+    malnBlk_markOrDelete(blk);
     struct malnBlk *newJoinBlk = NULL;
     do {
         // try both ways due to transitive joins across the sets
@@ -162,34 +160,53 @@ static void joinBlkWithSet(struct malnSet *malnSetJoined, struct Genome *guideGe
             newJoinBlk = joinBlkWithSetPass(guideGenome, joinBlk, malnSet1, pending);
         }
         if (newJoinBlk != NULL) {
-            addPending(pending, malnSet1, malnSet2);
+            addPending(pending, malnSet1);
             joinBlk = newJoinBlk;
+            anyJoined = true;
         }
     } while (newJoinBlk != NULL);
-    assert(joinBlk->malnSet == NULL);
     malnSet_addBlk(malnSetJoined, joinBlk);
+    return anyJoined;
 }
 
-/* join blocks between sets */
-static void joinBlksWithSet(struct malnSet *malnSetJoined, struct Genome *guideGenome, struct malnSet *malnSet1, struct malnSet *malnSet2) {
-    // make copy of set of blocks so underlying set can be modified during loop
+/* join blocks from one set */
+static bool joinBlksWithSet(struct malnSet *malnSetJoined, struct Genome *guideGenome, struct malnSet *malnSet1, struct malnSet *malnSet2) {
+    // make copy of container for blocks so underlying set can be modified
+    // during loop (doesn't copy actual blocks)
+    bool anyJoined = false;
     struct malnBlkSet *pending = malnBlkSet_construct();
     struct malnBlkSet *set1Blks = malnSet_getBlockSetCopy(malnSet1);
     struct malnBlkSetIterator *iter1 = malnBlkSet_getIterator(set1Blks);
     struct malnBlk *nextBlk;
     while ((nextBlk = malnBlkSetIterator_getNext(iter1)) != NULL) {
         // make copy and delete from set so it's not overlapped
-        struct malnBlk *joinBlk = malnBlk_constructClone(nextBlk);
-        malnBlk_markOrDelete(nextBlk);
-        joinBlkWithSet(malnSetJoined, guideGenome, joinBlk, malnSet1, malnSet2, pending);
+        if (joinBlkWithSet(malnSetJoined, guideGenome, nextBlk, malnSet1, malnSet2, pending)) {
+            anyJoined = true;
+        }
     }
     malnBlkSetIterator_destruct(iter1);
     malnBlkSet_destruct(set1Blks);
     malnBlkSet_destruct(pending);
+    return anyJoined;
+}
+
+/* join blocks from both sets with both sets, continuing until nothing done  */
+static void joinBlksWithSets(struct malnSet *malnSetJoined, struct Genome *guideGenome, struct malnSet *malnSet1, struct malnSet *malnSet2) {
+    bool anyJoined;
+    do {
+        anyJoined = false;
+        if (joinBlksWithSet(malnSetJoined, guideGenome, malnSet1, malnSet2)) {
+            anyJoined = true;
+        }
+        if (joinBlksWithSet(malnSetJoined, guideGenome, malnSet2, malnSet1)) {
+            anyJoined = true;
+        }
+    } while (anyJoined);
 }
 
 /* add blocks from set that were not joined into the alignment */
 static void addUndone(struct malnSet *malnSetJoined, struct malnSet *malnSet) {
+    // FIXME: still needed??
     // ones marked deleted are automatically skipped
     struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *blk;
@@ -201,9 +218,8 @@ static void addUndone(struct malnSet *malnSetJoined, struct malnSet *malnSet) {
 
 /* join two sets, generating a third */
 struct malnSet *malnJoinSets(struct Genome *guideGenome, struct malnSet *malnSet1, struct malnSet *malnSet2) {
-   struct malnSet *malnSetJoined = malnSet_construct(malnSet_getGenomes(malnSet1));
-
-    joinBlksWithSet(malnSetJoined, guideGenome, malnSet1, malnSet2);
+    struct malnSet *malnSetJoined = malnSet_construct(malnSet_getGenomes(malnSet1));
+    joinBlksWithSets(malnSetJoined, guideGenome, malnSet1, malnSet2);
     addUndone(malnSetJoined, malnSet1);
     addUndone(malnSetJoined, malnSet2);
     malnSet_assert(malnSetJoined);

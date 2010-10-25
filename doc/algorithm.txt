@@ -45,7 +45,10 @@ joinBlkWithSetPass(guideGenome, joinBlk, targetSet, pending):
 
 # make multiple pass over input sets until no more blocks can be joined
 # with joinBlk
-joinBlkWithSet(guideGenome, joinBlk, malnSet1, malnSet2)
+joinBlkWithSet(guideGenome, blk, malnSet1, malnSet2)
+  # copy and mark version in set as deleted
+  - joinBlock = blk.clone()
+  - blk.markDeleted()
   - until nothing joined:
     - joinBlk = joinBlkWithSetPass(guideGenome, joinBlk, malnSet1, pending):
     - joinBlk = joinBlkWithSetPass(guideGenome, joinBlk, malnSet2, pending):
@@ -53,10 +56,11 @@ joinBlkWithSet(guideGenome, joinBlk, malnSet1, malnSet2)
 
 # join two sets at guideGenome, prodicing a third
 malnJoinSets(guideGenome, malnSet1, malnSet2)
-  - foreach blk1 in malnSet1
-      joinBlock = blk1.close()
-      blk1.markDeleted()
-      joinedSet.add(joinBlock);
+  - until no block can be joined
+    - foreach blk1 in malnSet1
+        joinedSet.add(blk1);
+    - foreach blk2 in malnSet2
+        joinedSet.add(blk2);
 
 # join blocks with overlapping or adjacent root components.  Only join
 # adjacent roots if there are components that cross the block.  Always join

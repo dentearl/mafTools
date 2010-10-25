@@ -29,7 +29,6 @@ ${binPath}/mafJoin: ${mafJoinObjs}
 ${binPath}/mafOverlap: ${mafOverlapObjs}
 	${CC} ${cflags} -I ${libPath} -I ${kentInc} -o $@ $^ ${kentLibWeb} ${libPath}/sonLib.a
 
-
 clean: 
 	rm -f ${mafJoinObjs} ${mafOverlapObjs}
 
