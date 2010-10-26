@@ -158,6 +158,20 @@ int malnComp_chromCmp(struct malnComp *comp1, struct malnComp *comp2);
  * the subrange does not contain any aligned bases. */
 struct malnComp *malnComp_constructSubrange(struct malnComp *comp, int alnStart, int alnEnd);
 
+/* count the number of aligned bases in a range */
+int malnComp_countAlignedRange(struct malnComp *comp, int alnStart, int alnEnd);
+
+/* are there any aligned bases in a range */
+bool malnComp_anyAlignedRange(struct malnComp *comp, int alnStart, int alnEnd);
+
+/* find the previous aligned column, at or before a starting point, return
+ * -1 if no more */
+int malnComp_findPrevAligned(struct malnComp *comp, int alnStart);
+
+/* find the next aligned column, at or after a starting point, return
+ * alnWidth if no more */
+int malnComp_findNextAligned(struct malnComp *comp, int alnStart);
+
 /* print base information describing a comp, newline not included */
 void malnComp_prInfo(struct malnComp *comp, FILE *fh);
 

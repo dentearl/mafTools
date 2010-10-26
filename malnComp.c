@@ -262,6 +262,59 @@ struct malnComp *malnComp_constructSubrange(struct malnComp *comp, int alnStart,
     return subComp;
 }
 
+/* count the number of aligned bases in a range */
+int malnComp_countAlignedRange(struct malnComp *comp, int alnStart, int alnEnd) {
+    assert((0 <= alnStart) && (alnStart < alnEnd) && (alnEnd <= comp->blk->alnWidth));
+
+    int cnt = 0;
+    for (int iCol = alnStart; iCol < alnEnd; iCol++) {
+        if (isBase(comp->alnStr->string[iCol])) {
+            cnt++;
+        }
+    }
+    return cnt;
+}
+
+/* are there any aligned bases in a range */
+bool malnComp_anyAlignedRange(struct malnComp *comp, int alnStart, int alnEnd) {
+    assert((0 <= alnStart) && (alnStart < alnEnd) && (alnEnd <= comp->blk->alnWidth));
+
+    for (int iCol = alnStart; iCol < alnEnd; iCol++) {
+        if (isBase(comp->alnStr->string[iCol])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* find the previous aligned column, at or before a starting point, return
+ * -1 if no more */
+int malnComp_findPrevAligned(struct malnComp *comp, int alnStart) {
+    assert((0 <= alnStart) && (alnStart < comp->blk->alnWidth));
+
+    int iCol = alnStart;
+    for (; iCol >= 0; iCol--) {
+        if (isBase(comp->alnStr->string[iCol])) {
+            break;
+        }
+    }
+    return iCol;
+}
+
+/* find the next aligned column, at or after a starting point, return
+ * alnWidth if no more */
+int malnComp_findNextAligned(struct malnComp *comp, int alnStart) {
+    assert((0 <= alnStart) && (alnStart < comp->blk->alnWidth));
+
+    int iCol = alnStart;
+    for (; iCol < comp->blk->alnWidth; iCol++) {
+        if (isBase(comp->alnStr->string[iCol])) {
+            break;
+        }
+    }
+    return iCol;
+}
+
 /* print base information describing a comp, newline not included */
 void malnComp_prInfo(struct malnComp *comp, FILE *fh) {
     const char *loc = (comp->ncLink != NULL) ? mafTreeLoc_str(malnComp_getLoc(comp)) : "NULL";

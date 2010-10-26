@@ -206,14 +206,68 @@ struct malnSet *malnSet_construct(struct Genomes *genomes) {
     return malnSet;
 }
 
+/* Initialize the alignment starts in an array of splits. Adjust bounds of
+ * partitions so that the have least some bases of the block's root aligned,
+ * as require by split code */
+static void splitBlockInitStarts(struct malnBlk *blk, int numParts, int partSize, int alnStarts[]) {
+    struct malnComp *rootComp = malnBlk_getRootComp(blk);
+    int alnNext = 0;
+    int iPart = 0;
+    // fill in, combining partitions if needed
+    while ((iPart <= numParts) && (alnNext < blk->alnWidth)) {
+        int alnEnd = min(alnNext+partSize, blk->alnWidth);
+        if (malnComp_anyAlignedRange(rootComp, alnNext, alnEnd)) {
+            alnStarts[iPart++] = alnNext;
+        }
+        alnNext = alnEnd;
+    }
+    int iLast = iPart-1;
+    // fill in the rest with end
+    for (; iPart <= numParts; iPart++) {
+        alnStarts[iPart] = blk->alnWidth;
+    }
+
+    // if the last entry does have any aligned root bases, move the bound back
+    if (!malnComp_anyAlignedRange(rootComp, alnStarts[iLast], alnStarts[iLast+1])) {
+        alnStarts[iLast] = alnStarts[iLast+1];
+    }
+}
+
+/* split a block in to roughly equal sizes pieces under the limit and add
+ * them.  This is very annoying as each piece must include at least some
+ * bases of the root sequence. */
+static void splitBlock(struct malnSet *malnSet, int maxInputBlkWidth, struct malnBlk *blk) {
+    int numParts = (blk->alnWidth + maxInputBlkWidth - 1) / maxInputBlkWidth;
+    int partSize = (blk->alnWidth + numParts - 1) / numParts;
+    int alnStarts[numParts+1];
+    splitBlockInitStarts(blk, numParts, partSize, alnStarts);
+
+    for (int iPart = 0; iPart < numParts; iPart++) {
+        if (alnStarts[iPart] < alnStarts[iPart+1]) {
+            malnSet_addBlk(malnSet, malnBlk_constructSubrange(blk, alnStarts[iPart], alnStarts[iPart+1]));
+        }
+    }
+}
+
+/* add a mafAli to the set */
+static void addMafAli(struct malnSet *malnSet, struct mafAli *ali, int maxInputBlkWidth, double defaultBranchLength, struct Genome *treelessRootGenome) {
+    struct malnBlk *blk = mafAliToMAlnBlk(malnSet->genomes, ali, defaultBranchLength, treelessRootGenome);
+    if (blk->alnWidth < maxInputBlkWidth) {
+        malnSet_addBlk(malnSet, blk);
+    } else {
+        splitBlock(malnSet, maxInputBlkWidth, blk);
+        malnBlk_destruct(blk);
+    }
+}
+
 /* Construct a malnSet from a MAF file. defaultBranchLength is used to
  * assign branch lengths when inferring trees from the MAF. */
-struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, char *mafFileName, double defaultBranchLength, struct Genome *treelessRootGenome) {
+struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, char *mafFileName, int maxInputBlkWidth, double defaultBranchLength, struct Genome *treelessRootGenome) {
     struct malnSet *malnSet = malnSet_construct(genomes);
     struct mafFile *mafFile = mafOpen(mafFileName);
     struct mafAli *ali;
     while ((ali = mafNext(mafFile)) != NULL) {
-        malnSet_addBlk(malnSet, mafAliToMAlnBlk(genomes, ali, defaultBranchLength, treelessRootGenome));
+        addMafAli(malnSet, ali, maxInputBlkWidth, defaultBranchLength, treelessRootGenome);
         mafAliFree(&ali);
     }
     malnSet_assert(malnSet);
