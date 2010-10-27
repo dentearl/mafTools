@@ -9,8 +9,8 @@ simOutDir = MARK_MAFJOIN/output
 export PATH := ../../../bin:/hive/groups/recon/local/bin:${PATH}
 export PYTHONPATH = ../../../src
 
-#mafJoinOpts = -maxBlkWidth=10000
-mafJoinOpts = -maxInputBlkWidth=2500
+mafJoinOpts = -maxBlkWidth=10000
+#mafJoinOpts = -maxInputBlkWidth=2500  # doesn't work very well
 
 step1Mafs = \
 	${simOutDir}/sHuman-sChimp/sHuman-sChimp.maf \

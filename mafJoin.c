@@ -37,7 +37,7 @@ static char *usageMsg =
     "  -treelessRoot2=genome - root genome for inMaf2 blocks\n"
     "   that do not have trees.\n"
     "  -maxInputBlkWidth=n - split input block to this size to limit CPU and\n"
-    "   memory consumption during merge.\n"
+    "   memory consumption during merge. NOT RECOMMENDED\n"
     "  -maxBlkWidth=n - set a cutoff on the maximum width of an alignment\n"
     "   block when doing the final join blocks in the output MAF.  This is\n"
     "   used to limit size of blocks, near the Evolover root were long,\n"
@@ -66,12 +66,13 @@ static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, int maxInpu
         malnSet_dump(malnSet, stderr, "%s input", setName);
     }
     if (treelessRootGenome != NULL) {
+        malnMultiParents_resolve(malnSet);
         malnJoinWithinSet_joinDups(malnSet);
         if (debug) {
             malnSet_dump(malnSet, stderr, "%s: joined-dups", setName);
         }
     }
-    malnMultiParents_check(malnSet);
+    malnMultiParents_check(malnSet); // FIXME: no longer needed due to above resolve step
     return malnSet;
 }
 

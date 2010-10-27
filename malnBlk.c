@@ -276,6 +276,9 @@ static void shortenComp(struct malnBlk *blk, struct malnComp *comp, int newChrom
 void malnBlk_shortenComp(struct malnBlk *blk, struct malnComp *comp, int newChromStart, int newChromEnd) {
     assert((newChromStart == comp->chromStart) || (newChromEnd == comp->chromEnd));
     if ((newChromStart == comp->chromStart) && (newChromEnd == comp->chromEnd)) {
+        if (comp == malnBlk_getRootComp(blk)) {
+            errAbort("shorting component %s:%d-%d will delete root component", comp->seq->orgSeqName, comp->chromStart, comp->chromEnd);
+        }
         malnBlk_unlink(blk, comp);
         malnComp_destruct(comp);
     } else {

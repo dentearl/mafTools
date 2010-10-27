@@ -305,6 +305,7 @@ void mafTree_deleteNode(mafTree *mTree, struct mafTreeNodeCompLink *ncLink) {
     }
     freeMafTreeNodeCompLinks(node);
     eTree_destruct(node);
+    setCheckTreeOrder(mTree, false);
 }
 
 /* enforce order of children */

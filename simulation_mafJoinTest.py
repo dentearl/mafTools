@@ -547,24 +547,6 @@ class MafJoinTests(unittest.TestCase):
         """
         self.mafJoinTest("hg18", A, B, C)
 
-    def testJoin16(self):
-        """ Inconsistent bases in overlapping components to be meregd
-        """
-        A = """
-        a score=10.0 tree="(mm4.chr6:0.15)rn3.chr4;"
-        s mm4.chr6     54303885 10 + 151104725 AAAAAAgggg
-        s rn3.chr4     81444250 10 + 187371129 aaaaaagggg
-
-        a score=10.0 tree="(mm4.chr6:0.15)rn3.chr4;"
-        s mm4.chr6     54303893 12 + 151104725 ccggggAAAAAA
-        s rn3.chr4     81444258 12 + 187371129 ccggggaaaaaa
-        """
-        B = """
-        """
-        C = """
-        """
-        self.mafJoinTest("sHuman-sChimp", A, B, C, treelessRoot2="sG-sH-sC", expectExitCode=255, expectStderr="multiple parents detected in components mm4.chr6:54303885-54303895 (+) and mm4.chr6:54303893-54303905 (+)\ncompBlk #1 10 (mm4.chr6:0.15)rn3.chr4;\n\t mm4.chr6 (+) 54303885-54303895 54303885-54303895 [10] leaf AAAAAAgggg\n\t rn3.chr4 (+) 81444250-81444260 81444250-81444260 [10] root aaaaaagggg\noverCompBlk #2 12 (mm4.chr6:0.15)rn3.chr4;\n\t mm4.chr6 (+) 54303893-54303905 54303893-54303905 [12] leaf ccggggAAAAAA\n\t rn3.chr4 (+) 81444258-81444270 81444258-81444270 [12] root ccggggaaaaaa\nError: multiple parents detected in components mm4.chr6:54303885-54303895 (+) and mm4.chr6:54303893-54303905 (+)\n")
-
     def testJoin18(self):
         """Merge of components in a block that went very wrong
         """
@@ -589,28 +571,6 @@ class MafJoinTests(unittest.TestCase):
         """
         self.mafJoinTest("rn3", A, B, C, treelessRoot1="rn3")
     
-    def testJoin19(self):
-        """Merge of components with an inconsistent alignment of a common base
-        """
-        A = """
-        a score=50.0
-        s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
-        s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
-
-        a score=50.0
-        s hg18.chr7    27578828 34 + 158545518 AAA-GGGAATGTTAACCAAATG--A-ATTGTCTCTTAC----
-        s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
-        """
-        B = """
-        """
-        C = """
-        a score=0.000000 tree="(hg18.chr7:0.1,hg18.chr7:0.1)rn3.chr4;"
-        s hg18.chr7 27578828 34 + 158545518 -AAA--GGGAATGTTAACCAAATG--A-ATTGTCTCTTAC----
-        s hg18.chr7 27578828 38 + 158545518 A-AA--GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
-        s rn3.chr4  81344243 40 + 187371129 --AA--GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
-        """
-        self.mafJoinTest("rn3", A, B, C, treelessRoot1="rn3")
-
     def getTransitiveSetMafs(self):
         """get larger mafs which have transitive alignments across sets"""
         return ("""
@@ -787,8 +747,39 @@ class MafJoinTests(unittest.TestCase):
         """
         self.mafJoinTest("sHuman-sChimp", A, B, C, treelessRoot2="sG-sH-sC", maxInputBlkWidth=250)
     
+    def testJoin26(self):
+        """ resolving multiple parents
+        """
+        A = """
+        a score=0 pctid=100.0
+        s simChimp.chr6      1528 1 + 500089 A
+        s sHuman-sChimp.chr6 1528 1 + 500300 A
+
+        a score=0 pctid=100.0
+        s simChimp.chr6      1528 1 + 500089 A
+        s sHuman-sChimp.chr6 1527 1 + 500300 A
+
+        a score=0 pctid=100.0
+        s simChimp.chr6      1528 1 + 500089 A
+        s sHuman-sChimp.chr6 1526 1 + 500300 A
+        """
+        B = """
+        """
+        C = """
+        a score=0.000000 tree="sHuman-sChimp.chr6;"
+        s sHuman-sChimp.chr6 1526 1 + 500300 A
+
+        a score=0.000000 tree="sHuman-sChimp.chr6;"
+        s sHuman-sChimp.chr6 1527 1 + 500300 A
+
+        a score=0.000000 tree="(simChimp.chr6:0.1)sHuman-sChimp.chr6;"
+        s simChimp.chr6      1528 1 + 500089 A
+        s sHuman-sChimp.chr6 1528 1 + 500300 A
+        """
+        self.mafJoinTest("sHuman-sChimp", A, B, C, treelessRoot1="sHuman-sChimp", expectStderr="Warning: multiple parents for simChimp.chr6:1528-1529, dropping one\nWarning: multiple parents for simChimp.chr6:1528-1529, dropping one\n")
+
 # FIXME: should be controllable from the command line
-import logging
-logger.setLevel(logging.INFO)
+#import logging
+#logger.setLevel(logging.INFO)
 if __name__ == '__main__':
     unittest.main()
