@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <getopt.h>
+#include <stdarg.h>
 
 #include "cactus.h"
 #include "avl.h"
@@ -33,13 +34,13 @@
  */
 
 void usage() {
-    fprintf(stderr, "eval_MAFComparator, version 0.1\n");
-    fprintf(stderr, "-a --logLevel : Set the log level\n");
-    fprintf(stderr, "-b --mAFFile1 : The location of the first MAF file\n");
-    fprintf(stderr, "-c --mAFFile2 : The location of the second MAF file\n");
-    fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
-    fprintf(stderr, "-e --sampleNumber : The number of sample homology tests to perform (total).\n");
-    fprintf(stderr, "-h --help : Print this help screen\n");
+   fprintf(stderr, "eval_MAFComparator, version 0.1\n");
+   fprintf(stderr, "-a --logLevel : Set the log level\n");
+   fprintf(stderr, "-b --mAFFile1 : The location of the first MAF file\n");
+   fprintf(stderr, "-c --mAFFile2 : The location of the second MAF file\n");
+   fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
+   fprintf(stderr, "-e --sampleNumber : The number of sample homology tests to perform (total).\n");
+   fprintf(stderr, "-h --help : Print this help screen\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -103,10 +104,21 @@ int main(int argc, char *argv[]) {
     ///////////////////////////////////////////////////////////////////////////
     // (0) Check the inputs.
     ///////////////////////////////////////////////////////////////////////////
-
-    assert(mAFFile1 != NULL);
-    assert(mAFFile2 != NULL);
-    assert(outputFile != NULL);
+    if (mAFFile1 == NULL){
+       usage();
+       fprintf(stderr, "\nSet --mAFFile1 .\n");
+       exit(2);
+    }
+    if (mAFFile2 == NULL){
+       usage();
+       fprintf(stderr, "\nSet --mAFFile2 .\n");
+       exit(2);
+    }
+    if (outputFile == NULL){
+       usage();
+       fprintf(stderr, "\nSet --outputFile .\n");
+       exit(2);
+    }
     FILE *fileHandle = fopen(mAFFile1, "r");
     if(fileHandle == NULL){
        fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", mAFFile1);
