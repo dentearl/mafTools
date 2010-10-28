@@ -16,6 +16,8 @@
 
 #include "eval_ComparatorAPI.h"
 
+float VERSION = 0.1;
+
 /*
  * The script takes two MAF files and for each ordered pair of sequences in the MAFS calculates
  * a predefined number of sample homology tests (see below), then reports the statistics in an XML formatted file.
@@ -34,13 +36,17 @@
  */
 
 void usage() {
-   fprintf(stderr, "eval_MAFComparator, version 0.1\n");
+   fprintf(stderr, "eval_MAFComparator, version %.1f\n", VERSION);
    fprintf(stderr, "-a --logLevel : Set the log level\n");
    fprintf(stderr, "-b --mAFFile1 : The location of the first MAF file\n");
    fprintf(stderr, "-c --mAFFile2 : The location of the second MAF file\n");
    fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
-   fprintf(stderr, "-e --sampleNumber : The number of sample homology tests to perform (total).\n");
+   fprintf(stderr, "-e --sampleNumber : The number of sample homology tests to perform (total) [default 1000000].\n");
    fprintf(stderr, "-h --help : Print this help screen\n");
+}
+
+void version() {
+   fprintf(stderr, "eval_MAFComparator, version %.1f\n", VERSION);
 }
 
 int main(int argc, char *argv[]) {
@@ -64,6 +70,7 @@ int main(int argc, char *argv[]) {
             { "mAFFile2", required_argument, 0, 'c' },
             { "outputFile", required_argument, 0, 'd' },
             { "sampleNumber", required_argument, 0, 'e' },
+            { "version", no_argument, 0, 'v'},
             { "help", no_argument, 0, 'h' },
             { 0, 0, 0, 0 }
         };
@@ -89,6 +96,9 @@ int main(int argc, char *argv[]) {
             case 'd':
                 outputFile = stString_copy(optarg);
                 break;
+            case 'v':
+                version();
+                return 0;
             case 'e':
                 assert(sscanf(optarg, "%i", &sampleNumber) == 1);
                 break;
