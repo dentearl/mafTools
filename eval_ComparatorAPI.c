@@ -165,8 +165,8 @@ int32_t aTrio_cmpFunction(ATrio *aTrio1, ATrio *aTrio2, void *a) {
     return i;
 }
 
-void getPairsP(void (*passPairFn)(APair *pair, void *extraArgument1, void *extraArgument2, void *extraArgument3),
-        void *extraArgument1, void *extraArgument2, void *extraArgument3, int *bytesRead, int *nBytes, char **cA, FILE *fileHandle) {
+void getPairsP(void (*passPairFn)(APair *pair, void *extraArgument1, void *extraArgument2, void *extraArgument3, void *extraArgument4),
+               void *extraArgument1, void *extraArgument2, void *extraArgument3, void *extraArgument4, int *bytesRead, int *nBytes, char **cA, FILE *fileHandle) {
     int32_t length, start, seqLength, i, j, k, pos1, pos2, inc1, inc2;
     struct List *ranges = constructEmptyList(0, free);
     char *seqName;
@@ -209,7 +209,7 @@ void getPairsP(void (*passPairFn)(APair *pair, void *extraArgument1, void *extra
     }
 
     //Now call the pair function for every pair of aligned bases.
-    for(i=0; i<ranges->length; i+=4) {
+    for(i=0; i < ranges->length; i += 4) {
         char *seq1 = ranges->list[i];
         inc1 = *((int32_t *)ranges->list[i+2]);
         sequence = ranges->list[i+3];
@@ -229,7 +229,7 @@ void getPairsP(void (*passPairFn)(APair *pair, void *extraArgument1, void *extra
                 if(sequence[k] != '-') {
                     if(sequence2[k] != '-') {
                         aPair_fillOut(&aPair, seq1, seq2, pos1, pos2);
-                        passPairFn(&aPair, extraArgument1, extraArgument2, extraArgument3);
+                        passPairFn(&aPair, extraArgument1, extraArgument2, extraArgument3, extraArgument4);
                         pos2 += inc2;
                     }
                     pos1 += inc1;
@@ -396,8 +396,8 @@ void getTriosP(void (*passTrioFn)(ATrio *trio, void *extraArgument1, void *extra
     trioDecoder_destruct(decoder);
 }
 
-void getPairs(const char *mAFFile1, void (*passPairFn)(APair *pair, void *extraArgument1, void *extraArgument2, void *extraArgument3),
-        void *extraArgument1, void *extraArgument2, void *extraArgument3) {
+void getPairs(const char *mAFFile1, void (*passPairFn)(APair *pair, void *extraArgument1, void *extraArgument2, void *extraArgument3, void *extraArgument4),
+              void *extraArgument1, void *extraArgument2, void *extraArgument3, void *extraArgument4) {
     /*
      * Iterates through all pairs of bases in a set of MAFs, calling the given function for each one.
      */
@@ -407,16 +407,16 @@ void getPairs(const char *mAFFile1, void (*passPairFn)(APair *pair, void *extraA
     char *cA;
 
     cA = st_malloc(nBytes + 1);
-    bytesRead = benLine (&cA, &nBytes, fileHandle);
+    bytesRead = benLine(&cA, &nBytes, fileHandle);
 
     //read through lines until reaching a line starting with an 'a':
     //then call process block function passing it the next line.
     while(bytesRead != -1) {
         if(bytesRead > 0 && cA[0] == 'a') {
-            getPairsP(passPairFn, extraArgument1, extraArgument2, extraArgument3, &bytesRead, &nBytes, &cA, fileHandle);
+           getPairsP(passPairFn, extraArgument1, extraArgument2, extraArgument3, extraArgument4, &bytesRead, &nBytes, &cA, fileHandle);
         }
         else { //deal with empty, white space lines.
-            bytesRead = benLine (&cA, &nBytes, fileHandle);
+            bytesRead = benLine(&cA, &nBytes, fileHandle);
         }
     }
 
@@ -501,14 +501,14 @@ void countTrios(ATrio *trio, int64_t *counter, struct hashtable *legitTrios, voi
                 (*counter)++;
 }
 
-void samplePairs(APair *pair, struct avl_table *pairs, double *acceptProbability, struct hashtable *legitPairs) {
+void samplePairs(APair *thisPair, struct avl_table *pairs, double *acceptProbability, struct hashtable *legitPairs) {
     /*
-     * Adds *pair to *pairs with a given probability.
+     * Adds *thisPair to *pairs with a given probability.
      */
-   if(hashtable_search(legitPairs, pair->seq1) != NULL)
-      if(hashtable_search(legitPairs, pair->seq2) != NULL)
-         if(RANDOM() >= *acceptProbability)
-            avl_insert(pairs, aPair_copyConstruct(pair));
+   if( hashtable_search( legitPairs, thisPair->seq1 ) != NULL )
+      if( hashtable_search( legitPairs, thisPair->seq2 ) != NULL )
+         if( RANDOM() <= *acceptProbability )
+            avl_insert( pairs, aPair_copyConstruct( thisPair ));
 }
 
 void sampleTrios(ATrio *trio, struct avl_table *trios, double *acceptProbability, struct hashtable *legitTrios) {
@@ -522,20 +522,23 @@ void sampleTrios(ATrio *trio, struct avl_table *trios, double *acceptProbability
                     avl_insert(trios, aTrio_copyConstruct(trio));
 }
 
-void homologyTests1(APair *pair, struct avl_table *pairs, struct avl_table *resultPairs, struct hashtable *legitPairs) {
+void homologyTests1(APair *thisPair, struct avl_table *pairs, struct avl_table *resultPairs, struct hashtable *legitPairs, int32_t *verbose) {
     /*
-     * If both members of *pair are in the intersection of MAFFileA and MAFFileB,
-     * and *pair is in the set *pairs then adds to the result pair a positive result.
+     * If both members of *thisPair are in the intersection of MAFFileA and MAFFileB,
+     * and *thisPair is in the set *pairs then adds to the result pair a positive result.
      */
-    if ((hashtable_search(legitPairs, pair->seq1) != NULL) && (hashtable_search(legitPairs, pair->seq2) != NULL)) {
-        APair *resultPair = avl_find(resultPairs, pair);
+    if ((hashtable_search(legitPairs, thisPair->seq1) != NULL) && (hashtable_search(legitPairs, thisPair->seq2) != NULL)) {
+        APair *resultPair = avl_find(resultPairs, thisPair);
         if (resultPair == NULL) {
-            resultPair = aPair_construct(pair->seq1, pair->seq2, 0, 0);
+            resultPair = aPair_construct(thisPair->seq1, thisPair->seq2, 0, 0);
             avl_insert(resultPairs, resultPair);
         }
 
-        if (avl_find(pairs, pair) != NULL) { //we use the positions as indices as to the outcome of of the homology test.
+        if (avl_find(pairs, thisPair) != NULL) { // we use the positions as indices as to the outcome of of the homology test.
             resultPair->pos1++;
+        }else{
+           if ( *verbose )
+              printf("Missing: %s [%d] %s [%d]\n", thisPair->seq1, thisPair->pos1, thisPair->seq2, thisPair->pos2);
         }
     }
 }
@@ -603,19 +606,19 @@ void homologyTestsTrio2(struct avl_table *trios, struct avl_table *resultTrios) 
     }
 }
 
-struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht) {
+struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, int32_t verbose) {
     /*
      * Gets samples.
      */
     int64_t pairNumber = 0;
-    getPairs(mAFFileA, (void (*)(APair *, void *, void *, void *))countPairs, &pairNumber, ht, NULL);
+    getPairs(mAFFileA, (void (*)(APair *, void *, void *, void *, void *))countPairs, &pairNumber, ht, NULL, NULL);
 
-    double acceptProbability = 1.0 - ((double)numberOfSamples) / pairNumber;
+    double acceptProbability = ((double)numberOfSamples) / pairNumber;
     struct avl_table *pairs = avl_create((int32_t (*)(const void *, const void *, void *))aPair_cmpFunction, NULL, NULL);
-    getPairs(mAFFileA, (void (*)(APair *, void *, void *, void *))samplePairs, pairs, &acceptProbability, ht);
+    getPairs(mAFFileA, (void (*)(APair *, void *, void *, void *, void *))samplePairs, pairs, &acceptProbability, ht, &verbose);
 
     struct avl_table *resultPairs = avl_create((int32_t (*)(const void *, const void *, void *))aPair_cmpFunction_seqsOnly, NULL, NULL);
-    getPairs(mAFFileB, (void (*)(APair *, void *, void *, void *))homologyTests1, pairs, resultPairs, ht);
+    getPairs(mAFFileB, (void (*)(APair *, void *, void *, void *, void *))homologyTests1, pairs, resultPairs, ht, &verbose );
 
     homologyTests2(pairs, resultPairs);
     avl_destroy(pairs, (void (*)(void *, void *))aPair_destruct);

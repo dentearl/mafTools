@@ -17,6 +17,7 @@
 #include "eval_ComparatorAPI.h"
 
 float VERSION = 0.1;
+int32_t ULTRAVERBOSE = 0;
 
 /*
  * The script takes two MAF files and for each ordered pair of sequences in the MAFS calculates
@@ -42,6 +43,8 @@ void usage() {
    fprintf(stderr, "-c --mAFFile2 : The location of the second MAF file\n");
    fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
    fprintf(stderr, "-e --sampleNumber : The number of sample homology tests to perform (total) [default 1000000].\n");
+   fprintf(stderr, "-u --ultraVerbose : Print details about failed tests.\n");
+   fprintf(stderr, "-v --version : Print current version number\n");
    fprintf(stderr, "-h --help : Print this help screen\n");
 }
 
@@ -70,6 +73,7 @@ int main(int argc, char *argv[]) {
             { "mAFFile2", required_argument, 0, 'c' },
             { "outputFile", required_argument, 0, 'd' },
             { "sampleNumber", required_argument, 0, 'e' },
+            { "ultraVerbose", no_argument, 0, 'u'},
             { "version", no_argument, 0, 'v'},
             { "help", no_argument, 0, 'h' },
             { 0, 0, 0, 0 }
@@ -77,7 +81,7 @@ int main(int argc, char *argv[]) {
 
         int option_index = 0;
 
-        int key = getopt_long(argc, argv, "a:b:c:d:e:h", long_options, &option_index);
+        int key = getopt_long(argc, argv, "a:b:c:d:e:u:v:h", long_options, &option_index);
 
         if(key == -1) {
             break;
@@ -99,6 +103,9 @@ int main(int argc, char *argv[]) {
             case 'v':
                 version();
                 return 0;
+            case 'u':
+                ULTRAVERBOSE = 1;
+                break;
             case 'e':
                 assert(sscanf(optarg, "%i", &sampleNumber) == 1);
                 break;
@@ -173,13 +180,18 @@ int main(int argc, char *argv[]) {
     //Do comparisons.
     //////////////////////////////////////////////
 
-    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNameHash);
-    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNameHash);
+    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNameHash, ULTRAVERBOSE);
+    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNameHash, ULTRAVERBOSE);
     fileHandle = fopen(outputFile, "w");
     if(fileHandle == NULL){
        fprintf(stderr, "ERROR, unable to open `%s' for writing.\n", outputFile);
        exit(1);
     }
+
+    //////////////////////////////////////////////
+    //Report results.
+    //////////////////////////////////////////////
+    
     fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\">\n", sampleNumber);
     reportResults(results_12, mAFFile1, mAFFile2, fileHandle);
     reportResults(results_21, mAFFile2, mAFFile1, fileHandle);

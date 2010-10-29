@@ -60,7 +60,7 @@ typedef struct _trioDecoder {
 void populateNameHash(const char *mAFFile, struct hashtable *htp);
 void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3);
 void printNameHash(struct hashtable *h);
-struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht);
+struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, int32_t verbose);
 struct avl_table *compareMAFs_AB_Trio(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, struct List *speciesList);
 void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle);
 void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle);
