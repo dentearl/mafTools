@@ -655,8 +655,8 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
         positive += resultPair->pos1;
         total += resultPair->pos2;
     }
-    fprintf(fileHandle, "\t<homology_tests fileA=\"%s\" fileB=\"%s\" totalTests=\"%f\" totalTrue=\"%f\" totalFalse=\"%f\" average=\"%f\">\n",
-            mAFFileA, mAFFileB, total, positive, total - positive, positive / total);
+    fprintf(fileHandle, "\t<homology_tests fileA=\"%s\" fileB=\"%s\" totalTests=\"%d\" totalTrue=\"%d\" totalFalse=\"%d\" average=\"%f\">\n",
+            mAFFileA, mAFFileB, (int)total, (int)positive, (int)total - (int)positive, positive / total);
     while((resultPair = avl_t_prev(&iterator)) != NULL) {
         assert(resultPair->pos2 >= resultPair->pos1);
         fprintf(fileHandle,

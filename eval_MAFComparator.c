@@ -38,7 +38,7 @@ float VERSION = 0.1;
 void usage() {
    fprintf(stderr, "eval_MAFComparator, version %.1f\n", VERSION);
    fprintf(stderr, "-a --logLevel : Set the log level\n");
-   fprintf(stderr, "-b --mAFFile1 : The location of the first MAF file\n");
+   fprintf(stderr, "-b --mAFFile1 : The location of the first MAF file (used to create sequence name hash.)\n");
    fprintf(stderr, "-c --mAFFile2 : The location of the second MAF file\n");
    fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
    fprintf(stderr, "-e --sampleNumber : The number of sample homology tests to perform (total) [default 1000000].\n");
@@ -162,13 +162,12 @@ int main(int argc, char *argv[]) {
     st_logInfo("Output stats file : %s\n", outputFile);
 
     //////////////////////////////////////////////
-    // Create hashtable for the first MAF file.
+    // Create sequence name hashtable from the first MAF file.
     //////////////////////////////////////////////
 
     struct hashtable *seqNameHash;
     seqNameHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, free, free);
     populateNameHash(mAFFile1, seqNameHash);
-
 
     //////////////////////////////////////////////
     //Do comparisons.
