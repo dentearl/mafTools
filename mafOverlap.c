@@ -7,6 +7,7 @@
 
 /* command line option specifications */
 static struct optionSpec optionSpecs[] = {
+    {"overlapComps", OPTION_BOOLEAN},
     {NULL, 0}
 };
 
@@ -14,7 +15,11 @@ static char *usageMsg =
     "mafOverlap [options] inMaf selectBed outMaf\n"
     "\n"
     "Select records from inMaf with any overlap with records in selectbed.\n"
-    "The chrom column in bed should be org.chrom.\n";
+    "The chrom column in bed should be org.chrom.\n"
+    "\n"
+    "  -overlapComps - drop components that don't overlap the regions\n";
+
+static boolean overlapComps = FALSE;
 
 /* usage msg and exit */
 static void usage(char *msg) {
@@ -47,6 +52,18 @@ static bool keepMafBlk(struct bed *selectBeds, struct mafAli *blk) {
     return false;
 }
 
+/* only write components that overlap */
+static void writeOverlapComps(struct bed *selectBeds, struct mafAli *blk, FILE *outMafFh) {
+    struct mafComp *comp, *holdComps = NULL, *useComps = NULL;
+    while ((comp = slPopHead(&blk->components)) != NULL) {
+        slAddHead((anyOverlaps(selectBeds, comp) ? &useComps : &holdComps), comp);
+    }
+    slReverse(&useComps);
+    blk->components = useComps;
+    mafWrite(outMafFh, blk);
+    blk->components = slCat(useComps, holdComps);
+}
+
 /* select overlapping MAF records */
 static void mafOverlap(char *inMafFile, char *selectBedFile, char *outMafFile) {
     struct bed *selectBeds = bedLoadNAll(selectBedFile, 3);
@@ -57,7 +74,11 @@ static void mafOverlap(char *inMafFile, char *selectBedFile, char *outMafFile) {
     struct mafAli *blk;
     while ((blk = mafNext(inMafFh)) != NULL) {
         if (keepMafBlk(selectBeds, blk)) {
-            mafWrite(outMafFh, blk);
+            if (overlapComps) {
+                writeOverlapComps(selectBeds, blk, outMafFh);
+            } else {
+                mafWrite(outMafFh, blk);
+            }
         }
         mafAliFree(&blk);
     }
@@ -76,6 +97,7 @@ int main(int argc, char *argv[]) {
     if (argc != 4)  {
         usage("Error: wrong number of arguments");
     }
+    overlapComps = optionExists("overlapComps");
 
     mafOverlap(argv[1], argv[2], argv[3]);
     return 0;

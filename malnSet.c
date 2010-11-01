@@ -511,3 +511,13 @@ void malnSet_dump(struct malnSet *malnSet, FILE *fh, const char *label, ...) {
     malnSet_dumpv(malnSet, fh, label, args);
     va_end(args);
 }
+
+/* print set for debugging to a file */
+void malnSet_dumpFile(struct malnSet *malnSet, char *dumpFile, const char *label, ...) {
+    FILE *fh = mustOpen(dumpFile, "w");
+    va_list args;
+    va_start(args, label);
+    malnSet_dumpv(malnSet, fh, label, args);
+    va_end(args);
+    carefulClose(&fh);
+}

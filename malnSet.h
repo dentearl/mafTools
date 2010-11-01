@@ -85,4 +85,11 @@ __attribute__((format(printf, 3, 4)))
 #endif
 ;
 
+/* print set for debugging to a file */
+void malnSet_dumpFile(struct malnSet *malnSet, char *dumpFile, const char *label, ...)
+#if defined(__GNUC__)
+__attribute__((format(printf, 3, 4)))
+#endif
+;
+
 #endif

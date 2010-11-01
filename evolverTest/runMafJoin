@@ -1,0 +1,33 @@
+#!/bin/bash
+# runMafJoin [options] guideGenome inMaf1 inMaf2 outMaf
+#  
+# script to run mafJoin for evolver testing, simplifying calling by generating the names of
+# derived files
+
+set -beEu -o pipefail
+
+cmd="../../../bin/mafJoin"
+while [[ $1 == -* ]] ; do
+    cmd="$cmd $1"
+    shift
+done
+
+if [ $# != 4 ] ; then
+    echo "Error: wrong # args" >&2
+    exit 1
+fi
+guideGenome="$1"
+inMaf1="$2"
+inMaf2="$3"
+outMaf="$4"
+outMafTmp=$outMaf.$$.tmp
+err=$(echo $outMaf | sed 's/[.][^/]*$//').err
+
+if true ; then
+    # add dump options
+    cmd="$cmd -inMaf1Dump=${inMaf1}dmp -inMaf2Dump=${inMaf2}dmp -outMafDump=${outMaf}dmp"
+fi
+cmd="$cmd $guideGenome $inMaf1 $inMaf2 $outMafTmp"
+
+$cmd >&$err
+mv -f $outMafTmp $outMaf
