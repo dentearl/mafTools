@@ -12,6 +12,7 @@
 
 struct malnSet {
     struct Genomes *genomes;
+    char *mafFileName;       // maybe NULL
     struct malnBlkSet *blks;
     struct genomeRangeTree *compRangeMap; /* range index slRefs of malnComp
                                            * objects.  chrom name is org.seq,
@@ -110,6 +111,11 @@ struct Genomes *malnSet_getGenomes(struct malnSet *malnSet) {
     return malnSet->genomes;
 }
 
+/* get the source MAF file or NULL if not specified */
+char *malnSet_getMafFileName(struct malnSet *malnSet) {
+    return malnSet->mafFileName;
+}
+
 /* add a block to a malnSet */
 void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     assert(blk->malnSet == NULL);
@@ -194,11 +200,14 @@ static void malnSet_deleteBlk(struct malnSet *malnSet, struct malnBlk *blk) {
     malnBlk_destruct(blk);
 }
 
-/* construct an empty malnSet  */
-struct malnSet *malnSet_construct(struct Genomes *genomes) {
+/* construct an empty malnSet.  mafFileName maybe NULL  */
+struct malnSet *malnSet_construct(struct Genomes *genomes, char *mafFileName) {
     struct malnSet *malnSet;
     AllocVar(malnSet);
     malnSet->genomes = genomes;
+    if (mafFileName != NULL) {
+        malnSet->mafFileName = cloneString(mafFileName);
+    }
     // n.b. don't try to sort on a key, just use addess key, otherwise
     // deleting entries in merge will delete the wrong entries.
     malnSet->blks = malnBlkSet_construct();
@@ -263,7 +272,7 @@ static void addMafAli(struct malnSet *malnSet, struct mafAli *ali, int maxInputB
 /* Construct a malnSet from a MAF file. defaultBranchLength is used to
  * assign branch lengths when inferring trees from the MAF. */
 struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, char *mafFileName, int maxInputBlkWidth, double defaultBranchLength, struct Genome *treelessRootGenome) {
-    struct malnSet *malnSet = malnSet_construct(genomes);
+    struct malnSet *malnSet = malnSet_construct(genomes, mafFileName);
     struct mafFile *mafFile = mafOpen(mafFileName);
     struct mafAli *ali;
     while ((ali = mafNext(mafFile)) != NULL) {
@@ -311,6 +320,7 @@ void malnSet_destruct(struct malnSet *malnSet) {
     deleteAllBlks(malnSet, malnSet->blks);
     malnBlkSet_destruct(malnSet->blks);
     malnBlkSet_destruct(malnSet->dyingBlks);
+    freeMem(malnSet->mafFileName);
     freeMem(malnSet);
 }
 

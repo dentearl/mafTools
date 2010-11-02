@@ -7,6 +7,14 @@
 #include "sonLibList.h"
 #include "stSafeC.h"
 
+/* open file for reporting problems, writing header */
+FILE *malnMultiParents_openResolveDropLog(char *multiParentDroppedFile) {
+    static char *probHeader = "maf\tdroppedSeq\tdroppedStart\tdroppedEnd\n";
+    FILE *dropLogFh = mustOpen(multiParentDroppedFile, "w");
+    fputs(probHeader, dropLogFh);
+    return dropLogFh;
+}
+
 /*
  * find overlapping coordinates of two components
  */
@@ -52,14 +60,18 @@ static void shortenComp(struct malnComp *comp, int cutChromStart, int cutChromEn
 }
 
 /* resolve conflicting parents for a component of a block.*/
-static void resolveBlkOverComp(struct malnComp *comp1, struct malnComp *comp2) {
+static void resolveBlkOverComp(struct malnComp *comp1, struct malnComp *comp2, FILE *dropLogFh) {
     int commonChromStart, commonChromEnd;
     commonChromStart = overlappingCoords(comp1, comp2, &commonChromEnd);
     int aln1Start, aln1End, aln2Start, aln2End;
     malnComp_seqChromRangeToAlnRange(comp1, commonChromStart, commonChromEnd, &aln1Start, &aln1End);
     malnComp_seqChromRangeToAlnRange(comp2, commonChromStart, commonChromEnd, &aln2Start, &aln2End);
 
-    fprintf(stderr, "Warning: multiple parents for %s:%d-%d, dropping one\n", comp1->seq->orgSeqName, commonChromStart, commonChromEnd);
+    if (dropLogFh != NULL) {
+        fprintf(dropLogFh, "%s\t%s\t%d\t%d\n", malnSet_getMafFileName(comp1->blk->malnSet) ,comp1->seq->orgSeqName, commonChromStart, commonChromEnd);
+    } else {
+        fprintf(stderr, "Warning: multiple parents for %s:%d-%d, dropping one\n", comp1->seq->orgSeqName, commonChromStart, commonChromEnd);
+    }
 
     if (pickCompToShorten(comp1, aln1Start, aln1End, comp2, aln2Start, aln2End) == 1) {
         shortenComp(comp1, commonChromStart, commonChromEnd);
@@ -71,13 +83,13 @@ static void resolveBlkOverComp(struct malnComp *comp1, struct malnComp *comp2) {
 /* Resolve conflicting parents for a component of a block. Since comp
  * can be completely removed, can only update component and must start block
  * over.  Return true if something was done. */
-static bool resolveBlkComp(struct malnSet *malnSet, struct malnBlk *blk, struct malnComp *comp) {
+static bool resolveBlkComp(struct malnSet *malnSet, struct malnBlk *blk, struct malnComp *comp, FILE *dropLogFh) {
     bool didSomething = false;
     stList *overComps = malnSet_getOverlappingPendingComps(malnSet, comp->seq, comp->chromStart, comp->chromEnd, mafTreeLocAll, NULL);
     for (int i = 0; (i < stList_length(overComps)) && (!didSomething) ; i++) {
         struct malnComp *overComp = stList_get(overComps, i);
         if ((overComp->blk != comp->blk) && (!overComp->blk->deleted) && (malnComp_getLoc(overComp) != mafTreeLocRoot)) {
-            resolveBlkOverComp(comp, overComp);
+            resolveBlkOverComp(comp, overComp, dropLogFh);
             didSomething = true;
         }
     }
@@ -86,7 +98,7 @@ static bool resolveBlkComp(struct malnSet *malnSet, struct malnBlk *blk, struct 
 }
 
 /* resolve conflicting parents on for block. */
-static void resolveBlk(struct malnSet *malnSet, struct malnBlk *blk) {
+static void resolveBlk(struct malnSet *malnSet, struct malnBlk *blk, FILE *dropLogFh) {
     // must start over each time something is resolved, since the block could
     // be updated.
     bool didSomething;
@@ -94,7 +106,7 @@ static void resolveBlk(struct malnSet *malnSet, struct malnBlk *blk) {
         didSomething = false;
         for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
             if (malnComp_getLoc(comp) != mafTreeLocRoot) {
-                didSomething = resolveBlkComp(malnSet, blk, comp);
+                didSomething = resolveBlkComp(malnSet, blk, comp, dropLogFh);
                 if (didSomething) {
                     break;  // start again
                 }
@@ -104,14 +116,15 @@ static void resolveBlk(struct malnSet *malnSet, struct malnBlk *blk) {
 }
 
 /* Resolve conflicts where blocks imply sequences with multiple parents,
- * editing blocks */
-void malnMultiParents_resolve(struct malnSet *malnSet) {
+ * editing blocks.  If dropLogFh is not NULL, write a tab file describing the
+ * problems */
+void malnMultiParents_resolve(struct malnSet *malnSet, FILE *dropLogFh) {
     // this can be done in one pass, since the blocks and components are modified
     // in place instead of creating new ones
     struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *blk;
     while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
-        resolveBlk(malnSet, blk);
+        resolveBlk(malnSet, blk, dropLogFh);
     }
     malnBlkSetIterator_destruct(iter);
     malnSet_deleteDying(malnSet);

@@ -36,7 +36,17 @@ class MafJoinTests(unittest.TestCase):
         fileHandle.close()
         return tempFile
 
-    def makeMafJoinCmd(self, guideDb, mafFileA, mafFileB, outputMafFile, treelessRoot1=None, treelessRoot2=None, maxBlkWidth=None, maxInputBlkWidth=None):
+    def writeExpected(self, data, suffix):
+        """write an expected file"""
+        tempFile = self.getTestTempFile(suffix)
+        fileHandle = open(tempFile, 'w')
+        # skip first blank line
+        for line in data.split("\n")[1:]:
+            fileHandle.write(line.strip() + "\n")
+        fileHandle.close()
+        return tempFile
+
+    def makeMafJoinCmd(self, guideDb, mafFileA, mafFileB, outputMafFile, treelessRoot1=None, treelessRoot2=None, maxBlkWidth=None, maxInputBlkWidth=None, dropFile=None):
         cmd = ["mafJoin"]
         if treelessRoot1 != None:
             cmd.append("-treelessRoot1="+treelessRoot1)
@@ -46,6 +56,8 @@ class MafJoinTests(unittest.TestCase):
             cmd.append("-maxBlkWidth="+str(maxBlkWidth))
         if maxInputBlkWidth != None:
             cmd.append("-maxInputBlkWidth="+str(maxInputBlkWidth))
+        if dropFile != None:
+            cmd.append("-multiParentDropped="+dropFile)
         cmd.extend([guideDb, mafFileA, mafFileB, outputMafFile])
         return cmd
 
@@ -53,9 +65,9 @@ class MafJoinTests(unittest.TestCase):
         sys.stdout.flush()
         sys.stderr.flush()
 
-    def runMafJoin(self, guideDb, mafFileA, mafFileB, outputMafFile, expectExitCode=0, expectStderr=None, expectStderrRe=None, treelessRoot1=None, treelessRoot2=None, maxBlkWidth=None, maxInputBlkWidth=None):
+    def runMafJoin(self, guideDb, mafFileA, mafFileB, outputMafFile, expectExitCode=0, expectStderr=None, expectStderrRe=None, treelessRoot1=None, treelessRoot2=None, maxBlkWidth=None, maxInputBlkWidth=None, dropFile=None, dropExpectFile=None):
         self.__stdFlush()
-        cmd = self.makeMafJoinCmd(guideDb, mafFileA, mafFileB, outputMafFile, treelessRoot1, treelessRoot2, maxBlkWidth, maxInputBlkWidth)
+        cmd = self.makeMafJoinCmd(guideDb, mafFileA, mafFileB, outputMafFile, treelessRoot1, treelessRoot2, maxBlkWidth, maxInputBlkWidth, dropFile)
         logger.info("run: " + " ".join(cmd))
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, stderr) = proc.communicate()
@@ -81,7 +93,7 @@ class MafJoinTests(unittest.TestCase):
         """
         system("diff -u %s %s" % (expected, recieved))
 
-    def mafJoinTest(self, guide, mafA, mafB, mafC, expectExitCode=0, expectStderr=None, expectStderrRe=None, treelessRoot1=None, treelessRoot2=None, maxBlkWidth=None, maxInputBlkWidth=None):
+    def mafJoinTest(self, guide, mafA, mafB, mafC, expectExitCode=0, expectStderr=None, expectStderrRe=None, treelessRoot1=None, treelessRoot2=None, maxBlkWidth=None, maxInputBlkWidth=None, dropExpect=None):
         """Writes out mafA and mafB to temp files.
         Runs mafJoin
         Parses the output and compares it to mafC.
@@ -90,9 +102,17 @@ class MafJoinTests(unittest.TestCase):
         tempFileB = self.writeMAF(mafB, "B.maf")
         tempFileC = self.writeMAF(mafC, "C.maf")
         tempOutputFile = self.getTestTempFile("out.maf")
-        self.runMafJoin(guide, tempFileA, tempFileB, tempOutputFile, expectExitCode=expectExitCode, expectStderr=expectStderr, expectStderrRe=expectStderrRe, treelessRoot1=treelessRoot1, treelessRoot2=treelessRoot2, maxBlkWidth=maxBlkWidth, maxInputBlkWidth=maxInputBlkWidth)
+        tempDropFile = None
+        tempDropExpectFile = None
+        if dropExpect != None:
+            tempDropFile = self.getTestTempFile(".drop")
+            tempDropExpectFile =  self.writeExpected(dropExpect, "expect.drop")
+        self.runMafJoin(guide, tempFileA, tempFileB, tempOutputFile, expectExitCode=expectExitCode, expectStderr=expectStderr, expectStderrRe=expectStderrRe, treelessRoot1=treelessRoot1, treelessRoot2=treelessRoot2, maxBlkWidth=maxBlkWidth, maxInputBlkWidth=maxInputBlkWidth, dropFile=tempDropFile)
         if expectExitCode == 0:  # only check MAF on success
             self.compareExpectedAndRecieved(tempFileC, tempOutputFile)
+            if dropExpect != None:
+                self.compareExpectedAndRecieved(tempDropExpectFile, tempDropFile)
+            
 
     def setUp(self):
         unittest.TestCase.setUp(self)
@@ -776,7 +796,11 @@ class MafJoinTests(unittest.TestCase):
         s simChimp.chr6      1528 1 + 500089 A
         s sHuman-sChimp.chr6 1528 1 + 500300 A
         """
-        self.mafJoinTest("sHuman-sChimp", A, B, C, treelessRoot1="sHuman-sChimp", expectStderr="Warning: multiple parents for simChimp.chr6:1528-1529, dropping one\nWarning: multiple parents for simChimp.chr6:1528-1529, dropping one\n")
+        dropExpect = """
+maf	droppedSeq	droppedStart	droppedEnd
+tmp/__main__.MafJoinTests.testJoin26.A.maf	simChimp.chr6	1528	1529
+tmp/__main__.MafJoinTests.testJoin26.A.maf	simChimp.chr6	1528	1529"""
+        self.mafJoinTest("sHuman-sChimp", A, B, C, treelessRoot1="sHuman-sChimp", dropExpect=dropExpect)
 
 # FIXME: should be controllable from the command line
 #import logging

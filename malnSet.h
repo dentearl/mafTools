@@ -10,8 +10,8 @@ struct malnComp;
 struct Seq;
 struct malnBlkSet;
 
-/* construct an empty malnSet  */
-struct malnSet *malnSet_construct(struct Genomes *genomes);
+/* construct an empty malnSet.  mafFileName maybe NULL  */
+struct malnSet *malnSet_construct(struct Genomes *genomes, char *mafFileName);
 
 /* Construct a malnSet from a MAF file. defaultBranchLength is used to
  * assign branch lengths when inferring trees from the MAF. */
@@ -22,6 +22,9 @@ void malnSet_destruct(struct malnSet *malnSet);
 
 /* get associated genomes object  */
 struct Genomes *malnSet_getGenomes(struct malnSet *malnSet);
+
+/* get the source MAF file or NULL if not specified */
+char *malnSet_getMafFileName(struct malnSet *malnSet);
 
 /* add a block to a malnSet */
 void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk);

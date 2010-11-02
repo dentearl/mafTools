@@ -6,9 +6,16 @@
 
 set -beEu -o pipefail
 
-cmd="../../../bin/mafJoin"
+cmd="../../../../bin/mafJoin"
+
+haveTreelessRoot1=no
+haveTreelessRoot2=no
 while [[ $1 == -* ]] ; do
     cmd="$cmd $1"
+    case $1 in
+        -treelessRoot1=*) haveTreelessRoot1=yes;;
+        -treelessRoot2=*) haveTreelessRoot2=yes;;
+    esac
     shift
 done
 
@@ -21,13 +28,27 @@ inMaf1="$2"
 inMaf2="$3"
 outMaf="$4"
 outMafTmp=$outMaf.$$.tmp
-err=$(echo $outMaf | sed 's/[.][^/]*$//').err
+outPrefix=$(echo $outMaf | sed 's/[.][^/]*$//')
+err=$outPrefix.err
 
 if true ; then
     # add dump options
-    cmd="$cmd -inMaf1Dump=${inMaf1}dmp -inMaf2Dump=${inMaf2}dmp -outMafDump=${outMaf}dmp"
+    cmd="$cmd -inMaf1Dump=${outPrefix}.in1.dmp -inMaf2Dump=${outPrefix}.in2.dmp -outMafDump=${outPrefix}.out.dmp"
 fi
 cmd="$cmd $guideGenome $inMaf1 $inMaf2 $outMafTmp"
 
+mkdir -p $(dirname $outMaf)
+set -x
 $cmd >&$err
 mv -f $outMafTmp $outMaf
+
+if true ; then
+    cmpXmlOut=$outPrefix.stepcmp.xml
+    cmpDetailOut=$outPrefix.stepcmp.details
+    if [ ${haveTreelessRoot1} = "yes" -a  ${haveTreelessRoot2} = "no" ] ; then
+        eval_MAFComparator --mAFFile1 $inMaf1  --mAFFile2 $outMaf --outputFile $cmpXmlOut --ultraVerbose >& $cmpDetailOut
+    fi
+    if [ ${haveTreelessRoot1} = "no" -a  ${haveTreelessRoot2} = "yes" ] ; then
+        eval_MAFComparator --mAFFile1 $inMaf2  --mAFFile2 $outMaf --outputFile $cmpXmlOut --ultraVerbose >& $cmpDetailOut
+    fi
+fi

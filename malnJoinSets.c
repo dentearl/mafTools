@@ -218,7 +218,7 @@ static void addUndone(struct malnSet *malnSetJoined, struct malnSet *malnSet) {
 
 /* join two sets, generating a third */
 struct malnSet *malnJoinSets(struct Genome *guideGenome, struct malnSet *malnSet1, struct malnSet *malnSet2) {
-    struct malnSet *malnSetJoined = malnSet_construct(malnSet_getGenomes(malnSet1));
+    struct malnSet *malnSetJoined = malnSet_construct(malnSet_getGenomes(malnSet1), NULL);
     joinBlksWithSets(malnSetJoined, guideGenome, malnSet1, malnSet2);
     addUndone(malnSetJoined, malnSet1);
     addUndone(malnSetJoined, malnSet2);

@@ -12,5 +12,5 @@ ${simOutDir}/%.probcmpout: ${simOutDir}/%.cmpout
 	awk '!/Missing:/ || $$2!=$$4' $< >$@
 
 clean:
-	rm -f ${createdMafs} $(compareBaseNames:%=${simOutDir}/%.cmpdone) $(compareBaseNames:%=${simOutDir}/%.probcmpdone) $(compareBaseNames:%=${simOutDir}/%.xml) $(compareBaseNames:%=${simOutDir}/%.probs)
+	rm -f ${simOutDir}
 

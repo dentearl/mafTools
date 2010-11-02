@@ -21,6 +21,7 @@ static struct optionSpec optionSpecs[] = {
     {"treelessRoot2", OPTION_STRING},
     {"maxInputBlkWidth", OPTION_INT},
     {"maxBlkWidth", OPTION_INT},
+    {"multiParentDropped", OPTION_STRING},
     {"inMaf1Dump", OPTION_STRING},
     {"inMaf2Dump", OPTION_STRING},
     {"outMafDump", OPTION_STRING},
@@ -46,6 +47,8 @@ static char *usageMsg =
     "   used to limit size of blocks, near the Evolover root were long,\n"
     "   contiguous overlapping regions can cause exponential growth in run\n"
     "   time and memory requirements\n"
+    "  -multiParentDropped=file - write regions were one copy was drop due to\n"
+    "   having multiple parents.\n"
     "  -inMaf1Dump=file - dump info about input inMaf1 after merging dups\n"
     "  -inMaf2Dump=file - dump info about input inMaf2 after merging dups\n"
     "  -outMafDump=file - dump info about final output maf\n"
@@ -65,14 +68,14 @@ static void usage(char *msg) {
 
 /* load a MAF and do internal joining.  */
 static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, int maxInputBlkWidth, double defaultBranchLength,
-                               char *treelessRootName, char *setName) {
+                               char *treelessRootName, char *setName, FILE *dropLogFh) {
     struct Genome *treelessRootGenome = (treelessRootName != NULL) ? genomesObtainGenome(genomes, treelessRootName) : NULL;
     struct malnSet *malnSet = malnSet_constructFromMaf(genomes, inMaf, maxInputBlkWidth, defaultBranchLength, treelessRootGenome);
     if (debug) {
         malnSet_dump(malnSet, stderr, "%s input", setName);
     }
     if (treelessRootGenome != NULL) {
-        malnMultiParents_resolve(malnSet);
+        malnMultiParents_resolve(malnSet, dropLogFh);
         malnJoinWithinSet_joinDups(malnSet);
         if (debug) {
             malnSet_dump(malnSet, stderr, "%s: joined-dups", setName);
@@ -85,18 +88,19 @@ static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, int maxInpu
 /* join two mafs */
 static void mafJoin(char *guideGenomeName, char *inMaf1, char *inMaf2, char *outMaf, double defaultBranchLength,
                     char *treelessRoot1Name, char *treelessRoot2Name, int maxInputBlkWidth, int maxBlkWidth,
-                    char *inMaf1Dump, char *inMaf2Dump, char *outMafDump) {
+                    char *multiParentDroppedFile, char *inMaf1Dump, char *inMaf2Dump, char *outMafDump) {
     struct Genomes *genomes = genomesNew();
     struct Genome *guideGenome = genomesObtainGenome(genomes, guideGenomeName);
-
-    struct malnSet *malnSet1 = loadMaf(genomes, inMaf1, maxInputBlkWidth, defaultBranchLength, treelessRoot1Name, "set1");
+    FILE *dropLogFh = (multiParentDroppedFile != NULL) ? malnMultiParents_openResolveDropLog(multiParentDroppedFile) : NULL;
+    struct malnSet *malnSet1 = loadMaf(genomes, inMaf1, maxInputBlkWidth, defaultBranchLength, treelessRoot1Name, "set1", dropLogFh);
     if (inMaf1Dump != NULL) {
         malnSet_dumpFile(malnSet1, inMaf1Dump, "set1");
     }
-    struct malnSet *malnSet2 = loadMaf(genomes, inMaf2, maxInputBlkWidth, defaultBranchLength, treelessRoot2Name, "set2");
+    struct malnSet *malnSet2 = loadMaf(genomes, inMaf2, maxInputBlkWidth, defaultBranchLength, treelessRoot2Name, "set2", dropLogFh);
     if (inMaf2Dump != NULL) {
         malnSet_dumpFile(malnSet2, inMaf2Dump, "set2");
     }
+    carefulClose(&dropLogFh);
 
     // join and then merge overlapping blocks that were created
     struct malnSet *malnSetJoined = malnJoinSets(guideGenome, malnSet1, malnSet2);
@@ -138,6 +142,7 @@ int main(int argc, char *argv[]) {
     mafJoin(argv[1], argv[2], argv[3], argv[4], optionDouble("branchLength", 0.1), 
             optionVal("treelessRoot1", NULL), optionVal("treelessRoot2", NULL),
             optionInt("maxInputBlkWidth", INT_MAX), optionInt("maxBlkWidth", INT_MAX),
+            optionVal("multiParentDropped", NULL),
             optionVal("inMaf1Dump", NULL), optionVal("inMaf2Dump", NULL), optionVal("outMafDump", NULL));
     return 0;
 }
