@@ -16,6 +16,9 @@ ${binPath}/eval_mergeMAFComparatorResults.py : eval_mergeMAFComparatorResults.py
 	cp eval_mergeMAFComparatorResults.py ${binPath}/eval_mergeMAFComparatorResults.py
 	chmod +x ${binPath}/eval_mergeMAFComparatorResults.py
 
+${binPath}/eval_MFAToMAF : eval_MFAToMAF.c ../mAFComparison/eTreeExtras.c ${libPath}/sonLib.a 
+	${cxx} ${cflags} -I ${libPath} ${tokyoCabinetIncl} -I ../mAFComparison -o ${binPath}/eval_MFAToMAF eval_MFAToMAF.c ../mAFComparison/eTreeExtras.c ${libPath}/sonLib.a 
+
 ${binPath}/eval_intersectDroppedMissing.py : eval_intersectDroppedMissing.py
 	cp eval_intersectDroppedMissing.py ${binPath}/eval_intersectDroppedMissing.py
 	chmod +x ${binPath}/eval_intersectDroppedMissing.py
@@ -24,3 +27,4 @@ clean :
 	rm -f *.o
 	rm -f ${binPath}/eval_MAFComparator
 	rm -f ${binPath}/eval_PhyloComparator
+	rm -f ${binPath}/eval_MFAToMAF
