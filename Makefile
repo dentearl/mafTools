@@ -16,6 +16,10 @@ ${binPath}/eval_mergeMAFComparatorResults.py : eval_mergeMAFComparatorResults.py
 	cp eval_mergeMAFComparatorResults.py ${binPath}/eval_mergeMAFComparatorResults.py
 	chmod +x ${binPath}/eval_mergeMAFComparatorResults.py
 
+${binPath}/eval_intersectDroppedMissing.py : eval_intersectDroppedMissing.py
+	cp eval_intersectDroppedMissing.py ${binPath}/eval_intersectDroppedMissing.py
+	chmod +x ${binPath}/eval_intersectDroppedMissing.py
+
 clean :
 	rm -f *.o
 	rm -f ${binPath}/eval_MAFComparator

@@ -538,7 +538,7 @@ void homologyTests1(APair *thisPair, struct avl_table *pairs, struct avl_table *
             resultPair->pos1++;
         }else{
            if ( *verbose )
-              printf("Missing: %s [%d] %s [%d]\n", thisPair->seq1, thisPair->pos1, thisPair->seq2, thisPair->pos2);
+              printf("%s\t%d\t%s\t%d\n", thisPair->seq1, thisPair->pos1, thisPair->seq2, thisPair->pos2);
         }
     }
 }

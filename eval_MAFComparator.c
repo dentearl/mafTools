@@ -180,11 +180,15 @@ int main(int argc, char *argv[]) {
     //Do comparisons.
     //////////////////////////////////////////////
 
-    if (ULTRAVERBOSE)
-       printf("Comparing %s to %s\n", mAFFile1, mAFFile2);
+    if (ULTRAVERBOSE){
+       printf("# Comparing %s to %s\n", mAFFile1, mAFFile2);
+       printf("# seq1\tpos1\tseq2\tpos2\n");
+    }
     struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNameHash, ULTRAVERBOSE);
-    if (ULTRAVERBOSE)
-       printf("Comparing %s to %s\n", mAFFile2, mAFFile1);
+    if (ULTRAVERBOSE){
+       printf("# Comparing %s to %s\n", mAFFile2, mAFFile1);
+       printf("# seq1\tpos1\tseq2\tpos2\n");
+    }
     struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNameHash, ULTRAVERBOSE);
     fileHandle = fopen(outputFile, "w");
     if(fileHandle == NULL){
