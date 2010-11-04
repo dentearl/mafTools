@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 """
-eval_intersectDroppedMissing.py
+eval_setDiffDroppedMissing.py
 dent earl, dearl (a) soe ucsc edu
 3 nov 2010
 A script that will take the dropped regions output from mafJoin
 (dropped.tab) and the missing pairs from eval_MAFcomparator
 (missing.tab) and will look for 'missing pairs' that are not
-in the intersection with dropped.tab. These members outside the
-intersection represent possible bugs.
+in the intersection with dropped.tab, i.e. the set difference.
+These members outside the intersection represent possible bugs.
 
 """
 ##############################
@@ -109,22 +109,22 @@ def printMissing( missing ):
     for m in missing:
         print '%s %d %s %d' %( m.seq1, m.pos1, m.seq2, m.pos2 )
 
-def findPairsNotInIntersect( dropped, missing ):
+def doSetDifference( dropped, missing ):
     inter = intersect( dropped, missing )
-    intersectC = intersectComplement( dropped, missing, inter )
+    intersectC = setDiff( dropped, missing, inter )
     return intersectC
 
-def intersectComplement( dropped, missing, intersect ):
+def setDiff( dropped, missing, intersect ):
     intersectDict = {}
-    intersectC = []
+    diff = []
     for i in intersect:
         intersectDict[ i ] = True
     for m in missing:
         if m.seq1 == m.seq2:
             continue
         if m not in intersect:
-            intersectC.append( m )
-    return intersectC
+            diff.append( m )
+    return diff
 
 # hey, check out bisect
 # wait, create a Dropped dict keyed with names and valued with an array
@@ -166,9 +166,9 @@ def main():
     missing = populateMissingPairs( options.missingFile )
     #printMissing( missing )
 
-    intersectComplement = []
-    intersectComplement = findPairsNotInIntersect( dropped, missing )
-    printMissing( intersectComplement )
+    setDifference = []
+    setDifference = doSetDifference( dropped, missing )
+    printMissing( setDifference )
 
 if __name__ == "__main__":
     main()
