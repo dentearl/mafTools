@@ -126,6 +126,10 @@ def intersectComplement( dropped, missing, intersect ):
             intersectC.append( m )
     return intersectC
 
+# hey, check out bisect
+# wait, create a Dropped dict keyed with names and valued with an array
+# 
+
 def intersect( dropped, missing ):
     intersect = []
     for m in missing:
