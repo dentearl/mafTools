@@ -24,11 +24,7 @@ class Intersections( unittest.TestCase ):
         dropped[ d.name ] = [ d ]
 
         result = setD.intersect( dropped, missing )
-        self.assertEqual( m.file, result[0].file )
-        self.assertEqual( m.seq1, result[0].seq1 )
-        self.assertEqual( m.pos1, result[0].pos1 )
-        self.assertEqual( m.seq2, result[0].seq2 )
-        self.assertEqual( m.pos2, result[0].pos2 )
+        self.assertTrue( m in result )
         
     def test_intersect_2( self ):
         """intersect() should return empty list when things do not intersect. checking apple.chr1 seq position."""
@@ -119,12 +115,9 @@ class Intersections( unittest.TestCase ):
         d.end = 110
         dropped[ d.name ] = [ d ]
 
-        result = setD.intersect( dropped, missing ) 
-        self.assertEqual( m.file, result[0].file )
-        self.assertEqual( m.seq1, result[0].seq1 )
-        self.assertEqual( m.pos1, result[0].pos1 )
-        self.assertEqual( m.seq2, result[0].seq2 )
-        self.assertEqual( m.pos2, result[0].pos2 )
+        result = setD.intersect( dropped, missing )
+        self.assertTrue( m in result )
+
     def test_intersect_5( self ):
         """intersect() should return intersecting pairs. Testing ending edges."""
         missing = []
