@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-import eval_intersectDroppedMissing as idm
+import eval_setDiffDroppedMissing as setD
 import unittest
 
 class Intersections( unittest.TestCase ):
     def test_intersect_1( self ):
         """intersect() should return intersecting pairs. Testing starting positions"""
         missing = []
-        m = idm.Miss()
+        m = setD.Miss()
         m.file = 'banana.maf'
         m.seq1 = 'banana.chr1'
         m.pos1 = 100
@@ -15,15 +15,15 @@ class Intersections( unittest.TestCase ):
         m.pos2 = 200
         missing.append( m )
 
-        dropped = []
-        d = idm.Drop()
+        dropped = {}
+        d = setD.Drop()
         d.file = 'banana.maf'
         d.name = 'banana.chr1'
         d.start = 100
         d.end = 110
-        dropped.append( d )
+        dropped[ d.name ] = [ d ]
 
-        result = idm.intersect( dropped, missing ) 
+        result = setD.intersect( dropped, missing )
         self.assertEqual( m.file, result[0].file )
         self.assertEqual( m.seq1, result[0].seq1 )
         self.assertEqual( m.pos1, result[0].pos1 )
@@ -33,7 +33,7 @@ class Intersections( unittest.TestCase ):
     def test_intersect_2( self ):
         """intersect() should return empty list when things do not intersect. checking apple.chr1 seq position."""
         missing = []
-        m = idm.Miss()
+        m = setD.Miss()
         m.file = 'banana.maf'
         m.seq1 = 'banana.chr1'
         m.pos1 = 100
@@ -41,21 +41,21 @@ class Intersections( unittest.TestCase ):
         m.pos2 = 200
         missing.append( m )
 
-        dropped = []
-        d = idm.Drop()
+        dropped = {}
+        d = setD.Drop()
         d.file = 'apple.maf'
         d.name = 'apple.chr1'
         d.start = 100
         d.end = 200
-        dropped.append( d )
+        dropped[ d.name ] = [ d ]
 
-        result = idm.intersect( dropped, missing ) 
+        result = setD.intersect( dropped, missing ) 
         self.assertTrue( len(result) == 0 )
 
     def test_intersect_3( self ):
         """intersect() should return empty list when the Missing sample pair is self-self."""
         missing = []
-        m = idm.Miss()
+        m = setD.Miss()
         m.file = 'banana.maf'
         m.seq1 = 'banana.chr1'
         m.pos1 = 100
@@ -63,21 +63,21 @@ class Intersections( unittest.TestCase ):
         m.pos2 = 200
         missing.append( m )
 
-        dropped = []
-        d = idm.Drop()
+        dropped = {}
+        d = setD.Drop()
         d.file = 'apple.maf'
         d.name = 'apple.chr1'
         d.start = 100
         d.end = 200
-        dropped.append( d )
+        dropped[ d.name ] = [ d ]
 
-        result = idm.intersect( dropped, missing ) 
+        result = setD.intersect( dropped, missing ) 
         self.assertTrue( len(result) == 0 )
 
-    def test_intersectComplement_1( self ):
-        """intersectComplement() should return things that do not intersect."""
+    def test_setDiff_1( self ):
+        """setDiff() should return things that do not intersect."""
         missing = []
-        m = idm.Miss()
+        m = setD.Miss()
         m.file = 'banana.maf'
         m.seq1 = 'banana.chr1'
         m.pos1 = 100
@@ -85,16 +85,16 @@ class Intersections( unittest.TestCase ):
         m.pos2 = 200
         missing.append( m )
 
-        dropped = []
-        d = idm.Drop()
+        dropped = {}
+        d = setD.Drop()
         d.file = 'apple.maf'
         d.name = 'apple.chr1'
         d.start = 100
         d.end = 200
-        dropped.append( d )
+        dropped[ d.name ] = [ d ]
 
-        iSect = idm.intersect( dropped, missing )
-        result = idm.intersectComplement( dropped, missing, iSect ) 
+        iSect = setD.intersect( dropped, missing )
+        result = setD.setDiff( missing, iSect ) 
         self.assertEqual( m.file, result[0].file )
         self.assertEqual( m.seq1, result[0].seq1 )
         self.assertEqual( m.pos1, result[0].pos1 )
@@ -103,7 +103,7 @@ class Intersections( unittest.TestCase ):
     def test_intersect_4( self ):
         """intersect() should return intersecting pairs. Testing ending edges."""
         missing = []
-        m = idm.Miss()
+        m = setD.Miss()
         m.file = 'banana.maf'
         m.seq1 = 'banana.chr1'
         m.pos1 = 109
@@ -111,15 +111,15 @@ class Intersections( unittest.TestCase ):
         m.pos2 = 200
         missing.append( m )
 
-        dropped = []
-        d = idm.Drop()
+        dropped = {}
+        d = setD.Drop()
         d.file = 'banana.maf'
         d.name = 'banana.chr1'
         d.start = 100
         d.end = 110
-        dropped.append( d )
+        dropped[ d.name ] = [ d ]
 
-        result = idm.intersect( dropped, missing ) 
+        result = setD.intersect( dropped, missing ) 
         self.assertEqual( m.file, result[0].file )
         self.assertEqual( m.seq1, result[0].seq1 )
         self.assertEqual( m.pos1, result[0].pos1 )
@@ -128,7 +128,7 @@ class Intersections( unittest.TestCase ):
     def test_intersect_5( self ):
         """intersect() should return intersecting pairs. Testing ending edges."""
         missing = []
-        m = idm.Miss()
+        m = setD.Miss()
         m.file = 'banana.maf'
         m.seq1 = 'banana.chr1'
         m.pos1 = 110
@@ -136,21 +136,21 @@ class Intersections( unittest.TestCase ):
         m.pos2 = 200
         missing.append( m )
 
-        dropped = []
-        d = idm.Drop()
+        dropped = {}
+        d = setD.Drop()
         d.file = 'banana.maf'
         d.name = 'banana.chr1'
         d.start = 100
         d.end = 110
-        dropped.append( d )
+        dropped[ d.name ] = [ d ]
 
-        result = idm.intersect( dropped, missing )
+        result = setD.intersect( dropped, missing )
         self.assertTrue( len(result) == 0 )
         
     def test_intersect_6( self ):
         """intersect() should return intersecting pairs. Testing starting positions."""
         missing = []
-        m = idm.Miss()
+        m = setD.Miss()
         m.file = 'banana.maf'
         m.seq1 = 'banana.chr1'
         m.pos1 = 99
@@ -158,15 +158,15 @@ class Intersections( unittest.TestCase ):
         m.pos2 = 200
         missing.append( m )
 
-        dropped = []
-        d = idm.Drop()
+        dropped = {}
+        d = setD.Drop()
         d.file = 'banana.maf'
         d.name = 'banana.chr1'
         d.start = 100
         d.end = 110
-        dropped.append( d )
+        dropped[ d.name ] = [ d ]
 
-        result = idm.intersect( dropped, missing )
+        result = setD.intersect( dropped, missing )
         self.assertTrue( len(result) == 0 )
 
 if __name__ == '__main__':

@@ -11,6 +11,7 @@ These members outside the intersection represent possible bugs.
 
 """
 ##############################
+import bisect
 import os
 import re
 import sys
@@ -49,10 +50,23 @@ class Drop:
         self.name  = ''
         self.start = -1
         self.end   = -1
+#    def __eq__( self, other ):
+#        return self.start == other
+    def __lt__( self, other ):
+        return self.start < other
+    def __gt__( self, other ):
+        return self.start > other
+    def __le__( self, other ):
+        return self.__eq__( other ) or self.__lt__( other )
+    def __ge__( self, other ):
+        return self.__eq__( other ) or self.__gt__( other )
 
 def populateDroppedRegions( file ):
+    """ populateDroppedRegions produces a dict keyed by sequence name and valued
+    with an array that contains Drop() objects.
+    """
     f = open( file )
-    dropped = []
+    dropped = {}
     firstLine = True
     for line in f:
         if firstLine:
@@ -66,13 +80,17 @@ def populateDroppedRegions( file ):
         d.name  = t[1]
         d.start = int( t[2] )
         d.end   = int( t[3] )
-        dropped.append(d)
-    dropped.sort( key = lambda x: ( x.name, x.start ) )
+        if not d.name in dropped:
+            dropped[ d.name ] = []
+        dropped[ d.name ].append( d )
+    for n in dropped:
+        dropped[ n ].sort()
     return dropped
 
 def printDropped( dropped ):
-    for d in dropped:
-        print '%s %s %d %d' %( d.file, d.name, d.start, d.end )
+    for n in dropped:
+        for d in dropped[ n ]:
+            print '%s %s %d %d' %( d.file, d.name, d.start, d.end )
 
 class Miss:
     def __init__(self):
@@ -102,7 +120,7 @@ def populateMissingPairs( file ):
         m.seq2 = t[2]
         m.pos2 = int( t[3] )
         missing.append( m )
-    missing.sort( key = lambda x: ( x.file, x.seq1, x.pos1 ) )
+    missing.sort( key= lambda x: ( x.file, x.seq1, x.pos1 ) )
     return missing
 
 def printMissing( missing ):
@@ -111,10 +129,10 @@ def printMissing( missing ):
 
 def doSetDifference( dropped, missing ):
     inter = intersect( dropped, missing )
-    intersectC = setDiff( dropped, missing, inter )
+    intersectC = setDiff( missing, inter )
     return intersectC
 
-def setDiff( dropped, missing, intersect ):
+def setDiff( missing, intersect ):
     intersectDict = {}
     diff = []
     for i in intersect:
@@ -128,29 +146,37 @@ def setDiff( dropped, missing, intersect ):
 
 # hey, check out bisect
 # wait, create a Dropped dict keyed with names and valued with an array
-# 
+#
+
+def find_le(a, x):
+    'Find rightmost value less than or equal to x'
+    i = bisect.bisect_right(a, x)
+    if i:
+        return i-1
+    return 0
 
 def intersect( dropped, missing ):
     intersect = []
     for m in missing:
         if m.seq1 == m.seq2:
+            # we skip the self-comparisons for now.
             continue
-        for d in dropped:
-            if m.seq1 != d.name and m.seq2!= d.name:
+        if m.seq1 in dropped:
+            i = find_le( dropped[ m.seq1 ], m.pos1 )
+            if m.pos1 < dropped[ m.seq1 ][ i ].start:
                 continue
-            if m.seq1 == d.name:
-                if m.pos1 < d.start:
-                    continue
-                if m.pos1 >= d.end:
-                    continue
+            if m.pos1 < dropped[ m.seq1 ][ i ].end:
                 intersect.append( m )
-            if m.seq2 == d.name:
-                if m.pos2 < d.start:
-                    continue
-                if m.pos2 >= d.end:
-                    continue
+        if m.seq2 in dropped:
+            i = find_le( dropped[ m.seq2 ], m.pos2 )
+            if m.pos2 < dropped[ m.seq2 ][ i ].start:
+                continue
+            if m.pos2 < dropped[ m.seq2 ][ i ].end:
                 intersect.append( m )
+
     return intersect
+
+
     
 def main():
     parser=OptionParser()
@@ -158,13 +184,13 @@ def main():
     (options, args) = parser.parse_args()
     checkOptions(options)
 
-    dropped = []
+    dropped = {}
     dropped = populateDroppedRegions( options.droppedFile )
-    #printDropped( dropped )
+    # printDropped( dropped )
 
     missing = []
     missing = populateMissingPairs( options.missingFile )
-    #printMissing( missing )
+    # printMissing( missing )
 
     setDifference = []
     setDifference = doSetDifference( dropped, missing )
