@@ -104,46 +104,45 @@ def main():
         for i in xrange(len(homologyTestsList1)):
             homologyTests1 = homologyTestsList1[i]
             homologyTests2 = homologyTestsList2[i]
+            assert(homologyTests1.attrib["near"] == homologyTests2.attrib["near"])
+            
+            def mergeAggregateResults(tag1, tag2):
+                def sum(i, j):
+                    i.attrib["totalTests"] = str(int(i.attrib["totalTests"]) + int(j.attrib["totalTests"]))
+                    i.attrib["totalTrue"] = str(int(i.attrib["totalTrue"]) + int(j.attrib["totalTrue"]))
+                    i.attrib["totalFalse"] = str(int(i.attrib["totalFalse"]) + int(j.attrib["totalFalse"]))
+                    if int(i.attrib["totalTests"]) != 0:
+                        i.attrib["average"] = str(float(i.attrib["totalTrue"]) / float(i.attrib["totalTests"]))
+                assert tag1.tag == "aggregate_results"
+                assert tag2.tag == "aggregate_results"
+                sum(tag1.find("all"), tag2.find("all"))
+                sum(tag1.find("both"), tag2.find("both"))
+                sum(tag1.find("A"), tag2.find("A"))
+                sum(tag1.find("B"), tag2.find("B"))
+                sum(tag1.find("neither"), tag2.find("neither"))
+            
             #Do merge for tests in both sets
-            for homologyTest1 in homologyTests1.findall("homology_test"):
-                for homologyTest2 in homologyTests2.findall("homology_test"):
+            for homologyTest1 in homologyTests1.find("homology_pair_tests").findall("homology_test"):
+                for homologyTest2 in homologyTests2.find("homology_pair_tests").findall("homology_test"):
                     if homologyTest1.attrib["sequenceA"] == homologyTest2.attrib["sequenceA"] and homologyTest1.attrib["sequenceB"] == homologyTest2.attrib["sequenceB"]:
-                    
-                        homologyTest1.attrib["totalTests"] = str(int(homologyTest1.attrib["totalTests"]) + int(homologyTest2.attrib["totalTests"]))
-                        homologyTest1.attrib["totalTrue"] = str(int(homologyTest1.attrib["totalTrue"]) + int(homologyTest2.attrib["totalTrue"]))
-                        homologyTest1.attrib["totalFalse"] = str(int(homologyTest1.attrib["totalFalse"]) + int(homologyTest2.attrib["totalFalse"]))
-                        if int(homologyTest1.attrib["totalTests"]) != 0:
-                            homologyTest1.attrib["average"] = str(float(homologyTest1.attrib["totalTrue"]) /  float(homologyTest1.attrib["totalTests"]))
-                    
-                        for singleHomologyTest2 in homologyTest2.findall("single_homology_test"):
-                            singleHomologyTest2.attrib["srcFile"] = str(xmlFile)
-                            homologyTest1.insert(0, singleHomologyTest2)
+                        mergeAggregateResults(homologyTest1.find("aggregate_results"), homologyTest2.find("aggregate_results"))
+                        for singleHomologyTest2 in homologyTest2.find("single_homology_tests").findall("single_homology_test"):
+                            homologyTest1.find("single_homology_tests").insert(0, singleHomologyTest2)
         
             #Now add in tests not in the intersection of the results
             l = []
-            for homologyTest2 in homologyTests2.findall("homology_test"):
-                for homologyTest1 in homologyTests1.findall("homology_test"):
+            for homologyTest2 in homologyTests2.find("homology_pair_tests").findall("homology_test"):
+                for homologyTest1 in homologyTests1.find("homology_pair_tests").findall("homology_test"):
                     if homologyTest1.attrib["sequenceA"] == homologyTest2.attrib["sequenceA"] and homologyTest1.attrib["sequenceB"] == homologyTest2.attrib["sequenceB"]:
                         break
                 else:
                     l.append(homologyTest2)
         
             for homologyTest2 in l:
-                homologyTests1.insert(0, homologyTest2)
+                homologyTests1.find("homology_pair_tests").insert(0, homologyTest2)
             
             #Now recalculate the totals
-            totalTrue = 0
-            totalFalse = 0
-            totalTests = 0
-            for homologyTest1 in homologyTests1.findall("homology_test"):
-                totalTests += int(homologyTest1.attrib["totalTests"])
-                totalTrue += int(homologyTest1.attrib["totalTrue"])
-                totalFalse += int(homologyTest1.attrib["totalFalse"])
-            assert totalTrue + totalFalse == totalTests
-            homologyTests1.attrib["totalTests"] = str(totalTests)
-            homologyTests1.attrib["totalTrue"] = str(totalTrue)
-            homologyTests1.attrib["totalFalse"] = str(totalFalse)
-            homologyTests1.attrib["average"] = str(float(totalTrue)/(totalTests + 0.01))
+            mergeAggregateResults(homologyTests1.find("aggregate_results"), homologyTests2.find("aggregate_results"))
         
     #Write to the results file.
     fileHandle = open(options.outputFile, 'w')

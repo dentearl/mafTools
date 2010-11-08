@@ -4,7 +4,7 @@ binPath = ../../../bin
 
 extraAPI = cString.c disjointset.c
 
-all: ${binPath}/eval_PhyloComparator ${binPath}/eval_MAFComparator ${binPath}/eval_mergeMAFComparatorResults.py ${binPath}/eval_setDiffDroppedMissing.py
+all: ${binPath}/eval_PhyloComparator ${binPath}/eval_MAFComparator ${binPath}/eval_mergeMAFComparatorResults.py ${binPath}/eval_setDiffDroppedMissing.py ${binPath}/eval_getRepeatBed
 
 ${binPath}/eval_MAFComparator : eval_MAFComparator.c ${extraAPI} eval_ComparatorAPI.c *.h ${libPath}/sonLib.a 
 	${cxx} ${cflags} -I ${libPath} -o ${binPath}/eval_MAFComparator ${extraAPI} eval_MAFComparator.c eval_ComparatorAPI.c ${libPath}/sonLib.a
@@ -19,6 +19,10 @@ ${binPath}/eval_mergeMAFComparatorResults.py : eval_mergeMAFComparatorResults.py
 ${binPath}/eval_MFAToMAF : eval_MFAToMAF.c ../mAFComparison/eTreeExtras.c ${libPath}/sonLib.a 
 	${cxx} ${cflags} -I ${libPath} ${tokyoCabinetIncl} -I ../mAFComparison -o ${binPath}/eval_MFAToMAF eval_MFAToMAF.c ../mAFComparison/eTreeExtras.c ${libPath}/sonLib.a 
 
+${binPath}/eval_getRepeatBed : eval_getRepeatBed.py
+	cp eval_getRepeatBed.py ${binPath}/eval_getRepeatBed
+	chmod +x ${binPath}/eval_getRepeatBed
+
 ${binPath}/eval_setDiffDroppedMissing.py : eval_setDiffDroppedMissing.py
 	cp eval_setDiffDroppedMissing.py ${binPath}/eval_setDiffDroppedMissing.py
 	chmod +x ${binPath}/eval_setDiffDroppedMissing.py
@@ -28,3 +32,4 @@ clean :
 	rm -f ${binPath}/eval_MAFComparator
 	rm -f ${binPath}/eval_PhyloComparator
 	rm -f ${binPath}/eval_MFAToMAF
+	rm -f ${binPath}/eval_getRepeatBed

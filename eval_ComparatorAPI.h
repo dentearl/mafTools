@@ -31,6 +31,20 @@ typedef struct _pair {
     int32_t pos2;
 } APair;
 
+typedef struct _resultPair {
+    APair aPair;
+    int32_t inAll;
+    int32_t inBoth;
+    int32_t inA;
+    int32_t inB;
+    int32_t inNeither;
+    int32_t total;
+    int32_t totalBoth;
+    int32_t totalA;
+    int32_t totalB;
+    int32_t totalNeither;
+} ResultPair;
+
 typedef struct _trio {
     char *seq1;
     char *seq2;
@@ -60,9 +74,9 @@ typedef struct _trioDecoder {
 void populateNameHash(const char *mAFFile, struct hashtable *htp);
 void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3);
 void printNameHash(struct hashtable *h);
-struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, int32_t verbose);
+struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, stHash *intervalsHash, int32_t verbose, int32_t near);
 struct avl_table *compareMAFs_AB_Trio(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, struct List *speciesList);
-void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle);
+void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle, int32_t near);
 void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle);
 void aPair_destruct(APair *pair, void *extraArgument);
 void aTrio_destruct(ATrio *trio, void *extraArgument);

@@ -36,6 +36,48 @@ int32_t ULTRAVERBOSE = 0;
  * is a proxy to the specificity of the aligned pairs in B with respect to the set of correctly aligned pairs in A.
  */
 
+void parseBedFile(const char *cA, stHash *intervalsHash) {
+    FILE *fileHandle = fopen(cA, "r");
+
+    int nBytes = 100;
+    char *cA2 = st_malloc(nBytes + 1);
+    int32_t bytesRead = benLine (&cA2, &nBytes, fileHandle);
+
+    //read through lines until reaching a line starting with an 's':
+    while(bytesRead != -1) {
+        if (bytesRead > 0) {
+            int32_t start, stop;
+            char *cA3 = stString_copy(cA2);
+            int32_t i = sscanf(cA2, "%s %i %i", cA3, &start, &stop);
+            assert(i == 3);
+            stSortedSet *intervals = stHash_search(intervalsHash, cA3);
+            if(intervals == NULL) {
+                intervals = stSortedSet_construct3((int (*)(const void *, const void *))stIntTuple_cmpFn, (void (*)(void *))stIntTuple_destruct);
+                stHash_insert(intervalsHash, stString_copy(cA3), intervals);
+            }
+            free(cA3);
+            stIntTuple *j = stIntTuple_construct(2, start, stop);
+            assert(stSortedSet_search(intervals, j) == NULL);
+            stSortedSet_insert(intervals, j);
+        }
+        bytesRead = benLine (&cA2, &nBytes, fileHandle);
+    }
+
+    free(cA2);
+    fclose(fileHandle);
+}
+
+void parseBedFiles(const char *cA, stHash *bedFileHash) {
+    char *cA2 = stString_copy(cA);
+    char *cA3 = cA2;
+    char *cA4;
+    while((cA4 = stString_getNextWord(&cA3)) != NULL) {
+        parseBedFile(cA4, bedFileHash);
+        free(cA4);
+    }
+    free(cA2);
+}
+
 void usage() {
    fprintf(stderr, "eval_MAFComparator, version %.1f\n", VERSION);
    fprintf(stderr, "-a --logLevel : Set the log level\n");
@@ -46,6 +88,8 @@ void usage() {
    fprintf(stderr, "-u --ultraVerbose : Print details about failed tests.\n");
    fprintf(stderr, "-v --version : Print current version number\n");
    fprintf(stderr, "-h --help : Print this help screen\n");
+   fprintf(stderr, "-f --bedFiles : The location of bed file used to filter the pairwise comparisons.\n");
+   fprintf(stderr, "-g --near : The number of bases in either sequence to allow a match to slip by.\n");
 }
 
 void version() {
@@ -60,7 +104,10 @@ int main(int argc, char *argv[]) {
     char * mAFFile1 = NULL;
     char * mAFFile2 = NULL;
     char * outputFile = NULL;
+    stHash* intervalsHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, (void (*)(void *))stSortedSet_destruct);
     int32_t sampleNumber = 1000000; // by default do a million samples per pair.
+    int32_t near = 0;
+    int32_t i;
 
     ///////////////////////////////////////////////////////////////////////////
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
@@ -76,12 +123,14 @@ int main(int argc, char *argv[]) {
             { "ultraVerbose", no_argument, 0, 'u'},
             { "version", no_argument, 0, 'v'},
             { "help", no_argument, 0, 'h' },
+            { "bedFiles", required_argument, 0, 'f' },
+            { "near", required_argument, 0, 'g' },
             { 0, 0, 0, 0 }
         };
 
         int option_index = 0;
 
-        int key = getopt_long(argc, argv, "a:b:c:d:e:u:v:h", long_options, &option_index);
+        int key = getopt_long(argc, argv, "a:b:c:d:e:u:v:hf:g:", long_options, &option_index);
 
         if(key == -1) {
             break;
@@ -107,11 +156,20 @@ int main(int argc, char *argv[]) {
                 ULTRAVERBOSE = 1;
                 break;
             case 'e':
-                assert(sscanf(optarg, "%i", &sampleNumber) == 1);
+                i = sscanf(optarg, "%i", &sampleNumber);
+                assert(i == 1);
                 break;
             case 'h':
                 usage();
                 return 0;
+            case 'f':
+                //Parse the bed file hashes
+                parseBedFiles(optarg, intervalsHash);
+                break;
+            case 'g':
+                i = sscanf(optarg, "%i", &near);
+                assert(i == 1);
+                break;
             default:
                 usage();
                 return 1;
@@ -167,6 +225,7 @@ int main(int argc, char *argv[]) {
     st_logInfo("MAF file 1 name : %s\n", mAFFile1);
     st_logInfo("MAF file 2 name : %s\n", mAFFile2);
     st_logInfo("Output stats file : %s\n", outputFile);
+    st_logInfo("Bed files parsed : %i\n", stHash_size(intervalsHash));
 
     //////////////////////////////////////////////
     // Create sequence name hashtable from the first MAF file.
@@ -184,12 +243,12 @@ int main(int argc, char *argv[]) {
        printf("# Comparing %s to %s\n", mAFFile1, mAFFile2);
        printf("# seq1\tpos1\tseq2\tpos2\n");
     }
-    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNameHash, ULTRAVERBOSE);
+    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNameHash, intervalsHash, ULTRAVERBOSE, near);
     if (ULTRAVERBOSE){
        printf("# Comparing %s to %s\n", mAFFile2, mAFFile1);
        printf("# seq1\tpos1\tseq2\tpos2\n");
     }
-    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNameHash, ULTRAVERBOSE);
+    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNameHash, intervalsHash, ULTRAVERBOSE, near);
     fileHandle = fopen(outputFile, "w");
     if(fileHandle == NULL){
        fprintf(stderr, "ERROR, unable to open `%s' for writing.\n", outputFile);
@@ -201,8 +260,8 @@ int main(int argc, char *argv[]) {
     //////////////////////////////////////////////
     
     fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\">\n", sampleNumber);
-    reportResults(results_12, mAFFile1, mAFFile2, fileHandle);
-    reportResults(results_21, mAFFile2, mAFFile1, fileHandle);
+    reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near);
+    reportResults(results_21, mAFFile2, mAFFile1, fileHandle, near);
     fprintf(fileHandle, "</alignment_comparisons>\n");
     fclose(fileHandle);
 
