@@ -68,13 +68,11 @@ def populateDroppedRegions( file, isVerbose ):
     """
     f = open( file )
     dropped = {}
-    firstLine = True
     for line in f:
-        if firstLine:
-            firstLine = False
-            continue
         t = line.split('\t')
         assert( len(t) == 4 )
+        if t[0] == 'maf':
+            continue
         d = Drop()
         d.file  = t[0]
         d.name  = t[1]
