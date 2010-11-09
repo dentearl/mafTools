@@ -709,7 +709,7 @@ struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int
     struct avl_table *resultPairs = avl_create(
                 (int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction_seqsOnly, NULL, NULL);
 
-    homologyTests2(pairs, resultPairs, intervalsHash, positivePairs, near);
+    homologyTests2(pairs, resultPairs, intervalsHash, positivePairs, verbose);
     avl_destroy(pairs, (void(*)(void *, void *)) aPair_destruct);
     stSortedSet_destruct(positivePairs);
     return resultPairs;
