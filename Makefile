@@ -4,7 +4,7 @@ binPath = ../../../bin
 
 extraAPI = cString.c disjointset.c
 
-all: ${binPath}/eval_PhyloComparator ${binPath}/eval_MAFComparator ${binPath}/eval_mergeMAFComparatorResults.py ${binPath}/eval_setDiffDroppedMissing.py ${binPath}/eval_getRepeatBed ${binPath}/eval_MFAToMAF
+all: ${binPath}/eval_PhyloComparator ${binPath}/eval_MAFComparator ${binPath}/eval_mergeMAFComparatorResults.py ${binPath}/eval_setDiffDroppedMissing.py ${binPath}/eval_setDiffStatGenerator.py ${binPath}/eval_getRepeatBed ${binPath}/eval_MFAToMAF
 
 ${binPath}/eval_MAFComparator : eval_MAFComparator.c ${extraAPI} eval_ComparatorAPI.c *.h ${libPath}/sonLib.a 
 	${cxx} ${cflags} -I ${libPath} -o ${binPath}/eval_MAFComparator ${extraAPI} eval_MAFComparator.c eval_ComparatorAPI.c ${libPath}/sonLib.a
@@ -24,8 +24,12 @@ ${binPath}/eval_getRepeatBed : eval_getRepeatBed.py
 	chmod +x ${binPath}/eval_getRepeatBed
 
 ${binPath}/eval_setDiffDroppedMissing.py : eval_setDiffDroppedMissing.py
-	cp eval_setDiffDroppedMissing.py ${binPath}/eval_setDiffDroppedMissing.py
-	chmod +x ${binPath}/eval_setDiffDroppedMissing.py
+	cp $< $@
+	chmod +x $@
+
+${binPath}/eval_setDiffStatGenerator.py : eval_setDiffStatGenerator.py
+	cp $< $@
+	chmod +x $@
 
 clean :
 	rm -f *.o
