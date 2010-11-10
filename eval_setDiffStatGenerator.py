@@ -52,7 +52,7 @@ def readStream(options):
         sizeDict[ currLength ]  = 1
     keys = sizeDict.keys()
     keys.sort()
-    print ' bp\tCount\tMstR pos\tMstR name'
+    print ' bp\tCount\tMR pos\tMR name'
     for k in keys:
         print '%3d\t%d\t%d\t%s' % ( k, sizeDict[ k ], positionDict[ k ], nameDict[ k ] )
 
