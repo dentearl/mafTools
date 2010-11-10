@@ -661,9 +661,11 @@ void homologyTests2(struct avl_table *pairs, struct avl_table *resultPairs, stHa
         if (b) {
             resultPair->inAll++;
         } else {
-            if (verbose) {
-                printf("%s\t%d\t%s\t%d\n", pair->seq1, pair->pos1, pair->seq2, pair->pos2);
-            }
+           if (verbose){
+              if (avl_find(pairs, pair) == NULL){
+                 printf("%s\t%d\t%s\t%d\n", pair->seq1, pair->pos1, pair->seq2, pair->pos2);
+              }
+           }
         }
     }
 }
