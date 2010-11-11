@@ -226,6 +226,7 @@ int main(int argc, char *argv[]) {
     st_logInfo("MAF file 2 name : %s\n", mAFFile2);
     st_logInfo("Output stats file : %s\n", outputFile);
     st_logInfo("Bed files parsed : %i\n", stHash_size(intervalsHash));
+    st_logInfo("Number of samples %i\n", sampleNumber);
 
     //////////////////////////////////////////////
     // Create sequence name hashtable from the first MAF file.
