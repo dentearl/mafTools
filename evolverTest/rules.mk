@@ -12,5 +12,5 @@ ${simOutDir}/%.probcmpout: ${simOutDir}/%.cmpout
 	awk '!/Missing:/ || $$2!=$$4' $< >$@
 
 clean:
-	rm -f ${simOutDir}
+	rm -rf ${simOutDir}
 
