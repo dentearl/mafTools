@@ -98,36 +98,41 @@ static bool resolveBlkComp(struct malnSet *malnSet, struct malnBlk *blk, struct 
 }
 
 /* resolve conflicting parents on for block. */
-static void resolveBlk(struct malnSet *malnSet, struct malnBlk *blk, FILE *dropLogFh) {
+static int resolveBlk(struct malnSet *malnSet, struct malnBlk *blk, FILE *dropLogFh) {
     // must start over each time something is resolved, since the block could
     // be updated.
     bool didSomething;
+    int numResolved = 0;
     do {
         didSomething = false;
         for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
             if (malnComp_getLoc(comp) != mafTreeLocRoot) {
                 didSomething = resolveBlkComp(malnSet, blk, comp, dropLogFh);
                 if (didSomething) {
+                    numResolved++;
                     break;  // start again
                 }
             }
         }
     } while (didSomething);
+    return numResolved;
 }
 
 /* Resolve conflicts where blocks imply sequences with multiple parents,
  * editing blocks.  If dropLogFh is not NULL, write a tab file describing the
  * problems */
-void malnMultiParents_resolve(struct malnSet *malnSet, FILE *dropLogFh) {
+int malnMultiParents_resolve(struct malnSet *malnSet, FILE *dropLogFh) {
     // this can be done in one pass, since the blocks and components are modified
     // in place instead of creating new ones
+    int numResolved = 0;
     struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *blk;
     while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
-        resolveBlk(malnSet, blk, dropLogFh);
+        numResolved += resolveBlk(malnSet, blk, dropLogFh);
     }
     malnBlkSetIterator_destruct(iter);
     malnSet_deleteDying(malnSet);
+    return numResolved;
 }
 
 /* report a multiple parent, either to stderr or by aborting */

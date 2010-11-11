@@ -10,7 +10,7 @@ FILE *malnMultiParents_openResolveDropLog(char *multiParentDroppedFile);
 
 /* Resolve conflicts where blocks imply sequences with multiple parents,
  * editing blocks */
-void malnMultiParents_resolve(struct malnSet *malnSet, FILE *dropLogFh);
+int malnMultiParents_resolve(struct malnSet *malnSet, FILE *dropLogFh);
 
 /* check for regions with multiple parents, deleting blocks if if requested.
  * otherwise aborting. */
