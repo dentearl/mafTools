@@ -1,4 +1,9 @@
 import unittest
+import os, sys
+myBinDir = os.path.normpath(os.path.dirname(sys.argv[0]))
+sys.path.append(myBinDir + "/../../..")
+os.environ["PATH"] = myBinDir + "/../../../../bin:" + os.environ["PATH"]
+from sonLib.bioio import logger
 
 class VerifyMafJoinOutput( unittest.TestCase ):
     import os
@@ -14,6 +19,7 @@ class VerifyMafJoinOutput( unittest.TestCase ):
                'evolverMAFs/simRat.sMouse-sRat.maf',
                'evolverMAFs/simMouse.sMouse-sRat.maf',
                'temp_offsetTests/sMouse-sRat.mafJoin.maf']
+        logger.info("run: " + " ".join(cmd))
         p = subprocess.Popen( cmd )
         p.wait()
         dropped = open('temp_offsetTests/sMouse-sRat.dropped.tab').read()
@@ -25,6 +31,7 @@ class VerifyMafJoinOutput( unittest.TestCase ):
                '--outputFile=temp_offsetTests/simRat.sMouse-sRat.compare.xml',
                '--sampleNumber=100000000', '--ultraVerbose']
         missingFile = open('temp_offsetTests/simRat.sMouse-sRat.missing.tab','w')
+        logger.info("run: " + " ".join(cmd))
         p = subprocess.Popen( cmd, stderr=missingFile )
         p.wait()
 
@@ -37,5 +44,8 @@ class VerifyMafJoinOutput( unittest.TestCase ):
         self.assertEqual( emptyMissing[0:111], missing[0:111] ) # this should be true no matter what, it's just the two headers.
         self.assertEqual( emptyMissing[0:225], missing[0:225] )
 
+# FIXME: should be controllable from the command line
+import logging
+logger.setLevel(logging.INFO)
 if __name__ == "__main__":
     unittest.main()

@@ -7,36 +7,85 @@
 #include "sonLibList.h"
 #include <stdbool.h>
 
-/* check for column consistency */
-static inline bool checkColConsistency(struct malnBlkCursor *cursor) {
+/* is a column in a state consistent with the start, or ignored because
+ * neither component is aligned */
+static bool isColConsistentState(struct malnCompCursor *cc0, struct malnCompCursor *cc1, bool aligned0, bool aligned1) {
+    return ((!malnCompCursor_isAligned(cc0) && !malnCompCursor_isAligned(cc1))
+            || ((malnCompCursor_isAligned(cc0) == aligned0) && (malnCompCursor_isAligned(cc1) == aligned1)));
+}
+
+/* find the next range of to components that is in at consistent state, that
+ * is both aligned, only first aligned, or only second aligned.  Return
+ * false when no more. Range is set to {-1,-1} when not aligned. */
+static bool nextConsistentStateRange(struct malnBlkCursor *cursor, struct stRange *range0, struct stRange *range1) {
+    *range0 = *range1 = stNullRange;
+    if (malnBlkCursor_atEnd(cursor)) {
+        return false;
+    }
     struct malnCompCursor *cc0 = &(cursor->rows[0]);
     struct malnCompCursor *cc1 = &(cursor->rows[1]);
     bool aligned0 = malnCompCursor_isAligned(cc0);
     bool aligned1 = malnCompCursor_isAligned(cc1);
-    if (aligned0 && aligned1) {
-        // both aligned
-        return (cc0->pos == cc1->pos);
-    } else if (aligned0) {
-        // only first aligned, must be out of other range
-        return (cc0->pos < cc1->comp->start) || (cc0->pos >= cc1->comp->end);
-    } else if (aligned1) {
-        // only second aligned, must be out of other range
-        return (cc1->pos < cc0->comp->start) || (cc1->pos >= cc0->comp->end);
-    } else {
-        // neither aligned
-        return true;
+    if (aligned0) {
+        range0->start = cc0->pos;
+        range0->end = cc0->pos + 1;
     }
+    if (aligned1) {
+        range1->start = cc1->pos;
+        range1->end = cc1->pos + 1;
+    }
+    
+    // scan for consistent state, ignoring columns were neither are aligned
+    while (malnBlkCursor_incr(cursor) && isColConsistentState(cc0, cc1, aligned0, aligned1)) {
+        if (malnCompCursor_isAligned(cc0) || malnCompCursor_isAligned(cc1)) {
+            if (aligned0) {
+                range0->end = cc0->pos + 1;
+            }
+            if (aligned1) {
+                range1->end = cc1->pos + 1;
+            }
+        }
+    }
+    return true;
+}
+
+/* check if two aligned component ranges are consistent, one maybe null */
+static bool checkRangeConsistency(struct stRange prevAlignedRange0, struct stRange range0, struct stRange prevAlignedRange1, struct stRange range1) {
+    if (!stRangeIsNull(range0) && !stRangeIsNull(range1)) {
+        return stRangeEq(range0, range1);  // both aligned, must be the same
+    }
+
+    // ranges must consistently increase, otherwise they are interleaved
+    if (!stRangeIsNull(range0) && !stRangeIsNull(prevAlignedRange1)) {
+        if (!(range0.start >= prevAlignedRange1.end)) {
+            return false;
+        }
+    }
+    if (!stRangeIsNull(range1) && !stRangeIsNull(prevAlignedRange0)) {
+        if (!(range1.start >= prevAlignedRange0.end)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /* scan two component in an alignment to determine if they are consistently
- * aligned */
+ * aligned and can be merged. */
 static bool scanConsistentOverlapAlignment(struct malnBlk *blk, struct malnComp *comp1, struct malnComp *comp2) {
     struct malnComp *subsetComps[] = {comp1, comp2, NULL};
     struct malnBlkCursor *cursor = malnBlkCursor_construct(blk, NULL, subsetComps);
+
+    struct stRange prevAlignedRange0 = stNullRange, prevAlignedRange1 = stNullRange;
+    struct stRange range0 = stNullRange, range1 = stNullRange;
     bool isOk = true;
-    while (isOk && !malnBlkCursor_atEnd(cursor)) {
-        isOk = checkColConsistency(cursor);
-        malnBlkCursor_incr(cursor);
+    while (isOk && nextConsistentStateRange(cursor, &range0, &range1)) {
+        isOk = checkRangeConsistency(prevAlignedRange0, range0, prevAlignedRange1, range1);
+        if (!stRangeIsNull(range0)) {
+            prevAlignedRange0 = range0;
+        }
+        if (!stRangeIsNull(range1)) {
+            prevAlignedRange1 = range1;
+        }
     }
     malnBlkCursor_destruct(cursor);
     return isOk;

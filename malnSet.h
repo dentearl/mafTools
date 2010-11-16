@@ -95,4 +95,7 @@ __attribute__((format(printf, 3, 4)))
 #endif
 ;
 
+/* debug dump to a file in a directory.  Will do nothing if dumpDir is NULL */
+void malnSet_dumpToDir(struct malnSet *malnSet, char *dumpDir, char *setName, char *stepName);
+
 #endif

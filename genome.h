@@ -10,6 +10,19 @@ struct stRange {
     int end;
 };
 
+/* range representing nothing {-1, -1} */
+extern const struct stRange stNullRange;
+
+/* is a stRange null */
+static inline bool stRangeIsNull(struct stRange range) {
+    return (range.start == stNullRange.start) && (range.end == stNullRange.end);
+}
+
+/* are two stRanges equal */
+static inline bool stRangeEq(struct stRange range0, struct stRange range1) {
+    return (range0.start == range1.start) && (range0.end == range1.end);
+}
+
 /* a sequence in the genome */
 struct Seq {
     struct Seq *next;

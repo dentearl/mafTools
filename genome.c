@@ -6,6 +6,9 @@
 
 // FIXME: make naming consistent with other modules
 
+/* range representing nothing */
+const struct stRange stNullRange = {-1, -1};
+
 /* make db.seq name */
 static char *seqMkName(struct Seq *seq) {
     int bufSize = strlen(seq->genome->name) + strlen(seq->name) + 2;

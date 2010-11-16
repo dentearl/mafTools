@@ -39,6 +39,17 @@ static inline bool malnCompCursor_atEnd(struct malnCompCursor *cc) {
     return cc->alnIdx == malnComp_getWidth(cc->comp);
 }
 
+/* is the current position at component end (no more aligned) */
+static inline bool malnCompCursor_atCompEnd(struct malnCompCursor *cc) {
+    assert(cc->pos <= cc->comp->chromEnd);
+    return (cc->pos == cc->comp->chromEnd);
+}
+
+/* get the next position */
+static inline int malnCompCursor_getNextPos(struct malnCompCursor *cc) {
+    return cc->isAligned ? cc->pos+1 : cc->pos;
+}
+
 /* increment the alignment cursor, return false at the end. */
 static inline bool malnCompCursor_incr(struct malnCompCursor *cc) {
     assert(cc->alnIdx < malnComp_getWidth(cc->comp));
@@ -87,7 +98,7 @@ static inline void malnCompCursor_setSeqPos(struct malnCompCursor *cc, int pos) 
 }
 
 /* advance the alignment cursor to the next aligned position, return false at the end  */
-static inline bool malnCompCursor_nextPos(struct malnCompCursor *cc) {
+static inline bool malnCompCursor_advanceToNextPos(struct malnCompCursor *cc) {
     assert(cc->alnIdx < malnComp_getWidth(cc->comp));
     do {
         if (!malnCompCursor_incr(cc)) {

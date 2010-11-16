@@ -38,5 +38,8 @@ clean:
 
 ${objs}: *.h
 
+test::
+	python mafJoinTest.py
+
 savebak:
-	savebak mafJoin *.[ch] simulation_mafJoinTest.py Makefile 
+	savebak mafJoin *.[ch] mafJoinTest.py Makefile 

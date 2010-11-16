@@ -116,7 +116,7 @@ bool malnComp_alnRangeToSeqRange(struct malnComp *comp, int alnStart, int alnEnd
 
     // find start
     if (!malnCompCursor_isAligned(&cc)) {
-        if (!malnCompCursor_nextPos(&cc)) {
+        if (!malnCompCursor_advanceToNextPos(&cc)) {
             *start = *end = 0;
             return false;
         }
@@ -138,7 +138,7 @@ bool malnComp_seqRangeToAlnRange(struct malnComp *comp, int start, int end, int 
 
     // find start
     if (!malnCompCursor_isAligned(&cc)) {
-        if (!malnCompCursor_nextPos(&cc)) {
+        if (!malnCompCursor_advanceToNextPos(&cc)) {
             *alnStart = *alnEnd = 0;
             return false;
         }

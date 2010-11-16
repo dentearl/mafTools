@@ -802,6 +802,57 @@ tmp/__main__.MafJoinTests.testJoin26.A.maf	simChimp.chr6	1528	1529
 tmp/__main__.MafJoinTests.testJoin26.A.maf	simChimp.chr6	1528	1529"""
         self.mafJoinTest("sHuman-sChimp", A, B, C, treelessRoot1="sHuman-sChimp", dropExpect=dropExpect)
 
+    def testJoin27(self):
+        """case were base order was mangled when merging components.
+        """
+        A = """
+        a score=0 pctid=90.4
+        s sMouse-sRat.chr6 120371 169 + 516010 TATATTAATCATCTATCTTATGCTGGGGATAATACAAGAAGATTACACACTCTGTAACTTGTCAGCACTCATCATATAACCCTATTAGGTCGATATCATTTCTACCACCTTGAAAAGAGCAGGAAAGTAAACAATTGAGGCCATGATGCTTCATCTGTTCCTTCTCCAC
+        s simRat.chr6      122291 167 + 522882 TATATTAATTGTCTATCTTATGCTGGAGATAATACAAGAAGATTACACATTCTGTAGCTTGTCAGCGCTAATCATATAACCCTATTAGGCTGGTATCATTTCTACCACCTTGAAAAGGGCAGGAAATTAAACAATTGAGGCCATGACA--TCATCTGTTCCATCTCCAA
+
+        # Paralog=1
+        a score=0 pctid=0.0
+        s sMouse-sRat.chr6 120539 1 + 516010 C
+        s simRat.chr6      122458 1 + 522882 A
+
+        # Paralog=1
+        a score=0 pctid=0.0
+        s sMouse-sRat.chr6 120538 1 + 516010 A
+        s simRat.chr6      122459 1 + 522882 T
+
+        # Paralog=1
+        a score=0 pctid=0.0
+        s sMouse-sRat.chr6 120539 1 + 516010 C
+        s simRat.chr6      122460 1 + 522882 A
+
+        # Paralog=1
+        a score=0 pctid=0.0
+        s sMouse-sRat.chr6 120539 1 + 516010 C
+        s simRat.chr6      122461 1 + 522882 A
+
+        # Paralog=1
+        a score=0 pctid=0.0
+        s sMouse-sRat.chr6 120538 1 + 516010 A
+        s simRat.chr6      122462 1 + 522882 T
+
+        # Paralog=1
+        a score=0 pctid=100.0
+        s sMouse-sRat.chr6 120539 1 + 516010 C
+        s simRat.chr6      122463 1 + 522882 C
+        """
+        B = """
+        """
+        C = """
+        a score=0.000000 tree="(simRat.chr6:0.1,simRat.chr6:0.1,simRat.chr6:0.1,simRat.chr6:0.1,simRat.chr6:0.1)sMouse-sRat.chr6;"
+        s simRat.chr6      122291 167 + 522882 TATATTAATTGTCTATCTTATGCTGGAGATAATACAAGAAGATTACACATTCTGTAGCTTGTCAGCGCTAATCATATAACCCTATTAGGCTGGTATCATTTCTACCACCTTGAAAAGGGCAGGAAATTAAACAATTGAGGCCATGACA--TCATCTGTTCCATCTCCAA
+        s simRat.chr6      122458   1 + 522882 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------A
+        s simRat.chr6      122459   2 + 522882 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------TA
+        s simRat.chr6      122461   1 + 522882 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------A
+        s simRat.chr6      122462   2 + 522882 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------TC
+        s sMouse-sRat.chr6 120371 169 + 516010 TATATTAATCATCTATCTTATGCTGGGGATAATACAAGAAGATTACACACTCTGTAACTTGTCAGCACTCATCATATAACCCTATTAGGTCGATATCATTTCTACCACCTTGAAAAGAGCAGGAAAGTAAACAATTGAGGCCATGATGCTTCATCTGTTCCTTCTCCAC
+        """
+        self.mafJoinTest("sMouse-sRat", A, B, C, treelessRoot1="sMouse-sRat", maxBlkWidth=1000)
+
 # FIXME: should be controllable from the command line
 #import logging
 #logger.setLevel(logging.INFO)

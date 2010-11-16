@@ -507,7 +507,7 @@ void malnSet_dumpv(struct malnSet *malnSet, FILE *fh, const char *label, va_list
     struct malnBlk *blk;
     while ((blk = malnBlkSetIterator_getNext(iter)) != NULL) {
         fputs("  ", fh);
-        malnBlk_dump(blk, fh, "  blk:%s", fmtLabel);
+        malnBlk_dump(blk, fh, "  blk");
     }
     malnBlkSetIterator_destruct(iter);
     fprintf(fh, "malnSet: end %s\n", fmtLabel);
@@ -530,4 +530,14 @@ void malnSet_dumpFile(struct malnSet *malnSet, char *dumpFile, const char *label
     malnSet_dumpv(malnSet, fh, label, args);
     va_end(args);
     carefulClose(&fh);
+}
+
+/* debug dump to a file in a directory.  Will do nothing if dumpDir is NULL */
+void malnSet_dumpToDir(struct malnSet *malnSet, char *dumpDir, char *setName, char *stepName) {
+    if (dumpDir != NULL) {
+        char label[PATH_LEN], dumpFile[PATH_LEN];
+        safef(label, sizeof(label), "%s-%s", setName, stepName);
+        safef(dumpFile, sizeof(dumpFile), "%s/%s-%s.dmp", dumpDir, setName, stepName);
+        malnSet_dumpFile(malnSet, dumpFile, "%s", label);
+    }
 }
