@@ -163,6 +163,15 @@ void malnBlk_pad(struct malnBlk *blk) {
 /* check for consistency within a components of a MAF, generating an
  * error if there are not consistent */
 void malnBlk_validate(struct malnBlk *blk) {
+    // check sizes
+    for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
+        if (malnComp_getWidth(comp) != blk->alnWidth) {
+            errAbort("component width (%d) doesn't match alignment width (%d): %s:%d-%d",
+                     malnComp_getWidth(comp), blk->alnWidth,
+                     comp->seq->orgSeqName, comp->chromStart, comp->chromEnd);
+        }
+    }
+
     // check for overlapping root components
     struct malnComp *rootComp = malnBlk_getRootComp(blk);
     for (struct malnComp *comp2 = blk->comps; comp2 != NULL; comp2 = comp2->next) {

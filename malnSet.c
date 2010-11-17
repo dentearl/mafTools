@@ -88,14 +88,14 @@ static void orderTreeless(struct malnBlk *blk, struct Genome *treelessRootGenome
 }
 
 /* convert a mafAli to an malnBlk */
-static struct malnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct mafAli *ali, double defaultBranchLength, struct Genome *treelessRootGenome) {
+static struct malnBlk *mafAliToMAlnBlk(struct Genomes *genomes, struct mafAli *mafAli, double defaultBranchLength, struct Genome *treelessRootGenome) {
     struct malnBlk *blk = malnBlk_construct();
-    for (struct mafComp *comp = ali->components; comp != NULL; comp = comp->next) {
-        malnBlk_addComp(blk, mafCompToMAlnComp(genomes, comp));
+    for (struct mafComp *mafComp = mafAli->components; mafComp != NULL; mafComp = mafComp->next) {
+        malnBlk_addComp(blk, mafCompToMAlnComp(genomes, mafComp));
     }
-    if (ali->tree != NULL) {
+    if (mafAli->tree != NULL) {
         slReverse(&blk->comps);
-        malnBlk_setTree(blk, mafTree_constructFromNewick(genomes, blk, ali->tree));
+        malnBlk_setTree(blk, mafTree_constructFromNewick(genomes, blk, mafAli->tree));
     } else if (treelessRootGenome != NULL) {
         orderTreeless(blk, treelessRootGenome);
         malnBlk_setTree(blk, mafTree_constructFromAlignment(genomes, blk, defaultBranchLength));
@@ -259,8 +259,8 @@ static void splitBlock(struct malnSet *malnSet, int maxInputBlkWidth, struct mal
 }
 
 /* add a mafAli to the set */
-static void addMafAli(struct malnSet *malnSet, struct mafAli *ali, int maxInputBlkWidth, double defaultBranchLength, struct Genome *treelessRootGenome) {
-    struct malnBlk *blk = mafAliToMAlnBlk(malnSet->genomes, ali, defaultBranchLength, treelessRootGenome);
+static void addMafAli(struct malnSet *malnSet, struct mafAli *mafAli, int maxInputBlkWidth, double defaultBranchLength, struct Genome *treelessRootGenome) {
+    struct malnBlk *blk = mafAliToMAlnBlk(malnSet->genomes, mafAli, defaultBranchLength, treelessRootGenome);
     if (blk->alnWidth < maxInputBlkWidth) {
         malnSet_addBlk(malnSet, blk);
     } else {

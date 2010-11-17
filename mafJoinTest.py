@@ -8,22 +8,11 @@ sys.path.append(myBinDir + "/../..")
 os.environ["PATH"] = myBinDir + "/../../../bin:" + os.environ["PATH"]
 
 import unittest
-from sonLib.bioio import getTempFile 
+from sonLib.unitTest import TestCase
 from sonLib.bioio import logger
 from sonLib.bioio import system
 
-class MafJoinTests(unittest.TestCase):
-
-    def getTestTempFile(self, suffix):
-        # FIXME: make this part of test framework
-        tempDir = "tmp"
-        if not os.path.exists(tempDir):
-            os.makedirs(tempDir)
-        tempFile = tempDir + "/" + self.id() + "." + suffix
-        if os.path.exists(tempFile):
-            os.unlink(tempFile)
-        return tempFile
-    
+class TestCaseBase(TestCase):
     def writeMAF(self, maf, suffix):
         """Takes one of the above MAF strings and writes it to temp file.
         """
@@ -46,6 +35,17 @@ class MafJoinTests(unittest.TestCase):
         fileHandle.close()
         return tempFile
 
+    def compareExpectedAndRecieved(self, expected, recieved):
+        """Checks two MAFs are equivalent.
+        """
+        system("diff -u %s %s" % (expected, recieved))
+
+    def stdFlush(self):
+        sys.stdout.flush()
+        sys.stderr.flush()
+
+
+class MafJoinTests(TestCaseBase):
     def makeMafJoinCmd(self, guideDb, mafFileA, mafFileB, outputMafFile, treelessRoot1=None, treelessRoot2=None, maxBlkWidth=None, maxInputBlkWidth=None, dropFile=None):
         cmd = ["mafJoin"]
         if treelessRoot1 != None:
@@ -61,12 +61,8 @@ class MafJoinTests(unittest.TestCase):
         cmd.extend([guideDb, mafFileA, mafFileB, outputMafFile])
         return cmd
 
-    def __stdFlush(self):
-        sys.stdout.flush()
-        sys.stderr.flush()
-
     def runMafJoin(self, guideDb, mafFileA, mafFileB, outputMafFile, expectExitCode=0, expectStderr=None, expectStderrRe=None, treelessRoot1=None, treelessRoot2=None, maxBlkWidth=None, maxInputBlkWidth=None, dropFile=None, dropExpectFile=None):
-        self.__stdFlush()
+        self.stdFlush()
         cmd = self.makeMafJoinCmd(guideDb, mafFileA, mafFileB, outputMafFile, treelessRoot1, treelessRoot2, maxBlkWidth, maxInputBlkWidth, dropFile)
         logger.info("run: " + " ".join(cmd))
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -88,11 +84,6 @@ class MafJoinTests(unittest.TestCase):
             self.assertEquals(stderr, "")
         logger.info("okay: " + " ".join(cmd))
 
-    def compareExpectedAndRecieved(self, expected, recieved):
-        """Checks two MAFs are equivalent.
-        """
-        system("diff -u %s %s" % (expected, recieved))
-
     def mafJoinTest(self, guide, mafA, mafB, mafC, expectExitCode=0, expectStderr=None, expectStderrRe=None, treelessRoot1=None, treelessRoot2=None, maxBlkWidth=None, maxInputBlkWidth=None, dropExpect=None):
         """Writes out mafA and mafB to temp files.
         Runs mafJoin
@@ -101,37 +92,31 @@ class MafJoinTests(unittest.TestCase):
         tempFileA = self.writeMAF(mafA, "A.maf")
         tempFileB = self.writeMAF(mafB, "B.maf")
         tempFileC = self.writeMAF(mafC, "C.maf")
-        tempOutputFile = self.getTestTempFile("out.maf")
+        tempFileOutput = self.getTestTempFile("out.maf")
         tempDropFile = None
         tempDropExpectFile = None
         if dropExpect != None:
             tempDropFile = self.getTestTempFile(".drop")
             tempDropExpectFile =  self.writeExpected(dropExpect, "expect.drop")
-        self.runMafJoin(guide, tempFileA, tempFileB, tempOutputFile, expectExitCode=expectExitCode, expectStderr=expectStderr, expectStderrRe=expectStderrRe, treelessRoot1=treelessRoot1, treelessRoot2=treelessRoot2, maxBlkWidth=maxBlkWidth, maxInputBlkWidth=maxInputBlkWidth, dropFile=tempDropFile)
+        self.runMafJoin(guide, tempFileA, tempFileB, tempFileOutput, expectExitCode=expectExitCode, expectStderr=expectStderr, expectStderrRe=expectStderrRe, treelessRoot1=treelessRoot1, treelessRoot2=treelessRoot2, maxBlkWidth=maxBlkWidth, maxInputBlkWidth=maxInputBlkWidth, dropFile=tempDropFile)
         if expectExitCode == 0:  # only check MAF on success
-            self.compareExpectedAndRecieved(tempFileC, tempOutputFile)
+            self.compareExpectedAndRecieved(tempFileC, tempFileOutput)
             if dropExpect != None:
                 self.compareExpectedAndRecieved(tempDropExpectFile, tempDropFile)
             
 
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-    
-    def tearDown(self):
-        unittest.TestCase.tearDown(self)
-        
     def testJoin1(self):
         """Simple non-dup join. Shows splitting of blocks.
         Note the join process should maintain the ordering of rows in columns.
         """
         A = """
-        a score=50.0 tree=\"(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;\"
+        a score=50.0 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
         s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
         s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
         s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
         """
         B = """
-        a score=5.0 tree=\"(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;\"
+        a score=5.0 tree="(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;"
         s panTro1.chr6 28741140 33 + 161576975 AAAGGGAATGTTAACCAAATGAATTGTCTCTTA
         s baboon.chr6    116834 33 +   4622798 AAAGGGAATGTTAACCAAATGAGTTGTCTCTTA
         s hg18.chr7    27578828 33 + 158545518 AAAGGGAATGTTAACCAAATGAATTGTCTCTTA
@@ -150,13 +135,13 @@ class MafJoinTests(unittest.TestCase):
         """Simple non-dup join. Shows ordering of inserts, first from A then from B.
         """
         A = """
-        a score=10.0 tree=\"(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;\"
+        a score=10.0 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
         s hg18.chr7    27699739 3 + 158545518 T---GA
         s mm4.chr6     53303881 6 + 151104725 TAAAGA
         s rn3.chr4     81444246 6 + 187371129 taagga
         """
         B = """
-        a score=1000.0 tree=\"(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;\"
+        a score=1000.0 tree="(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;"
         s panTro1.chr6 28862317 6 + 161576975 TAAAGA
         s baboon.chr6    241163 3 +   4622798 T---GA
         s hg18.chr7    27699739 3 + 158545518 T---GA
@@ -176,21 +161,21 @@ class MafJoinTests(unittest.TestCase):
         birfurcation.
         """
         A = """
-        a score=5.0 tree=\"(mm4.chr6:0.15)hg18.chr7;\"
+        a score=5.0 tree="(mm4.chr6:0.15)hg18.chr7;"
         s mm4.chr6     53310102 2 - 151104725 AC
         s hg18.chr7    27707221 2 + 158545518 gc
         
-        a score=5.0 tree=\"(mm4.chr6:0.15)hg18.chr7;\"
+        a score=5.0 tree="(mm4.chr6:0.15)hg18.chr7;"
         s mm4.chr6     53310104 11 - 151104725 AGCTGAAAATA
         s hg18.chr7    27707223 11 + 158545518 agctgaaaaca
         """
         B = """
-        a score=2.0 tree=\"((panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;\"
+        a score=2.0 tree="((panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;"
         s panTro1.chr6 28869787 5 + 161576975 gcagc-
         s baboon.chr6    249182 5 -   4622798 gcagc-
         s hg18.chr7    27707221 6 + 158545518 gcagct
         
-        a score=2.0 tree=\"((panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;\"
+        a score=2.0 tree="((panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;"
         s panTro1.chr6 28869792 7 + 161576975 gaaaaca
         s baboon.chr6    249187 7 -   4622798 gaaaaca
         s hg18.chr7    27707227 7 + 158545518 gaaaaca
@@ -208,14 +193,14 @@ class MafJoinTests(unittest.TestCase):
         """Dup join. Contains dups of non-guide sequences and simple split
         """
         A = """
-        a score=5.0 tree=\"((baboon.chr6:0.3,baboon.chr6:0.1)panTro1.chr6:0.2)hg18.chr7;\"
+        a score=5.0 tree="((baboon.chr6:0.3,baboon.chr6:0.1)panTro1.chr6:0.2)hg18.chr7;"
         s baboon.chr6    116834 37 +   4622798 AAAGGGAATGTTAACCAAATGAGTTGTCTCTTATGGT
         s baboon.chr6    126834 37 +   4622798 AAAGGGAATGTTAACCAAATGAGTTGTCTCTTATGGT
         s panTro1.chr6 28741140 37 + 161576975 AAAGGGAATGTTAACCAAATGAATTGTCTCTTACGGT
         s hg18.chr7    27578828 37 + 158545518 AAAGGGAATGTTAACCAAATGAATTGTCTCTTACGGT
         """
         B = """
-        a score=50.0 tree=\"((mm4.chr6:0.15,mm4.chr7:0.14)rn3.chr4:0.15,rn3.chr4:0.14)hg18.chr7;\"
+        a score=50.0 tree="((mm4.chr6:0.15,mm4.chr7:0.14)rn3.chr4:0.15,rn3.chr4:0.14)hg18.chr7;"
         s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
         s mm4.chr7     50000000 40 + 150000000 AAATGGGAATGTTAAGCAAACGAT--ATTGTCTCTCAGTGTG
         s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
@@ -243,14 +228,14 @@ class MafJoinTests(unittest.TestCase):
         this, but you might want to consider it illegal and change the test. 
         """
         A = """
-        a score=1000.0 tree=\"((panTro1.chr6:0.3,panTro1.chr6:0.1)baboon.chr6:0.2)hg18.chr7;\"
+        a score=1000.0 tree="((panTro1.chr6:0.3,panTro1.chr6:0.1)baboon.chr6:0.2)hg18.chr7;"
         s panTro1.chr6 28862317 6 + 161576975 TAAAGA
         s panTro1.chr6 29862317 6 + 161576975 TAAAGA
         s baboon.chr6    241163 3 +   4622798 T---GA
         s hg18.chr7    27699739 3 + 158545518 T---GA
         """
         B = """
-        a score=10.0 tree=\"((hg18.chr7:0.1,hg18.chr7:0.5)mm4.chr6:0.15)rn3.chr4;\"
+        a score=10.0 tree="((hg18.chr7:0.1,hg18.chr7:0.5)mm4.chr6:0.15)rn3.chr4;"
         s hg18.chr7    27699739 3 + 158545518 T---GA
         s hg18.chr7    27000000 5 + 158545518 T-GGGA
         s mm4.chr6     53303881 6 + 151104725 TAAAGA
@@ -272,23 +257,23 @@ class MafJoinTests(unittest.TestCase):
         """Dup multiple in the guide which joins to sequences..
         """
         A = """
-        a score=2.0 tree=\"((hg18.chr7:0.1,hg18.chr9:0.5)panTro1.chr6:0.15)baboon.chr6;\"
+        a score=2.0 tree="((hg18.chr7:0.1,hg18.chr9:0.5)panTro1.chr6:0.15)baboon.chr6;"
         s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
         s hg18.chr9    27707221 13 + 158545518 gcagctgaaaaca
         s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
         s baboon.chr6    249182 13 -   4622798 gcagctgaaaaca
         """
         B = """
-        a score=5.0 tree=\"(mm4.chr6:0.1)hg18.chr7;\"
+        a score=5.0 tree="(mm4.chr6:0.1)hg18.chr7;"
         s mm4.chr6     53310102 13 - 151104725 ACAGCTGAAAATA
         s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
         
-        a score=5.0 tree=\"(mm4.chr6:0.2)hg18.chr9;\"
+        a score=5.0 tree="(mm4.chr6:0.2)hg18.chr9;"
         s mm4.chr6     54310102 13 - 151104725 ACAGCTGAAAATA
         s hg18.chr9    27707221 13 + 158545518 gcagctgaaaaca
         """
         C = """
-        a score=0.000000 tree=\"(((mm4.chr6:0.1)hg18.chr7:0.1,(mm4.chr6:0.2)hg18.chr9:0.5)panTro1.chr6:0.15)baboon.chr6;\"
+        a score=0.000000 tree="(((mm4.chr6:0.1)hg18.chr7:0.1,(mm4.chr6:0.2)hg18.chr9:0.5)panTro1.chr6:0.15)baboon.chr6;"
         s mm4.chr6     53310102 13 - 151104725 ACAGCTGAAAATA
         s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
         s mm4.chr6     54310102 13 - 151104725 ACAGCTGAAAATA
@@ -323,17 +308,17 @@ class MafJoinTests(unittest.TestCase):
         """simple duplication represented by two separate blocks, as with evolver
         """
         A = """
-        a score=10.0 tree=\"(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;\"
+        a score=10.0 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
         s hg18.chr7    27699739 3 + 158545518 T---GA
         s mm4.chr6     53303881 6 + 151104725 TAAAGA
         s rn3.chr4     81444246 6 + 187371129 taagga
 
-        a score=10.0 tree=\"(mm4.chr6:0.15)rn3.chr4;\"
+        a score=10.0 tree="(mm4.chr6:0.15)rn3.chr4;"
         s mm4.chr6     54303881 6 + 151104725 TAAAGA
         s rn3.chr4     81444246 6 + 187371129 taagga
         """
         B = """
-        a score=1000.0 tree=\"(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;\"
+        a score=1000.0 tree="(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;"
         s panTro1.chr6 28862317 6 + 161576975 TAAAGA
         s baboon.chr6    241163 3 +   4622798 T---GA
         s hg18.chr7    27699739 3 + 158545518 T---GA
@@ -354,21 +339,21 @@ class MafJoinTests(unittest.TestCase):
         a reverse complement.
         """
         A = """
-        a score=10.0 tree=\"(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;\"
+        a score=10.0 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
         s hg18.chr7    27699739 3 + 158545518 T---GA
         s mm4.chr6     53303881 6 + 151104725 TAAAGA
         s rn3.chr4     81444246 6 + 187371129 taagga
 
-        a score=10.0 tree=\"(mm4.chr6:0.15)rn3.chr4;\"
+        a score=10.0 tree="(mm4.chr6:0.15)rn3.chr4;"
         s mm4.chr6     54303882 5 + 151104725 AAAG-A
         s rn3.chr4     81444247 6 + 187371129 aaggaa
 
-        a score=10.0 tree=\"(mm4.chr8:0.15)rn3.chr4;\"
+        a score=10.0 tree="(mm4.chr8:0.15)rn3.chr4;"
         s mm4.chr8     54303880 11 + 151104725 CATTCCTTAAC
         s rn3.chr4     105926875 9 - 187371129 c-ttcctta-c
         """
         B = """
-        a score=1000.0 tree=\"(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;\"
+        a score=1000.0 tree="(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;"
         s panTro1.chr6 28862317 6 + 161576975 TAAAGA
         s baboon.chr6    241163 3 +   4622798 T---GA
         s hg18.chr7    27699739 3 + 158545518 T---GA
@@ -390,21 +375,21 @@ class MafJoinTests(unittest.TestCase):
         """
         # this was a buggy version of testJoin9
         A = """
-        a score=10.0 tree=\"(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;\"
+        a score=10.0 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
         s hg18.chr7    27699739 3 + 158545518 T---GA
         s mm4.chr6     53303881 6 + 151104725 TAAAGA
         s rn3.chr4     81444246 6 + 187371129 taagga
 
-        a score=10.0 tree=\"(mm4.chr6:0.15)rn3.chr4;\"
+        a score=10.0 tree="(mm4.chr6:0.15)rn3.chr4;"
         s mm4.chr6     54303882 5 + 151104725 AAAG-A
         s rn3.chr4     81444247 6 + 187371129 aaggaa
 
-        a score=10.0 tree=\"(mm4.chr8:0.15)rn3.chr4;\"
+        a score=10.0 tree="(mm4.chr8:0.15)rn3.chr4;"
         s mm4.chr8     54303880 11 + 151104725 CATTCCTTAAC
         s rn3.chr4     105926875 9 + 187371129 c-ttcctta-c
         """
         B = """
-        a score=1000.0 tree=\"(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;\"
+        a score=1000.0 tree="(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;"
         s panTro1.chr6 28862317 6 + 161576975 TAAAGA
         s baboon.chr6    241163 3 +   4622798 T---GA
         s hg18.chr7    27699739 3 + 158545518 T---GA
@@ -428,22 +413,22 @@ class MafJoinTests(unittest.TestCase):
         """reverse of regression testJoin10, where second block got lost
         """
         A = """
-        a score=1000.0 tree=\"(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;\"
+        a score=1000.0 tree="(panTro1.chr6:0.3,baboon.chr6:0.2)hg18.chr7;"
         s panTro1.chr6 28862317 6 + 161576975 TAAAGA
         s baboon.chr6    241163 3 +   4622798 T---GA
         s hg18.chr7    27699739 3 + 158545518 T---GA
         """
         B = """
-        a score=10.0 tree=\"(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;\"
+        a score=10.0 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
         s hg18.chr7    27699739 3 + 158545518 T---GA
         s mm4.chr6     53303881 6 + 151104725 TAAAGA
         s rn3.chr4     81444246 6 + 187371129 taagga
 
-        a score=10.0 tree=\"(mm4.chr6:0.15)rn3.chr4;\"
+        a score=10.0 tree="(mm4.chr6:0.15)rn3.chr4;"
         s mm4.chr6     54303882 5 + 151104725 AAAG-A
         s rn3.chr4     81444247 6 + 187371129 aaggaa
 
-        a score=10.0 tree=\"(mm4.chr8:0.15)rn3.chr4;\"
+        a score=10.0 tree="(mm4.chr8:0.15)rn3.chr4;"
         s mm4.chr8     54303880 11 + 151104725 CATTCCTTAAC
         s rn3.chr4     105926875 9 + 187371129 c-ttcctta-c
         """
@@ -539,21 +524,21 @@ class MafJoinTests(unittest.TestCase):
         """Non-dup join, merging of blocks, adjacent guides with no overlap.
         """
         A = """
-        a score=5.0 tree=\"(mm4.chr6:0.15)hg18.chr7;\"
+        a score=5.0 tree="(mm4.chr6:0.15)hg18.chr7;"
         s mm4.chr6     53310102 2 - 151104725 AC
         s hg18.chr7    27707221 2 + 158545518 gc
         
-        a score=5.0 tree=\"(mm4.chr6:0.15)hg18.chr7;\"
+        a score=5.0 tree="(mm4.chr6:0.15)hg18.chr7;"
         s mm4.chr6     53310104 11 - 151104725 AGCTGAAAATA
         s hg18.chr7    27707223 11 + 158545518 agctgaaaaca
         """
         B = """
-        a score=2.0 tree=\"((panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;\"
+        a score=2.0 tree="((panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;"
         s panTro1.chr6 28869787 2 + 161576975 gc
         s baboon.chr6    249182 2 -   4622798 gc
         s hg18.chr7    27707221 2 + 158545518 gc
         
-        a score=2.0 tree=\"((panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;\"
+        a score=2.0 tree="((panTro1.chr6:0.3)baboon.chr6:0.2)hg18.chr7;"
         s panTro1.chr6 28869789 10 + 161576975 agc-gaaaaca
         s baboon.chr6    249184 10 -   4622798 agc-gaaaaca
         s hg18.chr7    27707223 11 + 158545518 agctgaaaaca
@@ -852,6 +837,63 @@ tmp/__main__.MafJoinTests.testJoin26.A.maf	simChimp.chr6	1528	1529"""
         s sMouse-sRat.chr6 120371 169 + 516010 TATATTAATCATCTATCTTATGCTGGGGATAATACAAGAAGATTACACACTCTGTAACTTGTCAGCACTCATCATATAACCCTATTAGGTCGATATCATTTCTACCACCTTGAAAAGAGCAGGAAAGTAAACAATTGAGGCCATGATGCTTCATCTGTTCCTTCTCCAC
         """
         self.mafJoinTest("sMouse-sRat", A, B, C, treelessRoot1="sMouse-sRat", maxBlkWidth=1000)
+
+class MafAdjustTests(TestCaseBase):
+    
+    def mafAdjustTest(self, mafIn, mafExpect, maxBlkWidth=None):
+        """run mafAdjust and check output
+        """
+        tempFileIn = self.writeMAF(mafIn, "in.maf")
+        tempFileExpect = self.writeMAF(mafExpect, "expect.maf")
+        tempFileOutput = self.getTestTempFile("out.maf")
+        cmd = ["mafAdjust"]
+        if maxBlkWidth != None:
+            cmd.append("-maxBlkWidth="+str(maxBlkWidth))
+        cmd.extend([tempFileIn, tempFileOutput])
+
+        self.stdFlush()
+        logger.info("run: " + " ".join(cmd))
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (stdout, stderr) = proc.communicate()
+        exitCode = proc.wait()
+        if stderr != "":
+            sys.stderr.write(stderr)
+        assert(exitCode == 0)
+        self.compareExpectedAndRecieved(tempFileExpect, tempFileOutput)
+            
+    def testAdjust1(self):
+        """Simple of adjustment of block width
+        """
+        mafIn = """
+        a score=50.0 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
+        s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+        s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+        s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+        """
+        mafExpect = """
+        a score=0.000000 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
+        s hg18.chr7 27578828 10 + 158545518 AAA-GGGAATG
+        s mm4.chr6  53215344 10 + 151104725 -AATGGGAATG
+        s rn3.chr4  81344243  9 + 187371129 -AA-GGGGATG
+
+        a score=0.000000 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
+        s hg18.chr7 27578838 11 + 158545518 TTAACCAAATG
+        s mm4.chr6  53215354 11 + 151104725 TTAAGCAAACG
+        s rn3.chr4  81344252 11 + 187371129 CTAAGCCAATG
+
+        a score=0.000000 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
+        s hg18.chr7 27578849  8 + 158545518 A---ATTGTCT
+        s mm4.chr6  53215365  8 + 151104725 A---ATTGTCT
+        s rn3.chr4  81344263 11 + 187371129 AGTTGTTGTCT
+
+        a score=0.000000 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
+        s hg18.chr7 27578857 9 + 158545518 CTTACGGTG
+        s mm4.chr6  53215373 9 + 151104725 CTCAGTGTG
+        s rn3.chr4  81344274 9 + 187371129 CTCAATGTG
+        """
+        self.mafAdjustTest(mafIn, mafExpect, maxBlkWidth=11)
+    
+
 
 # FIXME: should be controllable from the command line
 #import logging
