@@ -80,9 +80,22 @@ class MafJoinTests(TestCaseBase):
         else:
             if stderr != "":
                 sys.stderr.write(stderr)
-                self.__stdFlush()
+                self.stdFlush()
             self.assertEquals(stderr, "")
         logger.info("okay: " + " ".join(cmd))
+
+    def __editDropOutput(self, tempDropFile):
+        """edit drop file to have first column be only the last part of the
+        file name so test can be run from different directories"""
+        tempDropEditFile = self.getTestTempFile(".drop.edit")
+        with open(tempDropFile) as inFh:
+            with open(tempDropEditFile, "w") as outFh:
+                for l in inFh:
+                    l = re.sub("^.+MafJoinTests\\.", "", l)
+                    outFh.write(l)
+        return tempDropEditFile
+
+
 
     def mafJoinTest(self, guide, mafA, mafB, mafC, expectExitCode=0, expectStderr=None, expectStderrRe=None, treelessRoot1=None, treelessRoot2=None, maxBlkWidth=None, maxInputBlkWidth=None, dropExpect=None):
         """Writes out mafA and mafB to temp files.
@@ -102,7 +115,7 @@ class MafJoinTests(TestCaseBase):
         if expectExitCode == 0:  # only check MAF on success
             self.compareExpectedAndRecieved(tempFileC, tempFileOutput)
             if dropExpect != None:
-                self.compareExpectedAndRecieved(tempDropExpectFile, tempDropFile)
+                self.compareExpectedAndRecieved(tempDropExpectFile, self.__editDropOutput(tempDropFile))
             
 
     def testJoin1(self):
@@ -783,8 +796,8 @@ class MafJoinTests(TestCaseBase):
         """
         dropExpect = """
 maf	droppedSeq	droppedStart	droppedEnd
-tmp/__main__.MafJoinTests.testJoin26.A.maf	simChimp.chr6	1528	1529
-tmp/__main__.MafJoinTests.testJoin26.A.maf	simChimp.chr6	1528	1529"""
+testJoin26.A.maf	simChimp.chr6	1528	1529
+testJoin26.A.maf	simChimp.chr6	1528	1529"""
         self.mafJoinTest("sHuman-sChimp", A, B, C, treelessRoot1="sHuman-sChimp", dropExpect=dropExpect)
 
     def testJoin27(self):
