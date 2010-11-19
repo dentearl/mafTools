@@ -21,6 +21,7 @@ static struct optionSpec optionSpecs[] = {
     {"maxBlkWidth", OPTION_INT},
     {"multiParentDropped", OPTION_STRING},
     {"dumpDir", OPTION_STRING},
+    {"speciesTreeAssert", OPTION_STRING},
     {"help", OPTION_BOOLEAN},
     {NULL, 0}
 };
@@ -45,6 +46,8 @@ static char *usageMsg =
     "   time and memory requirements\n"
     "  -multiParentDropped=file - write regions were one copy was drop due to\n"
     "   having multiple parents.\n"
+    "  -speciesTreeAssert=nhtree - if supplied, verify that the block trees are\n"
+    "   consistent with this species tree\n"
     "  -dumpDir=dir - dump info about MAFs at various points during the\n"
     "   process to files in this directory.\n"
     "\n"
