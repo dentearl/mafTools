@@ -22,6 +22,21 @@ struct mafTree {
     struct Genomes *genomes;
 };
 
+/* get mafTreeNodeCompLink for a node */
+static struct mafTreeNodeCompLink *getNodeCompLink(ETree *node) {
+    return eTree_getClientData(node);
+}
+
+/* get malnComp for a node, or NULL */
+static struct malnComp *getNodeComp(ETree *node) {
+    struct mafTreeNodeCompLink *ncLink = eTree_getClientData(node);
+    if (ncLink == NULL) {
+        return NULL;
+    } else {
+        return ncLink->comp;
+    }
+}
+
 /* constructor, link with node and comp  */
 static struct mafTreeNodeCompLink *mafTreeNodeCompLink_construct(int treeOrder, ETree *node, struct malnComp *comp) {
     struct mafTreeNodeCompLink *ncLink;
@@ -54,7 +69,7 @@ static void setCheckTreeOrderDFS(mafTree *mTree, ETree *node, bool check, int *t
     for (int i = 0; i < eTree_getChildNumber(node); i++) {
         setCheckTreeOrderDFS(mTree, eTree_getChild(node, i), check, treeOrder);
     }
-    struct mafTreeNodeCompLink *ncLink = eTree_getClientData(node);
+    struct mafTreeNodeCompLink *ncLink = getNodeCompLink(node);
     if (!sameString(ncLink->comp->seq->orgSeqName, eTree_getLabel(node))) {
         errAbort("tree component name \"%s\" doesn't match tree node name \"%s\"", ncLink->comp->seq->orgSeqName, eTree_getLabel(node));
     }
@@ -146,7 +161,7 @@ mafTree *mafTree_constructFromAlignment(struct Genomes *genomes, struct malnBlk 
 
 /* recursively free  mafTreeNodeCompLink objects */
 static void freeMafTreeNodeCompLinks(ETree *node) {
-    mafTreeNodeCompLink_destruct(eTree_getClientData(node));
+    mafTreeNodeCompLink_destruct(getNodeCompLink(node));
     for (int i = 0; i < eTree_getChildNumber(node); i++) {
         freeMafTreeNodeCompLinks(eTree_getChild(node, i));
     }
@@ -163,7 +178,7 @@ void mafTree_destruct(mafTree *mTree) {
 
 /* recursively search a tree for node linked to the specified component */
 static ETree *searchByComp(ETree *node, struct malnComp *comp) {
-    struct mafTreeNodeCompLink *ncLink = eTree_getClientData(node);
+   struct mafTreeNodeCompLink *ncLink = getNodeCompLink(node);
     if (ncLink->comp == comp) {
         return node;
     }
@@ -179,16 +194,16 @@ static ETree *searchByComp(ETree *node, struct malnComp *comp) {
 /* assert nodes are compatible for a join */
 static void assertJoinCompatible(ETree *node1, ETree *node2) {
 #ifndef NDEBUG
-    struct mafTreeNodeCompLink *ncLink1 = eTree_getClientData(node1);
-    struct mafTreeNodeCompLink *ncLink2 = eTree_getClientData(node2);
-    assert(ncLink1->comp->seq == ncLink2->comp->seq);
+    struct malnComp *comp1 = getNodeComp(node1);
+    struct malnComp *comp2 = getNodeComp(node2);
+    assert(comp1->seq == comp2->seq);
 #endif
 }
 
 /* clone a node, linking in new mafTreeNodeCompLink object */
 static ETree *cloneNode(ETree *srcNode, struct malnCompCompMap *srcDestCompMap) {
     ETree *destNode = eTree_cloneNode(srcNode);
-    struct mafTreeNodeCompLink *srcNcLink = eTree_getClientData(srcNode);
+    struct mafTreeNodeCompLink *srcNcLink = getNodeCompLink(srcNode);
     struct malnComp *destComp = malnCompCompMap_get(srcDestCompMap, srcNcLink->comp);
     mafTreeNodeCompLink_construct(-1, destNode, destComp);
     return destNode;
@@ -218,7 +233,7 @@ static ETree *joinTrees(ETree *srcRoot1, ETree *srcAttach1, ETree *srcRoot2, str
     assertJoinCompatible(srcAttach1, srcRoot2);
     assert(eTree_getParent(srcRoot2) == NULL);
     ETree *joinedRoot = cloneTree(srcRoot1, NULL, srcDestCompMap);
-    struct mafTreeNodeCompLink *srcAttach1NcLink = eTree_getClientData(srcAttach1);
+    struct mafTreeNodeCompLink *srcAttach1NcLink = getNodeCompLink(srcAttach1);
     ETree *joinLeaf = searchByComp(joinedRoot, malnCompCompMap_get(srcDestCompMap, srcAttach1NcLink->comp));
     cloneChildren(srcRoot2, joinLeaf, srcDestCompMap);
     return joinedRoot;
@@ -313,7 +328,7 @@ static int sortChildrenCmpFn(ETree *a, ETree *b) {
     int diff = strcmp(eTree_getLabel(a), eTree_getLabel(b));
     if (diff == 0) {
         // same names, sort by seq and location, if available
-        struct mafTreeNodeCompLink *ncLinkA = eTree_getClientData(a), *ncLinkB = eTree_getClientData(b);
+        struct mafTreeNodeCompLink *ncLinkA = getNodeCompLink(a), *ncLinkB = getNodeCompLink(b);
         if ((ncLinkA != NULL) && (ncLinkB != NULL)) {
             diff = malnComp_cmp(ncLinkA->comp, ncLinkB->comp);
         }
@@ -327,43 +342,112 @@ void mafTree_sortChildren(mafTree *mTree) {
     setCheckTreeOrder(mTree, false);
 }
 
-/* forward declaration */
-static void cloneForSubRangeBlk(ETree *srcParent, ETree *destParent, struct malnCompCompMap *srcDestCompMap);
-
-/* recursive clone a node for subrange block */
-static void cloneNodeSubRangeBlk(ETree *srcParent, ETree *srcNode, ETree *destParent, struct malnCompCompMap *srcDestCompMap) {
-    struct mafTreeNodeCompLink *srcNcLink = eTree_getClientData(srcNode);
+/* non-recursive clone of one node when making a subrange tree, return NULL if
+ * associated component is deleted */
+static ETree *subrangeCloneOneNode(ETree *srcNode, struct malnCompCompMap *srcDestCompMap) {
+    struct mafTreeNodeCompLink *srcNcLink = getNodeCompLink(srcNode);
     struct malnComp *destComp = malnCompCompMap_find(srcDestCompMap, srcNcLink->comp);
     if (destComp == NULL) {
-        // drop this node
-        cloneForSubRangeBlk(srcNode, destParent, srcDestCompMap);
+        return NULL;
     } else {
-        // clone this node
         ETree *destNode = malnCompToETreeNode(destComp);
-        eTree_setParent(destNode, destParent);
         eTree_setBranchLength(destNode, eTree_getBranchLength(srcNode));
         mafTreeNodeCompLink_construct(-1, destNode, destComp);
-        cloneForSubRangeBlk(srcNode, destNode, srcDestCompMap);
+        return destNode;
     }
 }
 
-/* recursive clone for subrange block */
-static void cloneForSubRangeBlk(ETree *srcParent, ETree *destParent, struct malnCompCompMap *srcDestCompMap) {
-    for (int i = 0; i < eTree_getChildNumber(srcParent); i++) {
-        cloneNodeSubRangeBlk(srcParent, eTree_getChild(srcParent, i), destParent, srcDestCompMap);
+/* copy pending children from an array to a list */
+static void subrangeSavePendingChildren(int numChildren, ETree **children, stList *pendingSubtrees) {
+    for (int i = 0; i < numChildren; i++) {
+        stList_append(pendingSubtrees, children[i]);
     }
+}
+
+/* add children from pending list */
+static void subrangeAddPendingChildren(ETree *destNode, stList *pendingSubtrees) {
+    while (stList_length(pendingSubtrees) > 0) {
+        ETree *destChild = stList_pop(pendingSubtrees);
+        eTree_setParent(destChild, destNode);
+    }
+}
+
+/* forward */
+static ETree *subrangeCloneNode(ETree *srcNode, struct malnCompCompMap *srcDestCompMap, stList *pendingSubtrees);
+
+/* recursive clone children of node */
+static void subrangeCloneChildren(ETree *srcParent, struct malnCompCompMap *srcDestCompMap, stList *pendingSubtrees) {
+    // children are in on-stack array and then passed up pendingSubtrees
+    int numDestChildren = 0;
+    ETree *destChildren[eTree_getChildNumber(srcParent)];
+    for (int i = 0; i < eTree_getChildNumber(srcParent); i++) {
+        ETree *destNode = subrangeCloneNode(eTree_getChild(srcParent, i), srcDestCompMap, pendingSubtrees);
+        if (destNode !=  NULL) {
+            destChildren[numDestChildren++] = destNode;
+        }
+    }
+    subrangeSavePendingChildren(numDestChildren, destChildren, pendingSubtrees);
+}
+
+/* Recursive clone of a node, done bottom-up, allowing for deletion of the
+ * node after the children have been cloned.  In which case, children are left
+ * in pendingSubtrees */
+static ETree *subrangeCloneNode(ETree *srcNode, struct malnCompCompMap *srcDestCompMap, stList *pendingSubtrees) {
+    subrangeCloneChildren(srcNode, srcDestCompMap, pendingSubtrees);
+    ETree *destNode = subrangeCloneOneNode(srcNode, srcDestCompMap);
+    if (destNode != NULL) {
+        subrangeAddPendingChildren(destNode, pendingSubtrees);
+    }
+    return destNode;
+}
+
+/* clone the root. */
+static ETree *subrangeCloneRoot(ETree *srcRoot, struct malnCompCompMap *srcDestCompMap) {
+    // clone root, if deleted, these must only be one child (due to the way
+    // the trees are constructed).
+    stList *pendingSubtrees = stList_construct();
+    ETree *destRoot = subrangeCloneNode(srcRoot, srcDestCompMap, pendingSubtrees);
+    if (destRoot == NULL) {
+        if (stList_length(pendingSubtrees) > 1) {
+            struct mafTreeNodeCompLink *srcNcLink = getNodeCompLink(srcRoot);
+            errAbort("deleted tree root %s (component: %s:%d-%d/%c)) has more that one child", eTree_getLabel(srcRoot), srcNcLink->comp->seq->orgSeqName, srcNcLink->comp->start, srcNcLink->comp->end, srcNcLink->comp->strand);
+        } else if (stList_length(pendingSubtrees) == 1) {
+            destRoot = stList_pop(pendingSubtrees);
+        }
+    }
+    stList_destruct(pendingSubtrees);
+    return destRoot;
 }
 
 /*
- * Clone a tree for addition to a subrange block. If if components are in srcDestCompMap
- * clone them, otherwise drop the node and merge the children.
+ * Clone a tree for a subrange of a block. If a node' component is in srcDestCompMap
+ * then clone it, otherwise drop the node and merge the children.
  */
-mafTree *mafTree_cloneForSubRangeBlk(mafTree *mTree, struct malnCompCompMap *srcDestCompMap) {
-    ETree *destRoot = cloneNode(mTree->tree, srcDestCompMap);
-    cloneForSubRangeBlk(mTree->tree, destRoot, srcDestCompMap);
+mafTree *mafTree_subrangeClone(mafTree *mTree, struct malnCompCompMap *srcDestCompMap) {
+    ETree *destRoot = subrangeCloneRoot(mTree->tree, srcDestCompMap);
     mafTree *destMTree = mafTree_construct(mTree->genomes,  destRoot);
     setCheckTreeOrder(destMTree, false);
     return destMTree;
+}
+
+/* recursive dump */
+static void dumpSubtree(ETree *root, FILE *fh, int indent) {
+    fprintf(fh, "%*s", 4*indent, "");
+    struct malnComp *comp = getNodeComp(root);
+    if (comp == NULL) {
+        fprintf(fh, "%s", eTree_getLabel(root));
+    } else {
+        malnComp_prInfo(comp, fh);
+    }
+    fputc('\n', fh);
+    for (int i = 0; i < eTree_getChildNumber(root); i++) {
+        dumpSubtree(eTree_getChild(root, i), fh, indent+1);
+    }
+}
+
+/* dump for debugging */
+void mafTree_dump(mafTree *mTree, FILE *fh) {
+    dumpSubtree(mTree->tree, fh, 0);
 }
 
 /* assert sanity of the tree */

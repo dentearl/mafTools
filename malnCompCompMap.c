@@ -33,7 +33,7 @@ void malnCompCompMap_add(struct malnCompCompMap *mccm, struct malnComp *srcComp,
 struct malnComp *malnCompCompMap_get(struct malnCompCompMap *mccm, struct malnComp *srcComp) {
     struct malnComp *destComp = stHash_search(mccm->map, srcComp);
     if (destComp == NULL) {
-        errAbort("no mapping found for component");
+        errAbort("no mapping found for component: %s:%d-%d (%c)", srcComp->seq->orgSeqName, srcComp->start, srcComp->end, srcComp->strand);
     }
     return destComp;
 }

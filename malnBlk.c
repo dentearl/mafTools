@@ -230,7 +230,7 @@ struct malnBlk *malnBlk_constructSubrange(struct malnBlk *blk, int alnStart, int
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         compSubRange(subBlk, comp, alnStart, alnEnd, srcDestCompMap);
     }
-    subBlk->mTree = mafTree_cloneForSubRangeBlk(blk->mTree, srcDestCompMap);
+    subBlk->mTree = mafTree_subrangeClone(blk->mTree, srcDestCompMap);
     malnBlk_finish(subBlk);
     malnCompCompMap_destruct(srcDestCompMap);
     return subBlk;
@@ -300,6 +300,11 @@ void malnBlk_dumpv(struct malnBlk *blk, FILE *fh, const char *label, va_list arg
     char *nhTree = (blk->mTree != NULL) ? mafTree_format(blk->mTree) : cloneString("NULL");
     char *fmtLabel = stSafeCDynFmtv(label, args);
     fprintf(fh, "%s #%d %d%s %s\n", fmtLabel, blk->objId, blk->alnWidth, (blk->deleted ? " deleted" : ""), nhTree);
+#if 0
+    if (blk->mTree != NULL) {
+        mafTree_dump(blk->mTree, fh);
+    }
+#endif
     freeMem(fmtLabel);
     freeMem(nhTree);
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {

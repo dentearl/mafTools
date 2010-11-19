@@ -45,7 +45,7 @@ mafTree *mafTree_join(mafTree *mTree1, struct malnComp *comp1, mafTree *mTree2, 
  * Clone a tree for addition to a subrange block. If if components are in srcDestCompMap
  * clone them, otherwise drop the node and merge the children.
  */
-mafTree *mafTree_cloneForSubRangeBlk(mafTree *mTree, struct malnCompCompMap *srcDestCompMap);
+mafTree *mafTree_subrangeClone(mafTree *mTree, struct malnCompCompMap *srcDestCompMap);
 
 /* format tree as a newick string */
 char *mafTree_format(mafTree *mTree);
@@ -61,6 +61,9 @@ void mafTree_deleteNode(mafTree *mTree, struct mafTreeNodeCompLink *ncLink);
 
 /* sort children so tests are reproducible */
 void mafTree_sortChildren(mafTree *mTree);
+
+/* dump for debugging */
+void mafTree_dump(mafTree *mTree, FILE *fh);
 
 /* assert sanity of nodeCompLink */
 void mafTreeNodeCompLink_assert(struct mafTreeNodeCompLink *ncLink);
