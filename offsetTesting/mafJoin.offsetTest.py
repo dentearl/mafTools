@@ -7,42 +7,49 @@ from sonLib.bioio import logger
 
 class VerifyMafJoinOutput( unittest.TestCase ):
     import os
-    if not os.path.exists('temp_offsetTests'):
-        os.mkdir('temp_offsetTests')
+    if not os.path.exists('temp_testFiles'):
+        os.mkdir('temp_testFiles')
     def test_knownValues ( self ):
         """mafJoin output should produce no missing when run in eval_MAFComparator"""
         import subprocess
         import sys
-        cmd = ['mafJoin', '-treelessRoot1=sMouse-sRat', '-treelessRoot2=sMouse-sRat',
-               'sMouse-sRat', '-maxBlkWidth=1000',
-               '-multiParentDropped=temp_offsetTests/sMouse-sRat.dropped.tab',
-               'evolverMAFs/simRat.sMouse-sRat.maf',
-               'evolverMAFs/simMouse.sMouse-sRat.maf',
-               'temp_offsetTests/sMouse-sRat.mafJoin.maf']
+        childA = 'simMouse'
+        childB = 'simRat'
+        parent = 'sMouse-sRat'
+        cmd = ['mafJoin', '-treelessRoot1=%s' % parent, '-treelessRoot2=%s' % parent,
+               parent, '-maxBlkWidth=1000',
+               '-multiParentDropped=temp_testFiles/%s.dropped.tab' % parent,
+               'evolverMAFs/%s.%s.maf' % ( childA, parent ),
+               'evolverMAFs/%s.%s.maf' % ( childB, parent ),
+               'temp_testFiles/%s.mafJoin.maf' %parent ]
         logger.info("run: " + " ".join(cmd))
         p = subprocess.Popen( cmd )
         p.wait()
-        dropped = open('temp_offsetTests/sMouse-sRat.dropped.tab').read()
+        dropped = open('temp_testFiles/%s.dropped.tab' % parent).read()
 
         self.assertEqual('maf\tdroppedSeq\tdroppedStart\tdroppedEnd\n', dropped )
         
-        cmd = ['eval_MAFComparator', '--mAFFile1=evolverMAFs/simRat.sMouse-sRat.maf',
-               '--mAFFile2=temp_offsetTests/sMouse-sRat.mafJoin.maf',
-               '--outputFile=temp_offsetTests/simRat.sMouse-sRat.compare.xml',
+        cmd = ['eval_MAFComparator', '--mAFFile1=evolverMAFs/%s.%s.maf' % ( childA, parent ),
+               '--mAFFile2=temp_testFiles/%s.mafJoin.maf' % parent,
+               '--outputFile=temp_testFiles/%s.%s.compare.xml' % ( childA, parent ),
                '--sampleNumber=100000000', '--ultraVerbose']
-        missingFile = open('temp_offsetTests/simRat.sMouse-sRat.missing.tab','w')
+        missingFile = open('temp_testFiles/%s.%s.missing.tab' % ( childA, parent ),'w')
         logger.info("run: " + " ".join(cmd))
         p = subprocess.Popen( cmd, stderr=missingFile )
         p.wait()
 
-        missing = open( 'temp_offsetTests/simRat.sMouse-sRat.missing.tab' ).read()
-        emptyMissing  = '# Comparing evolverMAFs/simRat.sMouse-sRat.maf to temp_offsetTests/sMouse-sRat.mafJoin.maf\n'
+        missing = open( 'temp_testFiles/%s.%s.missing.tab' % ( childA, parent )).read()
+        emptyMissing  = '# Comparing evolverMAFs/%s.%s.maf to temp_testFiles/%s.mafJoin.maf\n' % ( childA, parent, parent )
         emptyMissing += '# seq1\tpos1\tseq2\tpos2\n'
-        emptyMissing += '# Comparing temp_offsetTests/sMouse-sRat.mafJoin.maf to evolverMAFs/simRat.sMouse-sRat.maf\n'
+        line1 = len( emptyMissing )
+        emptyMissing += '# Comparing temp_testFiles/%s.mafJoin.maf to evolverMAFs/%s.%s.maf\n' % ( parent, childA, parent )
         emptyMissing += '# seq1\tpos1\tseq2\tpos2\n'
+        bothLines = len( emptyMissing )
 
-        self.assertEqual( emptyMissing[0:111], missing[0:111] ) # this should be true no matter what, it's just the two headers.
-        self.assertEqual( emptyMissing[0:225], missing[0:225] )
+        self.assertEqual( emptyMissing[ 0:line1], missing[ 0:line1 ] ) # this should be true no matter what, it's just the two headers.
+        self.assertEqual( emptyMissing[ 0:bothLines ], missing[ 0:bothLines] )
+        # it's fine if there's more to the file after this point,
+        # what matters is if there are any missing items in the first set of comparisons.
 
 # FIXME: should be controllable from the command line
 import logging
