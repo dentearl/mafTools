@@ -242,12 +242,12 @@ int main(int argc, char *argv[]) {
 
     if (ULTRAVERBOSE){
        fprintf(stderr, "# Comparing %s to %s\n", mAFFile1, mAFFile2);
-       fprintf(stderr, "# seq1\tpos1\tseq2\tpos2\n");
+       fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
     struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNameHash, intervalsHash, ULTRAVERBOSE, near);
     if (ULTRAVERBOSE){
        fprintf(stderr, "# Comparing %s to %s\n", mAFFile2, mAFFile1);
-       fprintf(stderr, "# seq1\tpos1\tseq2\tpos2\n");
+       fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
     struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNameHash, intervalsHash, ULTRAVERBOSE, near);
     fileHandle = fopen(outputFile, "w");

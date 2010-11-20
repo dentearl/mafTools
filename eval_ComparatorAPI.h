@@ -29,6 +29,8 @@ typedef struct _pair {
     char *seq2;
     int32_t pos1;
     int32_t pos2;
+    int32_t origPos1;
+    int32_t origPos2;
 } APair;
 
 typedef struct _resultPair {
