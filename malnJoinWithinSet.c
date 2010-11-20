@@ -14,7 +14,7 @@
 /* join two blocks by associated root components, create a third
  * block. Return that new block. Joined blocks marked as deleted */
 static struct malnBlk *joinBlksAtRoot(struct malnSet *malnSet, struct malnBlk *blk1, struct malnBlk *blk2) {
-    struct malnBlk *joinBlk = malnJoinBlks(malnBlk_getRootComp(blk1), malnBlk_getRootComp(blk2), NULL);
+    struct malnBlk *joinBlk = malnJoinBlks(malnBlk_getRootComp(blk1), malnBlk_getRootComp(blk2));
     malnSet_markAsDeleted(malnSet, blk1);
     malnSet_markAsDeleted(malnSet, blk2);
     return joinBlk;

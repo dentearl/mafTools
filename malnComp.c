@@ -129,7 +129,6 @@ bool malnComp_alnRangeToSeqRange(struct malnComp *comp, int alnStart, int alnEnd
     return true;
 }
 
-
 /* convert a sequence range to an alignment range, set range to 0-0 and return
  * false if none aligned */
 bool malnComp_seqRangeToAlnRange(struct malnComp *comp, int start, int end, int *alnStart, int *alnEnd) {
@@ -168,7 +167,7 @@ bool malnComp_seqChromRangeToAlnRange(struct malnComp *comp, int chromStart, int
 /* pad component to the specified alignment width */
 void malnComp_pad(struct malnComp *comp, int width) {
     assert(malnComp_getWidth(comp) <= width);
-   dyStringAppendMultiC(comp->alnStr, '-', width-malnComp_getWidth(comp));
+    dyStringAppendMultiC(comp->alnStr, '-', width-malnComp_getWidth(comp));
 }
 
 /* append the specified number of characters from the string, adjusting component
@@ -192,6 +191,15 @@ void malnComp_append(struct malnComp *comp, char *src, int len) {
 /* Append the specified alignment region of a component to this component.
  * The component must extend the range of this component. */
 void malnComp_appendCompAln(struct malnComp *comp, struct malnComp *srcComp, int alnStart, int alnEnd) {
+#ifndef NDEBUG
+    assert(srcComp->seq == comp->seq);
+    assert(srcComp->strand == comp->strand);
+    int start, end;
+    if (malnComp_alnRangeToSeqRange(srcComp, alnStart, alnEnd, &start, &end)) {
+        assert(start == comp->end);
+    }
+#endif
+
     malnComp_append(comp, malnComp_getAln(srcComp)+alnStart, alnEnd-alnStart);
 }
 
@@ -318,7 +326,10 @@ int malnComp_findNextAligned(struct malnComp *comp, int alnStart) {
 /* print base information describing a comp, newline not included */
 void malnComp_prInfo(struct malnComp *comp, FILE *fh) {
     const char *loc = (comp->ncLink != NULL) ? mafTreeLoc_str(malnComp_getLoc(comp)) : "NULL";
-    fprintf(fh, "%s (%c) %d-%d %d-%d [%d] %s", comp->seq->orgSeqName, comp->strand, comp->start, comp->end, comp->chromStart, comp->chromEnd, malnComp_getAligned(comp), loc);
+    fprintf(fh, "%s (%c) %d-%d %d-%d [%d] %s", comp->seq->orgSeqName, comp->strand, comp->start, comp->end, 
+            ((comp->strand == '-') ? comp->chromEnd : comp->chromStart),
+            ((comp->strand == '-') ? comp->chromStart : comp->chromEnd),
+            malnComp_getAligned(comp), loc);
 }
 
 /* print a component for debugging purposes */

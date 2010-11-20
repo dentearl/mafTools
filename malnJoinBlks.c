@@ -10,13 +10,14 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+static bool debug = false; // FIXME: tmp
+
 /* Object use to keep state */
 struct malnJoinBlks {
-    struct malnComp *guide1;         // guide components
+    struct malnComp *guide1;         // guide components, #1 start before or at #2
     struct malnComp *guide2;
     struct malnBlk *blk1;            // input blocks
     struct malnBlk *blk2;
-    struct malnBlk *inBlk2;          // original blk2, before reverse complement
     struct malnBlkCursor *cursor1;   // cursors into input block
     struct malnBlkCursor *cursor2;
     struct malnBlk *joined;          // joined block
@@ -72,21 +73,38 @@ static void addCompsToJoined(struct malnJoinBlks *jb, struct malnBlkCursor *blkC
     }
 }
 
+/* reverse complement one of the blocks give the guide component */
+static struct malnComp *revComplementGuide(struct malnComp *guideComp, struct malnBlk **freeBlk) {
+    *freeBlk = malnBlk_reverseComplement(guideComp->blk);
+    guideComp = malnBlk_findCompByChromRange(*freeBlk, guideComp->seq, guideComp->chromStart, guideComp->chromEnd);
+    assert(guideComp != NULL);
+    return guideComp;
+}
+
 /* construct malnJoinBlks state object for the join */
 static struct malnJoinBlks *malnJoinBlks_construct(struct malnComp *guideComp1, struct malnComp *guideComp2) {
     struct malnJoinBlks *jb;
     AllocVar(jb);
+    // reverse complement a guide if needed (must do first), pick so they are
+    // positive strand
+    if (guideComp1->strand != guideComp2->strand) {
+        if (guideComp1->strand == '-') {
+            guideComp1 = revComplementGuide(guideComp1, &jb->freeBlk);
+        } else {
+            guideComp2 = revComplementGuide(guideComp2, &jb->freeBlk);
+        }
+    }
+
+    // make sure guideComp1 starts before or at #2
+    if (guideComp1->start > guideComp2->start) {
+        struct malnComp *hold = guideComp2;
+        guideComp2 = guideComp1;
+        guideComp1 = hold;
+    }
     jb->guide1 = guideComp1;
     jb->guide2 = guideComp2;
     jb->blk1 = guideComp1->blk;
-    jb->blk2 = jb->inBlk2 = guideComp2->blk;
-
-    // reverse complement if needed (must do before making cursors)
-    if (jb->guide1->strand != jb->guide2->strand) {
-        jb->blk2 = jb->freeBlk = malnBlk_reverseComplement(jb->blk2);
-        jb->guide2 = malnBlk_findCompByChromRange(jb->blk2, jb->guide2->seq, jb->guide2->chromStart, jb->guide2->chromEnd);
-        assert(jb->guide2 != NULL);
-    }
+    jb->blk2 = guideComp2->blk;
 
     jb->cursor1 = malnBlkCursor_construct(jb->blk1, jb->guide1, NULL);
     jb->cursor2 = malnBlkCursor_construct(jb->blk2, jb->guide2, NULL);
@@ -192,31 +210,45 @@ static void joinSharedGuideColumns(struct malnJoinBlks *jb) {
     assert(jb->cursor2->alnIdx == jb->aln2CommonEnd);
 }
 
-/* join two blocks using their specified guide components.  Optionally return
- * resulting join component. */
-struct malnBlk *malnJoinBlks(struct malnComp *guideComp1, struct malnComp *guideComp2, struct malnComp **joinedCompRet) {
-    // FIXME: is joinedCompRet needed??
+/* join two blocks using their specified guide components. */
+struct malnBlk *malnJoinBlks(struct malnComp *guideComp1, struct malnComp *guideComp2) {
     assert(malnComp_overlapAdjacent(guideComp1, guideComp2));
     struct malnJoinBlks *jb = malnJoinBlks_construct(guideComp1, guideComp2);
-    if (joinedCompRet != NULL) {
-        *joinedCompRet = jb->dests1[0];
-    }
     calcAlignmentCoords(jb);
+    if (debug) {
+        malnBlk_dump(jb->blk1, stderr, "inBlk1");
+        malnBlk_dump(jb->blk2, stderr, "inBlk2");
+    }
 
     // before common start
     copyUnsharedGuideColumns(jb, jb->dests1, jb->cursor1, 0, jb->aln1CommonStart);
+    if (debug) {
+        malnBlk_dump(jb->joined, stderr, "middle before common");
+    }
     copyUnsharedGuideColumns(jb, jb->dests2, jb->cursor2, 0, jb->aln2CommonStart);
+    if (debug) {
+        malnBlk_dump(jb->joined, stderr, "after before common");
+    }
 
     // common
     if (jb->guideCommonStart < jb->guideCommonEnd) {
         assert(jb->dests1[0]->end == jb->guideCommonStart);
         joinSharedGuideColumns(jb);
         assert(jb->dests1[0]->end == jb->guideCommonEnd);
+        if (debug) {
+            malnBlk_dump(jb->joined, stderr, "after common");
+        }
     }
 
     // after common end
     copyUnsharedGuideColumns(jb, jb->dests1, jb->cursor1, jb->aln1CommonEnd, jb->blk1->alnWidth);
+    if (debug) {
+        malnBlk_dump(jb->joined, stderr, "middle after common");
+    }
     copyUnsharedGuideColumns(jb, jb->dests2, jb->cursor2, jb->aln2CommonEnd, jb->blk2->alnWidth);
+    if (debug) {
+        malnBlk_dump(jb->joined, stderr, "after after common");
+    }
 
     malnBlk_setTree(jb->joined, joinTrees(jb->cursor1, jb->cursor2, jb->srcDestCompMap));
 

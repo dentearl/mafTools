@@ -52,7 +52,10 @@ static inline int malnCompCursor_getNextPos(struct malnCompCursor *cc) {
 
 /* increment the alignment cursor, return false at the end. */
 static inline bool malnCompCursor_incr(struct malnCompCursor *cc) {
-    assert(cc->alnIdx < malnComp_getWidth(cc->comp));
+    assert(cc->alnIdx <= malnComp_getWidth(cc->comp));
+    if (cc->alnIdx == malnComp_getWidth(cc->comp)) {
+        return false;
+    }
     if (cc->isAligned) {
         cc->pos++;
     }
@@ -99,7 +102,7 @@ static inline void malnCompCursor_setSeqPos(struct malnCompCursor *cc, int pos) 
 
 /* advance the alignment cursor to the next aligned position, return false at the end  */
 static inline bool malnCompCursor_advanceToNextPos(struct malnCompCursor *cc) {
-    assert(cc->alnIdx < malnComp_getWidth(cc->comp));
+    assert(cc->alnIdx <= malnComp_getWidth(cc->comp));
     do {
         if (!malnCompCursor_incr(cc)) {
             return false;

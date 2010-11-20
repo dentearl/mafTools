@@ -88,7 +88,7 @@ static struct malnBlk *joinCompWithComp(struct malnComp *comp1, struct malnComp 
         malnBlk_dump(comp1->blk, stderr, "blk1 after split");
         malnBlk_dump(comp2->blk, stderr, "blk2 after split");
     }
-    struct malnBlk *newBlk = malnJoinBlks(comp1, comp2, NULL);
+    struct malnBlk *newBlk = malnJoinBlks(comp1, comp2);
     malnBlk_markOrDelete(comp1->blk);
     malnBlk_markOrDelete(comp2->blk);
     return newBlk;
