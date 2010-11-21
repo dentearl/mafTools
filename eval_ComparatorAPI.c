@@ -208,6 +208,8 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
         //uglyf("%s,  %i %i %c %i %s\n", seqName, start, i /*ignore the length field*/, strand, seqLength, sequence);
         j = sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i, /*ignore the length field*/
                    &strand, &seqLength, sequence);
+        st_uglyf("I got string: :%s:\n", cA);
+        st_uglyf("I got the values :%s: %i %i %c %i :%s:\n", seqName, start, i, strand, seqLength, sequence);
         assert(j == 6 || (j == 5 && seqLength == 0));
         if (j == 5) {
             free(sequence);
