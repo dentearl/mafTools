@@ -7,7 +7,7 @@ int32_t calcTrioState(TrioDecoder *decoder, int32_t spA, int32_t spB, int32_t sp
 
 void aPair_fillOut(APair *aPair, char *seq1, char *seq2, int32_t pos1, int32_t pos2, int32_t origPos1, int32_t origPos2) {
     int32_t i = strcmp(seq1, seq2);
-    if (i > 0 || (i == 0 && pos1 > pos2)) { //we construct the sequence so that seq1 < seq2 || seq1 == seq2 and pos1 < pos2
+    if (i > 0 || (i == 0 && pos1 > pos2)) { //we construct the sequence so that seq1 < seq2 || seq1 == seq2 and pos1 <= pos2
        aPair_fillOut(aPair, seq2, seq1, pos2, pos1, origPos2, origPos1);
     } else {
         aPair->seq1 = seq1;
@@ -537,8 +537,8 @@ void samplePairs(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs
     /*
      * Adds *thisPair to *pairs with a given probability.
      */
-    if (hashtable_search(legitPairs, thisPair->seq1) != NULL)
-        if (hashtable_search(legitPairs, thisPair->seq2) != NULL)
+    //if (hashtable_search(legitPairs, thisPair->seq1) != NULL)
+    //    if (hashtable_search(legitPairs, thisPair->seq2) != NULL)
             if (RANDOM() <= *acceptProbability)
                 avl_insert(pairs, aPair_copyConstruct(thisPair));
 }
@@ -595,10 +595,10 @@ void homologyTests1(APair *thisPair, stHash *intervalsHash, struct avl_table *pa
      * If both members of *thisPair are in the intersection of MAFFileA and MAFFileB,
      * and *thisPair is in the set *pairs then adds to the result pair a positive result.
      */
-    if ((hashtable_search(legitPairs, thisPair->seq1) != NULL)
-            && (hashtable_search(legitPairs, thisPair->seq2) != NULL)) {
+   // if ((hashtable_search(legitPairs, thisPair->seq1) != NULL)
+    //        && (hashtable_search(legitPairs, thisPair->seq2) != NULL)) {
         getNearPairs(thisPair, pairs, near, positivePairs);
-    }
+    //}
 }
 
 void homologyTestsTrio1(ATrio *trio, struct avl_table *trios, struct avl_table *resultTrios,
