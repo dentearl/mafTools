@@ -3,6 +3,7 @@
 #include "genome.h"
 #include "hash.h"
 #include "jkmaf.h"
+#include "sonLibString.h"
 
 // FIXME: make naming consistent with other modules
 
@@ -18,11 +19,11 @@ static char *seqMkName(struct Seq *seq) {
 }
 
 /* constructor  */
-static struct Seq *seqNew(struct Genome *genome, char *name, int size) {
+static struct Seq *seqNew(struct Genome *genome, const char *name, int size) {
     struct Seq *seq;
     AllocVar(seq);
     seq->genome = genome;
-    seq->name = cloneString(name);
+    seq->name = stString_copy(name);
     seq->size = size;
     seq->orgSeqName = seqMkName(seq);
     return seq;
@@ -45,10 +46,10 @@ int seqCmp(struct Seq *seq1, struct Seq *seq2) {
 }
 
 /* constructor */
-static struct Genome *genomeNew(char *name) {
+static struct Genome *genomeNew(const char *name) {
     struct Genome *genome;
     AllocVar(genome);
-    genome->name = cloneString(name);
+    genome->name = stString_copy(name);
     genome->seqMap = hashNew(8);
     return genome;
 }
@@ -65,19 +66,19 @@ static void genomeFree(struct Genome *genome) {
 }
 
 /* obtain a new Seq object, creating if it doesn't exist */
-struct Seq *genomeObtainSeq(struct Genome *genome, char *name, int size) {
-    struct Seq *seq = hashFindVal(genome->seqMap, name);
+struct Seq *genomeObtainSeq(struct Genome *genome, const char *name, int size) {
+    struct Seq *seq = hashFindVal(genome->seqMap, (char*)name);
     if (seq == NULL) {
         seq = seqNew(genome, name, size);
-        hashAdd(genome->seqMap, name, seq);
+        hashAdd(genome->seqMap, (char*)name, seq);
         slAddHead(&genome->seqs, seq);
     }
     return seq;
 }
 
 /* obtain get a Seq object, error doesn't exist */
-struct Seq *genomeGetSeq(struct Genome *genome, char *name) {
-    struct Seq *seq = hashFindVal(genome->seqMap, name);
+struct Seq *genomeGetSeq(struct Genome *genome, const char *name) {
+    struct Seq *seq = hashFindVal(genome->seqMap, (char*)name);
     if (seq == NULL) {
         errAbort("can;t find seq \"%s\" in genome \"%s\"", name, genome->name);
     }
@@ -109,18 +110,18 @@ void genomesFree(struct Genomes *genomes) {
 }
 
 /* obtain a genome object, constructing a new one if it doesn't exist. */
-struct Genome *genomesObtainGenome(struct Genomes *genomes, char *name) {
-    struct Genome *genome = hashFindVal(genomes->genomeMap, name);
+struct Genome *genomesObtainGenome(struct Genomes *genomes, const char *name) {
+    struct Genome *genome = hashFindVal(genomes->genomeMap, (char*)name);
     if (genome == NULL) {
         genome = genomeNew(name);
-        hashAdd(genomes->genomeMap, name, genome);
+        hashAdd(genomes->genomeMap, (char*)name, genome);
     }
     return genome;
 }
 
 /* get a genome object, error if it doesn't exist */
-struct Genome *genomesGetGenome(struct Genomes *genomes, char *name) {
-    struct Genome *genome = hashFindVal(genomes->genomeMap, name);
+struct Genome *genomesGetGenome(struct Genomes *genomes, const char *name) {
+    struct Genome *genome = hashFindVal(genomes->genomeMap, (char*)name);
     if (genome == NULL) {
         errAbort("can't find genome \"%s\"", name);
     }
@@ -131,7 +132,7 @@ struct Genome *genomesGetGenome(struct Genomes *genomes, char *name) {
 /* Obtain a new Seq object, creating the genome and seq objects it they don't
  * exist. If size is -1, then it will not be initialized until a request is
  * made with the size. */
-struct Seq *genomesObtainSeq(struct Genomes *genomes, char *genomeName, char *seqName, int size) {
+struct Seq *genomesObtainSeq(struct Genomes *genomes, const char *genomeName, const char *seqName, int size) {
     struct Genome *genome = genomesObtainGenome(genomes, genomeName);
     struct Seq *seq = genomeObtainSeq(genome, seqName, size);
     if ((seq->size < 0) && (size >= 0)) {
@@ -143,7 +144,7 @@ struct Seq *genomesObtainSeq(struct Genomes *genomes, char *genomeName, char *se
 /* Obtain a new Seq object given organism.seq, creating the genome and seq objects it they
  * don't exist. If size is -1, then it will not be initialized until a request is
  * made with the size. */
-struct Seq *genomesObtainSeqForOrgSeqName(struct Genomes *genomes, char *orgSeqName, int size) {
+struct Seq *genomesObtainSeqForOrgSeqName(struct Genomes *genomes, const char *orgSeqName, int size) {
     char nameBuf[strlen(orgSeqName)+1];
     strcpy(nameBuf, orgSeqName);
     char *dot = strchr(nameBuf, '.');

@@ -71,11 +71,15 @@ static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, int maxInpu
     struct malnSet *malnSet = malnSet_constructFromMaf(genomes, inMaf, maxInputBlkWidth, defaultBranchLength, treelessRootGenome);
     malnSet_dumpToDir(malnSet, dumpDir, setName, "1.input");
     if (treelessRootGenome != NULL) {
-        malnMultiParents_resolve(malnSet, dropLogFh);
+        if (dropLogFh != NULL) {
+            malnMultiParents_resolve(malnSet, dropLogFh);
+        } else {
+            malnMultiParents_check(malnSet);
+        }
         malnJoinWithinSet_joinDups(malnSet);
         malnSet_dumpToDir(malnSet, dumpDir, setName, "2.joindups");
     }
-    malnMultiParents_check(malnSet); // FIXME: no longer needed due to above resolve step
+    malnMultiParents_check(malnSet);
     return malnSet;
 }
 

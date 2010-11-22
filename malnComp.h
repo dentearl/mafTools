@@ -5,6 +5,7 @@
 #include "common.h"
 #include "dystring.h"
 #include "mafTree.h"
+struct malnCompCursor;
 
 /* 
  * component of a multiple alignment block.
@@ -99,6 +100,9 @@ void malnComp_appendCompAln(struct malnComp *comp, struct malnComp *srcComp, int
 static inline bool malnComp_numBases(struct malnComp *comp) {
     return (comp->chromEnd - comp->chromStart);
 }
+
+/* Append the current column from a cursor. */
+void malnComp_appendColCursor(struct malnComp *comp, struct malnCompCursor *srcCursor);
 
 /* compare two components to see if they overlap */
 static inline bool malnComp_overlap(struct malnComp *comp, struct malnComp *comp2) {

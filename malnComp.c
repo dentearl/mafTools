@@ -170,6 +170,19 @@ void malnComp_pad(struct malnComp *comp, int width) {
     dyStringAppendMultiC(comp->alnStr, '-', width-malnComp_getWidth(comp));
 }
 
+/* append a column */
+void malnComp_appendCol(struct malnComp *comp, char src) {
+    int nbases = isBase(src) ? 1 : 0;
+    dyStringAppendC(comp->alnStr, src);
+    comp->end += nbases;
+    if (comp->strand == '+') {
+        comp->chromEnd += nbases;
+    } else {
+        comp->chromStart -= nbases;
+    }
+}
+
+
 /* append the specified number of characters from the string, adjusting component
  * coordinates */
 void malnComp_append(struct malnComp *comp, char *src, int len) {
@@ -188,19 +201,32 @@ void malnComp_append(struct malnComp *comp, char *src, int len) {
     }
 }
 
-/* Append the specified alignment region of a component to this component.
- * The component must extend the range of this component. */
-void malnComp_appendCompAln(struct malnComp *comp, struct malnComp *srcComp, int alnStart, int alnEnd) {
+/* assert that a range is being extended */
+static void assertExtendRange(struct malnComp *comp, struct malnComp *srcComp, int alnStart, int alnEnd) {
+    // this is very expensive
 #ifndef NDEBUG
-    assert(srcComp->seq == comp->seq);
-    assert(srcComp->strand == comp->strand);
     int start, end;
     if (malnComp_alnRangeToSeqRange(srcComp, alnStart, alnEnd, &start, &end)) {
         assert(start == comp->end);
     }
 #endif
+}
 
+/* Append the specified alignment region of a component to this component.
+ * The component must extend the range of this component. */
+void malnComp_appendCompAln(struct malnComp *comp, struct malnComp *srcComp, int alnStart, int alnEnd) {
+    assert(srcComp->seq == comp->seq);
+    assert(srcComp->strand == comp->strand);
+    assertExtendRange(comp, srcComp, alnStart, alnEnd);
     malnComp_append(comp, malnComp_getAln(srcComp)+alnStart, alnEnd-alnStart);
+}
+
+/* Append the current column from a cursor. */
+void malnComp_appendColCursor(struct malnComp *comp, struct malnCompCursor *srcCursor) {
+    assert(srcCursor->comp->seq == comp->seq);
+    assert(srcCursor->comp->strand == comp->strand);
+    assert(srcCursor->pos == comp->end);   
+    malnComp_appendCol(comp, malnCompCursor_getCol(srcCursor));
 }
 
 /* assert that the component is set-consistent */

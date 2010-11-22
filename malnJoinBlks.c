@@ -173,7 +173,7 @@ static bool isGuideAligned(struct malnBlkCursor *blkCursor) {
 /* copy column from one source, optionally skipping guide */
 static void copyColumn(struct malnComp **destComps, struct malnBlkCursor *blkCursor, bool skipGuide) {
     for (int i = (skipGuide ? 1 : 0); i < blkCursor->numRows; i++) {
-        malnComp_appendCompAln(destComps[i], blkCursor->rows[i].comp, blkCursor->alnIdx, blkCursor->alnIdx+1);
+        malnComp_appendColCursor(destComps[i], &(blkCursor->rows[i]));
     }
     malnBlkCursor_incr(blkCursor);
 }

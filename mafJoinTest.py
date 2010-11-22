@@ -14,26 +14,26 @@ from sonLib.bioio import system
 
 class TestCaseBase(TestCase):
     def writeMAF(self, maf, suffix):
-        """Takes one of the above MAF strings and writes it to temp file.
+        """Takes one of the above MAF strings and writes it to tmp file.
         """
-        tempFile = self.getTestTempFile(suffix)
-        fileHandle = open(tempFile, 'w')
+        tmpFile = self.getTestTempFile(suffix)
+        fileHandle = open(tmpFile, 'w')
         fileHandle.write("##maf version=1\n")
         # skip first blank line
         for line in maf.split("\n")[1:]:
             fileHandle.write(line.strip() + "\n")
         fileHandle.close()
-        return tempFile
+        return tmpFile
 
     def writeExpected(self, data, suffix):
         """write an expected file"""
-        tempFile = self.getTestTempFile(suffix)
-        fileHandle = open(tempFile, 'w')
+        tmpFile = self.getTestTempFile(suffix)
+        fileHandle = open(tmpFile, 'w')
         # skip first blank line
         for line in data.split("\n")[1:]:
             fileHandle.write(line.strip() + "\n")
         fileHandle.close()
-        return tempFile
+        return tmpFile
 
     def compareExpectedAndRecieved(self, expected, recieved):
         """Checks two MAFs are equivalent.
@@ -44,6 +44,17 @@ class TestCaseBase(TestCase):
         sys.stdout.flush()
         sys.stderr.flush()
 
+    def mafCheckMissing(self, name, inMaf, outMaf, numSamples=100000000):
+        tmpMissing = self.getTestTempFile(name + ".missing")
+        cmd = ["eval_MAFComparator", "--mAFFile1="+inMaf, "--mAFFile2="+outMaf, "--outputFile=/dev/null",
+               "--sampleNumber=" + str(numSamples), "--ultraVerbose"]
+        logger.info("run: " + " ".join(cmd))
+        with open(tmpMissing, "w") as missingFh:
+            exitCode = subprocess.Popen(cmd, stderr=missingFh).wait()
+        self.assertEquals(exitCode, 0)
+        with open(tmpMissing) as missingFh:
+            missingOut = [l for l in missingFh.readlines() if not l.startswith("#")]
+        self.assertEquals(len(missingOut), 0)
 
 class MafJoinTests(TestCaseBase):
     def makeMafJoinCmd(self, guideDb, mafFileA, mafFileB, outputMafFile, treelessRoot1=None, treelessRoot2=None, maxBlkWidth=None, maxInputBlkWidth=None, dropFile=None):
@@ -82,40 +93,42 @@ class MafJoinTests(TestCaseBase):
                 sys.stderr.write(stderr)
                 self.stdFlush()
             self.assertEquals(stderr, "")
-        logger.info("okay: " + " ".join(cmd))
 
-    def __editDropOutput(self, tempDropFile):
+    def __editDropOutput(self, tmpDropFile):
         """edit drop file to have first column be only the last part of the
         file name so test can be run from different directories"""
-        tempDropEditFile = self.getTestTempFile(".drop.edit")
-        with open(tempDropFile) as inFh:
-            with open(tempDropEditFile, "w") as outFh:
+        tmpDropEditFile = self.getTestTempFile(".drop.edit")
+        with open(tmpDropFile) as inFh:
+            with open(tmpDropEditFile, "w") as outFh:
                 for l in inFh:
                     l = re.sub("^.+MafJoinTests\\.", "", l)
                     outFh.write(l)
-        return tempDropEditFile
+        return tmpDropEditFile
 
-
-
-    def mafJoinTest(self, guide, mafA, mafB, mafC, expectExitCode=0, expectStderr=None, expectStderrRe=None, treelessRoot1=None, treelessRoot2=None, maxBlkWidth=None, maxInputBlkWidth=None, dropExpect=None):
-        """Writes out mafA and mafB to temp files.
+    def mafJoinTest(self, guide, mafA, mafB, mafC, expectExitCode=0, expectStderr=None, expectStderrRe=None, treelessRoot1=None, treelessRoot2=None, maxBlkWidth=None, maxInputBlkWidth=None, dropExpect=None, runMafCheckMissing=True):
+        """Writes out mafA and mafB to tmp files.
         Runs mafJoin
         Parses the output and compares it to mafC.
         """
-        tempFileA = self.writeMAF(mafA, "A.maf")
-        tempFileB = self.writeMAF(mafB, "B.maf")
-        tempFileC = self.writeMAF(mafC, "C.maf")
-        tempFileOutput = self.getTestTempFile("out.maf")
-        tempDropFile = None
-        tempDropExpectFile = None
+        tmpFileA = self.writeMAF(mafA, "A.maf")
+        tmpFileB = self.writeMAF(mafB, "B.maf")
+        tmpFileC = self.writeMAF(mafC, "C.maf")
+        tmpFileOutput = self.getTestTempFile("out.maf")
+        tmpDropFile = None
+        tmpDropExpectFile = None
         if dropExpect != None:
-            tempDropFile = self.getTestTempFile(".drop")
-            tempDropExpectFile =  self.writeExpected(dropExpect, "expect.drop")
-        self.runMafJoin(guide, tempFileA, tempFileB, tempFileOutput, expectExitCode=expectExitCode, expectStderr=expectStderr, expectStderrRe=expectStderrRe, treelessRoot1=treelessRoot1, treelessRoot2=treelessRoot2, maxBlkWidth=maxBlkWidth, maxInputBlkWidth=maxInputBlkWidth, dropFile=tempDropFile)
+            tmpDropFile = self.getTestTempFile(".drop")
+            tmpDropExpectFile =  self.writeExpected(dropExpect, "expect.drop")
+        self.runMafJoin(guide, tmpFileA, tmpFileB, tmpFileOutput, expectExitCode=expectExitCode, expectStderr=expectStderr, expectStderrRe=expectStderrRe, treelessRoot1=treelessRoot1, treelessRoot2=treelessRoot2, maxBlkWidth=maxBlkWidth, maxInputBlkWidth=maxInputBlkWidth, dropFile=tmpDropFile)
         if expectExitCode == 0:  # only check MAF on success
-            self.compareExpectedAndRecieved(tempFileC, tempFileOutput)
+            self.compareExpectedAndRecieved(tmpFileC, tmpFileOutput)
             if dropExpect != None:
-                self.compareExpectedAndRecieved(tempDropExpectFile, self.__editDropOutput(tempDropFile))
+                self.compareExpectedAndRecieved(tmpDropExpectFile, self.__editDropOutput(tmpDropFile))
+        runMafCheckMissing = False # FIXME
+        if runMafCheckMissing:
+            self.mafCheckMissing("A", tmpFileA, tmpFileOutput)
+            self.mafCheckMissing("B", tmpFileB, tmpFileOutput)
+            
             
 
     def testJoin1(self):
@@ -657,7 +670,7 @@ class MafJoinTests(TestCaseBase):
     
     def testJoin22(self):
         """Same sequence has adjacent bases aligned to self; code incorrectly
-        attempted to merge
+        attmpted to merge
         """
         A = """
         a score=0.000000
@@ -886,13 +899,13 @@ class MafAdjustTests(TestCaseBase):
     def mafAdjustTest(self, mafIn, mafExpect, maxBlkWidth=None):
         """run mafAdjust and check output
         """
-        tempFileIn = self.writeMAF(mafIn, "in.maf")
-        tempFileExpect = self.writeMAF(mafExpect, "expect.maf")
-        tempFileOutput = self.getTestTempFile("out.maf")
+        tmpFileIn = self.writeMAF(mafIn, "in.maf")
+        tmpFileExpect = self.writeMAF(mafExpect, "expect.maf")
+        tmpFileOutput = self.getTestTempFile("out.maf")
         cmd = ["mafAdjust"]
         if maxBlkWidth != None:
             cmd.append("-maxBlkWidth="+str(maxBlkWidth))
-        cmd.extend([tempFileIn, tempFileOutput])
+        cmd.extend([tmpFileIn, tmpFileOutput])
 
         self.stdFlush()
         logger.info("run: " + " ".join(cmd))
@@ -902,7 +915,7 @@ class MafAdjustTests(TestCaseBase):
         if stderr != "":
             sys.stderr.write(stderr)
         assert(exitCode == 0)
-        self.compareExpectedAndRecieved(tempFileExpect, tempFileOutput)
+        self.compareExpectedAndRecieved(tmpFileExpect, tmpFileOutput)
             
     def testAdjust1(self):
         """Simple of adjustment of block width

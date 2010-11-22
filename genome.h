@@ -61,10 +61,10 @@ struct Genomes {
 int seqCmp(struct Seq *seq1, struct Seq *seq2);
 
 /* obtain a new Seq object, creating if it doesn't exist */
-struct Seq *genomeObtainSeq(struct Genome *genome, char *name, int size);
+struct Seq *genomeObtainSeq(struct Genome *genome, const char *name, int size);
 
 /* obtain get a Seq object, error doesn't exist */
-struct Seq *genomeGetSeq(struct Genome *genome, char *name);
+struct Seq *genomeGetSeq(struct Genome *genome, const char *name);
 
 /* compare two genomes for deterministic sorting */
 int genomeCmp(struct Genome *genome1, struct Genome *genome2);
@@ -76,19 +76,19 @@ struct Genomes *genomesNew(void);
 void genomesFree(struct Genomes *genomes);
 
 /* obtain a genome object, constructing a new one if it doesn't exist */
-struct Genome *genomesObtainGenome(struct Genomes *genomes, char *name);
+struct Genome *genomesObtainGenome(struct Genomes *genomes, const char *name);
 
 /* get a genome object, error if it doesn't exist */
-struct Genome *genomesGetGenome(struct Genomes *genomes, char *name);
+struct Genome *genomesGetGenome(struct Genomes *genomes, const char *name);
 
 /* Obtain a new Seq object, creating the genome and seq objects it they don't
  * exist. If size is -1, then it will not be initialized until a request is
  * made with the size. */
-struct Seq *genomesObtainSeq(struct Genomes *genomes, char *genomeName, char *seqName, int size);
+struct Seq *genomesObtainSeq(struct Genomes *genomes, const char *genomeName, const char *seqName, int size);
 
 /* Obtain a new Seq object given organism.seq, creating the genome and seq objects it they
  * don't exist. If size is -1, then it will not be initialized until a request is
  * made with the size. */
-struct Seq *genomesObtainSeqForOrgSeqName(struct Genomes *genomes, char *orgSeqName, int size);
+struct Seq *genomesObtainSeqForOrgSeqName(struct Genomes *genomes, const const char *orgSeqName, int size);
 
 #endif

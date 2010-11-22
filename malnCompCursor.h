@@ -29,6 +29,12 @@ static inline struct malnCompCursor malnCompCursor_make(struct malnComp *comp) {
     return cc;
 }
 
+/* get the current column */
+static inline char malnCompCursor_getCol(struct malnCompCursor *cc) {
+    return malnComp_getCol(cc->comp, cc->alnIdx);
+}
+
+
 /* is the current position aligned */
 static inline bool malnCompCursor_isAligned(struct malnCompCursor *cc) {
     return cc->isAligned;

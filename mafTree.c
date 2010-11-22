@@ -450,11 +450,27 @@ void mafTree_dump(mafTree *mTree, FILE *fh) {
     dumpSubtree(mTree->tree, fh, 0);
 }
 
+
+#ifndef NDEBUG
+
+/* assert that the tree has no loops (same genome at two levels) */
+static void assertNoLoops(struct Genome *genome, ETree *root) {
+    for (int i = 0; i < eTree_getChildNumber(root); i++) {
+        ETree *subNode = eTree_getChild(root, i);
+        if (getNodeComp(subNode)->seq->genome == genome) {
+            errAbort("genome occurs at two levels in the tree: %s", genome->name);
+        }
+        assertNoLoops(genome, subNode);
+    }
+}
+#endif
+
 /* assert sanity of the tree */
 void mafTree_assert(mafTree *mTree, struct malnBlk *blk) {
 #ifndef NDEBUG
     setCheckTreeOrder(mTree, true);
     assert(eTree_getNumNodes(mTree->tree) == slCount(blk->comps));
+    assertNoLoops(getNodeComp(mTree->tree)->seq->genome, mTree->tree);
 #endif
 }
 
@@ -465,4 +481,75 @@ void mafTreeNodeCompLink_assert(struct mafTreeNodeCompLink *ncLink) {
         assert(stString_eq(eTree_getLabel(ncLink->node), ncLink->comp->seq->orgSeqName));
     }
 #endif
+}
+
+/* add genome objects as client data */
+static void speciesTreeAddLinks(ETree *speciesNode, struct Genomes *genomes) {
+    eTree_setClientData(speciesNode, genomesGetGenome(genomes, eTree_getLabel(speciesNode)));
+    for (int i = 0; i < eTree_getChildNumber(speciesNode); i++) {
+        speciesTreeAddLinks(eTree_getChild(speciesNode, i), genomes);
+    }
+}
+
+/* add genome object from client data */
+static struct Genome *speciesTreeGetGenome(ETree *speciesNode) {
+    return eTree_getClientData(speciesNode);
+}
+
+/* report species tree mismatch */
+static void speciesTreeMismatchError(ETree *blkNode) {
+    errAbort("block tree node \"%s\" doesn't match expected species", getNodeComp(blkNode)->seq->orgSeqName);
+}
+
+/* recursively find a species tree node *below* the specified node */
+static ETree *speciesTreeFindBelow(ETree *speciesRoot, struct Genome *genome) {
+    ETree *genomeNode = NULL;
+    for (int i = 0; (genomeNode == NULL) && (i < eTree_getChildNumber(speciesRoot)); i++) {
+        ETree *sn = eTree_getChild(speciesRoot, i);
+        if (speciesTreeGetGenome(sn) == genome) {
+            genomeNode = sn;
+        } else {
+            genomeNode = speciesTreeFindBelow(sn, genome);
+        }
+    }
+    return genomeNode;
+}
+
+/* recursively find a species tree node at  or below the specified node */
+static ETree *speciesTreeFindAtBelow(ETree *speciesRoot, struct Genome *genome) {
+    if (speciesTreeGetGenome(speciesRoot) == genome) {
+        return speciesRoot;
+    } else {
+        return speciesTreeFindBelow(speciesRoot, genome);
+    }
+}
+
+
+/* recursively verify the tree  */
+static void speciesTreeBlkTreeVerify(ETree *speciesNode, ETree *blkNode) {
+    speciesNode = speciesTreeFindAtBelow(speciesNode, getNodeComp(blkNode)->seq->genome);
+    if (speciesNode == NULL) {
+        speciesTreeMismatchError(blkNode);
+    } else {
+        for (int i = 0; i < eTree_getChildNumber(blkNode); i++) {
+            ETree *blkSubNode = eTree_getChild(blkNode, i);
+            ETree *speciesSubNode = speciesTreeFindAtBelow(speciesNode, getNodeComp(blkSubNode)->seq->genome);
+            if (speciesSubNode == NULL) {
+                speciesTreeMismatchError(blkNode);
+            } else {
+                speciesTreeBlkTreeVerify(speciesSubNode, blkSubNode);
+            }
+        }
+    }
+}
+
+/* check sequence tree against species tree */
+void mafTree_verifyWithSpeciesTree(mafTree *mTree, const char *nhSpeciesTree) {
+    // recursively search the two trees.  This allows the block tree
+    // to be shallower due to deletions.  Done in a way to detect
+    // that a block node contains the same genome as its parent
+    ETree *speciesTree = eTree_parseNewickString(nhSpeciesTree);
+    speciesTreeAddLinks(speciesTree, mTree->genomes);
+    speciesTreeBlkTreeVerify(speciesTree, mTree->tree);
+    eTree_destruct(speciesTree);
 }
