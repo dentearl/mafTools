@@ -226,33 +226,41 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
     }
 
     //Now call the pair function for every pair of aligned bases.
-    for (i = 0; i < ranges->length; i += 4) {
+    for (i = 0; i < ranges->length; i += 5) {
         char *seq1 = ranges->list[i];
         inc1 = *((int32_t *) ranges->list[i + 2]);
-        sequence = ranges->list[i + 3];
+        const char *sequence1 = ranges->list[i + 4];
 
-        for (j = i + 4; j < ranges->length; j += 4) {
+        for (j = i + 5; j < ranges->length; j += 5) {
             char *seq2 = ranges->list[j];
             pos2 = *((int32_t *) ranges->list[j + 1]);
             inc2 = *((int32_t *) ranges->list[j + 2]);
-            const char *sequence2 = ranges->list[j + 3];
+            origPos2 = *((int32_t *) ranges->list[j + 3]);
+            const char *sequence2 = ranges->list[j + 4];
 
-            pos1 = *((int32_t *) ranges->list[i + 1]);
+            // fprintf(stderr, "%s %d %d %d\n", seq1, pos1, inc1, origPos1);
+            // fprintf(stderr, "%s %d %d %d\n", seq2, pos2, inc2, origPos2);
 
-            assert((int32_t)strlen(sequence) == length);
+            assert((int32_t)strlen(sequence1) == length);
             assert((int32_t)strlen(sequence2) == length);
 
+            pos1 = *((int32_t *) ranges->list[i + 1]);
+            origPos1 = *((int32_t *) ranges->list[i + 3]);
+
             for (k = 0; k < length; k++) {
-                if (sequence[k] != '-') {
+                if (sequence1[k] != '-') {
                     if (sequence2[k] != '-') {
-                        aPair_fillOut(&aPair, seq1, seq2, pos1, pos2);
+                       aPair_fillOut(&aPair, seq1, seq2, pos1, pos2, origPos1, origPos2);
                         passPairFn(&aPair, intervalsHash, extraArgument1, extraArgument2, extraArgument3, verbose, near);
                         pos2 += inc2;
+                        origPos2 ++;
                     }
                     pos1 += inc1;
+                    origPos1 ++;
                 } else {
                     if (sequence2[k] != '-') {
                         pos2 += inc2;
+                        origPos2 ++;
                     }
                 }
             }
