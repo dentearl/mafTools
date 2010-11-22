@@ -234,7 +234,6 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
     //Now call the pair function for every pair of aligned bases.
     for (i = 0; i < ranges->length; i += 5) {
         char *seq1 = ranges->list[i];
-        inc1 = *((int32_t *) ranges->list[i + 2]);
         pos1 = *((int32_t *) ranges->list[i + 1]);
         origPos1 = *((int32_t *) ranges->list[i + 3]);
         const char *sequence1 = ranges->list[i + 4];
@@ -248,19 +247,15 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
 
             // fprintf(stderr, "%s %d %d %d\n", seq1, pos1, inc1, origPos1);
             // fprintf(stderr, "%s %d %d %d\n", seq2, pos2, inc2, origPos2);
+            inc1 = *((int32_t *) ranges->list[i + 2]);
 
             assert((int32_t)strlen(sequence1) == length);
             assert((int32_t)strlen(sequence2) == length);
-
-            st_uglyf("Hellllo: :%s: %i %i %i :%s:\n", seq1, inc1, pos1, origPos1, sequence1);
-            st_uglyf("Hellllo2: :%s: %i %i %i :%s:\n", seq2, inc2, pos2, origPos2, sequence2);
-
 
             for (k = 0; k < length; k++) {
                 if (sequence1[k] != '-') {
                     if (sequence2[k] != '-') {
                         aPair_fillOut(&aPair, seq1, seq2, pos1, pos2, origPos1, origPos2);
-                        st_uglyf("The pair %s %i %s %i\n", seq1, pos1, seq2, pos2);
                         passPairFn(&aPair, intervalsHash, extraArgument1, extraArgument2, extraArgument3, verbose, near);
                         pos2 += inc2;
                         origPos2 ++;
