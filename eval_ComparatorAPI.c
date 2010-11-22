@@ -5,17 +5,15 @@ int aSolo_cmpFunction(const void *a, const void *b);
 void trioDecoder_destruct(TrioDecoder *decoder);
 int32_t calcTrioState(TrioDecoder *decoder, int32_t spA, int32_t spB, int32_t spC);
 
-void aPair_fillOut(APair *aPair, char *seq1, char *seq2, int32_t pos1, int32_t pos2, int32_t origPos1, int32_t origPos2) {
+void aPair_fillOut(APair *aPair, char *seq1, char *seq2, int32_t pos1, int32_t pos2) {
     int32_t i = strcmp(seq1, seq2);
-    if (i > 0 || (i == 0 && pos1 > pos2)) { //we construct the sequence so that seq1 < seq2 || seq1 == seq2 and pos1 <= pos2
-       aPair_fillOut(aPair, seq2, seq1, pos2, pos1, origPos2, origPos1);
+    if (i > 0 || (i == 0 && pos1 > pos2)) { //we construct the sequence so that seq1 < seq2 || seq1 == seq2 and pos1 < pos2
+        aPair_fillOut(aPair, seq2, seq1, pos2, pos1);
     } else {
         aPair->seq1 = seq1;
         aPair->seq2 = seq2;
         aPair->pos1 = pos1;
         aPair->pos2 = pos2;
-        aPair->origPos1 = origPos1;
-        aPair->origPos2 = origPos2;
     }
 }
 
@@ -42,16 +40,16 @@ void aTrio_fillOut(ATrio *aTrio, char *seq1, char *seq2, char *seq3, int32_t pos
     aTrio->top = top;
 }
 
-APair *aPair_construct(const char *seq1, const char *seq2, int32_t pos1, int32_t pos2, int32_t origPos1, int32_t origPos2) {
+APair *aPair_construct(const char *seq1, const char *seq2, int32_t pos1, int32_t pos2) {
     APair *aPair = st_malloc(sizeof(APair));
-    aPair_fillOut(aPair, (char *) seq1, (char *) seq2, pos1, pos2, origPos1, origPos2);
+    aPair_fillOut(aPair, (char *) seq1, (char *) seq2, pos1, pos2);
     aPair->seq1 = stString_copy(aPair->seq1);
     aPair->seq2 = stString_copy(aPair->seq2);
     return aPair;
 }
 
 ResultPair *resultPair_construct(const char *seq1, const char *seq2) {
-    APair *aPair = aPair_construct(seq1, seq2, 0, 0, 0, 0);
+    APair *aPair = aPair_construct(seq1, seq2, 0, 0);
     ResultPair *resultPair = st_calloc(1, sizeof(ResultPair));
     resultPair->aPair = *aPair;
     free(aPair);
@@ -73,7 +71,7 @@ ATrio *aTrio_construct(const char *seq1, const char *seq2, const char *seq3, int
 }
 
 APair *aPair_copyConstruct(APair *pair) {
-   return aPair_construct(pair->seq1, pair->seq2, pair->pos1, pair->pos2, pair->origPos1, pair->origPos2);
+    return aPair_construct(pair->seq1, pair->seq2, pair->pos1, pair->pos2);
 }
 
 ATrio *aTrio_copyConstruct(ATrio *trio) {
@@ -186,7 +184,7 @@ int32_t aTrio_cmpFunction(ATrio *aTrio1, ATrio *aTrio2, void *a) {
 void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extraArgument1, void *extraArgument2,
         void *extraArgument3, int32_t, int32_t), stHash *intervalsHash, void *extraArgument1, void *extraArgument2,
         void *extraArgument3, int32_t verbose, int32_t near, int *bytesRead, int *nBytes, char **cA, FILE *fileHandle) {
-    int32_t length, start, seqLength, i, j, k, pos1, pos2, inc1, inc2, origPos1, origPos2;
+    int32_t length, start, seqLength, i, j, k, pos1, pos2, inc1, inc2;
     struct List *ranges = constructEmptyList(0, free);
     char *seqName;
     char *sequence;
@@ -206,10 +204,8 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
         //uglyf("Got the line :##%s#%i %i\n", *cA, (int)strlen(*cA), *bytesRead);
         //uglyf("I read %i \n", sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence));
         //uglyf("%s,  %i %i %c %i %s\n", seqName, start, i /*ignore the length field*/, strand, seqLength, sequence);
-        j = sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i, /*ignore the length field*/
-                   &strand, &seqLength, sequence);
-        //st_uglyf("I got string: :%s:\n", cA);
-        //st_uglyf("I got the values :%s: %i %i %c %i :%s:\n", seqName, start, i, strand, seqLength, sequence);
+        j = sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength,
+                sequence);
         assert(j == 6 || (j == 5 && seqLength == 0));
         if (j == 5) {
             free(sequence);
@@ -221,53 +217,42 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
         if (strand == '+') {
             listAppend(ranges, constructInt(start));
             listAppend(ranges, constructInt(1));
-            listAppend(ranges, constructInt(start));
         } else {
             listAppend(ranges, constructInt(seqLength - 1 - start));
             listAppend(ranges, constructInt(-1));
-            listAppend(ranges, constructInt(start));
         }
         listAppend(ranges, sequence);
         *bytesRead = benLine(cA, nBytes, fileHandle);
     }
 
     //Now call the pair function for every pair of aligned bases.
-    for (i = 0; i < ranges->length; i += 5) {
+    for (i = 0; i < ranges->length; i += 4) {
         char *seq1 = ranges->list[i];
         inc1 = *((int32_t *) ranges->list[i + 2]);
-        const char *sequence1 = ranges->list[i + 4];
+        sequence = ranges->list[i + 3];
 
-        for (j = i + 5; j < ranges->length; j += 5) {
+        for (j = i + 4; j < ranges->length; j += 4) {
             char *seq2 = ranges->list[j];
             pos2 = *((int32_t *) ranges->list[j + 1]);
             inc2 = *((int32_t *) ranges->list[j + 2]);
-            origPos2 = *((int32_t *) ranges->list[j + 3]);
-            const char *sequence2 = ranges->list[j + 4];
+            const char *sequence2 = ranges->list[j + 3];
 
             pos1 = *((int32_t *) ranges->list[i + 1]);
-            origPos1 = *((int32_t *) ranges->list[i + 3]);
 
-            // fprintf(stderr, "%s %d %d %d\n", seq1, pos1, inc1, origPos1);
-            // fprintf(stderr, "%s %d %d %d\n", seq2, pos2, inc2, origPos2);
-
-            assert((int32_t)strlen(sequence1) == length);
+            assert((int32_t)strlen(sequence) == length);
             assert((int32_t)strlen(sequence2) == length);
 
             for (k = 0; k < length; k++) {
-                if (sequence1[k] != '-') {
+                if (sequence[k] != '-') {
                     if (sequence2[k] != '-') {
-                        aPair_fillOut(&aPair, seq1, seq2, pos1, pos2, origPos1, origPos2);
-                        //st_uglyf("The pair %s %i %s %i\n", seq1, pos1, seq2, pos2);
+                        aPair_fillOut(&aPair, seq1, seq2, pos1, pos2);
                         passPairFn(&aPair, intervalsHash, extraArgument1, extraArgument2, extraArgument3, verbose, near);
                         pos2 += inc2;
-                        origPos2 ++;
                     }
                     pos1 += inc1;
-                    origPos1 ++;
                 } else {
                     if (sequence2[k] != '-') {
                         pos2 += inc2;
-                        origPos2 ++;
                     }
                 }
             }
@@ -541,8 +526,8 @@ void samplePairs(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs
     /*
      * Adds *thisPair to *pairs with a given probability.
      */
-    //if (hashtable_search(legitPairs, thisPair->seq1) != NULL)
-    //    if (hashtable_search(legitPairs, thisPair->seq2) != NULL)
+    if (hashtable_search(legitPairs, thisPair->seq1) != NULL)
+        if (hashtable_search(legitPairs, thisPair->seq2) != NULL)
             if (RANDOM() <= *acceptProbability)
                 avl_insert(pairs, aPair_copyConstruct(thisPair));
 }
@@ -599,10 +584,10 @@ void homologyTests1(APair *thisPair, stHash *intervalsHash, struct avl_table *pa
      * If both members of *thisPair are in the intersection of MAFFileA and MAFFileB,
      * and *thisPair is in the set *pairs then adds to the result pair a positive result.
      */
-   // if ((hashtable_search(legitPairs, thisPair->seq1) != NULL)
-    //        && (hashtable_search(legitPairs, thisPair->seq2) != NULL)) {
+    if ((hashtable_search(legitPairs, thisPair->seq1) != NULL)
+            && (hashtable_search(legitPairs, thisPair->seq2) != NULL)) {
         getNearPairs(thisPair, pairs, near, positivePairs);
-    //}
+    }
 }
 
 void homologyTestsTrio1(ATrio *trio, struct avl_table *trios, struct avl_table *resultTrios,
@@ -677,7 +662,7 @@ void homologyTests2(struct avl_table *pairs, struct avl_table *resultPairs, stHa
             resultPair->inAll++;
         } else {
            if (verbose){
-              fprintf(stderr, "%s\t%d\t%d\t%s\t%d\t%d\n", pair->seq1, pair->pos1, pair->origPos1, pair->seq2, pair->pos2, pair->origPos2);
+              fprintf(stderr, "%s\t%d\t%s\t%d\n", pair->seq1, pair->pos1, pair->seq2, pair->pos2);
            }
         }
     }
