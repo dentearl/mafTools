@@ -252,6 +252,10 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
             assert((int32_t)strlen(sequence1) == length);
             assert((int32_t)strlen(sequence2) == length);
 
+            st_uglyf("Hellllo: :%s: %i %i %i :%s:\n", seq1, inc1, pos1, origPos1, sequence1);
+            st_uglyf("Hellllo2: :%s: %i %i %i :%s:\n", seq2, inc2, pos2, origPos2, sequence2);
+
+
             for (k = 0; k < length; k++) {
                 if (sequence1[k] != '-') {
                     if (sequence2[k] != '-') {
