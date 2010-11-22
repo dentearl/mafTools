@@ -40,10 +40,10 @@ class VerifyMafJoinOutput( unittest.TestCase ):
 
         missing = open( 'temp_testFiles/%s.%s.missing.tab' % ( childA, parent )).read()
         emptyMissing  = '# Comparing evolverMAFs/%s.%s.avg30.maf to temp_testFiles/%s.mafJoin.maf\n' % ( childA, parent, parent )
-        emptyMissing += '# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n'
+        emptyMissing += '# seq1\tpos1\tseq2\tpos2\n'
         line1 = len( emptyMissing )
         emptyMissing += '# Comparing temp_testFiles/%s.mafJoin.maf to evolverMAFs/%s.%s.avg30.maf\n' % ( parent, childA, parent )
-        emptyMissing += '# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n'
+        emptyMissing += '# seq1\tpos1\tseq2\tpos2\n'
         bothLines = len( emptyMissing )
 
         self.assertEqual( emptyMissing[ 0:line1 ], missing[ 0:line1 ] ) # this should be true no matter what, it's just the two headers.
