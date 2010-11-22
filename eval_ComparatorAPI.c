@@ -257,7 +257,7 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
                 if (sequence1[k] != '-') {
                     if (sequence2[k] != '-') {
                         aPair_fillOut(&aPair, seq1, seq2, pos1, pos2, origPos1, origPos2);
-                        st_uglyf("The pair %s %i %s %i\n", seq1, pos1, seq2, pos2);
+                        //st_uglyf("The pair %s %i %s %i\n", seq1, pos1, seq2, pos2);
                         passPairFn(&aPair, intervalsHash, extraArgument1, extraArgument2, extraArgument3, verbose, near);
                         pos2 += inc2;
                         origPos2 ++;
