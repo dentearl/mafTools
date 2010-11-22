@@ -238,6 +238,9 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
             origPos2 = *((int32_t *) ranges->list[j + 3]);
             const char *sequence2 = ranges->list[j + 4];
 
+            pos1 = *((int32_t *) ranges->list[i + 1]);
+            origPos1 = *((int32_t *) ranges->list[i + 3]);
+
             // fprintf(stderr, "%s %d %d %d\n", seq1, pos1, inc1, origPos1);
             // fprintf(stderr, "%s %d %d %d\n", seq2, pos2, inc2, origPos2);
 
