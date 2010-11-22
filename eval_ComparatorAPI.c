@@ -208,8 +208,8 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
         //uglyf("%s,  %i %i %c %i %s\n", seqName, start, i /*ignore the length field*/, strand, seqLength, sequence);
         j = sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i, /*ignore the length field*/
                    &strand, &seqLength, sequence);
-        st_uglyf("I got string: :%s:\n", cA);
-        st_uglyf("I got the values :%s: %i %i %c %i :%s:\n", seqName, start, i, strand, seqLength, sequence);
+        //st_uglyf("I got string: :%s:\n", cA);
+        //st_uglyf("I got the values :%s: %i %i %c %i :%s:\n", seqName, start, i, strand, seqLength, sequence);
         assert(j == 6 || (j == 5 && seqLength == 0));
         if (j == 5) {
             free(sequence);
@@ -259,7 +259,8 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
             for (k = 0; k < length; k++) {
                 if (sequence1[k] != '-') {
                     if (sequence2[k] != '-') {
-                       aPair_fillOut(&aPair, seq1, seq2, pos1, pos2, origPos1, origPos2);
+                        aPair_fillOut(&aPair, seq1, seq2, pos1, pos2, origPos1, origPos2);
+                        st_uglyf("The pair %s %i %s %i\n", seq1, pos1, seq2, pos2);
                         passPairFn(&aPair, intervalsHash, extraArgument1, extraArgument2, extraArgument3, verbose, near);
                         pos2 += inc2;
                         origPos2 ++;
