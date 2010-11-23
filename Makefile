@@ -3,14 +3,16 @@ libPath = ../../../lib
 binPath = ../../../bin
 
 extraAPI = cString.c disjointset.c
+progs =  ${binPath}/eval_MAFComparator ${binPath}/eval_mergeMAFComparatorResults.py ${binPath}/eval_setDiffDroppedMissing.py ${binPath}/eval_setDiffStatGenerator.py ${binPath}/eval_getRepeatBed ${binPath}/eval_MFAToMAF
+# ${binPath}/eval_PhyloComparator
 
-all: ${binPath}/eval_PhyloComparator ${binPath}/eval_MAFComparator ${binPath}/eval_mergeMAFComparatorResults.py ${binPath}/eval_setDiffDroppedMissing.py ${binPath}/eval_setDiffStatGenerator.py ${binPath}/eval_getRepeatBed ${binPath}/eval_MFAToMAF
+all:
 
 ${binPath}/eval_MAFComparator : eval_MAFComparator.c ${extraAPI} eval_ComparatorAPI.c *.h ${libPath}/sonLib.a 
 	${cxx} ${cflags} -I ${libPath} -o ${binPath}/eval_MAFComparator ${extraAPI} eval_MAFComparator.c eval_ComparatorAPI.c ${libPath}/sonLib.a
 
-#${binPath}/eval_PhyloComparator : eval_PhyloComparator.c ${extraAPI} eval_ComparatorAPI.c *.h ${libPath}/sonLib.a 
-#	${cxx} ${cflags} -I ${libPath} -o ${binPath}/eval_PhyloComparator ${extraAPI} eval_PhyloComparator.c eval_ComparatorAPI.c ${libPath}/sonLib.a
+${binPath}/eval_PhyloComparator : eval_PhyloComparator.c ${extraAPI} eval_ComparatorAPI.c *.h ${libPath}/sonLib.a 
+	${cxx} ${cflags} -I ${libPath} -o ${binPath}/eval_PhyloComparator ${extraAPI} eval_PhyloComparator.c eval_ComparatorAPI.c ${libPath}/sonLib.a
 
 ${binPath}/eval_mergeMAFComparatorResults.py : eval_mergeMAFComparatorResults.py
 	cp eval_mergeMAFComparatorResults.py ${binPath}/eval_mergeMAFComparatorResults.py
@@ -32,8 +34,4 @@ ${binPath}/eval_setDiffStatGenerator.py : eval_setDiffStatGenerator.py
 	chmod +x $@
 
 clean :
-	rm -f *.o
-	rm -f ${binPath}/eval_MAFComparator
-	rm -f ${binPath}/eval_PhyloComparator
-	rm -f ${binPath}/eval_MFAToMAF
-	rm -f ${binPath}/eval_getRepeatBed
+	rm -f *.o ${progs}
