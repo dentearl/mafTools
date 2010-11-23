@@ -915,7 +915,7 @@ void populateNameHash(const char *mAFFile, struct hashtable *htp) {
     int bytesRead;
     int nBytes = 100;
     char *cA;
-    int32_t length, start, seqLength, i, j;
+    int32_t start, seqLength, i, j;
     char *seqName;
     char *sequence;
     char strand;
@@ -923,7 +923,6 @@ void populateNameHash(const char *mAFFile, struct hashtable *htp) {
     bytesRead = benLine(&cA, &nBytes, fileHandle);
 
     //read through lines until reaching a line starting with an 's':
-    length = INT32_MAX;
     while (bytesRead != -1) {
         if (bytesRead > 0 && cA[0] == 's') {
             seqName = st_malloc(sizeof(char) * (1 + (bytesRead)));
@@ -949,13 +948,11 @@ void populateNameHash(const char *mAFFile, struct hashtable *htp) {
 void printNameHash(struct hashtable *h) {
     // Debug function to iterate through a hash and print the contents.
     char *k;
-    int *v;
     struct hashtable_itr *itr = NULL;
     if (hashtable_count(h) > 0) {
         itr = hashtable_iterator(h);
         do {
             k = hashtable_iterator_key(itr);
-            v = hashtable_iterator_value(itr);
             fprintf(stderr, "%s\n", k);
         } while (hashtable_iterator_advance(itr));
     }
@@ -967,13 +964,11 @@ void printNameHash(struct hashtable *h) {
 void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3) {
     // intersects two hashes. (hash 1 \cap  hash 2) = hash 3.
     char *k;
-    int *v;
     struct hashtable_itr *itr = NULL;
     if (hashtable_count(h1) > 0) {
         itr = hashtable_iterator(h1);
         do {
             k = hashtable_iterator_key(itr);
-            v = hashtable_iterator_value(itr);
             if (NULL != hashtable_search(h2, k)) {
                 hashtable_insert(h3, k, constructInt(1));
             }
