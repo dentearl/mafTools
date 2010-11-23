@@ -509,16 +509,18 @@ int32_t encodeTopoMatIdx(int32_t top1, int32_t top2) {
     return 4 * top1 + top2 - ((top1 + 1) * top1 / 2);
 }
 
-void countPairs(APair *pair, stHash *intervalsHash, int64_t *counter, struct hashtable *legitPairs, void *a,
+void countPairs(APair *pair, stHash *intervalsHash, int64_t *counter, stSortedSet *legitPairs, void *a,
         int32_t verbose, int32_t near) {
     /*
      * Counts the number of pairs in the MAF file.
      */
     assert(pair != NULL);
     assert(a == NULL);
-    if (hashtable_search(legitPairs, pair->seq1) != NULL)
-        if (hashtable_search(legitPairs, pair->seq2) != NULL)
+    if (stSortedSet_search(legitPairs, pair->seq1) != NULL) {
+        if (stSortedSet_search(legitPairs, pair->seq2) != NULL) {
             (*counter)++;
+        }
+    }
 }
 
 void countTrios(ATrio *trio, int64_t *counter, struct hashtable *legitTrios, void *a) {
