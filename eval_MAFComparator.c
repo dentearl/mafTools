@@ -232,9 +232,11 @@ int main(int argc, char *argv[]) {
     // Create sequence name hashtable from the first MAF file.
     //////////////////////////////////////////////
 
-    struct hashtable *seqNameHash;
-    seqNameHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, free, free);
-    populateNameHash(mAFFile1, seqNameHash);
+    stSortedSet *seqNames1 = stSortedSet_construct3((int (*)(const void *, const void *))strcmp, free);
+    populateNames(mAFFile1, seqNames1);
+    stSortedSet *seqNames2 = stSortedSet_construct3((int (*)(const void *, const void *))strcmp, free);
+    populateNames(mAFFile2, seqNames2);
+    stSortedSet *seqNames = stSortedSet_getIntersection(seqNames1, seqNames2);
 
     //////////////////////////////////////////////
     //Do comparisons.
@@ -244,12 +246,12 @@ int main(int argc, char *argv[]) {
        fprintf(stderr, "# Comparing %s to %s\n", mAFFile1, mAFFile2);
        fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNameHash, intervalsHash, ULTRAVERBOSE, near);
+    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near);
     if (ULTRAVERBOSE){
        fprintf(stderr, "# Comparing %s to %s\n", mAFFile2, mAFFile1);
        fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNameHash, intervalsHash, ULTRAVERBOSE, near);
+    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near);
     fileHandle = fopen(outputFile, "w");
     if(fileHandle == NULL){
        fprintf(stderr, "ERROR, unable to open `%s' for writing.\n", outputFile);
@@ -278,7 +280,9 @@ int main(int argc, char *argv[]) {
     free(outputFile);
     free(logLevelString);
 
-    hashtable_destroy(seqNameHash, 1, 1);
+    stSortedSet_destruct(seqNames);
+    stSortedSet_destruct(seqNames1);
+    stSortedSet_destruct(seqNames2);
 
     return 0;
 }

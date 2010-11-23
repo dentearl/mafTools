@@ -73,10 +73,10 @@ typedef struct _trioDecoder {
     int32_t leafNum;
 } TrioDecoder;
 
-void populateNameHash(const char *mAFFile, struct hashtable *htp);
+void populateNames(const char *mAFFile, stSortedSet *htp);
 void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3);
 void printNameHash(struct hashtable *h);
-struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, stHash *intervalsHash, int32_t verbose, int32_t near);
+struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, stSortedSet *legitimateSequences, stHash *intervalsHash, int32_t verbose, int32_t near);
 struct avl_table *compareMAFs_AB_Trio(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, struct List *speciesList);
 void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle, int32_t near);
 void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle);

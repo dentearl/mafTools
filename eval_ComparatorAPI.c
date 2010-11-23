@@ -534,14 +534,17 @@ void countTrios(ATrio *trio, int64_t *counter, struct hashtable *legitTrios, voi
 }
 
 void samplePairs(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs, double *acceptProbability,
-        struct hashtable *legitPairs, int32_t verbose, int32_t near) {
+        stSortedSet *legitPairs, int32_t verbose, int32_t near) {
     /*
      * Adds *thisPair to *pairs with a given probability.
      */
-    if (hashtable_search(legitPairs, thisPair->seq1) != NULL)
-        if (hashtable_search(legitPairs, thisPair->seq2) != NULL)
-            if (RANDOM() <= *acceptProbability)
+    if (stSortedSet_search(legitPairs, thisPair->seq1) != NULL) {
+       if (stSortedSet_search(legitPairs, thisPair->seq2) != NULL) {
+            if (RANDOM() <= *acceptProbability) {
                 avl_insert(pairs, aPair_copyConstruct(thisPair));
+            }
+       }
+    }
 }
 
 void sampleTrios(ATrio *trio, struct avl_table *trios, double *acceptProbability, struct hashtable *legitTrios) {
@@ -591,13 +594,13 @@ void getNearPairs(APair *thisPair, struct avl_table *pairs, int32_t near, stSort
 }
 
 void homologyTests1(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs, stSortedSet *positivePairs,
-        struct hashtable *legitPairs, int32_t verbose, int32_t near) {
+        stSortedSet *legitPairs, int32_t verbose, int32_t near) {
     /*
      * If both members of *thisPair are in the intersection of MAFFileA and MAFFileB,
      * and *thisPair is in the set *pairs then adds to the result pair a positive result.
      */
-    if ((hashtable_search(legitPairs, thisPair->seq1) != NULL)
-            && (hashtable_search(legitPairs, thisPair->seq2) != NULL)) {
+    if ((stSortedSet_search(legitPairs, thisPair->seq1) != NULL)
+        && (stSortedSet_search(legitPairs, thisPair->seq2) != NULL)) {
         getNearPairs(thisPair, pairs, near, positivePairs);
     }
 }
@@ -700,23 +703,23 @@ void homologyTestsTrio2(struct avl_table *trios, struct avl_table *resultTrios) 
 }
 
 struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples,
-        struct hashtable *ht, stHash *intervalsHash, int32_t verbose, int32_t near) {
+        stSortedSet *legitimateSequences, stHash *intervalsHash, int32_t verbose, int32_t near) {
     /*
      * Gets samples.
      */
     int64_t pairNumber = 0;
     getPairs(mAFFileA, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) countPairs,
-            intervalsHash, &pairNumber, ht, NULL, verbose, near);
+            intervalsHash, &pairNumber, legitimateSequences, NULL, verbose, near);
 
     double acceptProbability = ((double) numberOfSamples) / pairNumber;
     struct avl_table *pairs =
             avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction, NULL, NULL);
     getPairs(mAFFileA, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) samplePairs,
-            intervalsHash, pairs, &acceptProbability, ht, verbose, near);
+            intervalsHash, pairs, &acceptProbability, legitimateSequences, verbose, near);
 
     stSortedSet *positivePairs = stSortedSet_construct();
     getPairs(mAFFileB, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) homologyTests1,
-            intervalsHash, pairs, positivePairs, ht, verbose, near);
+            intervalsHash, pairs, positivePairs, legitimateSequences, verbose, near);
 
     struct avl_table *resultPairs = avl_create(
                 (int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction_seqsOnly, NULL, NULL);
@@ -907,7 +910,7 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA, const
     return;
 }
 
-void populateNameHash(const char *mAFFile, struct hashtable *htp) {
+void populateNames(const char *mAFFile, stSortedSet *htp) {
     /*
      * populates a hash table with the names of sequences from a MAF file.
      */
@@ -932,8 +935,8 @@ void populateNameHash(const char *mAFFile, struct hashtable *htp) {
                     sequence);
             assert(j == 6 || (j == 5 && seqLength == 0));
 
-            if (hashtable_search(htp, seqName) == NULL) {
-                hashtable_insert(htp, seqName, constructInt(1));
+            if (stSortedSet_search(htp, seqName) == NULL) {
+                stSortedSet_insert(htp, seqName);
             }
             free(sequence);
         }
