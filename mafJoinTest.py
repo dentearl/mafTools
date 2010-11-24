@@ -916,7 +916,6 @@ testJoin26.A.maf	simChimp.chr6	1528	1529"""
         self.mafJoinTest("sG-sH-sC", A, B, C, treelessRoot1="sG-sH-sC", treelessRoot2="sG-sH-sC", maxBlkWidth=1000)
 
 class MafAdjustTests(TestCaseBase):
-    
     def mafAdjustTest(self, mafIn, mafExpect, maxBlkWidth=None):
         """run mafAdjust and check output
         """
