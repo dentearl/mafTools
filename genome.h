@@ -42,8 +42,8 @@ struct Genome {
 
 /* does a character represent a base */
 static inline bool isBase(char base) {
-    // n.b. isalpha doesn't return 0/1, might be out of bool range
-    return isalpha(base) != 0;
+    // faster than isalpha()
+    return (('A' <= base) && (base <= 'Z')) || (('a' <= base) && (base <= 'z'));
 }
 
 /* are two bases the same, ignoring case */

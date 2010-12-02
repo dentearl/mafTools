@@ -4,7 +4,8 @@ binPath = ../../../bin
 libPath = ../../../lib
 
 #cflags = ${cflags_opt}
-cflags = ${cflags_dbg}
+#cflags = ${cflags_dbg}
+cflags = ${cflags_dbg} -DASSERT_SLOW
 
 cflags += -I${libPath}
 ifneq ($(wildcard ${kentLibWeb}),)

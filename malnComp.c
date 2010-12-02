@@ -204,7 +204,7 @@ void malnComp_append(struct malnComp *comp, char *src, int len) {
 /* assert that a range is being extended */
 static void assertExtendRange(struct malnComp *comp, struct malnComp *srcComp, int alnStart, int alnEnd) {
     // this is very expensive
-#ifndef NDEBUG
+#if defined(ASSERT_SLOW) && !defined(NDEBUG)
     int start, end;
     if (malnComp_alnRangeToSeqRange(srcComp, alnStart, alnEnd, &start, &end)) {
         assert(start == comp->end);

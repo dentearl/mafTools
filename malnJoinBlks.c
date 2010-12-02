@@ -112,7 +112,6 @@ static struct malnJoinBlks *malnJoinBlks_construct(struct malnComp *guideComp1, 
     jb->dests1 = needMem(jb->cursor1->numRows * sizeof(struct malnComp *));
     jb->dests2 = needMem(jb->cursor2->numRows * sizeof(struct malnComp *));
     jb->srcDestCompMap = malnCompCompMap_construct();
-    jb->freeBlk = NULL;
 
     jb->dests1[0] = jb->dests2[0] = createJoinedGuideComp(jb);
     addCompsToJoined(jb, jb->cursor1, jb->dests1);
