@@ -9,9 +9,6 @@
 #include "malnMultiParents.h"
 #include <limits.h>
 
-/* set to true to cleanup all memory for memory leak checks */
-static bool memLeakDebugCleanup = true;
-
 /* command line option specifications */
 static struct optionSpec optionSpecs[] = {
     {"branchLength", OPTION_DOUBLE},
@@ -99,6 +96,10 @@ static void mafJoin(char *guideGenomeName, char *inMaf1, char *inMaf2, char *out
     struct malnSet *malnSetJoined = malnJoinSets(guideGenome, malnSet1, malnSet2);
     malnSet_dumpToDir(malnSetJoined, dumpDir, "set3", "1.joined");
 
+    // don't need input MAFs any more
+    malnSet_destruct(malnSet1);
+    malnSet_destruct(malnSet2);
+
     malnJoinWithinSet_joinOverlapAdjacent(malnSetJoined, maxBlkWidth);
     malnSet_dumpToDir(malnSetJoined, dumpDir, "set3", "2.overadj");
 
@@ -108,12 +109,8 @@ static void mafJoin(char *guideGenomeName, char *inMaf1, char *inMaf2, char *out
     malnMultiParents_check(malnSetJoined);
     malnSet_writeMaf(malnSetJoined, outMaf);
 
-    if (memLeakDebugCleanup) {
-        malnSet_destruct(malnSet1);
-        malnSet_destruct(malnSet2);
-        malnSet_destruct(malnSetJoined);
-        genomesFree(genomes);
-    }
+    malnSet_destruct(malnSetJoined);
+    genomesFree(genomes);
 }
 
 /* Process command line. */

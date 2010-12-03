@@ -151,9 +151,14 @@ static int findAdjacentToJoin(stList *rootSortBlks, int startIdx) {
  * joined might be limited by maxBlkWidth */
 static int joinAdjacents(struct malnSet *malnSet, struct malnBlkSet *newBlks, stList *rootSortBlks, int startIdx, int nextIdx, int maxBlkWidth) {
     struct malnBlk *joinedBlk = stList_get(rootSortBlks, startIdx);
+    stList_set(rootSortBlks, startIdx, NULL); // just paranoid, don't leave ptrs to blks that might be delete
+#if 0 // FIXME:
+    malnBlk_dump(joinedBlk, stderr, "joinAdjacents: %d %d", startIdx, nextIdx);
+#endif
     int iBlk;
     for (iBlk = startIdx+1; (iBlk < nextIdx) && (joinedBlk->alnWidth <= maxBlkWidth); iBlk++) {
         joinedBlk = joinBlksAtRoot(malnSet, joinedBlk, stList_get(rootSortBlks, iBlk));
+        stList_set(rootSortBlks, iBlk, NULL);
     }
     if (joinedBlk->malnSet == NULL) {
         // created this block
@@ -181,9 +186,8 @@ void malnJoinWithinSet_joinOverlapAdjacent(struct malnSet *malnSet, int maxBlkWi
     int nextIdx = 0;
     while (nextIdx < stList_length(rootSortBlks)) {
         nextIdx = joinSomeAdjacent(malnSet, newBlks, rootSortBlks, nextIdx, maxBlkWidth);
+        malnSet_deleteDying(malnSet);  // keep memory down
     }
-
-    malnSet_deleteDying(malnSet);
     malnSet_addBlks(malnSet, newBlks);
     stList_destruct(rootSortBlks);
     malnBlkSet_destruct(newBlks);

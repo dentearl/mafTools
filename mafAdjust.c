@@ -23,8 +23,9 @@ static char *usageMsg =
     "\n"
     "Options:\n"
     "  -help\n"
-    "  -maxBlkWidth=n - Limit size of MAF blocks to this value, cutting\n"
-    "   considering no other criteria.\n"
+    "  -maxBlkWidth=n - Limit size of MAF blocks to this value.\n"
+    "   Due to current issues with tree, blocks will be cut to include\n"
+    "   at least one column of the root.\n"
     "  -dumpDir=dir - dump info about MAFs at various points during the\n"
     "   process to files in this directory.\n"
     "\n";
