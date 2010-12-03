@@ -64,6 +64,9 @@ struct malnComp *malnComp_constructClone(struct malnComp *srcComp);
 /* destructor */
 void malnComp_destruct(struct malnComp *comp);
 
+/* Clear sequence to reduce memory associated with dying blocks */
+void malnComp_freeSeqMem(struct malnComp *comp);
+
 /* get tree location for component */
 enum mafTreeLoc malnComp_getLoc(struct malnComp *comp);
 

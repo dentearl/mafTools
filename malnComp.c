@@ -88,6 +88,11 @@ void malnComp_destruct(struct malnComp *comp) {
     }
 }
 
+/* Clear sequence to reduce memory associated with dying blocks */
+void malnComp_freeSeqMem(struct malnComp *comp) {
+    dyStringFree(&comp->alnStr);
+}
+
 /* component reverse complement */
 struct malnComp *malnComp_reverseComplement(struct malnComp *comp) {
     int start = comp->start, end = comp->end;

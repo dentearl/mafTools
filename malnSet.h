@@ -72,6 +72,9 @@ void malnSet_assert(struct malnSet *malnSet);
  * associated with a malnSet, as a way of cleaning up intermediate blocks. */
 void malnSet_markAsDeleted(struct malnSet *malnSet, struct malnBlk *blk);
 
+/* get the fraction of blocks that are dying */
+float malnSet_fractionDying(struct malnSet *malnSet);
+
 /* delete blocks marked as dying */
 void malnSet_deleteDying(struct malnSet *malnSet);
 

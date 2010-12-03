@@ -32,6 +32,11 @@ struct malnBlk *malnBlk_constructClone(struct malnBlk *srcBlk);
 /* destructor */
 void malnBlk_destruct(struct malnBlk *blk);
 
+/* Clear the sequences for a dying block.  This supports freeing up large
+ * amounts of memory immediately without having to update the metadata,
+ * requiring iterators to be invalidated, etc. */
+void malnBlk_freeSeqMem(struct malnBlk *blk);
+
 /* If a block is part of a set, mark it for deletion in that set,
  * otherwise deleted immediately*/
 void malnBlk_markOrDelete(struct malnBlk *blk);

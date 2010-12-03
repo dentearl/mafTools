@@ -58,6 +58,18 @@ void malnBlk_markOrDelete(struct malnBlk *blk) {
     }
 }
 
+/* Clear the sequences for a dying block.  This supports freeing up large
+ * amounts of memory immediately without having to update the metadata,
+ * requiring iterators to be invalidated, etc. */
+void malnBlk_freeSeqMem(struct malnBlk *blk) {
+    // FIXME: might be better just to set blk/comp pointers to null in metadata,
+    // but this is easy for now
+    assert(blk->deleted);
+    for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
+        malnComp_freeSeqMem(comp);
+    }
+}
+
 /* add a component */
 void malnBlk_addComp(struct malnBlk *blk, struct malnComp *comp) {
     comp->blk = blk;

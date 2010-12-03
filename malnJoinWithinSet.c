@@ -14,6 +14,14 @@
 /* join two blocks by associated root components, create a third
  * block. Return that new block. Joined blocks marked as deleted */
 static struct malnBlk *joinBlksAtRoot(struct malnSet *malnSet, struct malnBlk *blk1, struct malnBlk *blk2) {
+#if 0 // FIXME
+    fprintf(stderr, "joinBlksAtRoot: %g\n", malnSet_fractionDying(malnSet)); 
+    fprintf(stderr, "    blk1: ");
+    malnComp_prInfo(malnBlk_getRootComp(blk1), stderr); fputc('\n', stderr);
+    fprintf(stderr, "    blk2: ");
+    malnComp_prInfo(malnBlk_getRootComp(blk2), stderr); fputc('\n', stderr);
+    fflush(stderr);
+#endif
     struct malnBlk *joinBlk = malnJoinBlks(malnBlk_getRootComp(blk1), malnBlk_getRootComp(blk2));
     malnSet_markAsDeleted(malnSet, blk1);
     malnSet_markAsDeleted(malnSet, blk2);
@@ -27,6 +35,9 @@ static struct malnBlk *joinBlkWithDupsPass(struct malnSet *malnSet, struct malnB
     // the root.
     struct malnBlk *newJoinBlk =  NULL;
     struct malnComp *joinComp = malnBlk_getRootComp(joinBlk);
+#if 0 // FIXME
+    malnComp_dump(joinComp, stderr, "=================\njoinBlkWithDupsPass");
+#endif
     stList *overComps = malnSet_getOverlappingPendingComps(malnSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocRoot, NULL);
     for (int i = 0; i < stList_length(overComps); i++) {
         struct malnComp *overComp = stList_get(overComps, i);
@@ -59,19 +70,40 @@ static void joinBlkWithDups(struct malnSet *malnSet, struct malnBlk *joinBlk, st
     }
 }
 
-/* Join duplication blocks in a set, which evolver outputs as separate
- * blocks. */
-void malnJoinWithinSet_joinDups(struct malnSet *malnSet) {
-    struct malnBlkSet *newBlks = malnBlkSet_construct();
+/* One pass over set to join dups.  Multiple passes are made to allow freeing
+ * memory during the scan at the cost of needing to do rescanning.  However
+ * since blocks that are created have been checked against all other blocks,
+ * these do not have to be rescanned and are not added until later.  This stop
+ * when all blocks have been scanned or a threshold of the number deleted but
+ * not yet freed blocks is reached.  If returns true if this function
+ * should be called again to continue scanning.
+ */
+static bool joinDupsPass(struct malnSet *malnSet, struct malnBlkSet *newBlks) {
+    static const float fractionDyingThreshold = 0.10;
     struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *joinBlk;
-    while ((joinBlk = malnBlkSetIterator_getNext(iter)) != NULL) {
+#if 0 // FIXME
+    fprintf(stderr, ">>>>>>>>>>>>>> joinDupsPass <<<<<<<<<<<<\n");
+#endif
+    bool reachedDyingThreshold = false;
+    while (((joinBlk = malnBlkSetIterator_getNext(iter)) != NULL) && (!reachedDyingThreshold)) {
         if (!joinBlk->deleted) {
             joinBlkWithDups(malnSet, joinBlk, newBlks);
+            reachedDyingThreshold = malnSet_fractionDying(malnSet) >= fractionDyingThreshold;
         }
     }
     malnBlkSetIterator_destruct(iter);
     malnSet_deleteDying(malnSet);
+    return reachedDyingThreshold;
+}
+
+/* Join duplication blocks in a set, which evolver outputs as separate
+ * blocks. */
+void malnJoinWithinSet_joinDups(struct malnSet *malnSet) {
+    struct malnBlkSet *newBlks = malnBlkSet_construct();
+    while (joinDupsPass(malnSet, newBlks)) {
+        continue;
+    }
     malnSet_addBlks(malnSet, newBlks);
     malnBlkSet_destruct(newBlks);
     malnSet_assert(malnSet);

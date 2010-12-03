@@ -492,6 +492,17 @@ void malnSet_markAsDeleted(struct malnSet *malnSet, struct malnBlk *blk) {
     assert((blk->malnSet == malnSet) || (blk->malnSet == NULL));
     blk->deleted = true;
     malnBlkSet_add(malnSet->dyingBlks, blk);
+    malnBlk_freeSeqMem(blk);
+}
+
+/* get the fraction of blocks that are dying */
+float malnSet_fractionDying(struct malnSet *malnSet) {
+    float total = malnBlkSet_size(malnSet->blks);
+    if (total == 0.0) {
+        return 0.0;
+    } else {
+        return ((float)malnBlkSet_size(malnSet->dyingBlks)) / total;
+    }
 }
 
 /* delete blocks marked as dying */

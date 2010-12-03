@@ -45,6 +45,10 @@ void malnBlkSet_destruct(struct malnBlkSet *blks) {
     }
 }
 
+int malnBlkSet_size(struct malnBlkSet *blks) {
+    return stSortedSet_size(blks->map);
+}
+
 void malnBlkSet_add(struct malnBlkSet *blks, struct malnBlk *blk) {
     stSortedSet_insert(blks->map, blk);
 }

@@ -17,6 +17,10 @@ struct malnBlkSet *malnBlkSet_constructClone(struct malnBlkSet *srcBlks);
 /* destructor*/
 void malnBlkSet_destruct(struct malnBlkSet *blks);
 
+
+/* get number of blocks in the set */
+int malnBlkSet_size(struct malnBlkSet *blks);
+
 /* Add block to the map */
 void malnBlkSet_add(struct malnBlkSet *blks, struct malnBlk *blk);
 
