@@ -3,8 +3,8 @@ include ../../../include.mk
 binPath = ../../../bin
 libPath = ../../../lib
 
-#cflags = ${cflags_opt}
-cflags = ${cflags_dbg}
+cflags = ${cflags_opt} -DNDEBUG
+#cflags = ${cflags_dbg}
 #cflags = ${cflags_dbg} -DASSERT_SLOW
 
 cflags += -I${libPath}
