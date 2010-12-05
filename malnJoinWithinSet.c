@@ -38,7 +38,7 @@ static struct malnBlk *joinBlkWithDupsPass(struct malnSet *malnSet, struct malnB
 #if 0 // FIXME
     malnComp_dump(joinComp, stderr, "=================\njoinBlkWithDupsPass");
 #endif
-    stList *overComps = malnSet_getOverlappingPendingComps(malnSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocRoot, NULL);
+    stList *overComps = malnSet_getOverlappingComps(malnSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocRoot);
     for (int i = 0; i < stList_length(overComps); i++) {
         struct malnComp *overComp = stList_get(overComps, i);
         if ((malnComp_getLoc(overComp) == mafTreeLocRoot) && (overComp->blk != joinBlk) && !overComp->blk->deleted) {

@@ -85,7 +85,7 @@ static void resolveBlkOverComp(struct malnComp *comp1, struct malnComp *comp2, F
  * over.  Return true if something was done. */
 static bool resolveBlkComp(struct malnSet *malnSet, struct malnBlk *blk, struct malnComp *comp, FILE *dropLogFh) {
     bool didSomething = false;
-    stList *overComps = malnSet_getOverlappingPendingComps(malnSet, comp->seq, comp->chromStart, comp->chromEnd, mafTreeLocAll, NULL);
+    stList *overComps = malnSet_getOverlappingComps(malnSet, comp->seq, comp->chromStart, comp->chromEnd, mafTreeLocAll);
     for (int i = 0; (i < stList_length(overComps)) && (!didSomething) ; i++) {
         struct malnComp *overComp = stList_get(overComps, i);
         if ((overComp->blk != comp->blk) && (!overComp->blk->deleted) && (malnComp_getLoc(overComp) != mafTreeLocRoot)) {
@@ -149,7 +149,7 @@ static void reportMultiParent(struct malnComp *comp, struct malnComp *overComp) 
 
 /* compare a component to other components */
 static void checkCompForMultiParents(struct malnSet *malnSet, struct malnComp *comp) {
-    stList *overComps = malnSet_getOverlappingPendingComps(malnSet, comp->seq, comp->chromStart, comp->chromEnd, mafTreeLocAll, NULL);
+    stList *overComps = malnSet_getOverlappingComps(malnSet, comp->seq, comp->chromStart, comp->chromEnd, mafTreeLocAll);
     for (int i = 0; i < stList_length(overComps); i++) {
         struct malnComp *overComp = stList_get(overComps, i);
         if ((comp->blk != overComp->blk) && (malnComp_getLoc(overComp) != mafTreeLocRoot)) {

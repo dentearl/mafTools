@@ -103,7 +103,7 @@ static struct malnBlk *joinCompWithSet(struct malnComp *joinComp, struct malnSet
     }
     // must stop if we join any, as bounds might be changed by trimming
     struct malnBlk *newJoinBlk = NULL;
-    stList *overComps = malnSet_getOverlappingPendingComps(targetSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocAll, NULL);
+    stList *overComps = malnSet_getOverlappingComps(targetSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocAll);
     for (int i = 0; i < (stList_length(overComps) && (newJoinBlk == NULL)); i++) {
         struct malnComp *targetComp = stList_get(overComps, i);
         if (debug) {

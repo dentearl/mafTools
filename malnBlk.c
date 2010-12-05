@@ -225,6 +225,11 @@ int malnBlk_cmp(struct malnBlk *blk1, struct malnBlk *blk2) {
     return diff;
 }
 
+/* compare blocks by ascending width */
+int malnBlk_assendingWidthCmp(struct malnBlk *blk1, struct malnBlk *blk2) {
+    return blk1->alnWidth - blk2->alnWidth;
+}
+
 /* take subrange of a component */
 static void compSubRange(struct malnBlk *subBlk, struct malnComp *comp, int alnStart, int alnEnd, struct malnCompCompMap *srcDestCompMap) {
     struct malnComp *subComp = malnComp_constructSubrange(comp, alnStart, alnEnd);
