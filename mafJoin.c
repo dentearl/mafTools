@@ -1,6 +1,7 @@
 #include "common.h"
 #include "options.h"
 #include "genome.h"
+#include "mafIO.h"
 #include "malnSet.h"
 #include "malnJoinWithinSet.h"
 #include "malnJoinSets.h"
@@ -66,7 +67,7 @@ static void usage(char *msg) {
 static struct malnSet *loadMaf(struct Genomes *genomes, char *inMaf, int maxInputBlkWidth, double defaultBranchLength,
                                char *treelessRootName, char *setName, FILE *dropLogFh, char *dumpDir) {
     struct Genome *treelessRootGenome = (treelessRootName != NULL) ? genomesObtainGenome(genomes, treelessRootName) : NULL;
-    struct malnSet *malnSet = malnSet_constructFromMaf(genomes, inMaf, maxInputBlkWidth, defaultBranchLength, treelessRootGenome);
+    struct malnSet *malnSet = mafIO_malnSetRead(genomes, inMaf, maxInputBlkWidth, defaultBranchLength, treelessRootGenome);
     malnSet_dumpToDir(malnSet, dumpDir, setName, "1.input");
     if (treelessRootGenome != NULL) {
         if (dropLogFh != NULL) {
@@ -107,7 +108,7 @@ static void mafJoin(char *guideGenomeName, char *inMaf1, char *inMaf2, char *out
     malnSet_dumpToDir(malnSetJoined, dumpDir, "set3", "3.merged");
 
     malnMultiParents_check(malnSetJoined);
-    malnSet_writeMaf(malnSetJoined, outMaf);
+    mafIO_malnSetWrite(malnSetJoined, outMaf);
 
     malnSet_destruct(malnSetJoined);
     genomesFree(genomes);

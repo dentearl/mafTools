@@ -250,12 +250,11 @@ void malnComp_assert(struct malnComp *comp) {
         malnBlk_dump(comp->blk, stderr, "countAligned(comp) != (comp->end - comp->start)");
     }
     assert(malnComp_countAligned(comp) == (comp->end - comp->start));
-    if (comp->ncLink == NULL) {
-        malnBlk_dump(comp->blk, stderr, "NULL ncLink");
+    if (comp->blk->mTree != NULL) {
+        assert(comp->ncLink != NULL);
+        assert(comp->ncLink->comp == comp);
+        mafTreeNodeCompLink_assert(comp->ncLink);
     }
-    assert(comp->ncLink != NULL);
-    assert(comp->ncLink->comp == comp);
-    mafTreeNodeCompLink_assert(comp->ncLink);
 #endif
 }
 

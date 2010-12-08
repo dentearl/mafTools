@@ -10,10 +10,10 @@ cflags = ${cflags_opt} -DNDEBUG
 
 cflags += -I${libPath}
 ifneq ($(wildcard ${kentLibWeb}),)
-mafJoinObjs = mafJoin.o jkmaf.o genome.o mafTree.o malnComp.o malnBlk.o malnBlkCursor.o malnBlkSet.o malnSet.o malnJoinBlks.o malnJoinWithinSet.o malnJoinSets.o malnMergeComps.o malnMultiParents.o malnCompCompMap.o
+mafJoinObjs = mafJoin.o jkmaf.o genome.o mafTree.o malnComp.o malnBlk.o malnBlkCursor.o malnBlkSet.o malnSet.o malnJoinBlks.o malnJoinWithinSet.o malnJoinSets.o malnMergeComps.o malnMultiParents.o malnCompCompMap.o mafIO.o
 mafOverlapObjs = mafOverlap.o jkmaf.o
-mafAdjustObjs = mafAdjust.o jkmaf.o genome.o mafTree.o malnComp.o malnBlk.o malnBlkCursor.o malnBlkSet.o malnSet.o malnJoinBlks.o malnJoinWithinSet.o malnJoinSets.o malnMergeComps.o malnCompCompMap.o
-mafMultiParentCheckObjs = mafMultiParentCheck.o jkmaf.o genome.o mafTree.o malnComp.o malnBlk.o malnBlkCursor.o malnBlkSet.o malnSet.o malnCompCompMap.o malnMultiParents.o
+mafAdjustObjs = mafAdjust.o jkmaf.o genome.o mafTree.o malnComp.o malnBlk.o malnBlkCursor.o malnBlkSet.o malnSet.o malnJoinBlks.o malnJoinWithinSet.o malnJoinSets.o malnMergeComps.o malnCompCompMap.o mafIO.o
+mafMultiParentCheckObjs = mafMultiParentCheck.o jkmaf.o genome.o mafTree.o malnComp.o malnBlk.o malnBlkCursor.o malnBlkSet.o malnSet.o malnCompCompMap.o malnMultiParents.o mafIO.o
 cflags += -I ${kentInc}
 progs = ${binPath}/mafJoin ${binPath}/mafOverlap ${binPath}/mafMultiParentCheck ${binPath}/mafAdjust
 endif

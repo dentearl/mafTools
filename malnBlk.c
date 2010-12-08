@@ -100,11 +100,10 @@ static void malnBlk_sortComps(struct malnBlk *blk) {
 /* finish construction a block, setting component attributes and sorting
  * components */
 void malnBlk_finish(struct malnBlk *blk) {
-    malnBlk_sortComps(blk); // FIXME: don't need to do this for all cases
+    if (blk->mTree != NULL) {
+        malnBlk_sortComps(blk); // FIXME: don't need to do this for all cases
+    }
     malnBlk_validate(blk);  // produces better error messages
-#if 0 // very expensive
-    malnBlk_assert(blk);    // really only to catch bugs in this code, not input
-#endif
 }
 
 /* Unlink a component from the block, also removing it from the tree and
@@ -172,10 +171,8 @@ void malnBlk_pad(struct malnBlk *blk) {
     }
 }
 
-/* check for consistency within a components of a MAF, generating an
- * error if there are not consistent */
-void malnBlk_validate(struct malnBlk *blk) {
-    // check sizes
+/* check that component sizes are the same */
+static void validateCompSizes(struct malnBlk *blk) {
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         if (malnComp_getWidth(comp) != blk->alnWidth) {
             errAbort("component width (%d) doesn't match alignment width (%d): %s:%d-%d",
@@ -183,8 +180,10 @@ void malnBlk_validate(struct malnBlk *blk) {
                      comp->seq->orgSeqName, comp->chromStart, comp->chromEnd);
         }
     }
+}
 
-    // check for overlapping root components
+/* check for no overlapping root components */
+static void validateNoOverlappingRootComps(struct malnBlk *blk) {
     struct malnComp *rootComp = malnBlk_getRootComp(blk);
     for (struct malnComp *comp2 = blk->comps; comp2 != NULL; comp2 = comp2->next) {
         if ((comp2 != rootComp) && malnComp_overlap(rootComp, comp2)) {
@@ -192,6 +191,16 @@ void malnBlk_validate(struct malnBlk *blk) {
                      rootComp->seq->orgSeqName, rootComp->start, rootComp->end, rootComp->strand,
                      comp2->seq->orgSeqName, comp2->start, comp2->end, comp2->strand);
         }
+    }
+}
+
+/* check for consistency within a components of a MAF, generating an
+ * error if there are not consistent */
+void malnBlk_validate(struct malnBlk *blk) {
+    validateCompSizes(blk);
+
+    if (blk->mTree != NULL) {
+        validateNoOverlappingRootComps(blk);
     }
 }
 
@@ -207,7 +216,9 @@ void malnBlk_assert(struct malnBlk *blk) {
         assert(malnComp_getWidth(comp) == blk->alnWidth);
         malnComp_assert(comp);
     }
-    mafTree_assert(blk->mTree, blk);
+    if (blk->mTree != NULL) {
+        mafTree_assert(blk->mTree, blk);
+    }
 #endif
 }
 
@@ -247,7 +258,9 @@ struct malnBlk *malnBlk_constructSubrange(struct malnBlk *blk, int alnStart, int
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         compSubRange(subBlk, comp, alnStart, alnEnd, srcDestCompMap);
     }
-    subBlk->mTree = mafTree_subrangeClone(blk->mTree, srcDestCompMap);
+    if (blk->mTree  != NULL) {
+        subBlk->mTree = mafTree_subrangeClone(blk->mTree, srcDestCompMap);
+    }
     malnBlk_finish(subBlk);
     malnCompCompMap_destruct(srcDestCompMap);
     return subBlk;
@@ -328,6 +341,7 @@ void malnBlk_dumpv(struct malnBlk *blk, FILE *fh, const char *label, va_list arg
         malnComp_dump(comp, fh, "\t");
     }    
 }
+
 /* print a block for debugging purposes */
 void malnBlk_dump(struct malnBlk *blk, FILE *fh, const char *label, ...) {
     va_list args;

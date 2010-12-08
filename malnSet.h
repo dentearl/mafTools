@@ -13,10 +13,6 @@ struct malnBlkSet;
 /* construct an empty malnSet.  mafFileName maybe NULL  */
 struct malnSet *malnSet_construct(struct Genomes *genomes, char *mafFileName);
 
-/* Construct a malnSet from a MAF file. defaultBranchLength is used to
- * assign branch lengths when inferring trees from the MAF. */
-struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, char *mafFileName, int maxInputBlkWidth, double defaultBranchLength, struct Genome *treelessRootGenome);
-
 /* destructor */
 void malnSet_destruct(struct malnSet *malnSet);
 
@@ -78,9 +74,6 @@ float malnSet_fractionDying(struct malnSet *malnSet);
 
 /* delete blocks marked as dying */
 void malnSet_deleteDying(struct malnSet *malnSet);
-
-/* write a malnSet to a MAF file  */
-void malnSet_writeMaf(struct malnSet *malnSet, char *mafFileName);
 
 /* print set for debugging */
 void malnSet_dumpv(struct malnSet *malnSet, FILE *fh, const char *label, va_list args);

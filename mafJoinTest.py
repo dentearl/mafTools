@@ -947,22 +947,22 @@ class MafAdjustTests(TestCaseBase):
         s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
         """
         mafExpect = """
-        a score=0.000000 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
+        a score=0.000000
         s hg18.chr7 27578828 10 + 158545518 AAA-GGGAATG
         s mm4.chr6  53215344 10 + 151104725 -AATGGGAATG
         s rn3.chr4  81344243  9 + 187371129 -AA-GGGGATG
 
-        a score=0.000000 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
+        a score=0.000000
         s hg18.chr7 27578838 11 + 158545518 TTAACCAAATG
         s mm4.chr6  53215354 11 + 151104725 TTAAGCAAACG
         s rn3.chr4  81344252 11 + 187371129 CTAAGCCAATG
 
-        a score=0.000000 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
+        a score=0.000000
         s hg18.chr7 27578849  8 + 158545518 A---ATTGTCT
         s mm4.chr6  53215365  8 + 151104725 A---ATTGTCT
         s rn3.chr4  81344263 11 + 187371129 AGTTGTTGTCT
 
-        a score=0.000000 tree="(hg18.chr7:0.1,mm4.chr6:0.15)rn3.chr4;"
+        a score=0.000000
         s hg18.chr7 27578857 9 + 158545518 CTTACGGTG
         s mm4.chr6  53215373 9 + 151104725 CTCAGTGTG
         s rn3.chr4  81344274 9 + 187371129 CTCAATGTG
@@ -980,17 +980,17 @@ class MafAdjustTests(TestCaseBase):
         s rn3.chr4     81444246 4 + 187371129 ta--ga
         """
         mafExpect = """
-        a score=0.000000 tree="(hg18.chr7:0.5)mm4.chr6:0.15;"
-        s hg18.chr7 27000001 2 + 158545518 GG
-        s mm4.chr6  53303883 2 + 151104725 AA
-
-        a score=0.000000 tree="((hg18.chr7:0.5,hg18.chr7:0.1)mm4.chr6:0.15)rn3.chr4;"
+        a score=0.000000
         s hg18.chr7 27000000 1 + 158545518 T-
         s hg18.chr7 27699739 1 + 158545518 T-
         s mm4.chr6  53303881 2 + 151104725 TA
         s rn3.chr4  81444246 2 + 187371129 ta
 
-        a score=0.000000 tree="((hg18.chr7:0.5,hg18.chr7:0.1)mm4.chr6:0.15)rn3.chr4;"
+        a score=0.000000
+        s hg18.chr7 27000001 2 + 158545518 GG
+        s mm4.chr6  53303883 2 + 151104725 AA
+
+        a score=0.000000
         s hg18.chr7 27000003 2 + 158545518 GA
         s hg18.chr7 27699740 2 + 158545518 GA
         s mm4.chr6  53303885 2 + 151104725 GA

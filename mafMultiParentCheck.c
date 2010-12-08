@@ -1,5 +1,6 @@
 #include "common.h"
 #include "options.h"
+#include "mafIO.h"
 #include "genome.h"
 #include "malnSet.h"
 #include "malnJoinWithinSet.h"
@@ -37,7 +38,7 @@ static void mafMultiParentCheck(char *inMaf, char *multiParentDroppedFile, char 
     struct Genomes *genomes = genomesNew();
     struct Genome *treelessRootGenome = (treelessRootName != NULL) ? genomesObtainGenome(genomes, treelessRootName) : NULL;
     FILE *dropLogFh = malnMultiParents_openResolveDropLog(multiParentDroppedFile);
-    struct malnSet *malnSet = malnSet_constructFromMaf(genomes, inMaf, 10000, 0.1, treelessRootGenome);
+    struct malnSet *malnSet = mafIO_malnSetRead(genomes, inMaf, 10000, 0.1, treelessRootGenome);
     int numResolved = malnMultiParents_resolve(malnSet, dropLogFh);
     if (inMafDump != NULL) {
         malnSet_dumpFile(malnSet, inMafDump, "maf");
