@@ -98,6 +98,10 @@ def main():
 
     for xmlFile in xmlList:
         resultsTree2 = ET.parse(xmlFile).getroot()
+        #Add the time to the previous time
+        if resultsTree2.attrib.has_key("time") and resultsTree1.attrib.has_key("time"):
+            resultsTree1.attrib["time"] = str(float(resultsTree1.attrib["time"]) + float(resultsTree2.attrib["time"]))
+        
         homologyTestsList2 = resultsTree2.findall("homology_tests")
     
         assert len(homologyTestsList1) == len(homologyTestsList2)
