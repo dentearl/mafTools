@@ -85,5 +85,6 @@ void aTrio_destruct(ATrio *trio, void *extraArgument);
 
 TrioDecoder *trioDecoder_construct(char *treestring);
 int32_t calcTrioState(TrioDecoder *decoder, int32_t i, int32_t j, int32_t k);
+void writeXMLHeader( FILE *fileHandle );
 
 #endif /* _EVAL_COMPARATOR_API_H_ */

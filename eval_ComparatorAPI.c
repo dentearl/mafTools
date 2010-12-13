@@ -1224,3 +1224,7 @@ void trioDecoder_destruct(TrioDecoder *decoder) {
     return;
 }
 
+void writeXMLHeader( FILE *fileHandle ){
+   fprintf( fileHandle, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n");
+   return;
+}
