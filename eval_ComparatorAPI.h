@@ -76,9 +76,9 @@ typedef struct _trioDecoder {
 void populateNames(const char *mAFFile, stSortedSet *htp);
 void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3);
 void printNameHash(struct hashtable *h);
-struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, stSortedSet *legitimateSequences, stHash *intervalsHash, int32_t verbose, int32_t near);
+struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, stSortedSet *legitimateSequences, stHash *intervalsHash, int32_t verbose, int32_t near, bool includeGaps);
 struct avl_table *compareMAFs_AB_Trio(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, struct hashtable *ht, struct List *speciesList);
-void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle, int32_t near);
+void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle, int32_t near, int32_t includeGaps);
 void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle);
 void aPair_destruct(APair *pair, void *extraArgument);
 void aTrio_destruct(ATrio *trio, void *extraArgument);
