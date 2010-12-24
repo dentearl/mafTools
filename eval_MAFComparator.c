@@ -90,7 +90,6 @@ void usage() {
    fprintf(stderr, "-h --help : Print this help screen\n");
    fprintf(stderr, "-f --bedFiles : The location of bed file used to filter the pairwise comparisons.\n");
    fprintf(stderr, "-g --near : The number of bases in either sequence to allow a match to slip by.\n");
-   fprintf(stderr, "-i --alignmentMetricAccuracy : Do comparison including gap pairs to calculate the alignment metric accuracy score.\n");
 }
 
 void version() {
@@ -109,7 +108,6 @@ int main(int argc, char *argv[]) {
     int32_t sampleNumber = 1000000; // by default do a million samples per pair.
     int32_t near = 0;
     int32_t i;
-    bool includeGaps = 0;
 
     ///////////////////////////////////////////////////////////////////////////
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
@@ -127,13 +125,12 @@ int main(int argc, char *argv[]) {
             { "help", no_argument, 0, 'h' },
             { "bedFiles", required_argument, 0, 'f' },
             { "near", required_argument, 0, 'g' },
-            { "alignmentMetricAccuracy", no_argument, 0, 'i' },
             { 0, 0, 0, 0 }
         };
 
         int option_index = 0;
 
-        int key = getopt_long(argc, argv, "a:b:c:d:e:u:v:hf:g:i", long_options, &option_index);
+        int key = getopt_long(argc, argv, "a:b:c:d:e:u:v:hf:g:", long_options, &option_index);
 
         if(key == -1) {
             break;
@@ -172,9 +169,6 @@ int main(int argc, char *argv[]) {
             case 'g':
                 i = sscanf(optarg, "%i", &near);
                 assert(i == 1);
-                break;
-            case 'i':
-                includeGaps = !includeGaps;
                 break;
             default:
                 usage();
@@ -252,20 +246,12 @@ int main(int argc, char *argv[]) {
        fprintf(stderr, "# Comparing %s to %s\n", mAFFile1, mAFFile2);
        fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near, 0);
+    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near);
     if (ULTRAVERBOSE){
        fprintf(stderr, "# Comparing %s to %s\n", mAFFile2, mAFFile1);
        fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near, 0);
-
-    struct avl_table *results_ama1 = NULL;
-    struct avl_table *results_ama2 = NULL;
-    if(includeGaps) {
-        results_ama1 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near, 1);
-        results_ama2 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near, 1);
-    }
-
+    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near);
     fileHandle = fopen(outputFile, "w");
     if(fileHandle == NULL){
        fprintf(stderr, "ERROR, unable to open `%s' for writing.\n", outputFile);
@@ -278,12 +264,8 @@ int main(int argc, char *argv[]) {
     
     writeXMLHeader( fileHandle );
     fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\">\n", sampleNumber);
-    reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near, 0);
-    reportResults(results_21, mAFFile2, mAFFile1, fileHandle, near, 0);
-    if(includeGaps) {
-        reportResults(results_ama1, mAFFile1, mAFFile2, fileHandle, near, 1);
-        reportResults(results_ama2, mAFFile2, mAFFile1, fileHandle, near, 1);
-    }
+    reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near);
+    reportResults(results_21, mAFFile2, mAFFile1, fileHandle, near);
     fprintf(fileHandle, "</alignment_comparisons>\n");
     fclose(fileHandle);
 
@@ -293,10 +275,6 @@ int main(int argc, char *argv[]) {
 
     avl_destroy(results_12, (void (*)(void *, void *))aPair_destruct);
     avl_destroy(results_21, (void (*)(void *, void *))aPair_destruct);
-    if(includeGaps) {
-        avl_destroy(results_ama1, (void (*)(void *, void *))aPair_destruct);
-        avl_destroy(results_ama2, (void (*)(void *, void *))aPair_destruct);
-    }
 
     free(mAFFile1);
     free(mAFFile2);
