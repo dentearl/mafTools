@@ -262,8 +262,8 @@ int main(int argc, char *argv[]) {
     struct avl_table *results_ama1 = NULL;
     struct avl_table *results_ama2 = NULL;
     if(includeGaps) {
-        results_ama1 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, intervalsHash, 0, near, 1);
-        results_ama2 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, intervalsHash, 0, near, 1);
+        results_ama1 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near, 1);
+        results_ama2 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near, 1);
     }
 
     fileHandle = fopen(outputFile, "w");
@@ -271,9 +271,6 @@ int main(int argc, char *argv[]) {
        fprintf(stderr, "ERROR, unable to open `%s' for writing.\n", outputFile);
        exit(1);
     }
-
-
-
 
     //////////////////////////////////////////////
     //Report results.

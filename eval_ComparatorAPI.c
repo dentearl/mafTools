@@ -267,7 +267,7 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
                         origPos2 ++;
                     }
                     else if(includeGaps) {
-                        aPair_fillOut(&aPair, seq1, seq2, pos1, GAP_POS, origPos1, -1);
+                        aPair_fillOut(&aPair, seq1, seq2, pos1, GAP_POS, origPos1, GAP_POS);
                         passPairFn(&aPair, intervalsHash, extraArgument1, extraArgument2, extraArgument3, verbose, near);
                     }
                     pos1 += inc1;
@@ -275,7 +275,7 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
                 } else {
                     if (sequence2[k] != '-') {
                         if(includeGaps) {
-                            aPair_fillOut(&aPair, seq1, seq2, GAP_POS, pos2, -1, origPos2);
+                            aPair_fillOut(&aPair, seq1, seq2, GAP_POS, pos2, GAP_POS, origPos2);
                             passPairFn(&aPair, intervalsHash, extraArgument1, extraArgument2, extraArgument3, verbose, near);
                         }
                         pos2 += inc2;
@@ -650,7 +650,7 @@ void homologyTestsTrio1(ATrio *trio, struct avl_table *trios, struct avl_table *
 }
 
 static int fn(bool includeGaps, APair *pair) {
-    return pair->pos1 != GAP_POS && pair->pos2 != GAP_POS ? 2 : 1;
+    return (includeGaps && pair->pos1 != GAP_POS && pair->pos2 != GAP_POS) ? 2 : 1;
 }
 
 void homologyTests2(struct avl_table *pairs, struct avl_table *resultPairs, stHash *intervalsHash,
