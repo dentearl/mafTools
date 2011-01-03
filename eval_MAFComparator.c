@@ -264,8 +264,8 @@ int main(int argc, char *argv[]) {
     
     writeXMLHeader( fileHandle );
     fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\">\n", sampleNumber);
-    reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near);
-    reportResults(results_21, mAFFile2, mAFFile1, fileHandle, near);
+    reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near, seqNames);
+    reportResults(results_21, mAFFile2, mAFFile1, fileHandle, near, seqNames);
     fprintf(fileHandle, "</alignment_comparisons>\n");
     fclose(fileHandle);
 

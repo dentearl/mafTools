@@ -762,28 +762,11 @@ void reportResult(const char *tagName, double total, double totalTrue, FILE *fil
             (int32_t) total, (int32_t) totalTrue, (int32_t) (total - totalTrue), totalTrue / total);
 }
 
-void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle,
-        int32_t near) {
-    /*
-     * Report results in an XML formatted document.
-     */
-    static struct avl_traverser iterator;
-    avl_t_init(&iterator, results_AB);
+ResultPair *aggregateResult(void *(*getNextPair)(void *, void *), void *arg1, void *arg2, const char *name1, const char *name2) {
     ResultPair *resultPair;
+    ResultPair *resultPair2 = resultPair_construct(name1, name2);
 
-    double inAll = 0.0;
-    double inBoth = 0.0;
-    double inA = 0.0;
-    double inB = 0.0;
-    double inNeither = 0.0;
-
-    double total = 0.0;
-    double totalBoth = 0.0;
-    double totalA = 0.0;
-    double totalB = 0.0;
-    double totalNeither = 0.0;
-
-    while ((resultPair = avl_t_next(&iterator)) != NULL) {
+    while ((resultPair = getNextPair(arg1, arg2)) != NULL) {
         assert(resultPair->inAll == resultPair->inBoth + resultPair->inA + resultPair->inB + resultPair->inNeither);
         assert(resultPair->total == resultPair->totalBoth + resultPair->totalA + resultPair->totalB + resultPair->totalNeither);
         assert(resultPair->total >= resultPair->inAll);
@@ -791,25 +774,85 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
         assert(resultPair->totalA >= resultPair->inA);
         assert(resultPair->totalB >= resultPair->inB);
         assert(resultPair->totalNeither >= resultPair->inNeither);
-        inAll += resultPair->inAll;
-        inBoth += resultPair->inBoth;
-        inA += resultPair->inA;
-        inB += resultPair->inB;
-        inNeither += resultPair->inNeither;
+        resultPair2->inAll += resultPair->inAll;
+        resultPair2->inBoth += resultPair->inBoth;
+        resultPair2->inA += resultPair->inA;
+        resultPair2->inB += resultPair->inB;
+        resultPair2->inNeither += resultPair->inNeither;
 
-        total += resultPair->total;
-        totalBoth += resultPair->totalBoth;
-        totalA += resultPair->totalA;
-        totalB += resultPair->totalB;
-        totalNeither += resultPair->totalNeither;
+        resultPair2->total += resultPair->total;
+        resultPair2->totalBoth += resultPair->totalBoth;
+        resultPair2->totalA += resultPair->totalA;
+        resultPair2->totalB += resultPair->totalB;
+        resultPair2->totalNeither += resultPair->totalNeither;
     }
-    fprintf(fileHandle, "\t<homology_tests fileA=\"%s\" fileB=\"%s\" near=\"%i\">\n<aggregate_results>\n", mAFFileA,
-            mAFFileB, near);
-    reportResult("all", total, inAll, fileHandle);
-    reportResult("both", totalBoth, inBoth, fileHandle);
-    reportResult("A", totalA, inA, fileHandle);
-    reportResult("B", totalB, inB, fileHandle);
-    reportResult("neither", totalNeither, inNeither, fileHandle);
+    return resultPair2;
+}
+
+void *addReferencesAndDups_getDups(void *arg, void *arg2) {
+    ResultPair *resultPair;
+    while ((resultPair = avl_t_next(arg)) != NULL) {
+        if(strcmp(resultPair->aPair.seq1, resultPair->aPair.seq2) == 0) {
+            break;
+        }
+    }
+    return resultPair;
+}
+
+void *addReferencesAndDups_getReferences(void *arg, void *arg2) {
+    ResultPair *resultPair;
+    while ((resultPair = avl_t_next(arg)) != NULL) {
+        if(strcmp(resultPair->aPair.seq1, arg2) == 0 || strcmp(resultPair->aPair.seq2, arg2) == 0) {
+            break;
+        }
+    }
+    return resultPair;
+}
+
+void addReferencesAndDups(struct avl_table *results_AB, stSortedSet *legitimateSequences) {
+    /*
+     * Adds tags for all against each species.
+     */
+    stSortedSetIterator *speciesIt = stSortedSet_getIterator(legitimateSequences);
+    static struct avl_traverser iterator;
+    char *species;
+    avl_t_init(&iterator, results_AB);
+    stList *list = stList_construct();
+    stList_append(list, aggregateResult(addReferencesAndDups_getDups, &iterator, NULL, "self", "self"));
+    //Add references
+    while((species = stSortedSet_getNext(speciesIt)) != NULL) {
+        avl_t_init(&iterator, results_AB);
+        stList_append(list, aggregateResult(addReferencesAndDups_getReferences, &iterator, species, species, "aggregate"));
+    }
+    stSortedSet_destructIterator(speciesIt);
+    for(int32_t i=0; i<stList_length(list); i++) {
+        avl_insert(results_AB, stList_get(list, i));
+    }
+    stList_destruct(list);
+}
+
+void *reportResults_fn(void *arg, void *arg2) {
+   return avl_t_next(arg);
+}
+
+void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle,
+        int32_t near, stSortedSet *legitimateSequences) {
+    /*
+     * Report results in an XML formatted document.
+     */
+    static struct avl_traverser iterator;
+    avl_t_init(&iterator, results_AB);
+    ResultPair *resultPair;
+
+    ResultPair *aggregateResults = aggregateResult(reportResults_fn, &iterator, NULL, "", "");
+
+    addReferencesAndDups(results_AB, legitimateSequences);
+
+    reportResult("all", aggregateResults->total, aggregateResults->inAll, fileHandle);
+    reportResult("both", aggregateResults->totalBoth, aggregateResults->inBoth, fileHandle);
+    reportResult("A", aggregateResults->totalA, aggregateResults->inA, fileHandle);
+    reportResult("B", aggregateResults->totalB, aggregateResults->inB, fileHandle);
+    reportResult("neither", aggregateResults->totalNeither, aggregateResults->inNeither, fileHandle);
     fprintf(fileHandle, "</aggregate_results>\n<homology_pair_tests>\n");
 
     while ((resultPair = avl_t_prev(&iterator)) != NULL) {
@@ -831,6 +874,7 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
         fprintf(fileHandle,
                 "</aggregate_results>\n</single_homology_test>\n</single_homology_tests>\n</homology_test>\n");
     }
+
     fprintf(fileHandle, "</homology_pair_tests>\n</homology_tests>\n");
     return;
 }
