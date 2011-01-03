@@ -848,6 +848,8 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
 
     addReferencesAndDups(results_AB, legitimateSequences);
 
+	fprintf(fileHandle, "\t<homology_tests fileA=\"%s\" fileB=\"%s\" near=\"%i\">\n<aggregate_results>\n", mAFFileA,
+            mAFFileB, near);
     reportResult("all", aggregateResults->total, aggregateResults->inAll, fileHandle);
     reportResult("both", aggregateResults->totalBoth, aggregateResults->inBoth, fileHandle);
     reportResult("A", aggregateResults->totalA, aggregateResults->inA, fileHandle);
