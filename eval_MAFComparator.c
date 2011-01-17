@@ -85,7 +85,7 @@ void usage() {
    fprintf(stderr, "-c --mAFFile2 : The location of the second MAF file\n");
    fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
    fprintf(stderr, "-e --sampleNumber : The number of sample homology tests to perform (total) [default 1000000].\n");
-   fprintf(stderr, "-u --ultraVerbose : Print details about failed tests.\n");
+   fprintf(stderr, "-u --ultraVerbose : Print tab-delimited details about failed tests to stderr.\n");
    fprintf(stderr, "-v --version : Print current version number\n");
    fprintf(stderr, "-h --help : Print this help screen\n");
    fprintf(stderr, "-f --bedFiles : The location of bed file used to filter the pairwise comparisons.\n");
