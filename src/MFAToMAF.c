@@ -18,7 +18,7 @@
  */
 
 void usage() {
-    fprintf(stderr, "eval_MFAtoMAF, version 0.1\n");
+    fprintf(stderr, "MFAtoMAF, version 0.1\n");
     fprintf(stderr, "\t-a --logLevel : Set the log level\n");
     fprintf(stderr, "\t-b --mFAFile : The location of the MFA file\n");
     fprintf(stderr, "\t-d --outputFile : The output file MAF file.\n");

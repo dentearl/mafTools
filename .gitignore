@@ -1,3 +1,4 @@
 .gitignore
 bin
 *.o
+*.pyc

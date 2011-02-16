@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import eval_setDiffDroppedMissing as setD
+import setDiffDroppedMissing as setD
 import unittest
 
 class Intersections( unittest.TestCase ):

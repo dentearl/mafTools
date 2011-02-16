@@ -1,5 +1,5 @@
-#ifndef _EVAL_COMPARATOR_API_H_
-#define _EVAL_COMPARATOR_API_H_
+#ifndef _COMPARATOR_API_H_
+#define _COMPARATOR_API_H_
 
 #include <assert.h>
 #include <limits.h>
@@ -87,4 +87,4 @@ TrioDecoder *trioDecoder_construct(char *treestring);
 int32_t calcTrioState(TrioDecoder *decoder, int32_t i, int32_t j, int32_t k);
 void writeXMLHeader( FILE *fileHandle );
 
-#endif /* _EVAL_COMPARATOR_API_H_ */
+#endif /* _COMPARATOR_API_H_ */

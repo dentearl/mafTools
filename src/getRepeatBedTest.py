@@ -11,7 +11,7 @@ class TestCase(unittest.TestCase):
         fileHandle = open(tempFile, 'w')
         fileHandle.write(">hello boo\nacTGACCCCgtcgAAcAAccc\n>foo\nAaaAAAAAAA")
         fileHandle.close()
-        system("eval_getRepeatBed %s %s" % (tempFile, tempFile2))
+        system("getRepeatBed %s %s" % (tempFile, tempFile2))
         fileHandle = open(tempFile2, 'r')
         fn = lambda (i, j, k) : (i, int(j), int(k))
         j = [ fn(i.split()) for i in fileHandle.readlines() ]

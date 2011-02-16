@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
-eval_setDiffDroppedMissing.py
+setDiffDroppedMissing.py
 dent earl, dearl (a) soe ucsc edu
 3 nov 2010
 A script that will take the dropped regions output from mafJoin
-(dropped.tab) and the missing pairs from eval_MAFcomparator
+(dropped.tab) and the missing pairs from MAFcomparator
 (missing.tab) and will look for 'missing pairs' that are not
 in the intersection with dropped.tab, i.e. the set difference.
 These members outside the intersection represent possible bugs.
@@ -25,7 +25,7 @@ def initOptions(parser):
     parser.add_option('-d', '--droppedFile', dest='droppedFile',
                       help='Regions dropped from maf by mafJoin.')
     parser.add_option('-m', '--missingFile', dest='missingFile',
-                      help='Missing pairs from the sampling approach of eval_MAFcomparator.')
+                      help='Missing pairs from the sampling approach of MAFcomparator.')
     parser.add_option('-v', '--verbose', dest='isVerbose', action='store_true',
                       default=False, help='Prints out extra information to STDERR.')
 

@@ -13,7 +13,7 @@
 #include "hashTableC_itr.h"
 #include "bioioC.h"
 
-#include "eval_ComparatorAPI.h"
+#include "ComparatorAPI.h"
 #include "cString.h"
 
 /*

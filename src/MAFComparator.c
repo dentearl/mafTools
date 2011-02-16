@@ -14,7 +14,7 @@
 #include "hashTableC_itr.h"
 #include "bioioC.h"
 
-#include "eval_ComparatorAPI.h"
+#include "ComparatorAPI.h"
 
 float VERSION = 0.1;
 int32_t ULTRAVERBOSE = 0;
@@ -79,7 +79,7 @@ void parseBedFiles(const char *cA, stHash *bedFileHash) {
 }
 
 void usage() {
-   fprintf(stderr, "eval_MAFComparator, version %.1f\n", VERSION);
+   fprintf(stderr, "MAFComparator, version %.1f\n", VERSION);
    fprintf(stderr, "-a --logLevel : Set the log level\n");
    fprintf(stderr, "-b --mAFFile1 : The location of the first MAF file (used to create sequence name hash.)\n");
    fprintf(stderr, "-c --mAFFile2 : The location of the second MAF file\n");
@@ -93,7 +93,7 @@ void usage() {
 }
 
 void version() {
-   fprintf(stderr, "eval_MAFComparator, version %.1f\n", VERSION);
+   fprintf(stderr, "MAFComparator, version %.1f\n", VERSION);
 }
 
 int main(int argc, char *argv[]) {

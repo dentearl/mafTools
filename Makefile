@@ -2,43 +2,51 @@ include include.mk
 libPath = ../sonLib/lib
 binPath = bin
 
-extraAPI = cString.c disjointset.c
-progs =  ${binPath}/eval_MAFComparator ${binPath}/eval_mergeMAFComparatorResults.py ${binPath}/eval_setDiffDroppedMissing.py ${binPath}/eval_setDiffStatGenerator.py ${binPath}/eval_getRepeatBed ${binPath}/eval_MFAToMAF
-# ${binPath}/eval_PhyloComparator
+extraAPI = src/cString.c src/disjointset.c
+progs =  ${binPath}/MAFComparator ${binPath}/mergeMAFComparatorResults.py ${binPath}/setDiffDroppedMissing.py ${binPath}/setDiffStatGenerator.py ${binPath}/getRepeatBed ${binPath}/MFAToMAF
+# ${binPath}/src/PhyloComparator
+
+.PHONY: all clean test
 
 all: ${progs}
 
-${binPath}/eval_MAFComparator : eval_MAFComparator.c ${extraAPI} eval_ComparatorAPI.c *.h ${libPath}/sonLib.a 
+${binPath}/MAFComparator : src/MAFComparator.c ${extraAPI} src/ComparatorAPI.c $(wildcard src/*.h) ${libPath}/sonLib.a 
 	mkdir -p $(dir $@)
-	${cxx} ${cflags} -I ${libPath} -o ${binPath}/eval_MAFComparator ${extraAPI} eval_MAFComparator.c eval_ComparatorAPI.c ${libPath}/sonLib.a
+	${cxx} ${cflags} -I ${libPath} -o $@.tmp ${extraAPI} src/MAFComparator.c src/ComparatorAPI.c ${libPath}/sonLib.a
+	mv $@.tmp $@
 
-${binPath}/eval_PhyloComparator : eval_PhyloComparator.c ${extraAPI} eval_ComparatorAPI.c *.h ${libPath}/sonLib.a 
+${binPath}/PhyloComparator : src/PhyloComparator.c ${extraAPI} src/ComparatorAPI.c $(wildcard src/*.h) ${libPath}/sonLib.a 
 	mkdir -p $(dir $@)
-	${cxx} ${cflags} -I ${libPath} -o ${binPath}/eval_PhyloComparator ${extraAPI} eval_PhyloComparator.c eval_ComparatorAPI.c ${libPath}/sonLib.a
+	${cxx} ${cflags} -I ${libPath} -o $@.tmp ${extraAPI} src/PhyloComparator.c src/ComparatorAPI.c ${libPath}/sonLib.a
+	mv $@.tmp $@
 
-${binPath}/eval_mergeMAFComparatorResults.py : eval_mergeMAFComparatorResults.py
-	mkdir -p $(dir $@)
-	cp eval_mergeMAFComparatorResults.py ${binPath}/eval_mergeMAFComparatorResults.py
-	chmod +x ${binPath}/eval_mergeMAFComparatorResults.py
-
-${binPath}/eval_MFAToMAF : eval_MFAToMAF.c eTreeExtras.c ${libPath}/sonLib.a 
-	mkdir -p $(dir $@)
-	${cxx} ${cflags} -I ${libPath} ${tokyoCabinetIncl} -I ./ -o ${binPath}/eval_MFAToMAF eval_MFAToMAF.c eTreeExtras.c ${libPath}/sonLib.a 
-
-${binPath}/eval_getRepeatBed : eval_getRepeatBed.py
-	mkdir -p $(dir $@)
-	cp eval_getRepeatBed.py ${binPath}/eval_getRepeatBed
-	chmod +x ${binPath}/eval_getRepeatBed
-
-${binPath}/eval_setDiffDroppedMissing.py : eval_setDiffDroppedMissing.py
+${binPath}/mergeMAFComparatorResults.py : src/mergeMAFComparatorResults.py
 	mkdir -p $(dir $@)
 	cp $< $@
 	chmod +x $@
 
-${binPath}/eval_setDiffStatGenerator.py : eval_setDiffStatGenerator.py
+${binPath}/MFAToMAF : src/MFAToMAF.c src/eTreeExtras.c ${libPath}/sonLib.a 
+	mkdir -p $(dir $@)
+	${cxx} ${cflags} -I ${libPath} ${tokyoCabinetIncl} -I ./ -o $@.tmp src/MFAToMAF.c src/eTreeExtras.c ${libPath}/sonLib.a 
+	mv $@.tmp $@
+
+${binPath}/getRepeatBed : src/getRepeatBed.py
 	mkdir -p $(dir $@)
 	cp $< $@
 	chmod +x $@
+
+${binPath}/setDiffDroppedMissing.py : src/setDiffDroppedMissing.py
+	mkdir -p $(dir $@)
+	cp $< $@
+	chmod +x $@
+
+${binPath}/setDiffStatGenerator.py : src/setDiffStatGenerator.py
+	mkdir -p $(dir $@)
+	cp $< $@
+	chmod +x $@
+
+test :
+	python src/allTests.py -v
 
 clean :
 	rm -f *.o ${progs}
