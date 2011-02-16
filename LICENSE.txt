@@ -2,8 +2,8 @@ Copyright (C) 2009-2011 by
 Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
 Benedict Paten (benedict@soe.ucsc.edu, benedictpaten@gmail.com)
 Mark Diekhans (markd@soe.ucsc.edu)
-... and other members of th Reconstruction Team of David Haussler's 
-lab (BME Dept. UCSC)
+... and other members of the Reconstruction Team of David Haussler's 
+lab (BME Dept. UCSC).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
