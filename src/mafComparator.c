@@ -79,10 +79,10 @@ void parseBedFiles(const char *cA, stHash *bedFileHash) {
 }
 
 void usage() {
-   fprintf(stderr, "MAFComparator, version %.1f\n", VERSION);
+   fprintf(stderr, "mafComparator, version %.1f\n", VERSION);
    fprintf(stderr, "-a --logLevel : Set the log level\n");
-   fprintf(stderr, "-b --mAFFile1 : The location of the first MAF file (used to create sequence name hash.)\n");
-   fprintf(stderr, "-c --mAFFile2 : The location of the second MAF file\n");
+   fprintf(stderr, "-b --mafFile1 : The location of the first MAF file (used to create sequence name hash.)\n");
+   fprintf(stderr, "-c --mafFile2 : The location of the second MAF file\n");
    fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
    fprintf(stderr, "-e --sampleNumber : The number of sample homology tests to perform (total) [default 1000000].\n");
    fprintf(stderr, "-u --ultraVerbose : Print tab-delimited details about failed tests to stderr.\n");
@@ -93,7 +93,7 @@ void usage() {
 }
 
 void version() {
-   fprintf(stderr, "MAFComparator, version %.1f\n", VERSION);
+   fprintf(stderr, "mafComparator, version %.1f\n", VERSION);
 }
 
 int main(int argc, char *argv[]) {
@@ -116,8 +116,8 @@ int main(int argc, char *argv[]) {
     while(1) {
         static struct option long_options[] = {
             { "logLevel", required_argument, 0, 'a' },
-            { "mAFFile1", required_argument, 0, 'b' },
-            { "mAFFile2", required_argument, 0, 'c' },
+            { "mafFile1", required_argument, 0, 'b' },
+            { "mafFile2", required_argument, 0, 'c' },
             { "outputFile", required_argument, 0, 'd' },
             { "sampleNumber", required_argument, 0, 'e' },
             { "ultraVerbose", no_argument, 0, 'u'},
