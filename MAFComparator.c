@@ -7,7 +7,7 @@
 #include <getopt.h>
 #include <stdarg.h>
 
-#include "cactus.h"
+//#include "cactus.h"
 #include "avl.h"
 #include "commonC.h"
 #include "hashTableC.h"
