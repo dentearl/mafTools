@@ -48,7 +48,7 @@
 void usage() {
     fprintf(stderr, "MFAtoMAF, version 0.1\n");
     fprintf(stderr, "\t-a --logLevel : Set the log level\n");
-    fprintf(stderr, "\t-b --mFAFile : The location of the MFA file\n");
+    fprintf(stderr, "\t-b --mfaFile : The location of the MFA file\n");
     fprintf(stderr, "\t-d --outputFile : The output file MAF file.\n");
     fprintf(stderr, "\t-t --treeFile: The location of the tree file\n");
     fprintf(stderr, "\t-h --help : Print this help screen\n");
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
      * Arguments/options
      */
     char *logLevelString = NULL;
-    char *mFAFile = NULL;
+    char *mfaFile = NULL;
     char *outputFile = NULL;
     char *treeFile = NULL;
 
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     while (1) {
         static struct option long_options[] = {
             { "logLevel", required_argument, 0, 'a' },
-            { "mFAFile", required_argument, 0, 'b' },
+            { "mfaFile", required_argument, 0, 'b' },
             { "outputFile", required_argument, 0, 'd' },
             { "treeFile", optional_argument, 0, 't' },
             { "help", no_argument, 0, 'h' },
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
                 logLevelString = stString_copy(optarg);
                 break;
             case 'b':
-                mFAFile = stString_copy(optarg);
+                mfaFile = stString_copy(optarg);
                 break;
             case 'd':
                 outputFile = stString_copy(optarg);
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    assert(mFAFile != NULL);
+    assert(mfaFile != NULL);
     assert(outputFile != NULL);
 
     //////////////////////////////////////////////
@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
     //Log (some of) the inputs
     //////////////////////////////////////////////
 
-    st_logInfo("MFA file  name : %s\n", mFAFile);
+    st_logInfo("MFA file  name : %s\n", mfaFile);
     st_logInfo("Output MAF file : %s\n", outputFile);
     st_logInfo("Tree file name: %s\n", treeFile == NULL ? "null" : treeFile);
 
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
     struct List *sequences = constructEmptyList(0, free);
     struct List *seqLengths = constructEmptyList(0, (void (*)(void *))destructInt);
     struct List *fastaNames = constructEmptyList(0, free);
-    FILE *fileHandle = fopen(mFAFile, "r");
+    FILE *fileHandle = fopen(mfaFile, "r");
     if (fileHandle == NULL) {
         usage();
         exit(1);
@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
     //Clean up.
     //////////////////////////////////////////////
 
-    free(mFAFile);
+    free(mfaFile);
     free(outputFile);
     free(treeFile);
 
