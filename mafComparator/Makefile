@@ -1,6 +1,6 @@
-include include.mk
+include ../include.mk
 libPath = ../../sonLib/lib
-binPath = bin
+binPath = ../bin
 
 extraAPI = src/cString.c src/disjointset.c
 progs =  ${binPath}/mafComparator ${binPath}/mergeMafComparatorResults.py ${binPath}/setDiffDroppedMissing.py ${binPath}/setDiffStatGenerator.py ${binPath}/getRepeatBed ${binPath}/mfaToMaf
