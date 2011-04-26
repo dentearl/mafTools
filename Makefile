@@ -15,3 +15,6 @@ clean: ${modules:%=clean.%}
 
 clean.%:
 	cd $* && make clean
+	
+test :
+	echo NOT IMPLEMENTED YET
