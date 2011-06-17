@@ -1,4 +1,4 @@
-include ../../../include.mk
+include ../include.mk
 sonLibPath = ../../sonLib/lib
 binPath = ../bin
 incPath = inc/
@@ -28,16 +28,24 @@ ${mafJoinObjs} ${mafOverlapObjs}: $(wildcard *.h)
 
 
 ${binPath}/mafJoin: ${mafJoinObjs}
-	${CC} ${cflags} -I ${incPath} -I ${sonLibPath} -I ${kentInc} -o $@ $^ ${kentLibWeb} ${sonLibPath}/sonLib.a
+	@mkdir -p $(dir $@)
+	${CC} ${cflags} -I ${incPath} -I ${sonLibPath} -I ${kentInc} -o $@.tmp $^ ${kentLibWeb} ${sonLibPath}/sonLib.a
+	mv $@.tmp $@
 
 ${binPath}/mafMultiParentCheck: ${mafMultiParentCheckObjs}
-	${CC} ${cflags} -I ${incPath} -I ${sonLibPath} -I ${kentInc} -o $@ $^ ${kentLibWeb} ${sonLibPath}/sonLib.a
+	@mkdir -p $(dir $@)
+	${CC} ${cflags} -I ${incPath} -I ${sonLibPath} -I ${kentInc} -o $@.tmp $^ ${kentLibWeb} ${sonLibPath}/sonLib.a
+	mv $@.tmp $@
 
 ${binPath}/mafOverlap: ${mafOverlapObjs}
-	${CC} ${cflags} -I ${incPath} -I ${sonLibPath} -I ${kentInc} -o $@ $^ ${kentLibWeb} ${sonLibPath}/sonLib.a
+	@mkdir -p $(dir $@)
+	${CC} ${cflags} -I ${incPath} -I ${sonLibPath} -I ${kentInc} -o $@.tmp $^ ${kentLibWeb} ${sonLibPath}/sonLib.a
+	mv $@.tmp $@
 
 ${binPath}/mafAdjust: ${mafAdjustObjs}
-	${CC} ${cflags} -I ${incPath} -I ${sonLibPath} -I ${kentInc} -o $@ $^ ${kentLibWeb} ${sonLibPath}/sonLib.a
+	@mkdir -p $(dir $@)
+	${CC} ${cflags} -I ${incPath} -I ${sonLibPath} -I ${kentInc} -o $@.tmp $^ ${kentLibWeb} ${sonLibPath}/sonLib.a
+	mv $@.tmp $@
 
 clean: 
 	rm -f ${mafJoinObjs} ${mafOverlapObjs} ${mafAdjustObjs} ${mafMultiParentCheckObjs} ${progs}
