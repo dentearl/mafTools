@@ -4,7 +4,7 @@ export SHELLOPTS=pipefail
 
 modules= mafComparator
 
-.PHONY: all %.all clean %.clean
+.PHONY: all %.all clean %.clean test %.test
 
 all: ${modules:%=all.%}
 
@@ -16,5 +16,7 @@ clean: ${modules:%=clean.%}
 clean.%:
 	cd $* && make clean
 
-test :
-#NOT IMPLEMENTED YET
+test : ${modules:%=test.%}
+
+test.%:
+	cd $* && make test
