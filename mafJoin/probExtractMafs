@@ -1,0 +1,16 @@
+#!/bin/env tclsh
+proc mkBed {x chrom start len strand seqSize {seq {}}} {
+    puts "$chrom\t$start\t[expr $start+$len]"
+}
+
+set maf {
+a score=0.000000 tree="sHuman-sChimp.chr20;"
+s sHuman-sChimp.chr20 753000 2000 + 10138340 T
+}
+
+foreach line [split $maf \n] {
+    set line [string trim $line]
+    if {[string match {s *} $line]} {
+        eval mkBed $line
+    }
+}

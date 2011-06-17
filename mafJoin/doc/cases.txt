@@ -1,0 +1,70 @@
+various corner cases that must be handled
+========================================================================
+-------------------------------------------------------------------------
+example of why longer root blocks join to short leaf blocks must be
+split into multiple blocks and joined later.
+
+treelessRoot2=sG-sH-sC 
+joinGenome=sHuman-sChimp
+
+multiple parents detected in components 
+   sHuman-sChimp.chr20:475093-475313 and 
+   sHuman-sChimp.chr20:475211-475296 (+)
+range is sHuman-sChimp.chr20:475211-475296
+
+malnSet: set1: joined-dups
+    blk:set1: joined-dups #1 220 
+         sHuman-sChimp.chr20 475093-475313 [220] root <1> {475211-475296}
+             simChimp.chr20 476453-476673 [220] leaf  <1>
+             simHuman.chr20 478764-478984 [220] leaf  <1>
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+malnSet: begin set2: joined-dups
+    blk:set2: joined-dups #2 118 
+         sG-sH-sC.chr20 472913-473031 [118] root
+         sHuman-sChimp.chr20 475093-475211 [118] leaf  <----------- 
+    blk:set2: joined-dups #3 85 
+         sG-sH-sC.chr20 473031-473116 [85] root
+         sHuman-sChimp.chr20 475211-475296 [85] leaf   {475211-475296}
+=======================================================================
+malnSet: begin out: joined
+    blk:out: joined #5 220 
+         sG-sH-sC.chr20 472913-473031 [118] root
+             sHuman-sChimp.chr20 475093-475313 [220] internal <1>  {475211-475296}
+                 simChimp.chr20 476453-476673 [220] leaf      <1>
+                 simHuman.chr20 478764-478984 [220] leaf      <1>
+    blk:out: joined #6 85 
+         sG-sH-sC.chr20 473031-473116 [85] root
+             sHuman-sChimp.chr20 475211-475296 [85] leaf           {475211-475296}
+malnSet: end out: joined
+
+
+multiple parents detected in components 
+sHuman-sChimp.chr20:475093-475313 and 
+sHuman-sChimp.chr20:475211-475296 (+)
+
+region: sHuman-sChimp.chr20:475211-475296 (+)
+
+compBlk #5 220 
+         simChimp.chr20 476453-476673 [220] leaf
+         simHuman.chr20 478764-478984 [220] leaf
+         sHuman-sChimp.chr20 475093-475313 [220] internal
+         sG-sH-sC.chr20 472913-473031 [118] root
+overCompBlk #6 85 
+         sHuman-sChimp.chr20 475211-475296 [85] leaf
+         sG-sH-sC.chr20 473031-473116 [85] root
+Error: multiple parents detected in components sHuman-sChimp.chr20:475093-475313 
+and sHuman-sChimp.chr20:475211-475296 (+)
+
+----------------------
+
+
+      sG-sH-sC.chr20 473031-473116 [85] root
+         sHuman-sChimp.chr20 475211-475296 [85] leaf   {475211-475296}
+         sHuman-sChimp.chr20 475093-475313 [220] root <1> {475211-475296}
+             simChimp.chr20 476453-476673 [220] leaf  <1>
+
+    blk:out: joined #6 85 
+         sG-sH-sC.chr20 473031-473116 [85] root
+             sHuman-sChimp.chr20 475211-475296 [85] leaf           {475211-475296}
+
+---
