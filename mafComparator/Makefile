@@ -1,5 +1,5 @@
 include ../include.mk
-libPath = ../../sonLib/lib
+sonLibPath = ../../sonLib/lib
 binPath = ../bin
 
 extraAPI = src/cString.c src/disjointset.c
@@ -10,14 +10,14 @@ progs =  ${binPath}/mafComparator ${binPath}/mergeMafComparatorResults.py ${binP
 
 all: ${progs}
 
-${binPath}/mafComparator : src/mafComparator.c ${extraAPI} src/ComparatorAPI.c $(wildcard src/*.h) ${libPath}/sonLib.a 
+${binPath}/mafComparator : src/mafComparator.c ${extraAPI} src/ComparatorAPI.c $(wildcard src/*.h) ${sonLibPath}/sonLib.a 
 	mkdir -p $(dir $@)
-	${cxx} ${cflags} -I ${libPath} -o $@.tmp $^
+	${cxx} ${cflags} -I ${sonLibPath} -o $@.tmp $^
 	mv $@.tmp $@
 
-${binPath}/PhyloComparator : src/PhyloComparator.c ${extraAPI} src/ComparatorAPI.c $(wildcard src/*.h) ${libPath}/sonLib.a 
+${binPath}/PhyloComparator : src/PhyloComparator.c ${extraAPI} src/ComparatorAPI.c $(wildcard src/*.h) ${sonLibPath}/sonLib.a 
 	mkdir -p $(dir $@)
-	${cxx} ${cflags} -I ${libPath} -o $@.tmp $^
+	${cxx} ${cflags} -I ${sonLibPath} -o $@.tmp $^
 	mv $@.tmp $@
 
 ${binPath}/mergeMafComparatorResults.py : src/mergeMafComparatorResults.py
@@ -25,9 +25,9 @@ ${binPath}/mergeMafComparatorResults.py : src/mergeMafComparatorResults.py
 	cp $< $@
 	chmod +x $@
 
-${binPath}/mfaToMaf : src/mfaToMaf.c src/eTreeExtras.c ${libPath}/sonLib.a 
+${binPath}/mfaToMaf : src/mfaToMaf.c src/eTreeExtras.c ${sonLibPath}/sonLib.a 
 	mkdir -p $(dir $@)
-	${cxx} ${cflags} -I ${libPath} ${tokyoCabinetIncl} -I ./ -o $@.tmp $^
+	${cxx} ${cflags} -I ${sonLibPath} ${tokyoCabinetIncl} -I ./ -o $@.tmp $^
 	mv $@.tmp $@
 
 ${binPath}/getRepeatBed : src/getRepeatBed.py
