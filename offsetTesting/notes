@@ -1,2 +1,0 @@
-mafJoin -treelessRoot1=sMouse-sRat -treelessRoot2=sMouse-sRat sMouse-sRat -maxBlkWidth=1000 -multiParentDropped=sMouse-sRat.dropped.tab simRat.sMouse-sRat.maf simMouse.sMouse-sRat.maf sMouse-sRat.mafJoin.maf
-eval_MAFComparator --mAFFile1 simRat.sMouse-sRat.maf --mAFFile2 sMouse-sRat.mafJoin.maf --outputFile simRat.sMouse-sRat.compare.xml --sampleNumber 100000000 --ultraVerbose &> simRat.sMouse-sRat.missing.tab
