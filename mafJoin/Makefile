@@ -26,7 +26,7 @@ cflags += -I ${kentInc}
 progs = ${binPath}/mafJoin ${binPath}/mafOverlap ${binPath}/mafMultiParentCheck ${binPath}/mafAdjust
 CFLAGS=${cflags} -std=c99 -pedantic
 
-.PHONY: all clean test savebak
+.PHONY: all clean test
 
 all: ${progs} ${mafJoinObjs} 
 
@@ -61,6 +61,3 @@ clean:
 
 test:
 	python test/mafJoinTest.py
-
-savebak:
-	savebak mafJoin *.[ch] mafJoinTest.py Makefile 
