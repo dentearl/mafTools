@@ -7,7 +7,7 @@
 
 ##Dependencies
 * sonLib https://github.com/benedictpaten/sonLib/
-* mafJoin wont compile without the kentSource installed: <code>git clone git://genome-source.cse.ucsc.edu/kent.git</code>
+* mafJoin will not compile without the kentSource installed: <code>git clone git://genome-source.cse.ucsc.edu/kent.git</code>
 
 ##Installation
 1. Download the package. Consider making it a sibling directory to <code>sonLib/</code>.
