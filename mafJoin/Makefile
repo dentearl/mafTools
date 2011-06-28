@@ -8,25 +8,26 @@ cflags = ${cflags_opt} -DNDEBUG
 #cflags = ${cflags_dbg}
 #cflags = ${cflags_dbg} -DNDEBUG
 #cflags = ${cflags_dbg} -DASSERT_SLOW
-
 cflags += -I ${sonLibPath} -I ${srcPath}
 
 # required kent library stuff (git clone git://genome-source.cse.ucsc.edu/kent.git)
-KENTDIR=/hive/groups/recon/local/kent/src
-kentInc = ${KENTDIR}/inc
-kentLib = ${KENTDIR}/lib
+# if you have installed the kent library, you can change the kentDir variable
+# on the command line by using $ make kentDir=/path/to/kent/src
+kentDir = /hive/groups/recon/local/kent/src
+ifneq ($(wildcard ${kentDir}),)
+kentInc = ${kentDir}/inc
+kentLib = ${kentDir}/lib
 kentLibWeb = ${kentLib}/${MACH}/jkweb.a
-
 mafJoinObjs = $(foreach f,mafJoin jkmaf genome mafTree malnComp malnBlk malnBlkCursor malnBlkSet malnSet malnJoinBlks malnJoinWithinSet malnJoinSets malnMergeComps malnMultiParents malnCompCompMap mafIO, ${objPath}/$f.o)
 mafOverlapObjs = $(foreach f,mafOverlap jkmaf, ${objPath}/$f.o)
 mafAdjustObjs = $(foreach f,mafAdjust jkmaf genome mafTree malnComp malnBlk malnBlkCursor malnBlkSet malnSet malnJoinBlks malnJoinWithinSet malnJoinSets malnMergeComps malnCompCompMap mafIO, ${objPath}/$f.o)
 mafMultiParentCheckObjs = $(foreach f,mafMultiParentCheck jkmaf genome mafTree malnComp malnBlk malnBlkCursor malnBlkSet malnSet malnCompCompMap malnMultiParents mafIO, ${objPath}/$f.o)
 cflags += -I ${kentInc}
-
+CFLAGS = ${cflags} -std=c99 -pedantic
 progs = ${binPath}/mafJoin ${binPath}/mafOverlap ${binPath}/mafMultiParentCheck ${binPath}/mafAdjust
-CFLAGS=${cflags} -std=c99 -pedantic
+endif
 
-.PHONY: all clean test savebak
+.PHONY: all clean test
 
 all: ${progs} ${mafJoinObjs} 
 
@@ -61,6 +62,3 @@ clean:
 
 test:
 	python test/mafJoinTest.py
-
-savebak:
-	savebak mafJoin *.[ch] mafJoinTest.py Makefile 
