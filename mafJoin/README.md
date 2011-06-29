@@ -19,7 +19,7 @@ Mark Diekhans
 
 Let there be two mafs, AC.maf and BC.maf, that share a common sequence C. A sequence in this context refers to the file wide sample name which is commonly in the format <code>species.chromosomeNumber</code>, e.g. sequence hg18 might have a line <code>hg18.chr19</code>. 
 
-Let AC.maf contain two (in practice there may be any *n >= 2*) sequences, A and C and let BC.maf contain sequences B and C. A call to mafJoin would look like
+Let AC.maf contain two (in practice there may be any *n* >= 2) sequences, A and C and let BC.maf contain sequences B and C. A call to mafJoin would look like
 
 <code>mafJoin -treelessRoot1=C -treelessRoot2=C C -maxBlkWidth=10000 -maxInputBlkWidth=1000 AC.maf BC.maf ABC.maf.tmp</code>
 
