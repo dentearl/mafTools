@@ -1,6 +1,6 @@
 #mafTools
 
-**mafTools** is a collection of tools that operate on .maf files.
+**mafTools** is a collection of tools that operate on Multiple Alignment Fomat ([maf](http://genome.ucsc.edu/FAQ/FAQformat.html#format5)) files.
 
 ##Authors
 [Dent Earl](https://github.com/dentearl/), [Benedict Paten](https://github.com/benedictpaten/), Mark Diekhans
