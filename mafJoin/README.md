@@ -17,7 +17,7 @@ Mark Diekhans
 ##Use
 <code>mafJoin [optional -treelessRoot1="sequence name" -treelessRoot2="sequence name" ...] "common sequence" first.maf second.maf out.maf</code>
 
-Let there be two mafs, AC.maf and BC.maf, that share a common sequence C. A sequence in this context refers to the file wide sample name which is commonly in the format <code>species.chromosomeNumber</code>, e.g. sequence hg18 might have a line <code>hg18.chr19</code>. 
+Let there be two mafs, AC.maf and BC.maf, that share a common sequence C. A sequence in this context refers to the file wide sample name which is in the format <code>species.chromosomeNumber</code>, e.g. sequence hg18 might have a line <code>hg18.chr19</code> if the maf contains chromosome 19.
 
 Let AC.maf contain two (in practice there may be any *n* >= 2) sequences, A and C and let BC.maf contain sequences B and C. A call to mafJoin would look like
 
@@ -46,3 +46,8 @@ Note that in the second call to mafJoin we're only establishing the root (-treel
 * <code>mv ABCDEFG.maf.tmp ABCDEFG.maf</code>
 
 Note that the final join does not have any -treelessRoot options since both incoming mafs are already tree-mafs.
+
+##Example
+Two mafs are included in the example/ directory and can be joined using the command
+
+<code>$ mafJoin -treelessRoot1=C -treelessRoot2=C C example/AC.maf example/BC.maf ABC.maf</code>

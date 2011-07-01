@@ -1,0 +1,18 @@
+##maf version=1 scoring=tba.v8 
+                   
+a score=23262.0     
+s B.chr1 116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s C.chr0 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+                  
+a score=5062.0                    
+s B.chr1 241163 6 +   4622798 TAAAGA 
+s C.chr0 28862317 6 + 161576975 TAAAGA
+
+a score=6636.0
+s B.chr1 249182 13 +   4622798 gcagctgaaaaca
+s C.chr0 28869787 13 + 161576975 gcagctgaaaaca
+
+a score=6636.0
+s B.chr1 30000 13 +   4622798 gcagctgaaaaca
+s C.chr0 10000 13 + 161576975 gcagctgaaaaca
+
