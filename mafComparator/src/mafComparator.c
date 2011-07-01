@@ -107,7 +107,7 @@ void parseBedFiles(const char *cA, stHash *bedFileHash) {
 
 void usage() {
    fprintf(stderr, "mafComparator, version %.1f\n", VERSION);
-   fprintf(stderr, "-a --logLevel : Set the log level\n");
+   fprintf(stderr, "-a --logLevel : Set the log level. [off, critical, info, debug] in ascending order.\n");
    fprintf(stderr, "-b --mafFile1 : The location of the first MAF file (used to create sequence name hash.)\n");
    fprintf(stderr, "-c --mafFile2 : The location of the second MAF file\n");
    fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
