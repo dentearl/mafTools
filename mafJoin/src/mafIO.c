@@ -16,7 +16,9 @@ static struct malnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafCom
     char buf[128];
     char *srcDb = mafCompGetSrcDb(mafComp, buf, sizeof(buf));
     if (srcDb == NULL) {
-        errAbort("Error: no org name in MAF component, source must be org.seq: %s", mafComp->src);
+        errAbort("Error: no organism name in MAF component, sample "
+                 "must be formatted as \"organism.seq\", e.g. \"hg18.chr2\". "
+                 "Offending sequence name: %s", mafComp->src);
     }
     struct malnComp *comp = malnComp_construct(genomesObtainSeq(genomes, srcDb, mafCompGetSrcName(mafComp), mafComp->srcSize),
                                                mafComp->strand, mafComp->start, mafComp->start+mafComp->size, mafComp->text);
@@ -63,7 +65,7 @@ struct malnBlk *mafIO_malnBlkRead(struct Genomes *genomes, struct mafAli *mafAli
         orderTreeless(blk, treelessRootGenome);
         malnBlk_setTree(blk, mafTree_constructFromAlignment(genomes, blk, defaultBranchLength));
     } else if (requireTree) {
-        errAbort("no tree in mafAli block and no treelessRoot genome specified");
+        errAbort("No tree fuond in mafAli block and no treelessRoot genome option specified.");
     } else {
         slReverse(&blk->comps);
     }
