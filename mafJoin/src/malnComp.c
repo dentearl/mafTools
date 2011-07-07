@@ -8,6 +8,59 @@
 #include "dystring.h"
 #include "dnautil.h"
 #include "sonLibString.h"
+#include "sonLibETree.h"
+
+/* construct a new seg. base maybe NULL */
+static struct malnCompSeg *malnCompSeg_construct(int start, int alnStart, char *bases, int len) {
+    assert((start >= 0) && (alnStart >= 0) && (len >= 0) && (len <= strlen(bases)));
+    struct malnCompSeg *seg;
+    AllocVar(seg);
+    seg->start = start;
+    seg->alnStart = alnStart;
+    if (bases != NULL) {
+        seg->bases = cloneStringZ(bases, len);
+        seg->size = len;
+    }
+    return seg;
+}
+
+/* clone a segment */
+struct malnCompSeg *malnCompSeg_constructClone(struct malnCompSeg *srcSeg) {
+    struct malnCompSeg *seg;
+    AllocVar(seg);
+    seg->start = srcSeg->start;
+    seg->alnStart = srcSeg->alnStart;
+    if (srcSeg->bases != NULL) {
+        seg->bases = cloneString(srcSeg->bases);
+        seg->size = srcSeg->size;
+    }
+    return seg;
+}
+
+/* extend a segment */
+void malnCompSeg_extend(struct malnCompSeg *seg, char *newBases, int newSize) {
+    seg->bases = needMoreMem(seg->bases, seg->size+1, seg->size+newSize+1);
+    strcpy(seg->bases+seg->size, newBases);
+    seg->size += newSize;
+}
+
+/* clone, creating a reverse complement of a segment */
+static struct malnCompSeg *malnCompSeg_reverseComplement(struct malnCompSeg *srcSeg, struct Seq *seq, int alnWidth) {
+    int start = seq->size - (srcSeg->start + srcSeg->size);
+    int alnStart = alnWidth - (srcSeg->alnStart + srcSeg->size);
+    struct malnCompSeg *seg = malnCompSeg_construct(start, alnStart, srcSeg->bases, srcSeg->size);
+    reverseComplement(seg->bases, seg->size);
+    return seg;
+}
+
+/* destruct a segment */
+static void malnCompSeg_destruct(struct malnCompSeg *seg) {
+    if (seg != NULL) {
+        freeMem(seg->bases);
+        freeMem(seg);
+    }
+}
+
 
 /* get tree location for component */
 enum mafTreeLoc malnComp_getLoc(struct malnComp *comp) {
@@ -30,21 +83,42 @@ bool malnComp_overlapAdjacentOrient(struct malnComp *comp, struct malnComp *comp
     return (comp->seq == comp2->seq) && (comp->start <= end2) && (comp->end >= start2);
 }
 
-
-/* count aligned positions */
-int malnComp_countAligned(const struct malnComp *comp) {
-    int c = 0;
-    for (const char *p = comp->alnStr->string; *p != '\0'; p++) {
-        if (isBase(*p)) {
-            c++;
-        }
+/* find next contiguous range of bases */
+static int nextContigBases(char *alnStr, int *alnNext, int alnEnd) {
+    int i = *alnNext;
+    // find next base
+    while ((i < alnEnd) && !isBase(alnStr[i])) {
+        i++;
     }
-    return c;
+
+    int rngStart = i;
+
+    // find end of range
+    while ((i < alnEnd) && isBase(alnStr[i])) {
+        i++;
+    }
+    *alnNext = i;
+    return rngStart;
 }
 
-/* basic component constructor using all or part of an alignment string . */
-static struct malnComp *malnComp_make(struct Seq *seq, char strand, int start, int end, char *alnStr, int strStart, int strEnd) {
-    assert(end-start <= strEnd-strStart);
+/* build segments from sequence */
+static struct malnCompSeg *alnStrToSegs(int start, int end, char *alnStr, int alnStart, int alnEnd) {
+    struct malnCompSeg *segs = NULL;
+    int nextPos = start;
+    int alnNext = alnStart, alnRngStart;
+    while ((alnRngStart = nextContigBases(alnStr, &alnNext, alnEnd)) < alnEnd) {
+        slAddHead(&segs, malnCompSeg_construct(nextPos, alnRngStart, alnStr+alnRngStart, (alnNext-alnRngStart)));
+        nextPos += alnNext-alnRngStart;
+    }
+    if (nextPos != end) {
+        errAbort("sequence range doesn't match bases in alignment");
+    }
+    slReverse(&segs);
+    return segs;
+}
+
+/* constructor */
+struct malnComp *malnComp_construct(struct Seq *seq, char strand, int start, int end, int alnWidth) {
     struct malnComp *comp;
     AllocVar(comp);
     comp->seq = seq;
@@ -56,25 +130,33 @@ static struct malnComp *malnComp_make(struct Seq *seq, char strand, int start, i
     if (strand == '-') {
         reverseIntRange(&comp->chromStart, &comp->chromEnd, seq->size);
     }
-    comp->alnStr = dyStringNew(strEnd-strStart);
-    dyStringAppendN(comp->alnStr, alnStr+strStart, strEnd-strStart);
-
-    // sanity check, as bad sequence can really break things
-    if (malnComp_countAligned(comp) != (comp->end - comp->start)) {
-        malnComp_dump(comp, stderr, "bases in component (%d) doesn't match range (%d)",malnComp_countAligned(comp) , end-start);
-        errAbort("invalid MAF");
-    }
+    comp->alnWidth = alnWidth;
     return comp;
 }
 
-/* component constructor */
-struct malnComp *malnComp_construct(struct Seq *seq, char strand, int start, int end, char *alnStr) {
-    return malnComp_make(seq, strand, start, end, alnStr, 0, strlen(alnStr));
+/* constructor from alignment string  */
+struct malnComp *malnComp_constructFromStr(struct Seq *seq, char strand, int start, int end, char *alnStr) {
+    struct malnComp *comp = malnComp_construct(seq, strand, start, end, strlen(alnStr));
+    comp->segs = alnStrToSegs(start, end, alnStr, 0, comp->alnWidth);
+    return comp;
 }
 
 /* component constructor to clone another component */
 struct malnComp *malnComp_constructClone(struct malnComp *srcComp) {
-    return malnComp_construct(srcComp->seq, srcComp->strand, srcComp->start, srcComp->end, malnComp_getAln(srcComp));
+    struct malnComp *comp = malnComp_construct(srcComp->seq, srcComp->strand, srcComp->start, srcComp->end, srcComp->alnWidth);
+    for (struct malnCompSeg *srcSeg = srcComp->segs; srcSeg != NULL; srcSeg = srcSeg->next) {
+        slAddHead(&comp->segs, malnCompSeg_constructClone(srcSeg));
+    }
+    slReverse(&comp->segs);
+    return comp;
+}
+
+/* Clear sequence to reduce memory associated with dying blocks */
+void malnComp_freeSeqMem(struct malnComp *comp) {
+    struct malnCompSeg *seg;
+    while ((seg = slPopHead(&comp->segs)) != NULL) {
+        malnCompSeg_destruct(seg);
+    }
 }
 
 /* destructor */
@@ -83,23 +165,21 @@ void malnComp_destruct(struct malnComp *comp) {
         if (comp->ncLink != NULL) {
             comp->ncLink->comp = NULL;
         }
-        dyStringFree(&comp->alnStr);
+        malnComp_freeSeqMem(comp);
         freeMem(comp);
     }
 }
 
-/* Clear sequence to reduce memory associated with dying blocks */
-void malnComp_freeSeqMem(struct malnComp *comp) {
-    dyStringFree(&comp->alnStr);
-}
-
 /* component reverse complement */
-struct malnComp *malnComp_reverseComplement(struct malnComp *comp) {
-    int start = comp->start, end = comp->end;
-    reverseIntRange(&start, &end, comp->seq->size);
-    struct malnComp *rc = malnComp_construct(comp->seq, ((comp->strand == '-') ? '+' : '-'), start, end, malnComp_getAln(comp));
-    reverseComplement(rc->alnStr->string, rc->alnStr->stringSize);
-    return rc;
+struct malnComp *malnComp_reverseComplement(struct malnComp *srcComp) {
+    int start = srcComp->start, end = srcComp->end;
+    reverseIntRange(&start, &end, srcComp->seq->size);
+    struct malnComp *rcComp = malnComp_construct(srcComp->seq, ((srcComp->strand == '-') ? '+' : '-'), start, end, srcComp->alnWidth);
+    for (struct malnCompSeg *srcSeg = srcComp->segs; srcSeg != NULL; srcSeg = srcSeg->next) {
+        slAddHead(&rcComp->segs, malnCompSeg_reverseComplement(srcSeg, srcComp->seq, rcComp->alnWidth));
+    }
+    // list order was reversed by above loop
+    return rcComp;
 }
 
 /* convert a chrom range to a strand range for this component */
@@ -120,11 +200,9 @@ bool malnComp_alnRangeToSeqRange(struct malnComp *comp, int alnStart, int alnEnd
     malnCompCursor_setAlignCol(&cc, alnStart);
 
     // find start
-    if (!malnCompCursor_isAligned(&cc)) {
-        if (!malnCompCursor_advanceToNextPos(&cc)) {
-            *start = *end = 0;
-            return false;
-        }
+    if (!malnCompCursor_advanceToAligned(&cc)) {
+        *start = *end = 0;
+        return false;
     }
     *start = cc.pos;
     
@@ -141,11 +219,9 @@ bool malnComp_seqRangeToAlnRange(struct malnComp *comp, int start, int end, int 
     malnCompCursor_setSeqPos(&cc, start);
 
     // find start
-    if (!malnCompCursor_isAligned(&cc)) {
-        if (!malnCompCursor_advanceToNextPos(&cc)) {
-            *alnStart = *alnEnd = 0;
-            return false;
-        }
+    if (!malnCompCursor_advanceToAligned(&cc)) {
+        *alnStart = *alnEnd = 0;
+        return false;
     }
     *alnStart = cc.alnIdx;
     
@@ -164,78 +240,88 @@ bool malnComp_seqChromRangeToAlnRange(struct malnComp *comp, int chromStart, int
     }
     bool anyAligned = malnComp_seqRangeToAlnRange(comp, start, end, alnStart, alnEnd);
     if (anyAligned && (comp->strand == '-')) {
-        reverseIntRange(alnStart, alnEnd, comp->alnStr->stringSize);
+        reverseIntRange(alnStart, alnEnd, comp->alnWidth);
     }
     return anyAligned;
 }
 
-/* pad component to the specified alignment width */
-void malnComp_pad(struct malnComp *comp, int width) {
-    assert(malnComp_getWidth(comp) <= width);
-    dyStringAppendMultiC(comp->alnStr, '-', width-malnComp_getWidth(comp));
-}
-
-/* append a column */
-void malnComp_appendCol(struct malnComp *comp, char src) {
-    int nbases = isBase(src) ? 1 : 0;
-    dyStringAppendC(comp->alnStr, src);
-    comp->end += nbases;
+/* append bases from a string */
+static void appendBases(struct malnComp *comp, char *alnStr, int strStart, int numBases) {
+    slAddTail(&comp->segs, malnCompSeg_construct(comp->end, comp->alnWidth, alnStr+strStart, numBases));
+    comp->end += numBases;
     if (comp->strand == '+') {
-        comp->chromEnd += nbases;
+        comp->chromEnd += numBases;
     } else {
-        comp->chromStart -= nbases;
+        comp->chromStart -= numBases;
     }
-}
-
-
-/* append the specified number of characters from the string, adjusting component
- * coordinates */
-void malnComp_append(struct malnComp *comp, char *src, int len) {
-    int nbases = 0;
-    for (int i = 0; i < len; i++) {
-        if (isBase(src[i])) {
-            nbases++;
-        }
-    }
-    dyStringAppendN(comp->alnStr, src, len);
-    comp->end += nbases;
-    if (comp->strand == '+') {
-        comp->chromEnd += nbases;
-    } else {
-        comp->chromStart -= nbases;
-    }
+    comp->alnWidth += numBases;
 }
 
 /* assert that a range is being extended */
 static void assertExtendRange(struct malnComp *comp, struct malnComp *srcComp, int alnStart, int alnEnd) {
-    // this is very expensive
-#if defined(ASSERT_SLOW) && !defined(NDEBUG)
+#ifdef ASSERT_SLOW
+    assert(alnStart <= alnEnd);
     int start, end;
-    if (malnComp_alnRangeToSeqRange(srcComp, alnStart, alnEnd, &start, &end)) {
+    if ((alnStart < alnEnd) && malnComp_alnRangeToSeqRange(srcComp, alnStart, alnEnd, &start, &end)) {
         assert(start == comp->end);
     }
 #endif
 }
 
-/* Append the specified alignment region of a component to this component.
- * The component must extend the range of this component. */
-void malnComp_appendCompAln(struct malnComp *comp, struct malnComp *srcComp, int alnStart, int alnEnd) {
-    assert(srcComp->seq == comp->seq);
-    assert(srcComp->strand == comp->strand);
-    assertExtendRange(comp, srcComp, alnStart, alnEnd);
-    malnComp_append(comp, malnComp_getAln(srcComp)+alnStart, alnEnd-alnStart);
+/* extend a component with unaligned columns, advancing the cursor. */
+static void appendCompGap(struct malnComp *comp, struct malnCompCursor *srcCursor, int alnEnd) {
+    int extendAlnEnd = (srcCursor->seg == NULL) ? alnEnd : min(srcCursor->seg->alnStart, alnEnd);
+    comp->alnWidth += extendAlnEnd - srcCursor->alnIdx;
+    malnCompCursor_setAlignCol(srcCursor, extendAlnEnd);
 }
 
-/* Append the current column from a cursor. */
-void malnComp_appendColCursor(struct malnComp *comp, struct malnCompCursor *srcCursor) {
+/* extend a component with aligned columns, advancing the cursor. */
+static void appendCompSeg(struct malnComp *comp, struct malnCompCursor *srcCursor, int alnEnd) {
+    int extendAlnEnd = min(malnCompSeg_getAlnEnd(srcCursor->seg), alnEnd);
+    appendBases(comp, srcCursor->seg->bases, (srcCursor->alnIdx - srcCursor->seg->alnStart), (extendAlnEnd - srcCursor->alnIdx));
+    malnCompCursor_setAlignCol(srcCursor, extendAlnEnd);
+}
+
+/* Append from the current position of the specified cursor up to the
+ * given alignment column, advancing the cursor   */
+void malnComp_appendFromCursor(struct malnComp *comp, struct malnCompCursor *srcCursor, int alnEnd) {
+    // FIXME: better function name
     assert(srcCursor->comp->seq == comp->seq);
     assert(srcCursor->comp->strand == comp->strand);
-    assert(srcCursor->pos == comp->end);   
-    malnComp_appendCol(comp, malnCompCursor_getCol(srcCursor));
+    assert(srcCursor->alnIdx <= alnEnd);
+    assertExtendRange(comp, srcCursor->comp, srcCursor->alnIdx, alnEnd);
+   
+#ifndef NDEBUG
+    int newAlnWidth = comp->alnWidth + (alnEnd - srcCursor->alnIdx);
+#endif
+    while (srcCursor->alnIdx < alnEnd) {
+        if (!srcCursor->isAligned) {
+            appendCompGap(comp, srcCursor, alnEnd);
+        }
+        if ((srcCursor->alnIdx < alnEnd) && srcCursor->isAligned) {
+            appendCompSeg(comp, srcCursor, alnEnd);
+        }
+    }
+    assert(comp->alnWidth == newAlnWidth);
+    if (comp->blk != NULL) {
+        comp->blk->alnWidth = max(comp->blk->alnWidth, comp->alnWidth);
+    }
 }
 
-/* assert that the component is set-consistent */
-void malnComp_assert(struct malnComp *comp) {
+#ifndef NDEBUG
+/* count aligned positions */
+static int malnComp_countAligned(const struct malnComp *comp) {
+    int c = 0;
+    for (struct malnCompSeg *seg = comp->segs; seg != NULL; seg = seg->next) {
+        c += seg->size;
+    }
+    return c;
+}
+#endif
+
+/* assert that the component is set-consistent. ncLinkCheck can be false
+ * for sanity check before links are constructed. */
+void malnComp_assert(struct malnComp *comp, bool ncLinkCheck) {
 #ifndef NDEBUG
     assert((comp->strand == '+') || (comp->strand == '-'));
     if (comp->strand == '+') {
@@ -245,16 +331,30 @@ void malnComp_assert(struct malnComp *comp) {
         assert(comp->start == (comp->seq->size - comp->chromEnd));
         assert(comp->end == (comp->seq->size - comp->chromStart));
     }
-    assert(comp->alnStr->stringSize == comp->blk->alnWidth);
+    assert(comp->alnWidth >= (comp->end - comp->start));
+    assert(comp->alnWidth == comp->blk->alnWidth);
     if (malnComp_countAligned(comp) != (comp->end - comp->start)) { // FIXME
-        malnBlk_dump(comp->blk, stderr, "countAligned(comp) != (comp->end - comp->start)");
+        malnBlk_dump(comp->blk, stderr, malnBlk_dumpDefault, "countAligned(comp) != (comp->end - comp->start)");
     }
     assert(malnComp_countAligned(comp) == (comp->end - comp->start));
-    if (comp->blk->mTree != NULL) {
+    if (ncLinkCheck) {
+        if (comp->ncLink == NULL) {
+            malnBlk_dump(comp->blk, stderr, malnBlk_dumpDefault, "NULL ncLink");
+        }
         assert(comp->ncLink != NULL);
         assert(comp->ncLink->comp == comp);
-        mafTreeNodeCompLink_assert(comp->ncLink);
     }
+
+    // verify contiguous, ordered blks
+    assert(comp->segs->start == comp->start);
+    struct malnCompSeg *prevSeg = comp->segs;
+    for (struct malnCompSeg *seg = prevSeg->next; seg != NULL; seg = seg->next) {
+        assert(seg->start == malnCompSeg_getEnd(prevSeg));
+        prevSeg = seg;
+    }
+    assert(malnCompSeg_getEnd(prevSeg) == comp->end);
+
+    mafTreeNodeCompLink_assert(comp->ncLink);
 #endif
 }
 
@@ -287,70 +387,27 @@ int malnComp_chromCmp(struct malnComp *comp1, struct malnComp *comp2) {
 
 /* construct an component from a subrange of this component. Return NULL if
  * the subrange does not contain any aligned bases. */
-struct malnComp *malnComp_constructSubrange(struct malnComp *comp, int alnStart, int alnEnd) {
-    struct malnCompCursor cursor = malnCompCursor_make(comp);
-    malnCompCursor_setAlignCol(&cursor, alnStart);
-    int compStart = cursor.pos;
-    malnCompCursor_setAlignCol(&cursor, alnEnd);
-    int compEnd = cursor.pos;
+struct malnComp *malnComp_constructSubrange(struct malnComp *srcComp, int alnStart, int alnEnd) {
+    struct malnCompCursor srcCursor = malnCompCursor_make(srcComp);
+    malnCompCursor_setAlignCol(&srcCursor, alnEnd);  // do end first
+    int srcCompEnd = srcCursor.pos;
+    malnCompCursor_setAlignCol(&srcCursor, alnStart); // leave at the start
+    int srcCompStart = srcCursor.pos;
     struct malnComp *subComp = NULL;
-    if (compStart < compEnd) {
-        subComp = malnComp_make(comp->seq, comp->strand, compStart, compEnd, comp->alnStr->string, alnStart, alnEnd);
+    if (srcCompStart < srcCompEnd) {
+        subComp = malnComp_construct(srcComp->seq, srcComp->strand, srcCompStart, srcCompStart, 0);
+        malnComp_appendFromCursor(subComp, &srcCursor, alnEnd);
     }
     return subComp;
-}
-
-/* count the number of aligned bases in a range */
-int malnComp_countAlignedRange(struct malnComp *comp, int alnStart, int alnEnd) {
-    assert((0 <= alnStart) && (alnStart < alnEnd) && (alnEnd <= comp->blk->alnWidth));
-
-    int cnt = 0;
-    for (int iCol = alnStart; iCol < alnEnd; iCol++) {
-        if (isBase(comp->alnStr->string[iCol])) {
-            cnt++;
-        }
-    }
-    return cnt;
 }
 
 /* are there any aligned bases in a range */
 bool malnComp_anyAlignedRange(struct malnComp *comp, int alnStart, int alnEnd) {
     assert((0 <= alnStart) && (alnStart < alnEnd) && (alnEnd <= comp->blk->alnWidth));
 
-    for (int iCol = alnStart; iCol < alnEnd; iCol++) {
-        if (isBase(comp->alnStr->string[iCol])) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/* find the previous aligned column, at or before a starting point, return
- * -1 if no more */
-int malnComp_findPrevAligned(struct malnComp *comp, int alnStart) {
-    assert((0 <= alnStart) && (alnStart < comp->blk->alnWidth));
-
-    int iCol = alnStart;
-    for (; iCol >= 0; iCol--) {
-        if (isBase(comp->alnStr->string[iCol])) {
-            break;
-        }
-    }
-    return iCol;
-}
-
-/* find the next aligned column, at or after a starting point, return
- * alnWidth if no more */
-int malnComp_findNextAligned(struct malnComp *comp, int alnStart) {
-    assert((0 <= alnStart) && (alnStart < comp->blk->alnWidth));
-
-    int iCol = alnStart;
-    for (; iCol < comp->blk->alnWidth; iCol++) {
-        if (isBase(comp->alnStr->string[iCol])) {
-            break;
-        }
-    }
-    return iCol;
+    struct malnCompCursor cursor = malnCompCursor_make(comp);
+    malnCompCursor_setAlignCol(&cursor, alnStart);
+    return malnCompCursor_advanceToAligned(&cursor) && (cursor.alnIdx < alnEnd);
 }
 
 /* print base information describing a comp, newline not included */
@@ -359,16 +416,22 @@ void malnComp_prInfo(struct malnComp *comp, FILE *fh) {
     fprintf(fh, "%s (%c) %d-%d %d-%d [%d] %s", comp->seq->orgSeqName, comp->strand, comp->start, comp->end, 
             ((comp->strand == '-') ? comp->chromEnd : comp->chromStart),
             ((comp->strand == '-') ? comp->chromStart : comp->chromEnd),
-            malnComp_getAligned(comp), loc);
+            malnComp_numAlignedBases(comp), loc);
 }
 
 /* print a component for debugging purposes */
 void malnComp_dumpv(struct malnComp *comp, FILE *fh, const char *label, va_list args) {
     char *fmtLabel = stSafeCDynFmtv(label, args);
     fprintf(fh, "%s ", fmtLabel);
-    malnComp_prInfo(comp, fh);
-    fprintf(fh, " %s\n", comp->alnStr->string);
     freeMem(fmtLabel);
+    malnComp_prInfo(comp, fh);
+    // FIXME: do block at a time
+    fputc(' ', fh);
+    struct malnCompCursor cursor = malnCompCursor_make(comp);
+    while (malnCompCursor_incr(&cursor)) {
+        fputc(malnCompCursor_getCol(&cursor), fh);
+    }
+    fputc('\n', fh);
 }
 
 /* print a component for debugging purposes */

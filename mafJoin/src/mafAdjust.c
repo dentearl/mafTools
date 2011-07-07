@@ -1,16 +1,19 @@
 #include "common.h"
 #include "options.h"
 #include "genome.h"
-#include "mafIO.h"
+#include "malnSet.h"
+#include "malnBlkSet.h"
 #include "malnBlk.h"
-#include "mafTree.h"
-#include "jkmaf.h"
 #include <limits.h>
+
+/* set to true to cleanup all memory for memory leak checks */
+static bool memLeakDebugCleanup = true;
 
 /* command line option specifications */
 static struct optionSpec optionSpecs[] = {
     {"maxBlkWidth", OPTION_INT},
-    {"dumpFile", OPTION_STRING},
+    {"dumpDir", OPTION_STRING},
+    {"guideGenome", OPTION_STRING},
     {"help", OPTION_BOOLEAN},
     {NULL, 0}
 };
@@ -21,6 +24,8 @@ static char *usageMsg =
     "Options:\n"
     "  -help\n"
     "  -maxBlkWidth=n - Limit size of MAF blocks to this value.\n"
+    "   Due to current issues with tree, blocks will be cut to include\n"
+    "   at least one column of the root.\n"
     "  -dumpDir=dir - dump info about MAFs at various points during the\n"
     "   process to files in this directory.\n"
     "\n";
@@ -32,50 +37,49 @@ static void usage(char *msg) {
 }
 
 /* make adjustment to a block */
-static void adjustBlk(struct malnBlk *inBlk, FILE *outMafFh, int maxBlkWidth) {
+static void adjustBlk(struct malnBlk *inBlk, struct malnSet *malnSetOut, int maxBlkWidth) {
     int alnStart = 0;
     while (alnStart < inBlk->alnWidth) {
         int alnEnd = alnStart + maxBlkWidth;
         if (alnEnd > inBlk->alnWidth) {
             alnEnd = inBlk->alnWidth;
         }
-        struct malnBlk *outBlk = malnBlk_constructSubrange(inBlk, alnStart, alnEnd);
-        slReverse(&outBlk->comps);  // FIXME: hack for removing trees
-        mafIO_malnBlkWrite(outBlk, outMafFh);
-        malnBlk_destruct(outBlk);
+        malnSet_addBlk(malnSetOut, malnBlk_constructSubrange(inBlk, alnStart, alnEnd));
         alnStart = alnEnd;
     }
 }
 
-/* process one maf block */
-static void mafAliProcess(struct Genomes *genomes, int maxBlkWidth, struct mafAli *mafAli, FILE *outMafFh, FILE *dumpFh) {
-    struct malnBlk *inBlk = mafIO_malnBlkRead(genomes, mafAli, 0.0, NULL, false);
-    if (dumpFh != NULL) {
+/* make adjustments */
+static void adjustMalnSet(struct malnSet *malnSetIn, struct malnSet *malnSetOut, int maxBlkWidth) {
+    struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSetIn);
+    struct malnBlk *inBlk;
+    while ((inBlk = malnBlkSetIterator_getNext(iter)) != NULL) {
+        adjustBlk(inBlk, malnSetOut, maxBlkWidth);
     }
-    // FIXME: tmp hack to remove trees until we have accurate trees
-    mafTree_destruct(inBlk->mTree);
-    inBlk->mTree = NULL;
-    adjustBlk(inBlk, outMafFh, maxBlkWidth);
-    malnBlk_destruct(inBlk);
+    malnBlkSetIterator_destruct(iter);
 }
 
 /* make adjustments to mash mafs */
-static void mafAdjust(char *inMaf, char *outMaf, int maxBlkWidth, char *dumpFile) {
+static void mafAdjust(char *inMaf, char *outMaf, char *guideGenomeName, int maxBlkWidth, char *dumpDir) {
     struct Genomes *genomes = genomesNew();
-    struct mafFile *inMafFh = mafOpen(inMaf);
-    FILE *outMafFh = mustOpen(outMaf, "w");
-    mafWriteStart(outMafFh, NULL);
-    FILE *dumpFh = (dumpFile != NULL) ? mustOpen(dumpFile, "w") : NULL;
-    struct mafAli *mafAli;
-    while ((mafAli = mafNext(inMafFh)) != NULL) {
-        mafAliProcess(genomes, maxBlkWidth, mafAli, outMafFh, dumpFh);
-        mafAliFree(&mafAli);
-    }
+#if 0
+    struct Genome *guideGenome = (guideGenomeName != NULL)? genomesObtainGenome(genomes, guideGenomeName) : NULL;
+#endif
+    struct malnSet *malnSetIn = malnSet_constructFromMaf(genomes, inMaf, INT_MAX, 0.0, NULL);
+    malnSet_dumpToDir(malnSetIn, dumpDir, "in", "1.input");
+    
+    struct malnSet *malnSetOut = malnSet_construct(genomes, NULL);
 
-    carefulClose(&dumpFh);
-    carefulClose(&outMafFh);
-    mafFileFree(&inMafFh);
-    genomesFree(genomes);
+    adjustMalnSet(malnSetIn, malnSetOut, maxBlkWidth);
+
+    malnSet_dumpToDir(malnSetOut, dumpDir, "out", "1.output");
+    malnSet_writeMaf(malnSetOut, outMaf);
+
+    if (memLeakDebugCleanup) {
+        malnSet_destruct(malnSetIn);
+        malnSet_destruct(malnSetOut);
+        genomesFree(genomes);
+    }
 }
 
 /* Process command line. */
@@ -89,7 +93,8 @@ int main(int argc, char *argv[]) {
     }
 
     mafAdjust(argv[1], argv[2],
+              optionVal("guideGenome", NULL),
               optionInt("maxBlkWidth", INT_MAX),
-              optionVal("dumpFile", NULL));
+              optionVal("dumpDir", NULL));
     return 0;
 }

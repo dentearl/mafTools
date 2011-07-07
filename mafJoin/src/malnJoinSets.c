@@ -27,7 +27,7 @@ static void splitOutOfBounds(struct malnComp *belowComp, int chromStart, int chr
     struct malnBlk *blk = splitRegion(belowComp, chromStart, chromEnd);
     malnBlkSet_add(pending, blk);
     if (debug) {
-        malnBlk_dump(blk, stderr, "add to pending");
+        malnBlk_dump(blk, stderr, malnBlk_dumpDefault, "add to pending");
     }
 }
 
@@ -73,8 +73,8 @@ static struct malnComp *splitToBounds(struct malnComp *aboveComp, struct malnCom
 /* join two blocks at the specified components, returning resulting block */
 static struct malnBlk *joinCompWithComp(struct malnComp *comp1, struct malnComp *comp2, struct malnBlkSet *pending) {
     if (debug) {
-        malnBlk_dump(comp1->blk, stderr, "blk1 before split");
-        malnBlk_dump(comp2->blk, stderr, "blk2 before split");
+        malnBlk_dump(comp1->blk, stderr, malnBlk_dumpDefault, "blk1 before split");
+        malnBlk_dump(comp2->blk, stderr, malnBlk_dumpDefault, "blk2 before split");
     }
     assert(comp1 != comp2);
     // trimmed block being attached from below
@@ -85,8 +85,8 @@ static struct malnBlk *joinCompWithComp(struct malnComp *comp1, struct malnComp 
     }
 
     if (debug) {
-        malnBlk_dump(comp1->blk, stderr, "blk1 after split");
-        malnBlk_dump(comp2->blk, stderr, "blk2 after split");
+        malnBlk_dump(comp1->blk, stderr, malnBlk_dumpDefault, "blk1 after split");
+        malnBlk_dump(comp2->blk, stderr, malnBlk_dumpDefault, "blk2 after split");
     }
     struct malnBlk *newBlk = malnJoinBlks(comp1, comp2);
     malnBlk_markOrDelete(comp1->blk);
@@ -99,7 +99,7 @@ static struct malnBlk *joinCompWithComp(struct malnComp *comp1, struct malnComp 
 static struct malnBlk *joinCompWithSet(struct malnComp *joinComp, struct malnSet *targetSet, struct malnBlkSet *pending) {
     if (debug) {
         malnComp_dump(joinComp, stderr, "joinCompWithSet");
-        malnBlk_dump(joinComp->blk, stderr, "  joinComp->blk");
+        malnBlk_dump(joinComp->blk, stderr, malnBlk_dumpDefault, "  joinComp->blk");
     }
     // must stop if we join any, as bounds might be changed by trimming
     struct malnBlk *newJoinBlk = NULL;
@@ -111,11 +111,11 @@ static struct malnBlk *joinCompWithSet(struct malnComp *joinComp, struct malnSet
         }
         if (malnComp_canJoin(joinComp, targetComp)) {
             if (debug) {
-                malnBlk_dump(targetComp->blk, stderr, " joinwith:");
+                malnBlk_dump(targetComp->blk, stderr, malnBlk_dumpDefault, " joinwith:");
             }
             newJoinBlk = joinCompWithComp(joinComp, targetComp, pending);
             if (debug) {
-                malnBlk_dump(newJoinBlk, stderr, " newBlk:");
+                malnBlk_dump(newJoinBlk, stderr, malnBlk_dumpDefault, " newBlk:");
             }
         }
     }

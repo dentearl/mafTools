@@ -18,13 +18,12 @@ ifneq ($(wildcard ${kentDir}),)
 kentInc = ${kentDir}/inc
 kentLib = ${kentDir}/lib
 kentLibWeb = ${kentLib}/${MACH}/jkweb.a
-mafJoinObjs = $(foreach f,mafJoin jkmaf genome mafTree malnComp malnBlk malnBlkCursor malnBlkSet malnSet malnJoinBlks malnJoinWithinSet malnJoinSets malnMergeComps malnMultiParents malnCompCompMap mafIO, ${objPath}/$f.o)
+mafJoinObjs = $(foreach f,mafJoin jkmaf genome mafTree malnComp malnBlk malnBlkCursor malnBlkSet malnSet malnJoinBlks malnJoinWithinSet malnJoinSets malnMergeComps malnMultiParents malnCompCompMap, ${objPath}/$f.o)
 mafOverlapObjs = $(foreach f,mafOverlap jkmaf, ${objPath}/$f.o)
-mafAdjustObjs = $(foreach f,mafAdjust jkmaf genome mafTree malnComp malnBlk malnBlkCursor malnBlkSet malnSet malnJoinBlks malnJoinWithinSet malnJoinSets malnMergeComps malnCompCompMap mafIO, ${objPath}/$f.o)
-mafMultiParentCheckObjs = $(foreach f,mafMultiParentCheck jkmaf genome mafTree malnComp malnBlk malnBlkCursor malnBlkSet malnSet malnCompCompMap malnMultiParents mafIO, ${objPath}/$f.o)
+mafAdjustObjs = $(foreach f,mafAdjust jkmaf genome mafTree malnComp malnBlk malnBlkCursor malnBlkSet malnSet malnJoinBlks malnJoinWithinSet malnJoinSets malnMergeComps malnCompCompMap, ${objPath}/$f.o)
 cflags += -I ${kentInc}
 CFLAGS = ${cflags} -std=c99 -pedantic
-progs = ${binPath}/mafJoin ${binPath}/mafOverlap ${binPath}/mafMultiParentCheck ${binPath}/mafAdjust
+progs = ${binPath}/mafJoin ${binPath}/mafOverlap ${binPath}/mafAdjust
 endif
 
 .PHONY: all clean test
@@ -37,11 +36,6 @@ ${objPath}/%.o: ${srcPath}/%.c $(wildcard ${srcPath}/*.h)
 	mv $@.tmp $@                   
 
 ${binPath}/mafJoin: ${mafJoinObjs}
-	@mkdir -p $(dir $@)
-	${CC} ${CFLAGS} -o $@.tmp $^ ${kentLibWeb} ${sonLibPath}/sonLib.a
-	mv $@.tmp $@
-
-${binPath}/mafMultiParentCheck: ${mafMultiParentCheckObjs}
 	@mkdir -p $(dir $@)
 	${CC} ${CFLAGS} -o $@.tmp $^ ${kentLibWeb} ${sonLibPath}/sonLib.a
 	mv $@.tmp $@
@@ -59,6 +53,7 @@ ${binPath}/mafAdjust: ${mafAdjustObjs}
 clean: 
 	rm -f ${progs}
 	rm -rf ${objPath}
+	rm -rf tmp
 
 test:
 	python test/mafJoinTest.py

@@ -3,9 +3,19 @@
 #include <stdbool.h>
 #include "genome.h"
 #include "common.h"
-#include "dystring.h"
 #include "mafTree.h"
 struct malnCompCursor;
+
+/*
+ * component segment: a contiguous range of bases in a component of an alignment block.
+ */
+struct malnCompSeg {
+    struct malnCompSeg *next;  // link to next segment, in ascending order
+    int start;     // start of region in sequence strand coordinates
+    int alnStart;  // start of region in alignment
+    int size;      // size of region
+    char *bases;   // sequence bases
+};
 
 /* 
  * component of a multiple alignment block.
@@ -19,44 +29,62 @@ struct malnComp {
     int end;
     int chromStart;        // start/end in chrom coordinates
     int chromEnd;
-    struct dyString *alnStr;
+    int alnWidth;          // width of this sequence alignment
+    struct malnCompSeg *segs;
     struct mafTreeNodeCompLink *ncLink;
 };
 
-/* get a width of component */
-static inline int malnComp_getWidth(struct malnComp *comp) {
-    return comp->alnStr->stringSize;
+/* clone a segment */
+struct malnCompSeg *malnCompSeg_constructClone(struct malnCompSeg *srcSeg);
+
+/* extend a segment */
+void malnCompSeg_extend(struct malnCompSeg *seg, char *newBases, int newSize);
+
+/* get sequence end position for a seg */
+static inline int malnCompSeg_getEnd(struct malnCompSeg *seg) {
+    return seg->start + seg->size;
+}
+
+/* get alignment end position for a seg */
+static inline int malnCompSeg_getAlnEnd(struct malnCompSeg *seg) {
+    return seg->alnStart + seg->size;
+}
+
+/* get a base from a seg */
+static inline char malnCompSeg_getBase(struct malnCompSeg *seg, int alnIdx) {
+    assert((seg->alnStart <= alnIdx) && (alnIdx < malnCompSeg_getAlnEnd(seg)));
+    return seg->bases[alnIdx - seg->alnStart];
+}
+
+/* is the specified alignment index in the seg */
+static inline bool malnCompSeg_alnIdxInSeg(struct malnCompSeg *seg, int alnIdx) {
+    return (seg->alnStart <= alnIdx) && (alnIdx < malnCompSeg_getAlnEnd(seg));
+}
+
+/* is the specified position in the seg */
+static inline bool malnCompSeg_containsPos(struct malnCompSeg *seg, int pos) {
+    return (seg->start <= pos) && (pos < malnCompSeg_getEnd(seg));
+}
+
+/* Are two segments overlapping or adjacent in position space.  segments maybe
+ * in different components. */
+static inline bool malnCompSeg_overlapAdjacentStrand(struct malnCompSeg *seg, struct malnComp *comp,
+                                                     struct malnCompSeg *seg2, struct malnComp *comp2) {
+    return (comp->seq == comp2->seq) && (comp->strand == comp2->strand)
+        && (seg->start <= malnCompSeg_getEnd(seg2))
+        && (malnCompSeg_getEnd(seg) >= seg2->start);
 }
 
 /* get number of aligned bases */
-static inline int malnComp_getAligned(struct malnComp *comp) {
+static inline int malnComp_getNumAligned(struct malnComp *comp) {
     return (comp->chromEnd - comp->chromStart);
 }
 
-/* get a column */
-static inline char malnComp_getCol(struct malnComp *comp, int alnIdx) {
-    assert((0 <= alnIdx) && (alnIdx < comp->alnStr->stringSize));
-    return comp->alnStr->string[alnIdx];
-}
+/* constructor */
+struct malnComp *malnComp_construct(struct Seq *seq, char strand, int start, int end, int alnWidth);
 
-/* set a column */
-static inline void malnComp_setCol(struct malnComp *comp, int alnIdx, char base) {
-    assert((0 <= alnIdx) && (alnIdx < comp->alnStr->stringSize));
-    comp->alnStr->string[alnIdx] = base;
-}
-
-/* get entire alignment string */
-static inline char *malnComp_getAln(struct malnComp *comp) {
-    return comp->alnStr->string;
-}
-
-/* is a position aligned? */
-static inline bool malnComp_isAligned(struct malnComp *comp, int alnIdx) {
-    return isBase(malnComp_getCol(comp, alnIdx));
-}
-
-/* component constructor */
-struct malnComp *malnComp_construct(struct Seq *seq, char strand, int start, int end, char *alnStr);
+/* constructor from alignment string  */
+struct malnComp *malnComp_constructFromStr(struct Seq *seq, char strand, int start, int end, char *alnStr);
 
 /* component constructor to clone another component */
 struct malnComp *malnComp_constructClone(struct malnComp *srcComp);
@@ -71,7 +99,7 @@ void malnComp_freeSeqMem(struct malnComp *comp);
 enum mafTreeLoc malnComp_getLoc(struct malnComp *comp);
 
 /* component reverse complement */
-struct malnComp *malnComp_reverseComplement(struct malnComp *comp);
+struct malnComp *malnComp_reverseComplement(struct malnComp *srcComp);
 
 /* convert a chrom range to a strand range for this component */
 void malnComp_chromRangeToStrandRange(struct malnComp *comp, int chromStart, int chromEnd, int *start, int *end);
@@ -89,23 +117,19 @@ bool malnComp_seqRangeToAlnRange(struct malnComp *comp, int start, int end, int 
 bool malnComp_seqChromRangeToAlnRange(struct malnComp *comp, int chromStart, int chromEnd, int *alnStart, int *alnEnd);
 
 /* pad component to the specified alignment width */
-void malnComp_pad(struct malnComp *comp, int width);
-
-/* append the specified number of characters from the string, adjusting component
- * coordinates */
-void malnComp_append(struct malnComp *comp, char *src, int len);
-
-/* Append the specified alignment region of a component to this component.
- * The component must extend the range of this component. */
-void malnComp_appendCompAln(struct malnComp *comp, struct malnComp *srcComp, int alnStart, int alnEnd);
-
-/* get number of bases in component, not including inserts */
-static inline bool malnComp_numBases(struct malnComp *comp) {
-    return (comp->chromEnd - comp->chromStart);
+static inline void malnComp_pad(struct malnComp *comp, int width) {
+    assert(comp->alnWidth <= width);
+    comp->alnWidth = width;
 }
 
-/* Append the current column from a cursor. */
-void malnComp_appendColCursor(struct malnComp *comp, struct malnCompCursor *srcCursor);
+/* Append from the current position of the specified cursor up to the
+ * given alignment column   */
+void malnComp_appendFromCursor(struct malnComp *comp, struct malnCompCursor *srcCursor, int alnEnd);
+
+/* get number of bases in component, not including inserts */
+static inline bool malnComp_numAlignedBases(struct malnComp *comp) {
+    return (comp->chromEnd - comp->chromStart);
+}
 
 /* compare two components to see if they overlap */
 static inline bool malnComp_overlap(struct malnComp *comp, struct malnComp *comp2) {
@@ -146,14 +170,17 @@ static inline bool malnComp_overlapAdjacentRange(struct malnComp *comp, struct S
  * component is in the specified relative orientation (-1 == reverse complemented) */
 bool malnComp_overlapAdjacentOrient(struct malnComp *comp, struct malnComp *comp2, int orient);
 
+/* is a stand position in the component */
+static inline bool malnComp_containsPos(struct malnComp *comp, int pos) {
+    return (comp->start <= pos) && (pos < comp->end);
+}
+
 /* can two components be joined? */
 bool malnComp_canJoin(struct malnComp *comp1, struct malnComp *comp2);
 
-/* count aligned positions */
-int malnComp_countAligned(const struct malnComp *comp);
-
-/* assert that the component is set-consistent */
-void malnComp_assert(struct malnComp *comp);
+/* assert that the component is set-consistent. ncLinkCheck can be false
+ * for sanity check before links are constructed. */
+void malnComp_assert(struct malnComp *comp, bool ncLinkCheck);
 
 /* compare two components for deterministic sorting */
 int malnComp_cmp(struct malnComp *comp1, struct malnComp *comp2);
@@ -163,21 +190,19 @@ int malnComp_chromCmp(struct malnComp *comp1, struct malnComp *comp2);
 
 /* construct an component from a subrange of this component. Return NULL if
  * the subrange does not contain any aligned bases. */
-struct malnComp *malnComp_constructSubrange(struct malnComp *comp, int alnStart, int alnEnd);
-
-/* count the number of aligned bases in a range */
-int malnComp_countAlignedRange(struct malnComp *comp, int alnStart, int alnEnd);
+struct malnComp *malnComp_constructSubrange(struct malnComp *srcComp, int alnStart, int alnEnd);
 
 /* are there any aligned bases in a range */
 bool malnComp_anyAlignedRange(struct malnComp *comp, int alnStart, int alnEnd);
 
-/* find the previous aligned column, at or before a starting point, return
- * -1 if no more */
-int malnComp_findPrevAligned(struct malnComp *comp, int alnStart);
-
-/* find the next aligned column, at or after a starting point, return
- * alnWidth if no more */
-int malnComp_findNextAligned(struct malnComp *comp, int alnStart);
+/* get the last block in the component */
+static inline struct malnCompSeg *malnComp_getLastSeg(struct malnComp *comp) {
+    struct malnCompSeg *seg = comp->segs;
+    while (seg->next != NULL) {
+        seg = seg->next;
+    }
+    return seg;
+}
 
 /* print base information describing a comp, newline not included */
 void malnComp_prInfo(struct malnComp *comp, FILE *fh);

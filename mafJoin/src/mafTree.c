@@ -147,7 +147,7 @@ static ETree *malnCompToETreeNode(struct malnComp *comp) {
 
 /* Construct a MafTree object from a malnBlk, assuming the last is the root and all others are descents  */
 mafTree *mafTree_constructFromAlignment(struct Genomes *genomes, struct malnBlk *blk, double defaultBranchLength) {
-    struct malnComp *rootComp = slLastEl(blk->comps);
+    struct malnComp *rootComp = malnBlk_getRootComp(blk);
     ETree *eRoot = malnCompToETreeNode(rootComp);
     for (struct malnComp *comp = blk->comps; comp != rootComp; comp = comp->next) {
         ETree *eLeaf = malnCompToETreeNode(comp);
