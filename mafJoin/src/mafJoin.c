@@ -8,6 +8,7 @@
 #include "sonLibETree.h"
 #include "malnMultiParents.h"
 #include <limits.h>
+#include <string.h>
 
 /* command line option specifications */
 static struct optionSpec optionSpecs[] = {
@@ -47,16 +48,19 @@ static char *usageMsg =
     "   process to files in this directory.\n"
     "\n"
     "If MAF blocks (mafAli) don't have a tree associated with them, one\n"
-    "will be created.  The root genome for the tree is chosen based on\n"
+    "will be created. The root genome for the tree is chosen based on\n"
     "the genome specified by the -treelessRoot1 or -treelessRoot2 options.\n"
     "One sequence from that genome becomes the root and the remainder\n"
-    "become it's direct children.  If  -treelessRoot option is specified, it\n"
+    "become its direct children. If  -treelessRoot option is specified, it\n"
     "also triggers merging of the duplication blocks that Evolver outputs.\n";
-
 
 /* usage msg and exit */
 static void usage(char *msg) {
-    errAbort("Error: %s\n%s", msg, usageMsg);
+    if (!strncmp(msg, "Usage:", 5)){
+        errAbort("%s\n%s", msg, usageMsg);
+    }else{
+        errAbort("Error: %s\n%s", msg, usageMsg);
+    }
 }
 
 /* load a MAF and do internal joining.  */
@@ -111,7 +115,7 @@ int main(int argc, char *argv[]) {
         usage("Usage:");
     }
     if (argc != 5)  {
-        usage("Error: wrong number of arguments");
+        usage("wrong number of arguments");
     }
 
     mafJoin(argv[1], argv[2], argv[3], argv[4], optionDouble("branchLength", 0.1), 
