@@ -14,14 +14,6 @@
 /* join two blocks by associated root components, create a third
  * block. Return that new block. Joined blocks marked as deleted */
 static struct malnBlk *joinBlksAtRoot(struct malnSet *malnSet, struct malnBlk *blk1, struct malnBlk *blk2) {
-#if 0 // FIXME
-    fprintf(stderr, "joinBlksAtRoot: %g\n", malnSet_fractionDying(malnSet)); 
-    fprintf(stderr, "    blk1: ");
-    malnComp_prInfo(malnBlk_getRootComp(blk1), stderr); fputc('\n', stderr);
-    fprintf(stderr, "    blk2: ");
-    malnComp_prInfo(malnBlk_getRootComp(blk2), stderr); fputc('\n', stderr);
-    fflush(stderr);
-#endif
     struct malnBlk *joinBlk = malnJoinBlks(malnBlk_getRootComp(blk1), malnBlk_getRootComp(blk2));
     malnSet_markAsDeleted(malnSet, blk1);
     malnSet_markAsDeleted(malnSet, blk2);
@@ -35,9 +27,6 @@ static struct malnBlk *joinBlkWithDupsPass(struct malnSet *malnSet, struct malnB
     // the root.
     struct malnBlk *newJoinBlk =  NULL;
     struct malnComp *joinComp = malnBlk_getRootComp(joinBlk);
-#if 0 // FIXME
-    malnComp_dump(joinComp, stderr, "=================\njoinBlkWithDupsPass");
-#endif
     stList *overComps = malnSet_getOverlappingComps(malnSet, joinComp->seq, joinComp->chromStart, joinComp->chromEnd, mafTreeLocRoot);
     for (int i = 0; i < stList_length(overComps); i++) {
         struct malnComp *overComp = stList_get(overComps, i);
@@ -82,9 +71,6 @@ static bool joinDupsPass(struct malnSet *malnSet, struct malnBlkSet *newBlks) {
     static const float fractionDyingThreshold = 0.10;
     struct malnBlkSetIterator *iter = malnSet_getBlocks(malnSet);
     struct malnBlk *joinBlk;
-#if 0 // FIXME
-    fprintf(stderr, ">>>>>>>>>>>>>> joinDupsPass <<<<<<<<<<<<\n");
-#endif
     bool reachedDyingThreshold = false;
     while (((joinBlk = malnBlkSetIterator_getNext(iter)) != NULL) && (!reachedDyingThreshold)) {
         if (!joinBlk->deleted) {
@@ -184,9 +170,6 @@ static int findAdjacentToJoin(stList *rootSortBlks, int startIdx) {
 static int joinAdjacents(struct malnSet *malnSet, struct malnBlkSet *newBlks, stList *rootSortBlks, int startIdx, int nextIdx, int maxBlkWidth) {
     struct malnBlk *joinedBlk = stList_get(rootSortBlks, startIdx);
     stList_set(rootSortBlks, startIdx, NULL); // just paranoid, don't leave ptrs to blks that might be delete
-#if 0 // FIXME:
-    malnBlk_dump(joinedBlk, stderr, "joinAdjacents: %d %d", startIdx, nextIdx);
-#endif
     int iBlk;
     for (iBlk = startIdx+1; (iBlk < nextIdx) && (joinedBlk->alnWidth <= maxBlkWidth); iBlk++) {
         joinedBlk = joinBlksAtRoot(malnSet, joinedBlk, stList_get(rootSortBlks, iBlk));

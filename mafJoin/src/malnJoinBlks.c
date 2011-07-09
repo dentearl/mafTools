@@ -11,6 +11,8 @@
 #include <unistd.h>
 
 static bool debug = false; // FIXME: tmp
+//static unsigned debugDumpOpts = malnBlk_dumpNoSeqs ; // FIXME: tmp
+static unsigned debugDumpOpts = malnBlk_dumpDefault ; // FIXME: tmp
 
 /* Object use to keep state */
 struct malnJoinBlks {
@@ -55,7 +57,7 @@ static void calcAlignmentCoords(struct malnJoinBlks *jb) {
 /* create new guide components from the two being joined */
 static struct malnComp *createJoinedGuideComp(struct malnJoinBlks *jb) {
     int start = min(jb->guide1->start, jb->guide2->start);
-    struct malnComp *comp = malnComp_construct(jb->guide1->seq, jb->guide1->strand, start, start, "");
+    struct malnComp *comp = malnComp_construct(jb->guide1->seq, jb->guide1->strand, start, start, 0);
     malnBlk_addComp(jb->joined, comp);
     malnCompCompMap_add(jb->srcDestCompMap, jb->guide1, comp);
     malnCompCompMap_add(jb->srcDestCompMap, jb->guide2, comp);
@@ -67,7 +69,7 @@ static struct malnComp *createJoinedGuideComp(struct malnJoinBlks *jb) {
 static void addCompsToJoined(struct malnJoinBlks *jb, struct malnBlkCursor *blkCursor, struct malnComp **destComps) {
     // skip rows[0], which is the guide
     for (int i = 1; i < blkCursor->numRows; i++) {
-        destComps[i] = malnComp_construct(blkCursor->rows[i].comp->seq, blkCursor->rows[i].comp->strand, blkCursor->rows[i].comp->start, blkCursor->rows[i].comp->start, "");
+        destComps[i] = malnComp_construct(blkCursor->rows[i].comp->seq, blkCursor->rows[i].comp->strand, blkCursor->rows[i].comp->start, blkCursor->rows[i].comp->start, 0);
         malnBlk_addComp(jb->joined, destComps[i]);
         malnCompCompMap_add(jb->srcDestCompMap, blkCursor->rows[i].comp, destComps[i]);
     }
@@ -95,7 +97,8 @@ static struct malnJoinBlks *malnJoinBlks_construct(struct malnComp *guideComp1, 
         }
     }
 
-    // make sure guideComp1 starts before or at #2
+    // make sure guideComp1 starts before or at guideComp2 (although don't
+    // remember why)
     if (guideComp1->start > guideComp2->start) {
         struct malnComp *hold = guideComp2;
         guideComp2 = guideComp1;
@@ -107,7 +110,9 @@ static struct malnJoinBlks *malnJoinBlks_construct(struct malnComp *guideComp1, 
     jb->blk2 = guideComp2->blk;
 
     jb->cursor1 = malnBlkCursor_construct(jb->blk1, jb->guide1, NULL);
+    malnBlkCursor_incr(jb->cursor1); // advance to start
     jb->cursor2 = malnBlkCursor_construct(jb->blk2, jb->guide2, NULL);
+    malnBlkCursor_incr(jb->cursor2);
     jb->joined = malnBlk_construct();
     jb->dests1 = needMem(jb->cursor1->numRows * sizeof(struct malnComp *));
     jb->dests2 = needMem(jb->cursor2->numRows * sizeof(struct malnComp *));
@@ -156,44 +161,61 @@ static void assertJoinedComps(struct malnBlkCursor *blkCursor, struct malnComp *
 
 /* copy columns outside of the common guide sequence region to the joined maf */
 static void copyUnsharedGuideColumns(struct malnJoinBlks *jb, struct malnComp **destComps, struct malnBlkCursor *blkCursor, int alnStart, int alnEnd) {
-  for (int i = 0; i < blkCursor->numRows; i++) {
-        malnComp_appendCompAln(destComps[i], blkCursor->rows[i].comp, alnStart, alnEnd);
+    assert(alnStart == blkCursor->alnIdx);  // FIXME: alnStart not really needed
+    for (int i = 0; i < blkCursor->numRows; i++) {
+        malnComp_appendFromCursor(destComps[i], &(blkCursor->rows[i]), alnEnd);
     }
     malnBlkCursor_setAlignCol(blkCursor, alnEnd);
-    jb->joined->alnWidth += (alnEnd - alnStart);  // FIXME should have append methods
     malnBlk_pad(jb->joined);
 }
 
+#ifndef NDEBUG
 /* is guide aligned? */
 static bool isGuideAligned(struct malnBlkCursor *blkCursor) {
     return malnCompCursor_isAligned(&(blkCursor->rows[0]));
 }
+#endif
 
-/* copy column from one source, optionally skipping guide */
-static void copyColumn(struct malnComp **destComps, struct malnBlkCursor *blkCursor, bool skipGuide) {
-    for (int i = (skipGuide ? 1 : 0); i < blkCursor->numRows; i++) {
-        malnComp_appendColCursor(destComps[i], &(blkCursor->rows[i]));
+/* get end index of contiguous aligned or unaligned guide sequence columns, up to the specified end point */
+static int getContiguousGuideStateEnd(struct malnBlkCursor *blkCursor, int alnEnd, bool wantAligned) {
+    // FIXME: way too inefficient, should use range.
+    struct malnCompCursor guideCursor = blkCursor->rows[0];
+    while ((guideCursor.alnIdx < alnEnd) && (malnCompCursor_isAligned(&guideCursor) == wantAligned)) {
+        if (!malnCompCursor_incr(&guideCursor)) {
+            break;
+        }
     }
-    malnBlkCursor_incr(blkCursor);
+    return guideCursor.alnIdx;
+}
+
+/* copy columns from one alignment to another, updating the cursor. */
+static void copyColumns(struct malnComp **destComps, struct malnBlkCursor *blkCursor, int alnEnd, bool skipGuide) {
+    if (skipGuide) {
+        malnCompCursor_setAlignCol(&(blkCursor->rows[0]), alnEnd);
+    }
+    for (int i = (skipGuide ? 1 : 0); i < blkCursor->numRows; i++) {
+        malnComp_appendFromCursor(destComps[i], &(blkCursor->rows[i]), alnEnd);
+    }
+    blkCursor->alnIdx = alnEnd;    // FIXME; make function
 }
 
 /* copy contiguous shared alignment columns to join blk */
 static void copySharedGuideColumns(struct malnJoinBlks *jb) {
     assert(isGuideAligned(jb->cursor1));
     assert(isGuideAligned(jb->cursor2));
-    while (isGuideAligned(jb->cursor1) && isGuideAligned(jb->cursor2) && (jb->cursor1->alnIdx < jb->aln1CommonEnd) && (jb->cursor2->alnIdx < jb->aln2CommonEnd)) {
-        copyColumn(jb->dests1, jb->cursor1, false);
-        copyColumn(jb->dests2, jb->cursor2, true);
-        jb->joined->alnWidth++;
-    }
+    // get minimum of the two that are aligned to the comm
+    int aln1End = getContiguousGuideStateEnd(jb->cursor1, jb->aln1CommonEnd, true);
+    int aln2End = getContiguousGuideStateEnd(jb->cursor2, jb->aln2CommonEnd, true);
+    int numCols = min((aln1End - jb->cursor1->alnIdx), (aln2End - jb->cursor2->alnIdx));
+
+    copyColumns(jb->dests1, jb->cursor1, jb->cursor1->alnIdx + numCols, false);
+    copyColumns(jb->dests2, jb->cursor2, jb->cursor2->alnIdx + numCols, true);
 }
 
 /* copy contiguous unaligned-to-guide columns to join blk */
-static void copyUnalignedSharedColumns(struct malnBlk *blkJoined, struct malnComp **destComps, struct malnBlkCursor *blkCursor, int alnCommonEnd) {
-    while ((!isGuideAligned(blkCursor)) && (blkCursor->alnIdx < alnCommonEnd)) {
-        copyColumn(destComps, blkCursor, false);
-        blkJoined->alnWidth++;
-    }
+static void copyUnalignedSharedColumns(struct malnBlk *blkJoined, struct malnComp **destComps, struct malnBlkCursor *blkCursor, int alnEnd) {
+    alnEnd = getContiguousGuideStateEnd(blkCursor, alnEnd, false);
+    copyColumns(destComps, blkCursor, alnEnd, false);
     malnBlk_pad(blkJoined);
 }
 
@@ -215,18 +237,18 @@ struct malnBlk *malnJoinBlks(struct malnComp *guideComp1, struct malnComp *guide
     struct malnJoinBlks *jb = malnJoinBlks_construct(guideComp1, guideComp2);
     calcAlignmentCoords(jb);
     if (debug) {
-        malnBlk_dump(jb->blk1, stderr, "inBlk1");
-        malnBlk_dump(jb->blk2, stderr, "inBlk2");
+        malnBlk_dump(jb->blk1, stderr, debugDumpOpts, "inBlk1");
+        malnBlk_dump(jb->blk2, stderr, debugDumpOpts, "inBlk2");
     }
 
     // before common start
     copyUnsharedGuideColumns(jb, jb->dests1, jb->cursor1, 0, jb->aln1CommonStart);
     if (debug) {
-        malnBlk_dump(jb->joined, stderr, "middle before common");
+        malnBlk_dump(jb->joined, stderr, debugDumpOpts, "middle before common");
     }
     copyUnsharedGuideColumns(jb, jb->dests2, jb->cursor2, 0, jb->aln2CommonStart);
     if (debug) {
-        malnBlk_dump(jb->joined, stderr, "after before common");
+        malnBlk_dump(jb->joined, stderr, debugDumpOpts, "after before common");
     }
 
     // common
@@ -235,18 +257,18 @@ struct malnBlk *malnJoinBlks(struct malnComp *guideComp1, struct malnComp *guide
         joinSharedGuideColumns(jb);
         assert(jb->dests1[0]->end == jb->guideCommonEnd);
         if (debug) {
-            malnBlk_dump(jb->joined, stderr, "after common");
+            malnBlk_dump(jb->joined, stderr, debugDumpOpts, "after common");
         }
     }
 
     // after common end
     copyUnsharedGuideColumns(jb, jb->dests1, jb->cursor1, jb->aln1CommonEnd, jb->blk1->alnWidth);
     if (debug) {
-        malnBlk_dump(jb->joined, stderr, "middle after common");
+        malnBlk_dump(jb->joined, stderr, debugDumpOpts, "middle after common");
     }
     copyUnsharedGuideColumns(jb, jb->dests2, jb->cursor2, jb->aln2CommonEnd, jb->blk2->alnWidth);
     if (debug) {
-        malnBlk_dump(jb->joined, stderr, "after after common");
+        malnBlk_dump(jb->joined, stderr, debugDumpOpts, "after after common");
     }
 
     malnBlk_setTree(jb->joined, joinTrees(jb->cursor1, jb->cursor2, jb->srcDestCompMap));

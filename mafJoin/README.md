@@ -3,7 +3,7 @@
 **mafJoin** is a tool for combining pairs of [maf](http://genome.ucsc.edu/FAQ/FAQformat.html#format5) files that share a common sequence.
 
 ##Authors
-Mark Diekhans
+[Mark Diekhans](https://github.com/diekhans/)
 
 ##Dependencies
 * sonLib https://github.com/benedictpaten/sonLib/
@@ -15,6 +15,8 @@ Mark Diekhans
 3. Type <code>make kentDir=/path/to/kent/src</code>.
 
 ##Use
+Try <code>mafJoin -help</code> for a usage statement.
+
 <code>mafJoin [optional -treelessRoot1="sequence name" -treelessRoot2="sequence name" ...] "common sequence" first.maf second.maf out.maf</code>
 
 Let there be two mafs, AC.maf and BC.maf, that share a common sequence C. A sequence in this context refers to the file wide sample name which is in the format <code>species.chromosomeNumber</code>, e.g. sequence hg18 might have a line <code>hg18.chr19</code> if the maf contains chromosome 19.

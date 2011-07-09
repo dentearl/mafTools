@@ -3,7 +3,7 @@
 #define malnMergeComps_h
 struct malnSet *malnSet;
 
-/* Merge adjacent components within the blocks of a set. */
+/* Merge overlapping and adjacent components within blocks. */
 void malnMergeComps_merge(struct malnSet *malnSet);
 
 #endif

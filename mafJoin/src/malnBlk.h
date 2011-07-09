@@ -14,7 +14,7 @@ struct Genome;
 struct malnBlk {
     int objId;                // unique, deterministic id.  Need because address space isn't deterministic
     struct malnSet *malnSet;  // set block is in, or NULL if not in a set.
-    int alnWidth;
+    int alnWidth;             // during construction, this will have the max width of any component
     struct malnComp *comps;   // components, root last
     mafTree *mTree;           // tree associated with block
     bool deleted;             // block is deleted, but not removed from structures yet.
@@ -64,11 +64,6 @@ struct malnComp *malnBlk_findCompByChromRange(struct malnBlk *blk, struct Seq *s
 /* block reverse complement */
 struct malnBlk *malnBlk_reverseComplement(struct malnBlk *blk);
 
-/* Shorten the range of a component in the block.  If the component is left
- * with no aligned bases, remove it.  Range must be at start or end of the
- * component. */
-void malnBlk_shortenComp(struct malnBlk *blk, struct malnComp *comp, int newChromStart, int newChromEnd);
-
 /* pad all components so they are the same width as the overall alignment. */
 void malnBlk_pad(struct malnBlk *blk);
 
@@ -76,8 +71,9 @@ void malnBlk_pad(struct malnBlk *blk);
  * error if there are no consistent */
 void malnBlk_validate(struct malnBlk *blk);
 
-/* assert that the block is set-consistent */
-void malnBlk_assert(struct malnBlk *blk);
+/* assert that the block is set-consistent.  ncLinkCheck can be false for
+ * sanity check before links and tree are constructed. */
+void malnBlk_assert(struct malnBlk *blk, bool ncLinkCheck);
 
 /* compare two blocks for deterministic sorting */
 int malnBlk_cmp(struct malnBlk *blk1, struct malnBlk *blk2);
@@ -85,13 +81,19 @@ int malnBlk_cmp(struct malnBlk *blk1, struct malnBlk *blk2);
 /* construct an alignment block from a subrange of this block */
 struct malnBlk *malnBlk_constructSubrange(struct malnBlk *blk, int alnStart, int alnEnd);
 
-/* print a block for debugging purposes */
-void malnBlk_dumpv(struct malnBlk *blk, FILE *fh, const char *label, va_list args);
+enum {
+    malnBlk_dumpDefault   = 0x00,
+    malnBlk_dumpNoSeqs    = 0x01,
+    malnBlk_dumpInclTree  = 0x02,
+};
 
 /* print a block for debugging purposes */
-void malnBlk_dump(struct malnBlk *blk, FILE *fh, const char *label, ...)
+void malnBlk_dumpv(struct malnBlk *blk, FILE *fh, unsigned opts, const char *label, va_list args);
+
+/* print a block for debugging purposes */
+void malnBlk_dump(struct malnBlk *blk, FILE *fh, unsigned opts, const char *label, ...)
 #if defined(__GNUC__)
-__attribute__((format(printf, 3, 4)))
+__attribute__((format(printf, 4, 5)))
 #endif
 ;
 

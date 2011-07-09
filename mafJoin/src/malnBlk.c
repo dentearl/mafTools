@@ -29,6 +29,7 @@ struct malnBlk *malnBlk_constructClone(struct malnBlk *srcBlk) {
         malnBlk_addComp(blk, malnComp_constructClone(srcComp));
     }
     slReverse(&blk->comps);
+    blk->alnWidth = srcBlk->alnWidth;
     malnBlk_setTree(blk, mafTree_clone(srcBlk->mTree, blk));
     malnBlk_finish(blk);
     return blk;
@@ -74,7 +75,7 @@ void malnBlk_freeSeqMem(struct malnBlk *blk) {
 void malnBlk_addComp(struct malnBlk *blk, struct malnComp *comp) {
     comp->blk = blk;
     slAddHead(&blk->comps, comp);
-    blk->alnWidth = max(blk->alnWidth, malnComp_getWidth(comp));
+    blk->alnWidth = max(blk->alnWidth, comp->alnWidth);
 }
 
 /* tree from block being compared */
@@ -100,10 +101,11 @@ static void malnBlk_sortComps(struct malnBlk *blk) {
 /* finish construction a block, setting component attributes and sorting
  * components */
 void malnBlk_finish(struct malnBlk *blk) {
-    if (blk->mTree != NULL) {
-        malnBlk_sortComps(blk); // FIXME: don't need to do this for all cases
-    }
+    malnBlk_sortComps(blk); // FIXME: don't need to do this for all cases
     malnBlk_validate(blk);  // produces better error messages
+#ifdef ASSERT_SLOW
+    malnBlk_assert(blk, false);    // really only to catch bugs in this code, not input
+#endif
 }
 
 /* Unlink a component from the block, also removing it from the tree and
@@ -120,12 +122,7 @@ void malnBlk_unlink(struct malnBlk *blk, struct malnComp *comp) {
 
 /* get the root component */
 struct malnComp *malnBlk_getRootComp(struct malnBlk *blk) {
-    struct malnComp *root = slLastEl(blk->comps);
-    if ((malnComp_getLoc(root) & mafTreeLocRoot) == 0) {
-        malnBlk_dump(blk, stderr, "last component is not root");
-        errAbort("last component is not root");
-    }
-    return root;
+    return slLastEl(blk->comps);
 }
 
 /* find a component by seq and start, NULL if not found  */
@@ -150,7 +147,7 @@ struct malnComp *malnBlk_findCompByChromRange(struct malnBlk *blk, struct Seq *s
 
 /* block reverse complement */
 struct malnBlk *malnBlk_reverseComplement(struct malnBlk *srcBlk) {
-    malnBlk_assert(srcBlk);
+    malnBlk_assert(srcBlk, true);
     struct malnBlk *rcBlk = malnBlk_construct();
     for (struct malnComp *srcComp = srcBlk->comps; srcComp != NULL; srcComp = srcComp->next) {
         malnBlk_addComp(rcBlk, malnComp_reverseComplement(srcComp));
@@ -164,26 +161,26 @@ struct malnBlk *malnBlk_reverseComplement(struct malnBlk *srcBlk) {
 /* Pad out an alignment so all columns are equal sized */
 void malnBlk_pad(struct malnBlk *blk) {
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
-        assert(malnComp_getWidth(comp) <= blk->alnWidth);
-        if (malnComp_getWidth(comp) <= blk->alnWidth) {
+        assert(comp->alnWidth <= blk->alnWidth);
+        if (comp->alnWidth <= blk->alnWidth) {
             malnComp_pad(comp, blk->alnWidth);
         }
     }
 }
 
-/* check that component sizes are the same */
-static void validateCompSizes(struct malnBlk *blk) {
+/* check for consistency within a components of a MAF, generating an
+ * error if there are not consistent */
+void malnBlk_validate(struct malnBlk *blk) {
+    // check sizes
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
-        if (malnComp_getWidth(comp) != blk->alnWidth) {
+        if (comp->alnWidth != blk->alnWidth) {
             errAbort("component width (%d) doesn't match alignment width (%d): %s:%d-%d",
-                     malnComp_getWidth(comp), blk->alnWidth,
+                     comp->alnWidth, blk->alnWidth,
                      comp->seq->orgSeqName, comp->chromStart, comp->chromEnd);
         }
     }
-}
 
-/* check for no overlapping root components */
-static void validateNoOverlappingRootComps(struct malnBlk *blk) {
+    // check for overlapping root components
     struct malnComp *rootComp = malnBlk_getRootComp(blk);
     for (struct malnComp *comp2 = blk->comps; comp2 != NULL; comp2 = comp2->next) {
         if ((comp2 != rootComp) && malnComp_overlap(rootComp, comp2)) {
@@ -194,29 +191,40 @@ static void validateNoOverlappingRootComps(struct malnBlk *blk) {
     }
 }
 
-/* check for consistency within a components of a MAF, generating an
- * error if there are not consistent */
-void malnBlk_validate(struct malnBlk *blk) {
-    validateCompSizes(blk);
-
-    if (blk->mTree != NULL) {
-        validateNoOverlappingRootComps(blk);
+#ifdef ASSERT_SLOW
+/* assert that there are no columns that have nothing aligned in them */
+static void assertNoEmptyColumns(struct malnBlk *blk) {
+    bool colsWithBases[blk->alnWidth];
+    memset(colsWithBases, false, blk->alnWidth);
+    for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
+        for (struct malnCompSeg *seg = comp->segs; seg != NULL; seg = seg->next) {
+            memset(colsWithBases+seg->alnStart, true, seg->size);
+        }
     }
+    bool *notSet = memchr(colsWithBases, false, blk->alnWidth);
+    if (notSet != NULL) {
+        malnBlk_dump(blk, stderr, malnBlk_dumpDefault, "empty column at %ld", (notSet - colsWithBases));
+    }
+    assert(notSet == NULL);
 }
+#endif
 
-/* assert that the block is set-consistent */
-void malnBlk_assert(struct malnBlk *blk) {
+/* assert that the block is set-consistent.  ncLinkCheck can be false for
+ * sanity check before links and tree are constructed. */
+void malnBlk_assert(struct malnBlk *blk, bool ncLinkCheck) {
 #ifndef NDEBUG
     assert(blk->comps != NULL);
+    assert(blk->alnWidth >= 0);
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         assert(comp->blk == blk);
-        if (malnComp_getWidth(comp) != blk->alnWidth) {
-            malnBlk_dump(blk, stderr, "invalid component width");
+        if (comp->alnWidth != blk->alnWidth) {
+            malnBlk_dump(blk, stderr, malnBlk_dumpDefault, "invalid component width");
         }
-        assert(malnComp_getWidth(comp) == blk->alnWidth);
-        malnComp_assert(comp);
+        assert(comp->alnWidth == blk->alnWidth);
+        malnComp_assert(comp, ncLinkCheck);
     }
-    if (blk->mTree != NULL) {
+    assertNoEmptyColumns(blk);
+    if (ncLinkCheck) {
         mafTree_assert(blk->mTree, blk);
     }
 #endif
@@ -258,94 +266,36 @@ struct malnBlk *malnBlk_constructSubrange(struct malnBlk *blk, int alnStart, int
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
         compSubRange(subBlk, comp, alnStart, alnEnd, srcDestCompMap);
     }
-    if (blk->mTree  != NULL) {
-        subBlk->mTree = mafTree_subrangeClone(blk->mTree, srcDestCompMap);
-    }
+    subBlk->mTree = mafTree_subrangeClone(blk->mTree, srcDestCompMap);
     malnBlk_finish(subBlk);
     malnCompCompMap_destruct(srcDestCompMap);
     return subBlk;
 }
 
-/* shorten comp sequence by overwriting bases */
-static void shortenCompSeq(struct malnComp *comp, int newStart, int newEnd)  {
-    struct malnCompCursor cursor = malnCompCursor_make(comp);
-    malnCompCursor_setSeqPos(&cursor, newStart);
-    assert(malnCompCursor_isAligned(&cursor));
-
-    while ((cursor.pos < newEnd) ) {
-        if (malnCompCursor_isAligned(&cursor)) {
-            comp->alnStr->string[cursor.alnIdx] = '-';
-        }
-        if (!malnCompCursor_incr(&cursor)) {
-            break;
-        }
-    } 
-    assert(cursor.pos == newEnd);
-}
-
-/* shorten bounds of a component in a blk */
-static void shortenComp(struct malnBlk *blk, struct malnComp *comp, int newChromStart, int newChromEnd)  {
-    // FIXME: should be in comp
-    int newStart, newEnd;
-    malnComp_chromRangeToStrandRange(comp, newChromStart, newChromEnd, &newStart, &newEnd);
-
-    if (blk->malnSet != NULL) {
-        malnSet_removeComp(blk->malnSet, comp);
-    }
-    // erase regions being dropped from start and/or end of component
-    if (newStart > comp->start) {
-        shortenCompSeq(comp, comp->start, newStart);
-    }
-    if (newEnd < comp->end) {
-        shortenCompSeq(comp, newEnd, comp->end);
-    }
-    comp->chromStart = newChromStart;
-    comp->chromEnd = newChromEnd;
-    comp->start = newStart;
-    comp->end = newEnd;
-
-    if (blk->malnSet != NULL) {
-        malnSet_addComp(blk->malnSet, comp);
-    }
-}
-
-/* Shorten the range of a component in the block.  If the component is left
- * with no aligned bases, remove it.  Range must be at start or end of the
- * component. */
-void malnBlk_shortenComp(struct malnBlk *blk, struct malnComp *comp, int newChromStart, int newChromEnd) {
-    assert((newChromStart == comp->chromStart) || (newChromEnd == comp->chromEnd));
-    if ((newChromStart == comp->chromStart) && (newChromEnd == comp->chromEnd)) {
-        if (comp == malnBlk_getRootComp(blk)) {
-            errAbort("shorting component %s:%d-%d will delete root component", comp->seq->orgSeqName, comp->chromStart, comp->chromEnd);
-        }
-        malnBlk_unlink(blk, comp);
-        malnComp_destruct(comp);
-    } else {
-        shortenComp(blk, comp, newChromStart, newChromEnd);
-    }
-}
-
 /* print a block for debugging purposes */
-void malnBlk_dumpv(struct malnBlk *blk, FILE *fh, const char *label, va_list args) {
+void malnBlk_dumpv(struct malnBlk *blk, FILE *fh, unsigned opts, const char *label, va_list args) {
     char *nhTree = (blk->mTree != NULL) ? mafTree_format(blk->mTree) : cloneString("NULL");
     char *fmtLabel = stSafeCDynFmtv(label, args);
-    fprintf(fh, "%s #%d %d%s %s\n", fmtLabel, blk->objId, blk->alnWidth, (blk->deleted ? " deleted" : ""), nhTree);
-#if 0
-    if (blk->mTree != NULL) {
+    fprintf(fh, "%s #%d width: %d%s %s\n", fmtLabel, blk->objId, blk->alnWidth, (blk->deleted ? " deleted" : ""), nhTree);
+    if ((opts & malnBlk_dumpInclTree) && (blk->mTree != NULL)) {
         mafTree_dump(blk->mTree, fh);
     }
-#endif
     freeMem(fmtLabel);
     freeMem(nhTree);
     for (struct malnComp *comp = blk->comps; comp != NULL; comp = comp->next) {
-        malnComp_dump(comp, fh, "\t");
+        if (opts & malnBlk_dumpNoSeqs) {
+            fputc('\t', fh);
+            malnComp_prInfo(comp, fh);
+            fputc('\n', fh);
+        } else {
+            malnComp_dump(comp, fh, "\t");
+        }
     }    
 }
-
 /* print a block for debugging purposes */
-void malnBlk_dump(struct malnBlk *blk, FILE *fh, const char *label, ...) {
+void malnBlk_dump(struct malnBlk *blk, FILE *fh, unsigned opts, const char *label, ...) {
     va_list args;
     va_start(args, label);
-    malnBlk_dumpv(blk, fh, label, args);
+    malnBlk_dumpv(blk, fh, opts, label, args);
     va_end(args);
 }

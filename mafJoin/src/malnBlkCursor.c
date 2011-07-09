@@ -6,16 +6,16 @@
 static void constructWithAllComps(struct malnBlkCursor *bc, struct malnComp *guideComp) {
     // optionally force guideComp first
     if (guideComp != NULL) {
-        bc->alnWidth = malnComp_getWidth(guideComp);
+        bc->alnWidth = guideComp->alnWidth;
         bc->rows[bc->numRows++] = malnCompCursor_make(guideComp);
     }
     
     for (struct malnComp *comp = bc->blk->comps; comp != NULL; comp = comp->next) {
         if (comp != guideComp) {
             if (bc->numRows == 0) {
-                bc->alnWidth = malnComp_getWidth(comp);
+                bc->alnWidth = comp->alnWidth;
             }
-            assert(bc->alnWidth == malnComp_getWidth(comp));
+            assert(bc->alnWidth == comp->alnWidth);
             bc->rows[bc->numRows++] = malnCompCursor_make(comp);
         }
     }
@@ -26,9 +26,9 @@ static void constructWithSubsetComps(struct malnBlkCursor *bc, struct malnComp *
     while (subsetComps[bc->numRows] != NULL) {
         assert(subsetComps[bc->numRows]->blk == bc->blk);
         if (bc->numRows == 0) {
-            bc->alnWidth = malnComp_getWidth(subsetComps[bc->numRows]);
+            bc->alnWidth = subsetComps[bc->numRows]->alnWidth;
         }
-        assert(bc->alnWidth == malnComp_getWidth(subsetComps[bc->numRows]));
+        assert(bc->alnWidth == subsetComps[bc->numRows]->alnWidth);
         bc->rows[bc->numRows] = malnCompCursor_make(subsetComps[bc->numRows]);
         bc->numRows++;
     }
@@ -56,4 +56,13 @@ struct malnBlkCursor *malnBlkCursor_construct(struct malnBlk *blk, struct malnCo
 /* destructor */
 void malnBlkCursor_destruct(struct malnBlkCursor *bc) {
     freeMem(bc);
+}
+
+/* print cursor info for debugging */
+void malnBlkCursor_dump(struct malnBlkCursor *bc, FILE *fh, char *label) {
+    fprintf(fh, "%s: idx: %d width %d\n", label, bc->alnIdx, bc->alnWidth);
+    for (int i = 0; i < bc->numRows; i++) {
+        fprintf(fh, "    %d: ", i);
+        malnCompCursor_dump(&(bc->rows[i]), fh);
+    }
 }

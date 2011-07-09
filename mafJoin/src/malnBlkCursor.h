@@ -47,4 +47,7 @@ static inline bool malnBlkCursor_incr(struct malnBlkCursor *bc) {
     return bc->alnIdx < bc->alnWidth;
 }
 
+/* print cursor info for debugging */
+void malnBlkCursor_dump(struct malnBlkCursor *bc, FILE *fh, char *label);
+
 #endif
