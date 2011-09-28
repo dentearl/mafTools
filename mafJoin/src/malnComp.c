@@ -8,7 +8,7 @@
 #include "dystring.h"
 #include "dnautil.h"
 #include "sonLibString.h"
-#include "sonLibETree.h"
+#include "sonLibTree.h"
 
 /* construct a new seg. base maybe NULL */
 static struct malnCompSeg *malnCompSeg_construct(int start, int alnStart, char *bases, int len) {
