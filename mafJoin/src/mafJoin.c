@@ -5,7 +5,7 @@
 #include "malnJoinWithinSet.h"
 #include "malnJoinSets.h"
 #include "malnMergeComps.h"
-#include "sonLibETree.h"
+#include "sonLibTree.h"
 #include "malnMultiParents.h"
 #include <limits.h>
 #include <string.h>

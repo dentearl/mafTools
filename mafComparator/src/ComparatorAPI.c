@@ -1058,77 +1058,77 @@ void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtabl
     }
 }
 
-int32_t countNodes(ETree *node) {
+int32_t countNodes(stTree *node) {
     int32_t i = 0;
     int32_t count = 0;
     if (node == NULL) {
         return 0;
     } else {
         count = 1;
-        for (i = 0; i < eTree_getChildNumber(node); i++) {
-            count += countNodes(eTree_getChild(node, i));
+        for (i = 0; i < stTree_getChildNumber(node); i++) {
+            count += countNodes(stTree_getChild(node, i));
         }
         return count;
     }
 }
 
-int32_t countLeaves(ETree *node) {
+int32_t countLeaves(stTree *node) {
     int32_t i = 0;
     int32_t count = 0;
     if (node == NULL) {
         return 0;
     } else {
-        if (eTree_getChildNumber(node) == 0) {
+        if (stTree_getChildNumber(node) == 0) {
             return 1;
         } else {
-            for (i = 0; i < eTree_getChildNumber(node); i++) {
-                count += countLeaves(eTree_getChild(node, i));
+            for (i = 0; i < stTree_getChildNumber(node); i++) {
+                count += countLeaves(stTree_getChild(node, i));
             }
             return count;
         }
     }
 }
 
-void postOrderLabelNodes(ETree *node, int32_t *index, char **labelArray) {
+void postOrderLabelNodes(stTree *node, int32_t *index, char **labelArray) {
     int32_t i = 0;
-    for (i = 0; i < eTree_getChildNumber(node); i++) {
-        postOrderLabelNodes(eTree_getChild(node, i), index, labelArray);
+    for (i = 0; i < stTree_getChildNumber(node); i++) {
+        postOrderLabelNodes(stTree_getChild(node, i), index, labelArray);
     }
-    labelArray[*index] = stString_copy(eTree_getLabel(node));
+    labelArray[*index] = stString_copy(stTree_getLabel(node));
     *index += 1;
 
     return;
 }
 
-void postOrderLabelLeaves(ETree *node, int32_t *index, char **labelArray) {
+void postOrderLabelLeaves(stTree *node, int32_t *index, char **labelArray) {
     int32_t i = 0;
-    for (i = 0; i < eTree_getChildNumber(node); i++) {
-        postOrderLabelLeaves(eTree_getChild(node, i), index, labelArray);
+    for (i = 0; i < stTree_getChildNumber(node); i++) {
+        postOrderLabelLeaves(stTree_getChild(node, i), index, labelArray);
     }
-    if (eTree_getChildNumber(node) == 0) {
-        labelArray[*index] = stString_copy(eTree_getLabel(node));
+    if (stTree_getChildNumber(node) == 0) {
+        labelArray[*index] = stString_copy(stTree_getLabel(node));
         *index += 1;
     }
 
     return;
 }
 
-void lcaP(ETree *node, struct djs *uf, int32_t *ancestor, int32_t *color, struct hashtable *ht, int32_t size,
+void lcaP(stTree *node, struct djs *uf, int32_t *ancestor, int32_t *color, struct hashtable *ht, int32_t size,
         int32_t **lcaMatrix) {
     if (node == NULL) {
         return;
     }
 
-    int32_t u = *((int *) hashtable_search(ht, (void *) eTree_getLabel(node)));
+    int32_t u = *((int *) hashtable_search(ht, (void *) stTree_getLabel(node)));
     djs_makeset(uf, u);
     ancestor[djs_findset(uf, u)] = u;
 
     int32_t v;
 
     int32_t i = 0;
-    for (i = 0; i < eTree_getChildNumber(node); i++) {
-        lcaP(eTree_getChild(node, i), uf, ancestor, color, ht, size, lcaMatrix);
-        v = *((int *) hashtable_search(ht, (void *) eTree_getLabel(eTree_getChild(node, i))));
+    for (i = 0; i < stTree_getChildNumber(node); i++) {
+        lcaP(stTree_getChild(node, i), uf, ancestor, color, ht, size, lcaMatrix);
+        v = *((int *) hashtable_search(ht, (void *) stTree_getLabel(stTree_getChild(node, i))));
         djs_union(uf, u, v);
         ancestor[djs_findset(uf, u)] = u;
     }
@@ -1144,7 +1144,7 @@ void lcaP(ETree *node, struct djs *uf, int32_t *ancestor, int32_t *color, struct
     return;
 }
 
-int32_t **lca(ETree *root, struct hashtable *ht) {
+int32_t **lca(stTree *root, struct hashtable *ht) {
     int32_t nodeNum = countNodes(root);
 
     struct djs *uf = NULL;
@@ -1190,7 +1190,7 @@ void lcaMatrix_free(int32_t **lcaMatrix, int32_t nodeNum) {
     return;
 }
 
-char **createNodeLabelArray(ETree *tree, int32_t nodeNum) {
+char **createNodeLabelArray(stTree *tree, int32_t nodeNum) {
     char **labelArray = st_malloc(sizeof(char *) * nodeNum);
     int32_t po_index = 0;
 
@@ -1199,7 +1199,7 @@ char **createNodeLabelArray(ETree *tree, int32_t nodeNum) {
     return labelArray;
 }
 
-char **createLeafLabelArray(ETree *tree, int32_t nodeNum) {
+char **createLeafLabelArray(stTree *tree, int32_t nodeNum) {
     char **leafLabelArray = st_malloc(sizeof(char *) * nodeNum);
     int32_t po_index = 0;
 
@@ -1263,8 +1263,8 @@ int32_t calcTrioState(TrioDecoder *decoder, int32_t spAIdx, int32_t spBIdx, int3
 }
 
 TrioDecoder *trioDecoder_construct(char *treestring) {
-    ETree *tree = NULL;
-    tree = eTree_parseNewickString(treestring);
+    stTree *tree = NULL;
+    tree = stTree_parseNewickString(treestring);
 
     int32_t nodeNum = countNodes(tree);
     int32_t leafNum = countLeaves(tree);
@@ -1284,7 +1284,7 @@ TrioDecoder *trioDecoder_construct(char *treestring) {
     decoder->nodeNum = nodeNum;
     decoder->leafNum = leafNum;
 
-    eTree_destruct(tree);
+    stTree_destruct(tree);
     return decoder;
 }
 
