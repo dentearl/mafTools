@@ -49,15 +49,25 @@ static void buildRangeTree(struct malnSet *malnSet) {
     malnBlkSetIterator_destruct(iter);
 }
 
-/* convert a mafComp to an malnComp */
-static struct malnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafComp *mafComp) {
+/* validate a maf component */
+static void checkMafComp(struct mafComp *mafComp) {
     if ((mafComp->srcSize < 0) || (mafComp->start < 0) || (mafComp->size < 0)
         || ((mafComp->start+mafComp->size) > mafComp->srcSize)
         || (!((mafComp->strand == '+') || (mafComp->strand == '-')))) {
         errAbort("invalid mafComp: %s srcSize=%d strand=%c, start=%d size=%d",
                  mafComp->src, mafComp->srcSize, mafComp->strand, mafComp->start, mafComp->size);
     }
-        
+}
+
+/* validate a mafali */
+static void checkMafAli(struct mafAli *mafAli) {
+    for (struct mafComp *mafComp = mafAli->components; mafComp != NULL; mafComp = mafComp->next) {
+        checkMafComp(mafComp);
+    }
+}
+
+/* convert a mafComp to an malnComp */
+static struct malnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafComp *mafComp) {
     char buf[128];
     char *srcDb = mafCompGetSrcDb(mafComp, buf, sizeof(buf));
     if (srcDb == NULL) {
@@ -281,6 +291,7 @@ struct malnSet *malnSet_constructFromMaf(struct Genomes *genomes, char *mafFileN
     struct mafFile *mafFile = mafOpen(mafFileName);
     struct mafAli *ali;
     while ((ali = mafNext(mafFile)) != NULL) {
+        checkMafAli(ali);
         addMafAli(malnSet, ali, maxInputBlkWidth, defaultBranchLength, treelessRootGenome);
         mafAliFree(&ali);
     }
@@ -399,6 +410,7 @@ static stList *buildRootSorted(struct malnSet *malnSet) {
 static void writeBlkToMaf(struct malnBlk *blk, FILE *mafFh) {
     malnBlk_validate(blk);
     struct mafAli *ma = malnAliToMafAli(blk);
+    checkMafAli(ma);
     mafWrite(mafFh, ma);
     mafAliFree(&ma);
 }
