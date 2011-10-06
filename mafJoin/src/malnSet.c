@@ -51,6 +51,13 @@ static void buildRangeTree(struct malnSet *malnSet) {
 
 /* convert a mafComp to an malnComp */
 static struct malnComp *mafCompToMAlnComp(struct Genomes *genomes, struct mafComp *mafComp) {
+    if ((mafComp->srcSize < 0) || (mafComp->start < 0) || (mafComp->size < 0)
+        || ((mafComp->start+mafComp->size) > mafComp->srcSize)
+        || (!((mafComp->strand == '+') || (mafComp->strand == '-')))) {
+        errAbort("invalid mafComp: %s srcSize=%d strand=%c, start=%d size=%d",
+                 mafComp->src, mafComp->srcSize, mafComp->strand, mafComp->start, mafComp->size);
+    }
+        
     char buf[128];
     char *srcDb = mafCompGetSrcDb(mafComp, buf, sizeof(buf));
     if (srcDb == NULL) {
@@ -127,7 +134,7 @@ void malnSet_addBlk(struct malnSet *malnSet, struct malnBlk *blk) {
         addCompsToMap(malnSet, blk);
     }
 }
-
+ 
 /* add all blocks in to a malnSet */
 void malnSet_addBlks(struct malnSet *malnSet, struct malnBlkSet *blks) {
     struct malnBlkSetIterator *iter = malnBlkSet_getIterator(blks);
