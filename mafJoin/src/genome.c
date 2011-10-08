@@ -72,6 +72,8 @@ struct Seq *genomeObtainSeq(struct Genome *genome, const char *name, int size) {
         seq = seqNew(genome, name, size);
         hashAdd(genome->seqMap, (char*)name, seq);
         slAddHead(&genome->seqs, seq);
+    } else if (size != seq->size) {
+        errAbort("sequence \"%s\" already exists with size %d, however input also has it with size %d", seq->orgSeqName, seq->size, size);
     }
     return seq;
 }
