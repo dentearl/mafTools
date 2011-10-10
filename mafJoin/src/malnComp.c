@@ -8,7 +8,7 @@
 #include "dystring.h"
 #include "dnautil.h"
 #include "sonLibString.h"
-#include "sonLibETree.h"
+#include "sonLibTree.h"
 
 /* construct a new seg. base maybe NULL */
 static struct malnCompSeg *malnCompSeg_construct(int start, int alnStart, char *bases, int len) {
@@ -331,6 +331,8 @@ void malnComp_assert(struct malnComp *comp, bool ncLinkCheck) {
         assert(comp->start == (comp->seq->size - comp->chromEnd));
         assert(comp->end == (comp->seq->size - comp->chromStart));
     }
+    assert(comp->start < comp->end);
+    assert(comp->end <= comp->seq->size);
     assert(comp->alnWidth >= (comp->end - comp->start));
     assert(comp->alnWidth == comp->blk->alnWidth);
     if (malnComp_countAligned(comp) != (comp->end - comp->start)) { // FIXME

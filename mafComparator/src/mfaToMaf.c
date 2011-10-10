@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
     //Get the tree alignment
     //////////////////////////////////////////////
 
-    ETree *tree = NULL;
+    stTree *tree = NULL;
     LeafPtrArray *leafArray = NULL;
 
     int32_t leafCount = 0;
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
     //write the score line
     char *treeString = NULL;
     if (treeFile != NULL) {
-        treeString = eTree_getNewickTreeString(tree);
+        treeString = stTree_getNewickTreeString(tree);
         fprintf(fileHandle, "a score=0 tree=\"%s\"\n", treeString);
     }
     else {
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
     const char *label;
     for (ii=0; ii<leafCount; ii++) {
         if (treeFile != NULL) {
-            label = eTree_getLabel((ETree *) leafArray->ptrArray[ii]);
+            label = stTree_getLabel((stTree *) leafArray->ptrArray[ii]);
 
             /* Do a brute force search to find the appropriate sequence that matches "label" */
             for (i=0; i<sequences->length; i++) {
@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
     free(treeFile);
 
     if (treeFile != NULL) {
-        eTree_destruct(tree);
+        stTree_destruct(tree);
         free(treeString);
         eTreeX_destructLeafPtrArray(leafArray);
     }

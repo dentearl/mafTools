@@ -21,7 +21,7 @@ enum mafTreeLoc {
 /* link a tree node with component */
 struct mafTreeNodeCompLink {
     int treeOrder;          // DFS post-visit order
-    ETree *node;
+    stTree *node;
     struct malnComp *comp;
 };
 
