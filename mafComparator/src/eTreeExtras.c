@@ -28,35 +28,35 @@
 
 #include "eTreeExtras.h"
 
-void eTreeX_countLeaves(ETree *node, void *data) {
-    if (eTree_getChildNumber(node) == 0) {
+void eTreeX_countLeaves(stTree *node, void *data) {
+    if (stTree_getChildNumber(node) == 0) {
         *((int *) data) += 1;
     }
     return;
 }
 
-void eTreeX_getLeafArray(ETree *node, void *data) {
+void eTreeX_getLeafArray(stTree *node, void *data) {
     LeafPtrArray *p = (LeafPtrArray *) data;
 
-    if (eTree_getChildNumber(node) == 0) {
+    if (stTree_getChildNumber(node) == 0) {
         p->ptrArray[p->index] = (void *) node;
         p->index++;
     }
     return;
 }
 
-void eTreeX_postOrderTraversal(ETree *node, void (*func)(ETree *, void *), void *data) {
+void eTreeX_postOrderTraversal(stTree *node, void (*func)(stTree *, void *), void *data) {
     int32_t i = 0;
-    ETree *child = NULL;
-    for (i=0; i<eTree_getChildNumber(node); i++) {
-        child = eTree_getChild(node, i);
+    stTree *child = NULL;
+    for (i=0; i<stTree_getChildNumber(node); i++) {
+        child = stTree_getChild(node, i);
         eTreeX_postOrderTraversal(child, func, data);
     }
     func(node, data);
     return;
 }
 
-ETree *eTreeX_getTreeFromFile(char *treeFile) {
+stTree *eTreeX_getTreeFromFile(char *treeFile) {
     int bytesRead;
     int nBytes = 100;
     char *cA = st_malloc(nBytes + 1);
@@ -70,8 +70,8 @@ ETree *eTreeX_getTreeFromFile(char *treeFile) {
     assert(bytesRead == -1); // Only read a single line from file
     fclose(fileHandle);
 
-    ETree *tree = NULL;
-    tree = eTree_parseNewickString(cA);
+    stTree *tree = NULL;
+    tree = stTree_parseNewickString(cA);
 
     free(cA);
 

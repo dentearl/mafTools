@@ -38,10 +38,10 @@ typedef struct leafPtrArray {
         int32_t index;
 } LeafPtrArray;
 
-void eTreeX_countLeaves(ETree *node, void *data);
-void eTreeX_getLeafArray(ETree *node, void *data);
-void eTreeX_postOrderTraversal(ETree *node, void (*func)(ETree *, void *), void *data);
-ETree *eTreeX_getTreeFromFile(char *treeFile);
+void eTreeX_countLeaves(stTree *node, void *data);
+void eTreeX_getLeafArray(stTree *node, void *data);
+void eTreeX_postOrderTraversal(stTree *node, void (*func)(stTree *, void *), void *data);
+stTree *eTreeX_getTreeFromFile(char *treeFile);
 
 LeafPtrArray *eTreeX_constructLeafPtrArray(int32_t leafCount);
 void eTreeX_destructLeafPtrArray(LeafPtrArray *leafArray);
