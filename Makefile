@@ -2,13 +2,13 @@ include include.mk
 SHELL:=/bin/bash -e
 export SHELLOPTS=pipefail
 
-modules= mafComparator mafJoin mafValidator
+modules = mafComparator mafJoin mafValidator
 
 .PHONY: all %.all clean %.clean test %.test
 
 all: ${modules:%=%.all}
 
-%.all.:
+%.all:
 	cd $* && make all
 
 clean: ${modules:%=%.clean}
