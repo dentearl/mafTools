@@ -18,9 +18,9 @@ ifneq ($(wildcard ${kentDir}),)
 kentInc = ${kentDir}/inc
 kentLib = ${kentDir}/lib
 kentLibWeb = ${kentLib}/${MACH}/jkweb.a
-mafJoinObjs = $(foreach f,mafJoin jkmaf genome mafTree malnComp malnBlk malnBlkCursor malnBlkSet malnSet malnJoinBlks malnJoinWithinSet malnJoinSets malnMergeComps malnMultiParents malnCompCompMap, ${objPath}/$f.o)
+mafJoinObjs = $(foreach f,mafJoin jkmaf genome mafTree malnComp malnBlk malnBlkCursor malnBlkSet malnSet malnJoinBlks malnJoinWithinSet malnJoinSets malnMergeComps malnMultiParents malnCompCompMap malnAdjust, ${objPath}/$f.o)
 mafOverlapObjs = $(foreach f,mafOverlap jkmaf, ${objPath}/$f.o)
-mafAdjustObjs = $(foreach f,mafAdjust jkmaf genome mafTree malnComp malnBlk malnBlkCursor malnBlkSet malnSet malnJoinBlks malnJoinWithinSet malnJoinSets malnMergeComps malnCompCompMap, ${objPath}/$f.o)
+mafAdjustObjs = $(foreach f,mafAdjust jkmaf genome mafTree malnComp malnBlk malnBlkCursor malnBlkSet malnSet malnJoinBlks malnJoinWithinSet malnJoinSets malnMergeComps malnCompCompMap malnAdjust, ${objPath}/$f.o)
 cflags += -I ${kentInc}
 CFLAGS = ${cflags} -std=c99 -pedantic
 progs = ${binPath}/mafJoin ${binPath}/mafOverlap ${binPath}/mafAdjust
