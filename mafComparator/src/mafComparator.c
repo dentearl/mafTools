@@ -115,7 +115,7 @@ void usage() {
    fprintf(stderr, "-u --ultraVerbose : Print tab-delimited details about failed tests to stderr.\n");
    fprintf(stderr, "-v --version : Print current version number\n");
    fprintf(stderr, "-h --help : Print this help screen\n");
-   fprintf(stderr, "-f --bedFiles : The location of bed file used to filter the pairwise comparisons.\n");
+   fprintf(stderr, "-f --bedFiles : The location of bed file(s) used to filter the pairwise comparisons, separated by spaces.\n");
    fprintf(stderr, "-g --near : The number of bases in either sequence to allow a match to slip by.\n");
 }
 
