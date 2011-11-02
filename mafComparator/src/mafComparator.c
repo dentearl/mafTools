@@ -94,8 +94,18 @@ void parseBedFile(const char *cA, stHash *intervalsHash) {
     fclose(fileHandle);
 }
 
+char *stringCommasToSpaces(const char *string) {
+    char *cA = stString_copy(string);
+    int i = 0;
+    for (i = 0; i < strlen(cA); i++){
+        if (cA[i] == ',')
+            cA[i] = ' ';
+    }
+    return cA;
+}
+
 void parseBedFiles(const char *cA, stHash *bedFileHash) {
-    char *cA2 = stString_copy(cA);
+    char *cA2 = stringCommasToSpaces(cA);
     char *cA3 = cA2;
     char *cA4;
     while((cA4 = stString_getNextWord(&cA3)) != NULL) {
@@ -115,7 +125,7 @@ void usage() {
    fprintf(stderr, "-u --ultraVerbose : Print tab-delimited details about failed tests to stderr.\n");
    fprintf(stderr, "-v --version : Print current version number\n");
    fprintf(stderr, "-h --help : Print this help screen\n");
-   fprintf(stderr, "-f --bedFiles : The location of bed file(s) used to filter the pairwise comparisons, separated by spaces.\n");
+   fprintf(stderr, "-f --bedFiles : The location of bed file(s) used to filter the pairwise comparisons, separated by commas.\n");
    fprintf(stderr, "-g --near : The number of bases in either sequence to allow a match to slip by.\n");
 }
 
