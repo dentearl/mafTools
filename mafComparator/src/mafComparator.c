@@ -77,7 +77,6 @@ void parseBedFile(const char *cA, stHash *intervalsHash) {
     char *cA2 = st_malloc(nBytes + 1);
     int32_t bytesRead = benLine(&cA2, &nBytes, fileHandle);
 
-    //read through lines until reaching a line starting with an 's':
     while(bytesRead != -1) {
         if (bytesRead > 0) {
             int32_t start, stop;
@@ -86,11 +85,17 @@ void parseBedFile(const char *cA, stHash *intervalsHash) {
             assert(i == 3);
             stSortedSet *intervals = stHash_search(intervalsHash, cA3);
             if(intervals == NULL) {
-                intervals = stSortedSet_construct3((int (*)(const void *, const void *))stIntTuple_cmpFn, (void (*)(void *))stIntTuple_destruct);
+                intervals = stSortedSet_construct3((int (*)(const void *, const void *))stIntTuple_cmpFn, 
+                                                   (void (*)(void *))stIntTuple_destruct);
                 stHash_insert(intervalsHash, stString_copy(cA3), intervals);
             }
             free(cA3);
             stIntTuple *j = stIntTuple_construct(2, start, stop);
+            if (stSortedSet_search(intervals, j) != NULL){
+                fprintf(stderr, "found duplicate, %d %d\n", j[1], j[2]);
+                bytesRead = benLine (&cA2, &nBytes, fileHandle);
+                continue;
+            }
             assert(stSortedSet_search(intervals, j) == NULL);
             stSortedSet_insert(intervals, j);
         }
@@ -151,7 +156,8 @@ int main(int argc, char *argv[]) {
     char * mAFFile1 = NULL;
     char * mAFFile2 = NULL;
     char * outputFile = NULL;
-    stHash* intervalsHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, (void (*)(void *))stSortedSet_destruct);
+    stHash* intervalsHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, 
+                                              free, (void (*)(void *))stSortedSet_destruct);
     int32_t sampleNumber = 1000000; // by default do a million samples per pair.
     int32_t near = 0;
     int32_t i;
@@ -294,12 +300,14 @@ int main(int argc, char *argv[]) {
        fprintf(stderr, "# Comparing %s to %s\n", mAFFile1, mAFFile2);
        fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, intervalsHash, VERBOSEFAILURES, near);
+    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, 
+                                                  seqNames, intervalsHash, VERBOSEFAILURES, near);
     if (VERBOSEFAILURES){
        fprintf(stderr, "# Comparing %s to %s\n", mAFFile2, mAFFile1);
        fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, intervalsHash, VERBOSEFAILURES, near);
+    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, 
+                                                  seqNames, intervalsHash, VERBOSEFAILURES, near);
     fileHandle = fopen(outputFile, "w");
     if(fileHandle == NULL){
        fprintf(stderr, "ERROR, unable to open %s for writing.\n", outputFile);
