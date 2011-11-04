@@ -213,7 +213,7 @@ int32_t aTrio_cmpFunction(ATrio *aTrio1, ATrio *aTrio2, void *a) {
 
 void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extraArgument1, void *extraArgument2,
         void *extraArgument3, int32_t, int32_t), stHash *intervalsHash, void *extraArgument1, void *extraArgument2,
-        void *extraArgument3, int32_t verbose, int32_t near, int *bytesRead, int *nBytes, char **cA, FILE *fileHandle) {
+        void *extraArgument3, int32_t verboseFailures, int32_t near, int *bytesRead, int *nBytes, char **cA, FILE *fileHandle) {
     int32_t length, start, seqLength, i, j, k, pos1, pos2, inc1, inc2, origPos1, origPos2;
     struct List *ranges = constructEmptyList(0, free);
     char *seqName;
@@ -283,7 +283,7 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
                 if (sequence1[k] != '-') {
                     if (sequence2[k] != '-') {
                        aPair_fillOut(&aPair, seq1, seq2, pos1, pos2, origPos1, origPos2);
-                        passPairFn(&aPair, intervalsHash, extraArgument1, extraArgument2, extraArgument3, verbose, near);
+                        passPairFn(&aPair, intervalsHash, extraArgument1, extraArgument2, extraArgument3, verboseFailures, near);
                         pos2 += inc2;
                         origPos2 ++;
                     }
@@ -453,8 +453,8 @@ void getTriosP(void(*passTrioFn)(ATrio *trio, void *extraArgument1, void *extraA
 }
 
 void getPairs(const char *mAFFile1, void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extraArgument1,
-        void *extraArgument2, void *extraArgument3, int32_t verbose, int32_t near), stHash *intervalsHash,
-        void *extraArgument1, void *extraArgument2, void *extraArgument3, int32_t verbose, int32_t near) {
+        void *extraArgument2, void *extraArgument3, int32_t verboseFailures, int32_t near), stHash *intervalsHash,
+        void *extraArgument1, void *extraArgument2, void *extraArgument3, int32_t verboseFailures, int32_t near) {
     /*
      * Iterates through all pairs of bases in a set of MAFs, calling the given function for each one.
      */
@@ -470,7 +470,7 @@ void getPairs(const char *mAFFile1, void(*passPairFn)(APair *pair, stHash *inter
     //then call process block function passing it the next line.
     while (bytesRead != -1) {
         if (bytesRead > 0 && cA[0] == 'a') {
-            getPairsP(passPairFn, intervalsHash, extraArgument1, extraArgument2, extraArgument3, verbose, near,
+            getPairsP(passPairFn, intervalsHash, extraArgument1, extraArgument2, extraArgument3, verboseFailures, near,
                     &bytesRead, &nBytes, &cA, fileHandle);
         } else { //deal with empty, white space lines.
             bytesRead = benLine(&cA, &nBytes, fileHandle);
@@ -538,7 +538,7 @@ int32_t encodeTopoMatIdx(int32_t top1, int32_t top2) {
 }
 
 void countPairs(APair *pair, stHash *intervalsHash, int64_t *counter, stSortedSet *legitPairs, void *a,
-        int32_t verbose, int32_t near) {
+        int32_t verboseFailures, int32_t near) {
     /*
      * Counts the number of pairs in the MAF file.
      */
@@ -564,7 +564,7 @@ void countTrios(ATrio *trio, int64_t *counter, struct hashtable *legitTrios, voi
 }
 
 void samplePairs(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs, double *acceptProbability,
-        stSortedSet *legitPairs, int32_t verbose, int32_t near) {
+        stSortedSet *legitPairs, int32_t verboseFailures, int32_t near) {
     /*
      * Adds *thisPair to *pairs with a given probability.
      */
@@ -624,7 +624,7 @@ void getNearPairs(APair *thisPair, struct avl_table *pairs, int32_t near, stSort
 }
 
 void homologyTests1(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs, stSortedSet *positivePairs,
-        stSortedSet *legitPairs, int32_t verbose, int32_t near) {
+        stSortedSet *legitPairs, int32_t verboseFailures, int32_t near) {
     /*
      * If both members of *thisPair are in the intersection of MAFFileA and MAFFileB,
      * and *thisPair is in the set *pairs then adds to the result pair a positive result.
@@ -661,7 +661,7 @@ void homologyTestsTrio1(ATrio *trio, struct avl_table *trios, struct avl_table *
 }
 
 void homologyTests2(struct avl_table *pairs, struct avl_table *resultPairs, stHash *intervalsHash,
-        stSortedSet *positivePairs, int32_t verbose) {
+        stSortedSet *positivePairs, int32_t verboseFailures) {
     /*
      * For every pair in 'pairs', add 1 to the total number of homology tests for the sequence-pair.
      * We don't bother with the  seqNames hashtable here because the ht was used to build *pairs
@@ -706,7 +706,7 @@ void homologyTests2(struct avl_table *pairs, struct avl_table *resultPairs, stHa
         if (b) {
             resultPair->inAll++;
         } else {
-           if (verbose){
+           if (verboseFailures){
               fprintf(stderr, "%s\t%d\t%d\t%s\t%d\t%d\n", pair->seq1, pair->pos1, pair->origPos1, pair->seq2, pair->pos2, pair->origPos2);
            }
         }
@@ -733,28 +733,28 @@ void homologyTestsTrio2(struct avl_table *trios, struct avl_table *resultTrios) 
 }
 
 struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples,
-        stSortedSet *legitimateSequences, stHash *intervalsHash, int32_t verbose, int32_t near) {
+        stSortedSet *legitimateSequences, stHash *intervalsHash, int32_t verboseFailures, int32_t near) {
     /*
      * Gets samples.
      */
     int64_t pairNumber = 0;
     getPairs(mAFFileA, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) countPairs,
-            intervalsHash, &pairNumber, legitimateSequences, NULL, verbose, near);
+            intervalsHash, &pairNumber, legitimateSequences, NULL, verboseFailures, near);
 
     double acceptProbability = ((double) numberOfSamples) / pairNumber;
     struct avl_table *pairs =
             avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction, NULL, NULL);
     getPairs(mAFFileA, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) samplePairs,
-            intervalsHash, pairs, &acceptProbability, legitimateSequences, verbose, near);
+            intervalsHash, pairs, &acceptProbability, legitimateSequences, verboseFailures, near);
 
     stSortedSet *positivePairs = stSortedSet_construct();
     getPairs(mAFFileB, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) homologyTests1,
-            intervalsHash, pairs, positivePairs, legitimateSequences, verbose, near);
+            intervalsHash, pairs, positivePairs, legitimateSequences, verboseFailures, near);
 
     struct avl_table *resultPairs = avl_create(
                 (int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction_seqsOnly, NULL, NULL);
 
-    homologyTests2(pairs, resultPairs, intervalsHash, positivePairs, verbose);
+    homologyTests2(pairs, resultPairs, intervalsHash, positivePairs, verboseFailures);
     avl_destroy(pairs, (void(*)(void *, void *)) aPair_destruct);
     stSortedSet_destruct(positivePairs);
     return resultPairs;

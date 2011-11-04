@@ -45,8 +45,7 @@
 #include "ComparatorAPI.h"
 
 float VERSION = 0.2;
-int32_t ULTRAVERBOSE = 0;
-int32_t PRINTFAILED = 0;
+int32_t VERBOSEFAILURES = 0;
 
 /*
  * The script takes two MAF files and for each ordered pair of sequences in the MAFS calculates
@@ -66,9 +65,6 @@ int32_t PRINTFAILED = 0;
  */
 
 void parseBedFile(const char *cA, stHash *intervalsHash) {
-    if (ULTRAVERBOSE){
-        fprintf(stderr, "parsing bed file, %s\n", cA);
-    }
     FILE *fileHandle = fopen(cA, "r");
     if(fileHandle == NULL){
         if (errno == ENOENT)
@@ -136,7 +132,7 @@ void usage() {
    fprintf(stderr, "-c --mafFile2 : The location of the second MAF file\n");
    fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
    fprintf(stderr, "-e --sampleNumber : The number of sample homology tests to perform (total) [default 1000000].\n");
-   fprintf(stderr, "-u --ultraVerbose : Print tab-delimited details about failed tests to stderr.\n");
+   fprintf(stderr, "-p --printFailures : Print tab-delimited details about failed tests to stderr.\n");
    fprintf(stderr, "-v --version : Print current version number\n");
    fprintf(stderr, "-h --help : Print this help screen\n");
    fprintf(stderr, "-f --bedFiles : The location of bed file(s) used to filter the pairwise comparisons, separated by commas.\n");
@@ -171,7 +167,7 @@ int main(int argc, char *argv[]) {
             { "mafFile2", required_argument, 0, 'c' },
             { "outputFile", required_argument, 0, 'd' },
             { "sampleNumber", required_argument, 0, 'e' },
-            { "ultraVerbose", no_argument, 0, 'u'},
+            { "printFailed", no_argument, 0, 'p'},
             { "version", no_argument, 0, 'v'},
             { "help", no_argument, 0, 'h' },
             { "bedFiles", required_argument, 0, 'f' },
@@ -203,8 +199,8 @@ int main(int argc, char *argv[]) {
             case 'v':
                 version();
                 return 0;
-            case 'u':
-                ULTRAVERBOSE = 1;
+            case 'p':
+                VERBOSEFAILURES = 1;
                 break;
             case 'e':
                 i = sscanf(optarg, "%i", &sampleNumber);
@@ -294,16 +290,16 @@ int main(int argc, char *argv[]) {
     //Do comparisons.
     //////////////////////////////////////////////
 
-    if (ULTRAVERBOSE){
+    if (VERBOSEFAILURES){
        fprintf(stderr, "# Comparing %s to %s\n", mAFFile1, mAFFile2);
        fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near);
-    if (ULTRAVERBOSE){
+    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, intervalsHash, VERBOSEFAILURES, near);
+    if (VERBOSEFAILURES){
        fprintf(stderr, "# Comparing %s to %s\n", mAFFile2, mAFFile1);
        fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near);
+    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, intervalsHash, VERBOSEFAILURES, near);
     fileHandle = fopen(outputFile, "w");
     if(fileHandle == NULL){
        fprintf(stderr, "ERROR, unable to open %s for writing.\n", outputFile);
