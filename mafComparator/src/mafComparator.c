@@ -26,6 +26,7 @@
 */
 
 #include <assert.h>
+#include <errno.h> // file existence via ENOENT
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
@@ -43,8 +44,9 @@
 
 #include "ComparatorAPI.h"
 
-float VERSION = 0.1;
+float VERSION = 0.2;
 int32_t ULTRAVERBOSE = 0;
+int32_t PRINTFAILED = 0;
 
 /*
  * The script takes two MAF files and for each ordered pair of sequences in the MAFS calculates
@@ -64,11 +66,20 @@ int32_t ULTRAVERBOSE = 0;
  */
 
 void parseBedFile(const char *cA, stHash *intervalsHash) {
+    if (ULTRAVERBOSE){
+        fprintf(stderr, "parsing bed file, %s\n", cA);
+    }
     FILE *fileHandle = fopen(cA, "r");
-
+    if(fileHandle == NULL){
+        if (errno == ENOENT)
+            fprintf(stderr, "ERROR, file %s does not exist.\n", cA);
+        else
+            fprintf(stderr, "ERROR, unable to open %s\n", cA);
+        exit(1);
+    }
     int nBytes = 100;
     char *cA2 = st_malloc(nBytes + 1);
-    int32_t bytesRead = benLine (&cA2, &nBytes, fileHandle);
+    int32_t bytesRead = benLine(&cA2, &nBytes, fileHandle);
 
     //read through lines until reaching a line starting with an 's':
     while(bytesRead != -1) {
@@ -95,6 +106,9 @@ void parseBedFile(const char *cA, stHash *intervalsHash) {
 }
 
 char *stringCommasToSpaces(const char *string) {
+    /* stString_getNextWork works on spaces so 
+       we swap commas for spaces 
+    */
     char *cA = stString_copy(string);
     int i = 0;
     for (i = 0; i < strlen(cA); i++){
@@ -233,14 +247,20 @@ int main(int argc, char *argv[]) {
     }
     FILE *fileHandle = fopen(mAFFile1, "r");
     if(fileHandle == NULL){
-       fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", mAFFile1);
-       exit(1);
+        if (errno == ENOENT)
+            fprintf(stderr, "ERROR, file %s does not exist.\n", mAFFile1);
+        else
+            fprintf(stderr, "ERROR, unable to open %s\n", mAFFile1);
+        exit(1);
     }
     fclose(fileHandle);
     fileHandle = fopen(mAFFile2, "r");
     if(fileHandle == NULL){
-       fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", mAFFile2);
-       exit(1);
+        if (errno == ENOENT)
+            fprintf(stderr, "ERROR, file %s does not exist.\n", mAFFile2);
+        else
+            fprintf(stderr, "ERROR, unable to open %s\n", mAFFile2);
+        exit(1);
     }
     fclose(fileHandle);
 
@@ -286,7 +306,7 @@ int main(int argc, char *argv[]) {
     struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near);
     fileHandle = fopen(outputFile, "w");
     if(fileHandle == NULL){
-       fprintf(stderr, "ERROR, unable to open `%s' for writing.\n", outputFile);
+       fprintf(stderr, "ERROR, unable to open %s for writing.\n", outputFile);
        exit(1);
     }
 
