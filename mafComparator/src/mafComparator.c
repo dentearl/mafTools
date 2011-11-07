@@ -203,11 +203,10 @@ int main(int argc, char *argv[]) {
 
         int option_index = 0;
 
-        int key = getopt_long(argc, argv, "a:b:c:d:e:u:v:hf:g:", long_options, &option_index);
+        int key = getopt_long(argc, argv, "a:b:c:d:e:p:v:h:f:g:", long_options, &option_index);
 
-        if(key == -1) {
+        if(key == -1)
             break;
-        }
 
         switch(key) {
             case 'a':
@@ -254,17 +253,17 @@ int main(int argc, char *argv[]) {
     ///////////////////////////////////////////////////////////////////////////
     if (mAFFile1 == NULL){
        usage();
-       fprintf(stderr, "\nSet --mAFFile1 .\n");
+       fprintf(stderr, "\nSet --mAFFile1\n");
        exit(2);
     }
     if (mAFFile2 == NULL){
        usage();
-       fprintf(stderr, "\nSet --mAFFile2 .\n");
+       fprintf(stderr, "\nSet --mAFFile2\n");
        exit(2);
     }
     if (outputFile == NULL){
        usage();
-       fprintf(stderr, "\nSet --outputFile .\n");
+       fprintf(stderr, "\nSet --outputFile\n");
        exit(2);
     }
     FILE *fileHandle = fopen(mAFFile1, "r");
@@ -338,7 +337,7 @@ int main(int argc, char *argv[]) {
     //Report results.
     //////////////////////////////////////////////
     
-    writeXMLHeader( fileHandle );
+    writeXMLHeader(fileHandle);
     fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\">\n", sampleNumber);
     reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near, seqNames);
     reportResults(results_21, mAFFile2, mAFFile1, fileHandle, near, seqNames);
