@@ -24,7 +24,7 @@
 * <code>-c --mafFile2</code> : The location of the second MAF file
 * <code>-d --outputFile</code> : The output XML formatted results file.
 * <code>-e --sampleNumber</code> : The number of sample homology tests to perform (total) [default 1000000].
-* <code>-u --ultraVerbose</code> : Print tab-delimited details about failed tests to stderr.
+* <code>-p --printFailures</code> : Print tab-delimited details about failed tests to stderr.
 * <code>-v --version</code> : Print current version number
 * <code>-h --help</code> : Print this help screen
 * <code>-f --bedFiles</code> : The location of bed file used to filter the pairwise comparisons.

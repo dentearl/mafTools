@@ -26,6 +26,7 @@
 */
 
 #include <assert.h>
+#include <errno.h> // file existence via ENOENT
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
@@ -43,8 +44,8 @@
 
 #include "ComparatorAPI.h"
 
-float VERSION = 0.1;
-int32_t ULTRAVERBOSE = 0;
+float VERSION = 0.2;
+int32_t VERBOSEFAILURES = 0;
 
 /*
  * The script takes two MAF files and for each ordered pair of sequences in the MAFS calculates
@@ -65,10 +66,16 @@ int32_t ULTRAVERBOSE = 0;
 
 void parseBedFile(const char *cA, stHash *intervalsHash) {
     FILE *fileHandle = fopen(cA, "r");
-
+    if(fileHandle == NULL){
+        if (errno == ENOENT)
+            fprintf(stderr, "ERROR, file %s does not exist.\n", cA);
+        else
+            fprintf(stderr, "ERROR, unable to open %s\n", cA);
+        exit(1);
+    }
     int nBytes = 100;
     char *cA2 = st_malloc(nBytes + 1);
-    int32_t bytesRead = benLine (&cA2, &nBytes, fileHandle);
+    int32_t bytesRead = benLine(&cA2, &nBytes, fileHandle);
 
     //read through lines until reaching a line starting with an 's':
     while(bytesRead != -1) {
@@ -94,8 +101,21 @@ void parseBedFile(const char *cA, stHash *intervalsHash) {
     fclose(fileHandle);
 }
 
+char *stringCommasToSpaces(const char *string) {
+    /* stString_getNextWork works on spaces so 
+       we swap commas for spaces 
+    */
+    char *cA = stString_copy(string);
+    int i = 0;
+    for (i = 0; i < strlen(cA); i++){
+        if (cA[i] == ',')
+            cA[i] = ' ';
+    }
+    return cA;
+}
+
 void parseBedFiles(const char *cA, stHash *bedFileHash) {
-    char *cA2 = stString_copy(cA);
+    char *cA2 = stringCommasToSpaces(cA);
     char *cA3 = cA2;
     char *cA4;
     while((cA4 = stString_getNextWord(&cA3)) != NULL) {
@@ -112,10 +132,10 @@ void usage() {
    fprintf(stderr, "-c --mafFile2 : The location of the second MAF file\n");
    fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
    fprintf(stderr, "-e --sampleNumber : The number of sample homology tests to perform (total) [default 1000000].\n");
-   fprintf(stderr, "-u --ultraVerbose : Print tab-delimited details about failed tests to stderr.\n");
+   fprintf(stderr, "-p --printFailures : Print tab-delimited details about failed tests to stderr.\n");
    fprintf(stderr, "-v --version : Print current version number\n");
    fprintf(stderr, "-h --help : Print this help screen\n");
-   fprintf(stderr, "-f --bedFiles : The location of bed file used to filter the pairwise comparisons.\n");
+   fprintf(stderr, "-f --bedFiles : The location of bed file(s) used to filter the pairwise comparisons, separated by commas.\n");
    fprintf(stderr, "-g --near : The number of bases in either sequence to allow a match to slip by.\n");
 }
 
@@ -147,7 +167,7 @@ int main(int argc, char *argv[]) {
             { "mafFile2", required_argument, 0, 'c' },
             { "outputFile", required_argument, 0, 'd' },
             { "sampleNumber", required_argument, 0, 'e' },
-            { "ultraVerbose", no_argument, 0, 'u'},
+            { "printFailed", no_argument, 0, 'p'},
             { "version", no_argument, 0, 'v'},
             { "help", no_argument, 0, 'h' },
             { "bedFiles", required_argument, 0, 'f' },
@@ -179,8 +199,8 @@ int main(int argc, char *argv[]) {
             case 'v':
                 version();
                 return 0;
-            case 'u':
-                ULTRAVERBOSE = 1;
+            case 'p':
+                VERBOSEFAILURES = 1;
                 break;
             case 'e':
                 i = sscanf(optarg, "%i", &sampleNumber);
@@ -223,14 +243,20 @@ int main(int argc, char *argv[]) {
     }
     FILE *fileHandle = fopen(mAFFile1, "r");
     if(fileHandle == NULL){
-       fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", mAFFile1);
-       exit(1);
+        if (errno == ENOENT)
+            fprintf(stderr, "ERROR, file %s does not exist.\n", mAFFile1);
+        else
+            fprintf(stderr, "ERROR, unable to open %s\n", mAFFile1);
+        exit(1);
     }
     fclose(fileHandle);
     fileHandle = fopen(mAFFile2, "r");
     if(fileHandle == NULL){
-       fprintf(stderr, "ERROR, unable to open `%s', is path correct?\n", mAFFile2);
-       exit(1);
+        if (errno == ENOENT)
+            fprintf(stderr, "ERROR, file %s does not exist.\n", mAFFile2);
+        else
+            fprintf(stderr, "ERROR, unable to open %s\n", mAFFile2);
+        exit(1);
     }
     fclose(fileHandle);
 
@@ -264,19 +290,19 @@ int main(int argc, char *argv[]) {
     //Do comparisons.
     //////////////////////////////////////////////
 
-    if (ULTRAVERBOSE){
+    if (VERBOSEFAILURES){
        fprintf(stderr, "# Comparing %s to %s\n", mAFFile1, mAFFile2);
        fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near);
-    if (ULTRAVERBOSE){
+    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, intervalsHash, VERBOSEFAILURES, near);
+    if (VERBOSEFAILURES){
        fprintf(stderr, "# Comparing %s to %s\n", mAFFile2, mAFFile1);
        fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, intervalsHash, ULTRAVERBOSE, near);
+    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, intervalsHash, VERBOSEFAILURES, near);
     fileHandle = fopen(outputFile, "w");
     if(fileHandle == NULL){
-       fprintf(stderr, "ERROR, unable to open `%s' for writing.\n", outputFile);
+       fprintf(stderr, "ERROR, unable to open %s for writing.\n", outputFile);
        exit(1);
     }
 
