@@ -25,7 +25,6 @@
  * THE SOFTWARE. 
 */
 
-
 #include "ComparatorAPI.h"
 #include "cString.h"
 
@@ -607,8 +606,8 @@ bool inInterval(stHash *intervalsHash, char *seq, int32_t position) {
     if (intervals == NULL) {
         return 0;
     }
-    stIntTuple *i = stIntTuple_construct(1, position);
-    stIntTuple *j = stSortedSet_searchGreaterThanOrEqual(intervals, i);
+    stIntTuple *i = stIntTuple_construct(2, position, INT32_MAX);
+    stIntTuple *j = stSortedSet_searchLessThanOrEqual(intervals, i);
     stIntTuple_destruct(i);
     if (j == NULL) {
         return 0;
@@ -680,7 +679,7 @@ void homologyTests2(struct avl_table *pairs, struct avl_table *resultPairs, stHa
                     stSortedSet *positivePairs, int32_t verboseFailures) {
     /*
      * For every pair in 'pairs', add 1 to the total number of homology tests for the sequence-pair.
-     * We don't bother with the  seqNames hashtable here because the ht was used to build *pairs
+     * We don't bother with the seqNames hashtable here because the ht was used to build *pairs
      * in the first place.
      */
     static struct avl_traverser iterator;
