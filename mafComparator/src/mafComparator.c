@@ -72,17 +72,17 @@ int32_t VERBOSEFAILURES = 0;
  * in A.
  */
 
-void parseBedFile(const char *cA, stHash *intervalsHash) {
+void parseBedFile(const char *filepath, stHash *intervalsHash) {
     /* 
      * takes a filepath and the intervalsHash, opens and reads the file,
      * adding intervals taken from each bed line to the intervalsHash.
      */
-    FILE *fileHandle = fopen(cA, "r");
+    FILE *fileHandle = fopen(filepath, "r");
     if(fileHandle == NULL){
         if (errno == ENOENT)
-            fprintf(stderr, "ERROR, file %s does not exist.\n", cA);
+            fprintf(stderr, "ERROR, file %s does not exist.\n", filepath);
         else
-            fprintf(stderr, "ERROR, unable to open %s\n", cA);
+            fprintf(stderr, "ERROR, unable to open %s\n", filepath);
         exit(1);
     }
     int nBytes = 100;
@@ -103,11 +103,6 @@ void parseBedFile(const char *cA, stHash *intervalsHash) {
             }
             free(cA3);
             stIntTuple *j = stIntTuple_construct(2, start, stop);
-            if (stSortedSet_search(intervals, j) != NULL){
-                fprintf(stderr, "found duplicate, %d %d\n", j[1], j[2]);
-                bytesRead = benLine(&cA2, &nBytes, fileHandle);
-                continue;
-            }
             assert(stSortedSet_search(intervals, j) == NULL);
             stSortedSet_insert(intervals, j);
         }
