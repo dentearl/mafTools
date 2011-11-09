@@ -801,10 +801,14 @@ struct avl_table *compareMAFs_AB_Trio(const char *mAFFileA, const char *mAFFileB
     return resultTrios;
 }
 
-void reportResult(const char *tagName, double total, double totalTrue, FILE *fileHandle) {
+void reportResult(const char *tagName, double total, double totalTrue, FILE *fileHandle, int tabLevel) {
     assert(total >= totalTrue);
-    fprintf(fileHandle, "<%s totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\"/>\n", tagName,
-            (int32_t) total, (int32_t) totalTrue, (int32_t) (total - totalTrue), totalTrue / total);
+    int i;
+    for (i = 0; i < tabLevel; i++)
+        fprintf(fileHandle, "\t");
+    fprintf(fileHandle, "<%s totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\"/>\n",
+            tagName, (int32_t) total, (int32_t) totalTrue, 
+            (int32_t) (total - totalTrue), totalTrue / total);
 }
 
 ResultPair *aggregateResult(void *(*getNextPair)(void *, void *), void *arg1, void *arg2, const char *name1, const char *name2) {
@@ -894,36 +898,41 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
 
     addReferencesAndDups(results_AB, legitimateSequences);
 
-	fprintf(fileHandle, "\t<homology_tests fileA=\"%s\" fileB=\"%s\" near=\"%i\">\n<aggregate_results>\n", 
-           mAFFileA, mAFFileB, near);
-    reportResult("all", aggregateResults->total, aggregateResults->inAll, fileHandle);
-    reportResult("both", aggregateResults->totalBoth, aggregateResults->inBoth, fileHandle);
-    reportResult("A", aggregateResults->totalA, aggregateResults->inA, fileHandle);
-    reportResult("B", aggregateResults->totalB, aggregateResults->inB, fileHandle);
-    reportResult("neither", aggregateResults->totalNeither, aggregateResults->inNeither, fileHandle);
-    fprintf(fileHandle, "</aggregate_results>\n<homology_pair_tests>\n");
+    fprintf(fileHandle, "\t<homology_tests fileA=\"%s\" fileB=\"%s\" near=\"%i\">\n"
+            "\t\t<aggregate_results>\n", 
+            mAFFileA, mAFFileB, near);
+    reportResult("all", aggregateResults->total, aggregateResults->inAll, fileHandle, 3);
+    reportResult("both", aggregateResults->totalBoth, aggregateResults->inBoth, fileHandle, 3);
+    reportResult("A", aggregateResults->totalA, aggregateResults->inA, fileHandle, 3);
+    reportResult("B", aggregateResults->totalB, aggregateResults->inB, fileHandle, 3);
+    reportResult("neither", aggregateResults->totalNeither, aggregateResults->inNeither, fileHandle, 3);
+    fprintf(fileHandle, "\t\t</aggregate_results>\n\t\t<homology_pair_tests>\n");
 
     while ((resultPair = avl_t_prev(&iterator)) != NULL) {
-        fprintf(fileHandle, "<homology_test sequenceA=\"%s\" sequenceB=\"%s\">\n<aggregate_results>\n",
+        fprintf(fileHandle, "\t\t\t<homology_test sequenceA=\"%s\" sequenceB=\"%s\">\n"
+                "\t\t\t\t<aggregate_results>\n",
                 resultPair->aPair.seq1, resultPair->aPair.seq2);
-        reportResult("all", resultPair->total, resultPair->inAll, fileHandle);
-        reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle);
-        reportResult("A", resultPair->totalA, resultPair->inA, fileHandle);
-        reportResult("B", resultPair->totalB, resultPair->inB, fileHandle);
-        reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle);
-        fprintf(fileHandle, "</aggregate_results>\n<single_homology_tests>");
-        fprintf(fileHandle, "<single_homology_test sequenceA=\"%s\" sequenceB=\"%s\">\n<aggregate_results>\n",
+        reportResult("all", resultPair->total, resultPair->inAll, fileHandle, 5);
+        reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 5);
+        reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, 5);
+        reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 5);
+        reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 5);
+        fprintf(fileHandle, "\t\t\t\t</aggregate_results>\n\t\t\t\t<single_homology_tests>\n");
+        fprintf(fileHandle, "\t\t\t\t\t<single_homology_test sequenceA=\"%s\" sequenceB=\"%s\">\n"
+                "\t\t\t\t\t\t<aggregate_results>\n",
                 resultPair->aPair.seq1, resultPair->aPair.seq2);
-        reportResult("all", resultPair->total, resultPair->inAll, fileHandle);
-        reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle);
-        reportResult("A", resultPair->totalA, resultPair->inA, fileHandle);
-        reportResult("B", resultPair->totalB, resultPair->inB, fileHandle);
-        reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle);
-        fprintf(fileHandle,
-                "</aggregate_results>\n</single_homology_test>\n</single_homology_tests>\n</homology_test>\n");
+        reportResult("all", resultPair->total, resultPair->inAll, fileHandle, 6);
+        reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 6);
+        reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, 6);
+        reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 6);
+        reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 6);
+        fprintf(fileHandle,"\t\t\t\t\t\t</aggregate_results>\n"
+                "\t\t\t\t\t</single_homology_test>\n"
+                "\t\t\t\t</single_homology_tests>\n"
+                "\t\t\t</homology_test>\n");
     }
 
-    fprintf(fileHandle, "</homology_pair_tests>\n</homology_tests>\n");
+    fprintf(fileHandle, "\t\t</homology_pair_tests>\n\t</homology_tests>\n");
     return;
 }
 
