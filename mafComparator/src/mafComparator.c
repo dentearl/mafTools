@@ -173,6 +173,7 @@ int main(int argc, char *argv[]) {
     char * outputFile = NULL;
     stHash* intervalsHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, 
                                               free, (void (*)(void *))stSortedSet_destruct);
+    char * bedFiles = NULL;
     int32_t sampleNumber = 1000000; // by default do a million samples per pair.
     int32_t near = 0;
     int32_t i;
@@ -232,6 +233,7 @@ int main(int argc, char *argv[]) {
             case 'f':
                 //Parse the bed file hashes
                 parseBedFiles(optarg, intervalsHash);
+                bedFiles = stString_copy(optarg);
                 break;
             case 'g':
                 i = sscanf(optarg, "%i", &near);
@@ -333,7 +335,11 @@ int main(int argc, char *argv[]) {
     //////////////////////////////////////////////
     
     writeXMLHeader(fileHandle);
-    fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\">\n", sampleNumber);
+    if (bedFiles == NULL)
+        fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\">\n", sampleNumber);
+    else
+        fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\" bedFiles=\"%s\">\n", 
+                sampleNumber, bedFiles);
     reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near, seqNames);
     reportResults(results_21, mAFFile2, mAFFile1, fileHandle, near, seqNames);
     fprintf(fileHandle, "</alignment_comparisons>\n");
