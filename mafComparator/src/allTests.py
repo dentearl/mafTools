@@ -33,6 +33,13 @@ import setDiffDroppedMissing as setD
 import shutil
 import subprocess
 import unittest
+import sys
+
+from sonLib.bioio import system
+from sonLib.bioio import logger
+from sonLib.bioio import getLogLevelString
+
+from cactus.shared.test import parseCactusSuiteTestOptions
 
 class BedParsing(unittest.TestCase):
     header = '##maf version=1\n\n'
@@ -43,38 +50,47 @@ class BedParsing(unittest.TestCase):
     # known values contains quad-tuples,
     # maf1, maf2, bed, threshold
                    # test 1 - 0 % bed coverage
-    knownValues = [('s test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+    knownValues = [('a score=0\n'
+                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
                     's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
+                    'a score=0\n'
                     's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
                     's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
                     'test1.chr0\t30\t100\n',
-                    0.0, 0.0),
+                    20, 0),
                    # test 2 - no bed file
-                   ('s test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                   ('a score=0\n'
+                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
                     's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
+                    'a score=0\n'
                     's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
                     's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
                     '',
-                    0.99, 1.0),
+                    20, 0),
                    # test 3 - 50% bed coverage
-                   ('s test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                   ('a score=0\n'
+                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
                     's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
+                    'a score=0\n'
                     's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
                     's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
                     'test1.chr0\t11\t100\n',
-                    0.4, 0.6),
+                    20, 9),
                    # test 3 - 100% bed coverage
-                   ('s test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                   ('a score=0\n'
+                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
                     's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
+                    'a score=0\n'
                     's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
                     's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
                     'test1.chr0\t1\t100\n',
-                    0.9, 1.0),
+                    20, 19),
                    ]
+    
     def test_bedParsing(self):
         """ mafComparator should parse a bed file and use the intervals for testing
         """
-        for maf1, maf2, bed, lthreshold, uthreshold in self.knownValues:
+        for maf1, maf2, bed, totalTrue, totalTrueInInterval in self.knownValues:
             if not os.path.exists('tempTestFiles'):
                 os.mkdir('tempTestFiles')
             f = open(self.maf1path, 'w')
@@ -92,29 +108,12 @@ class BedParsing(unittest.TestCase):
             cmd.append('--outputFile=%s' % os.path.join('tempTestFiles', 'output.xml'))
             if bed != '':
                 cmd.append('--bedFiles=%s' % os.path.join('tempTestFiles', 'bed.bed'))
-            cmd.append('--sampleNumber=1000')
-            p = subprocess.Popen(cmd)
-            p.wait()
-            if p.returncode:
-                if p.returncode < 0:
-                    raise RuntimeError('Experienced an error while trying to execute: '
-                                       '%s SIGNAL:%d' %(' '.join(cmd), -p.returncode))
-                else:
-                    raise RuntimeError('Experienced an error while trying to execute: '
-                                       '%s retcode:%d' %(' '.join(cmd), p.returncode))
+            cmd.append('--sampleNumber=1000 --logLevel %s' % getLogLevelString())
+            system(" ".join(cmd)) #Much nicer, huh? It will capture all the bugs
             tree = ET.parse(os.path.join('tempTestFiles', 'output.xml'))
             homTests = tree.findall('homology_tests')
-            try:
-                sens = float(homTests[0].find('aggregate_results').find('all').attrib['totalTests'])
-            except ValueError:
-                sens = 0.0
-            try:
-                spec = float(homTests[1].find('aggregate_results').find('all').attrib['totalTests'])
-            except ValueError:
-                spec = 0.0
-            if not (lthreshold <= sens <= uthreshold):
-                raise RuntimeError('not lthreshold (%.3f) <= sens (%.3f) <= uthreshold (%.3f)' 
-                                   % (lthreshold, sens, uthreshold))
+            self.assertAlmostEquals(totalTrue, float(homTests[0].find('aggregate_results').find('all').attrib['totalTrue']))
+            self.assertAlmostEquals(totalTrueInInterval, float(homTests[0].find('aggregate_results').find('A').attrib['totalTrue']))
             shutil.rmtree(os.path.dirname(self.maf1path))
 
 class setDifferenceTests(unittest.TestCase):
@@ -276,5 +275,10 @@ class setDifferenceTests(unittest.TestCase):
         result = setD.intersect(dropped, missing)
         self.assertTrue(len(result) == 0)
 
-if __name__ == '__main__':
+def main():
+    parseCactusSuiteTestOptions()
+    sys.argv = sys.argv[:1]
     unittest.main()
+        
+if __name__ == '__main__':
+    main()

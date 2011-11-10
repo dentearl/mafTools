@@ -808,7 +808,7 @@ void reportResult(const char *tagName, double total, double totalTrue, FILE *fil
         fprintf(fileHandle, "\t");
     fprintf(fileHandle, "<%s totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\"/>\n",
             tagName, (int32_t) total, (int32_t) totalTrue, 
-            (int32_t) (total - totalTrue), totalTrue / total);
+            (int32_t) (total - totalTrue), total == 0 ? 0.0 : totalTrue / total);
 }
 
 ResultPair *aggregateResult(void *(*getNextPair)(void *, void *), void *arg1, void *arg2, const char *name1, const char *name2) {

@@ -23,7 +23,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
-*/
+ */
 
 #include <assert.h>
 #include <errno.h> // file existence via ENOENT
@@ -78,7 +78,8 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
      * adding intervals taken from each bed line to the intervalsHash.
      */
     FILE *fileHandle = fopen(filepath, "r");
-    if(fileHandle == NULL){
+    st_logDebug("Parsing the bed file: %s\n", filepath);
+    if (fileHandle == NULL) {
         if (errno == ENOENT)
             fprintf(stderr, "ERROR, file %s does not exist.\n", filepath);
         else
@@ -89,35 +90,61 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
     char *cA2 = st_malloc(nBytes + 1);
     int32_t bytesRead = benLine(&cA2, &nBytes, fileHandle);
 
-    while(bytesRead != -1) {
+    while (bytesRead != -1) {
         if (bytesRead > 0) {
             int32_t start, stop;
             char *cA3 = stString_copy(cA2);
             int32_t i = sscanf(cA2, "%s %i %i", cA3, &start, &stop);
             assert(i == 3);
             stSortedSet *intervals = stHash_search(intervalsHash, cA3);
-            if(intervals == NULL) {
-                intervals = stSortedSet_construct3((int (*)(const void *, const void *))stIntTuple_cmpFn, 
-                                                   (void (*)(void *))stIntTuple_destruct);
+            if (intervals == NULL) {
+                intervals = stSortedSet_construct3(
+                        (int(*)(const void *, const void *)) stIntTuple_cmpFn,
+                        (void(*)(void *)) stIntTuple_destruct);
                 stHash_insert(intervalsHash, stString_copy(cA3), intervals);
             }
-            free(cA3);
             stIntTuple *j = stIntTuple_construct(2, start, stop);
+            stIntTuple *k = stSortedSet_searchLessThanOrEqual(intervals,
+                    j);
+            if (k != NULL) {
+                if (stIntTuple_getPosition(k, 1) > start) {
+                    st_errAbort(
+                            "Found an overlapping interval in the bed file: %s %i %i overlaps %s %i %i",
+                            cA3, start, stop, cA2,
+                            stIntTuple_getPosition(k, 0),
+                            stIntTuple_getPosition(k, 1));
+                }
+            }
+
+            k = stSortedSet_searchGreaterThanOrEqual(intervals, j);
+            if (k != NULL) {
+                if (stIntTuple_getPosition(k, 1) < stop) {
+                    st_errAbort(
+                            "Found an overlapping interval in the bed file: %s %i %i overlaps %s %i %i",
+                            cA3, start, stop, cA2,
+                            stIntTuple_getPosition(k, 0),
+                            stIntTuple_getPosition(k, 1));
+                }
+            }
+
             assert(stSortedSet_search(intervals, j) == NULL);
+            st_logDebug("Adding in an interval: %s %i %i\n", cA3, start, stop);
             stSortedSet_insert(intervals, j);
+            free(cA3);
         }
         bytesRead = benLine(&cA2, &nBytes, fileHandle);
     }
     free(cA2);
     fclose(fileHandle);
+    st_logDebug("Finished parsing the bed file: %s\n", filepath);
 }
 
 char *stringCommasToSpaces(const char *string) {
     /* swap all commas, ',', for spaces ' '.
-    */
+     */
     char *cA = stString_copy(string);
     int i = 0;
-    for (i = 0; i < strlen(cA); i++){
+    for (i = 0; i < strlen(cA); i++) {
         if (cA[i] == ',')
             cA[i] = ' ';
     }
@@ -129,38 +156,47 @@ void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
      * takes input from the command line, swaps spaces, ' ', for commas
      * and passes each bed file to parseBedFile().
      */
+    st_logDebug("Starting to parse bed files\n");
     char *spaceSepFiles = stringCommasToSpaces(commaSepFiles);
     char *currentLocation = spaceSepFiles;
     char *currentWord;
-    while((currentWord = stString_getNextWord(&currentLocation)) != NULL) {
+    while ((currentWord = stString_getNextWord(&currentLocation)) != NULL) {
         parseBedFile(currentWord, bedFileHash);
         free(currentWord);
     }
     free(spaceSepFiles);
+    st_logDebug("Done parsing bed files\n");
 }
 
 void usage() {
-   fprintf(stderr, "mafComparator, version %.1f\n", VERSION);
-   fprintf(stderr, "-a --logLevel : Set the log level. [off, critical, info, debug] "
-           "in ascending order.\n");
-   fprintf(stderr, "-b --mafFile1 : The location of the first MAF file (used to "
-           "create sequence name hash.)\n");
-   fprintf(stderr, "-c --mafFile2 : The location of the second MAF file\n");
-   fprintf(stderr, "-d --outputFile : The output XML formatted results file.\n");
-   fprintf(stderr, "-e --sampleNumber : The number of sample homology tests to perform "
-           "(total) [default 1000000].\n");
-   fprintf(stderr, "-p --printFailures : Print tab-delimited details about failed "
-           "tests to stderr.\n");
-   fprintf(stderr, "-v --version : Print current version number\n");
-   fprintf(stderr, "-h --help : Print this help screen\n");
-   fprintf(stderr, "-f --bedFiles : The location of bed file(s) used to filter the "
-           "pairwise comparisons, separated by commas.\n");
-   fprintf(stderr, "-g --near : The number of bases in either sequence to allow a "
-           "match to slip by.\n");
+    fprintf(stderr, "mafComparator, version %.1f\n", VERSION);
+    fprintf(stderr,
+            "-a --logLevel : Set the log level. [off, critical, info, debug] "
+                "in ascending order.\n");
+    fprintf(stderr,
+            "-b --mafFile1 : The location of the first MAF file (used to "
+                "create sequence name hash.)\n");
+    fprintf(stderr, "-c --mafFile2 : The location of the second MAF file\n");
+    fprintf(stderr,
+            "-d --outputFile : The output XML formatted results file.\n");
+    fprintf(stderr,
+            "-e --sampleNumber : The number of sample homology tests to perform "
+                "(total) [default 1000000].\n");
+    fprintf(stderr,
+            "-p --printFailures : Print tab-delimited details about failed "
+                "tests to stderr.\n");
+    fprintf(stderr, "-v --version : Print current version number\n");
+    fprintf(stderr, "-h --help : Print this help screen\n");
+    fprintf(stderr,
+            "-f --bedFiles : The location of bed file(s) used to filter the "
+                "pairwise comparisons, separated by commas.\n");
+    fprintf(stderr,
+            "-g --near : The number of bases in either sequence to allow a "
+                "match to slip by.\n");
 }
 
 void version() {
-   fprintf(stderr, "mafComparator, version %.1f\n", VERSION);
+    fprintf(stderr, "mafComparator, version %.1f\n", VERSION);
 }
 
 int main(int argc, char *argv[]) {
@@ -171,8 +207,9 @@ int main(int argc, char *argv[]) {
     char * mAFFile1 = NULL;
     char * mAFFile2 = NULL;
     char * outputFile = NULL;
-    stHash* intervalsHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, 
-                                              free, (void (*)(void *))stSortedSet_destruct);
+    stHash* intervalsHash =
+            stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free,
+                    (void(*)(void *)) stSortedSet_destruct);
     char * bedFiles = NULL;
     int32_t sampleNumber = 1000000; // by default do a million samples per pair.
     int32_t near = 0;
@@ -182,29 +219,26 @@ int main(int argc, char *argv[]) {
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
     ///////////////////////////////////////////////////////////////////////////
 
-    while(1) {
-        static struct option long_options[] = {
-            { "logLevel", required_argument, 0, 'a' },
-            { "mafFile1", required_argument, 0, 'b' },
-            { "mafFile2", required_argument, 0, 'c' },
-            { "outputFile", required_argument, 0, 'd' },
-            { "sampleNumber", required_argument, 0, 'e' },
-            { "printFailed", no_argument, 0, 'p'},
-            { "version", no_argument, 0, 'v'},
-            { "help", no_argument, 0, 'h' },
-            { "bedFiles", required_argument, 0, 'f' },
-            { "near", required_argument, 0, 'g' },
-            { 0, 0, 0, 0 }
-        };
+    while (1) {
+        static struct option long_options[] = { { "logLevel",
+                required_argument, 0, 'a' }, { "mafFile1", required_argument,
+                0, 'b' }, { "mafFile2", required_argument, 0, 'c' }, {
+                "outputFile", required_argument, 0, 'd' }, { "sampleNumber",
+                required_argument, 0, 'e' }, { "printFailed", no_argument, 0,
+                'p' }, { "version", no_argument, 0, 'v' }, { "help",
+                no_argument, 0, 'h' },
+                { "bedFiles", required_argument, 0, 'f' }, { "near",
+                        required_argument, 0, 'g' }, { 0, 0, 0, 0 } };
 
         int option_index = 0;
 
-        int key = getopt_long(argc, argv, "a:b:c:d:e:p:v:h:f:g:", long_options, &option_index);
+        int key = getopt_long(argc, argv, "a:b:c:d:e:p:v:h:f:g:", long_options,
+                &option_index);
 
-        if(key == -1)
+        if (key == -1)
             break;
 
-        switch(key) {
+        switch (key) {
             case 'a':
                 logLevelString = stString_copy(optarg);
                 break;
@@ -231,8 +265,6 @@ int main(int argc, char *argv[]) {
                 usage();
                 return 0;
             case 'f':
-                //Parse the bed file hashes
-                parseBedFiles(optarg, intervalsHash);
                 bedFiles = stString_copy(optarg);
                 break;
             case 'g':
@@ -245,26 +277,32 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    //////////////////////////////////////////////
+    //Set up logging
+    //////////////////////////////////////////////
+
+    st_setLogLevelFromString(logLevelString);
+
     ///////////////////////////////////////////////////////////////////////////
     // (0) Check the inputs.
     ///////////////////////////////////////////////////////////////////////////
-    if (mAFFile1 == NULL){
-       usage();
-       fprintf(stderr, "\nSet --mAFFile1\n");
-       exit(2);
+    if (mAFFile1 == NULL) {
+        usage();
+        fprintf(stderr, "\nSet --mAFFile1\n");
+        exit(2);
     }
-    if (mAFFile2 == NULL){
-       usage();
-       fprintf(stderr, "\nSet --mAFFile2\n");
-       exit(2);
+    if (mAFFile2 == NULL) {
+        usage();
+        fprintf(stderr, "\nSet --mAFFile2\n");
+        exit(2);
     }
-    if (outputFile == NULL){
-       usage();
-       fprintf(stderr, "\nSet --outputFile\n");
-       exit(2);
+    if (outputFile == NULL) {
+        usage();
+        fprintf(stderr, "\nSet --outputFile\n");
+        exit(2);
     }
     FILE *fileHandle = fopen(mAFFile1, "r");
-    if(fileHandle == NULL){
+    if (fileHandle == NULL) {
         if (errno == ENOENT)
             fprintf(stderr, "ERROR, file %s does not exist.\n", mAFFile1);
         else
@@ -273,7 +311,7 @@ int main(int argc, char *argv[]) {
     }
     fclose(fileHandle);
     fileHandle = fopen(mAFFile2, "r");
-    if(fileHandle == NULL){
+    if (fileHandle == NULL) {
         if (errno == ENOENT)
             fprintf(stderr, "ERROR, file %s does not exist.\n", mAFFile2);
         else
@@ -282,11 +320,13 @@ int main(int argc, char *argv[]) {
     }
     fclose(fileHandle);
 
-    //////////////////////////////////////////////
-    //Set up logging
-    //////////////////////////////////////////////
-
-    st_setLogLevelFromString(logLevelString);
+    //Parse the bed file hashes
+    if(bedFiles != NULL) {
+        parseBedFiles(bedFiles, intervalsHash);
+    }
+    else {
+        st_logDebug("No bed files specified\n");
+    }
 
     //////////////////////////////////////////////
     //Log (some of) the inputs
@@ -302,9 +342,11 @@ int main(int argc, char *argv[]) {
     // Create sequence name hashtable from the first MAF file.
     //////////////////////////////////////////////
 
-    stSortedSet *seqNames1 = stSortedSet_construct3((int (*)(const void *, const void *))strcmp, free);
+    stSortedSet *seqNames1 = stSortedSet_construct3(
+            (int(*)(const void *, const void *)) strcmp, free);
     populateNames(mAFFile1, seqNames1);
-    stSortedSet *seqNames2 = stSortedSet_construct3((int (*)(const void *, const void *))strcmp, free);
+    stSortedSet *seqNames2 = stSortedSet_construct3(
+            (int(*)(const void *, const void *)) strcmp, free);
     populateNames(mAFFile2, seqNames2);
     stSortedSet *seqNames = stSortedSet_getIntersection(seqNames1, seqNames2);
 
@@ -312,33 +354,36 @@ int main(int argc, char *argv[]) {
     //Do comparisons.
     //////////////////////////////////////////////
 
-    if (VERBOSEFAILURES){
-       fprintf(stderr, "# Comparing %s to %s\n", mAFFile1, mAFFile2);
-       fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
+    if (VERBOSEFAILURES) {
+        fprintf(stderr, "# Comparing %s to %s\n", mAFFile1, mAFFile2);
+        fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, 
-                                                  seqNames, intervalsHash, VERBOSEFAILURES, near);
-    if (VERBOSEFAILURES){
-       fprintf(stderr, "# Comparing %s to %s\n", mAFFile2, mAFFile1);
-       fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
+    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2,
+            sampleNumber, seqNames, intervalsHash, VERBOSEFAILURES, near);
+    if (VERBOSEFAILURES) {
+        fprintf(stderr, "# Comparing %s to %s\n", mAFFile2, mAFFile1);
+        fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, 
-                                                  seqNames, intervalsHash, VERBOSEFAILURES, near);
+    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1,
+            sampleNumber, seqNames, intervalsHash, VERBOSEFAILURES, near);
     fileHandle = fopen(outputFile, "w");
-    if(fileHandle == NULL){
-       fprintf(stderr, "ERROR, unable to open %s for writing.\n", outputFile);
-       exit(1);
+    if (fileHandle == NULL) {
+        fprintf(stderr, "ERROR, unable to open %s for writing.\n", outputFile);
+        exit(1);
     }
 
     //////////////////////////////////////////////
     //Report results.
     //////////////////////////////////////////////
-    
+
     writeXMLHeader(fileHandle);
     if (bedFiles == NULL)
-        fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\">\n", sampleNumber);
+        fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\">\n",
+                sampleNumber);
     else
-        fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\" bedFiles=\"%s\">\n", 
+        fprintf(
+                fileHandle,
+                "<alignment_comparisons sampleNumber=\"%i\" bedFiles=\"%s\">\n",
                 sampleNumber, bedFiles);
     reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near, seqNames);
     reportResults(results_21, mAFFile2, mAFFile1, fileHandle, near, seqNames);
@@ -349,8 +394,8 @@ int main(int argc, char *argv[]) {
     // Clean up.
     ///////////////////////////////////////////////////////////////////////////
 
-    avl_destroy(results_12, (void (*)(void *, void *))aPair_destruct);
-    avl_destroy(results_21, (void (*)(void *, void *))aPair_destruct);
+    avl_destroy(results_12, (void(*)(void *, void *)) aPair_destruct);
+    avl_destroy(results_21, (void(*)(void *, void *)) aPair_destruct);
 
     free(mAFFile1);
     free(mAFFile2);
