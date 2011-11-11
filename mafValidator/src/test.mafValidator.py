@@ -12,15 +12,18 @@ s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
+a score=0
 s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca 
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 i panTro1.chr6 N 0 C 0
 s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
 i baboon.chr0   I 234 n 19
 
+a score=0
 s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
 e mm4.chr6     53310102 13 + 151104725 I
 
+a score=0
 s hg18.chr1                  32741 26 + 247249719 TTTTTGAAAAACAAACAACAAGTTGG
 s panTro2.chrUn            9697231 26 +  58616431 TTTTTGAAAAACAAACAACAAGTTGG
 q panTro2.chrUn                                   99999999999999999999999999
@@ -299,6 +302,83 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
          mafFile = testFile(b)
          self.assertRaises(mafval.AlignmentLengthError, mafval.validateMaf, mafFile)
          removeTempDir()
+
+class AlignmentBlockLinesChecks(unittest.TestCase):
+   badAlignmentBlockStarts = ['''##maf version=1 scoring=tba.v8 
+
+a score=23262.0
+s hg18.7       27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s baboon.chr0    116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+
+s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+
+''',
+                 '''##maf version=1 scoring=tba.v8 
+
+a score=23262.0
+s hg18         27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s baboon.chr0    116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+
+a score=23262.0
+s hg18         27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+
+s hg18         27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+
+''',
+      ]
+   badAlignmentBlockKeyValuePairs = ['''##maf version=1 scoring=tba.v8 
+
+a score=23262.0
+s hg18.7       27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s baboon.chr0    116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+
+a score=0 banana
+s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243 39 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+
+''',
+                 '''##maf version=1 scoring=tba.v8 
+
+a score=23262.0
+s hg18         27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s baboon.chr0    116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+
+a score=23262.0
+s hg18         27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+
+a score=0 banana=apple cheeseburger
+s hg18         27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+
+''',
+      ]
+   def testAlignmentBlockLineExistence(self):
+      """mafValidator should fail when a sequence block starts without an '^a' line
+      """
+      for b in self.badAlignmentBlockStarts:
+         mafFile = testFile(b)
+         self.assertRaises(mafval.MissingAlignmentBlockLineError, mafval.validateMaf, mafFile)
+         removeTempDir()
+   def testAlignmentBlockLineKeyValuePairs(self):
+      """mafValidator should fail when an alignment block has mal-formed key-value pairs
+      """
+      for b in self.badAlignmentBlockKeyValuePairs:
+         mafFile = testFile(b)
+         self.assertRaises(mafval.AlignmentBlockLineKeyValuePairError, mafval.validateMaf, mafFile)
+         removeTempDir()
+   
 
 class StartFieldChecks(unittest.TestCase):
    badFields = ['''##maf version=1 scoring=tba.v8 
