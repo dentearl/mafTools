@@ -37,7 +37,7 @@ ${binPath}/%.py : src/%.py
 	mv $@.tmp $@
 
 test :
-	python src/allTests.py -v
+	python src/allTests.py
 
 clean :
 	rm -f *.o ${progs}

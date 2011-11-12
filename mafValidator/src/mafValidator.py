@@ -8,6 +8,31 @@ Script to validate Multpile Alignment Format (maf)
 files.
 
 """
+##############################
+# Copyright (C) 2009-2012 by
+# Dent Earl (dearl@soe.ucsc.edu, dent.earl@gmail.com)
+#
+# ... and other members of the Reconstruction Team of David Haussler's
+# lab (BME Dept. UCSC).
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+##############################
 from optparse import OptionParser
 import os
 import re
@@ -16,6 +41,8 @@ import sys
 class ValidatorError(Exception): pass
 class SourceLengthError(ValidatorError): pass
 class SpeciesFieldError(ValidatorError): pass
+class MissingAlignmentBlockLineError(ValidatorError): pass
+class AlignmentBlockLineKeyValuePairError(ValidatorError): pass
 class AlignmentLengthError(ValidatorError): pass
 class FieldNumberError(ValidatorError): pass
 class FooterError(ValidatorError): pass
@@ -49,11 +76,21 @@ def validateMaf(filename, testChromNames = False):
    header = f.next()
    validateHeader(header, filename)
    sources = {}
+   prevLineWasAlignmentBlock = False
    for lineno, line in enumerate(f, 2):
       line = line.strip()
+      
       if line.startswith('#'):
+         prevLineWasAlignmentBlock = False
          continue
-      if line.startswith('s'):
+      elif line.startswith('a'):
+         validateAlignmentLine(lineno, line, filename)
+         prevLineWasAlignmentBlock = True
+      elif line.startswith('s'):
+         if not prevLineWasAlignmentBlock:
+            raise MissingAlignmentBlockLineError('maf %s has a sequence line that was not preceded '
+                                                 'by an alignment line on lineno %d: %s' 
+                                                 % (filename, lineno, line))
          species, chrom, length = validateSeqLine(namePat, testChromNames, lineno, line, filename)
          if (species, chrom)  in sources:
             if sources[(species, chrom)] != length:
@@ -62,11 +99,36 @@ def validateMaf(filename, testChromNames = False):
                                        % (filename, species, lineno, line))
          else:
             sources[(species, chrom)] = length
+      elif line.startswith('i'):
+         if not prevLineWasAlignmentBlock:
+            raise MissingAlignmentBlockLineError('maf %s has a sequence line that was not preceded '
+                                                 'by an alignment line on lineno %d: %s' 
+                                                 % (filename, lineno, line))
+      elif line.startswith('e'):
+         if not prevLineWasAlignmentBlock:
+            raise MissingAlignmentBlockLineError('maf %s has a sequence line that was not preceded '
+                                                 'by an alignment line on lineno %d: %s' 
+                                                 % (filename, lineno, line))
+      elif line.startswith('q'):
+         if not prevLineWasAlignmentBlock:
+            raise MissingAlignmentBlockLineError('maf %s has a sequence line that was not preceded '
+                                                 'by an alignment line on lineno %d: %s' 
+                                                 % (filename, lineno, line))
+      elif line == '':
+         prevLineWasAlignmentBlock = False
          
    if line != '':
       raise FooterError('maf %s has a bad footer, should end with two new lines.' 
                         % filename)
    return True
+
+def validateAlignmentLine(lineno, line, filename):
+   d = line.split()
+   for i in xrange(1, len(d)):
+      if len(d[i].split('=')) != 2:
+         raise AlignmentBlockLineKeyValuePairError('maf %s has an alignment line that does not contain '
+                                                   'good key-value pairs on lineno %d: %s' 
+                                                   % (filename, lineno, line))
 
 def validateSeqLine(namePat, testChromNames, lineno, line, filename):
    data = line.split()
@@ -77,8 +139,8 @@ def validateSeqLine(namePat, testChromNames, lineno, line, filename):
       raise StrandCharacterError('maf %s has unexpected character in strand field "%s" lineno %d: %s' 
                                  % (filename, data[4], lineno, line))
    if int(data[3]) != len(data[6].replace('-', '')):
-      raise AlignmentLengthError('maf %s has incorrect seq len or alignment field lineno %d: %s'
-                                 % (filename, lineno, line))
+      raise AlignmentLengthError('maf %s has incorrect seq len (should be %d) or alignment field lineno %d: %s'
+                                 % (filename, len(data[6].replace('-', '')), lineno, line))
    if int(data[2]) < 0:
       raise StartFieldError('maf %s has bad start field lineno %d: %s'
                            % (filename, lineno, line))
