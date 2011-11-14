@@ -80,8 +80,8 @@ def checkOptions(options, args, parser):
     for k, v in [('maf', options.maf), ('outfile', options.outfile)]:
         if v is None:
             parser.error('specify --%s' % k)
-        if not os.path.exists(v):
-            parser.error('--%s %s does not exist' % (k, v))
+    if not os.path.exists(options.maf):
+        parser.error('--maf %s does not exist' % options.maf)
     if options.species is None:
         options.speciesList = set()
     else:
