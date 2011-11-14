@@ -77,7 +77,8 @@ def initOptions(parser):
                       help = 'directory where outfile will be written default = %default')
 
 def checkOptions(options, args, parser):
-    for k, v in [('maf', options.maf), ('outfile', options.outfile)]:
+    for k, v in [('maf', options.maf), ('outfile', options.outfile),
+                 ('species', options.species)]:
         if v is None:
             parser.error('specify --%s' % k)
     if not os.path.exists(options.maf):
