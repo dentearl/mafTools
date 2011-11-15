@@ -394,11 +394,11 @@ int main(int argc, char *argv[]) {
     writeXMLHeader(fileHandle);
     if (bedFiles == NULL)
         fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\" "
-                "seed=\"%i\">\n",
+                "seed=\"%u\">\n",
                 sampleNumber, randomSeed);
     else
         fprintf(fileHandle,
-                "<alignment_comparisons sampleNumber=\"%i\" seed=\"%i\" "
+                "<alignment_comparisons sampleNumber=\"%i\" seed=\"%u\" "
                 "bedFiles=\"%s\">\n",
                 sampleNumber, randomSeed, bedFiles);
     reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near, seqNames);
