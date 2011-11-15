@@ -3,7 +3,7 @@
 **mafTools** is a collection of tools that operate on Multiple Alignment Fomat ([maf](http://genome.ucsc.edu/FAQ/FAQformat.html#format5)) files.
 
 ##Authors
-[Dent Earl](https://github.com/dentearl/), [Benedict Paten](https://github.com/benedictpaten/), Mark Diekhans
+[Dent Earl](https://github.com/dentearl/), [Benedict Paten](https://github.com/benedictpaten/), [Mark Diekhans](https://github.com/diekhans)
 
 ##Dependencies
 * sonLib https://github.com/benedictpaten/sonLib/
@@ -17,4 +17,6 @@
 
 ##Components
 * **mafComparator** A program to compare two maf files by sampling and record differences. Useful when testing predicted alignments against known true alignments.
+* **mafIndelDistribution** A program to assess the pairwise coverage between sequences and to extract the indel distribution of a set of sequences contained in the maf.
 * **mafJoin** A program to join together two mafs that share a common sequence. The program maintains the phylogenetic relationships of the blocks it joins and produces a "tree-maf" output.
+* **mafValidator** A program to assess whether or not a given maf has a valid format. 
