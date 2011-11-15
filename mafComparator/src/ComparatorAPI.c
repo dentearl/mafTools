@@ -225,10 +225,10 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
     char strand;
     static APair aPair;
 
-    //process block function iterates through successive lines while we have not reached
-    //the end of the file and the newline starts with 's'
-    //for each line grep the sequence, start position and the length.
-    //all the lengths must be equal.
+    // process block function iterates through successive lines while we have not reached
+    // the end of the file and the newline starts with 's'
+    // for each line grep the sequence, start position and the length.
+    // all the lengths must be equal.
     *bytesRead = benLine(cA, nBytes, fileHandle);
 
     length = INT32_MAX;
@@ -574,17 +574,15 @@ void countTrios(ATrio *trio, int64_t *counter, struct hashtable *legitTrios, voi
 }
 
 void samplePairs(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs, 
-                 double *acceptProbability, stSortedSet *legitPairs, int32_t verboseFailures, int32_t near) {
+                 double *acceptProbability, stSortedSet *legitPairs, int32_t verboseFailures, 
+                 int32_t near) {
     /*
      * Adds *thisPair to *pairs with a given probability.
      */
-    if (stSortedSet_search(legitPairs, thisPair->seq1) != NULL) {
-       if (stSortedSet_search(legitPairs, thisPair->seq2) != NULL) {
-            if (RANDOM() <= *acceptProbability) {
+    if (stSortedSet_search(legitPairs, thisPair->seq1) != NULL)
+        if (stSortedSet_search(legitPairs, thisPair->seq2) != NULL)
+            if (st_random() <= *acceptProbability)
                 avl_insert(pairs, aPair_copyConstruct(thisPair));
-            }
-       }
-    }
 }
 
 void sampleTrios(ATrio *trio, struct avl_table *trios, double *acceptProbability, struct hashtable *legitTrios) {
@@ -594,7 +592,7 @@ void sampleTrios(ATrio *trio, struct avl_table *trios, double *acceptProbability
     if (hashtable_search(legitTrios, trio->seq1) != NULL)
         if (hashtable_search(legitTrios, trio->seq2) != NULL)
             if (hashtable_search(legitTrios, trio->seq3) != NULL)
-                if (RANDOM() >= *acceptProbability)
+                if (st_random() >= *acceptProbability)
                     avl_insert(trios, aTrio_copyConstruct(trio));
 }
 

@@ -34,6 +34,7 @@
 #include <time.h>
 #include <getopt.h>
 #include <stdarg.h>
+#include <unistd.h> // getpid
 
 //#include "cactus.h"
 #include "avl.h"
@@ -41,6 +42,7 @@
 #include "hashTableC.h"
 #include "hashTableC_itr.h"
 #include "bioioC.h"
+#include "sonLibRandom.h" // seeds and sampling
 
 #include "ComparatorAPI.h"
 
@@ -172,27 +174,31 @@ void usage() {
     fprintf(stderr, "mafComparator, version %.1f\n", VERSION);
     fprintf(stderr,
             "-a --logLevel : Set the log level. [off, critical, info, debug] "
-                "in ascending order.\n");
+            "in ascending order.\n");
     fprintf(stderr,
             "-b --mafFile1 : The location of the first MAF file (used to "
-                "create sequence name hash.)\n");
+            "create sequence name hash.)\n");
     fprintf(stderr, "-c --mafFile2 : The location of the second MAF file\n");
     fprintf(stderr,
             "-d --outputFile : The output XML formatted results file.\n");
     fprintf(stderr,
             "-e --sampleNumber : The number of sample homology tests to perform "
-                "(total) [default 1000000].\n");
+            "(total) [default 1000000].\n");
     fprintf(stderr,
             "-p --printFailures : Print tab-delimited details about failed "
-                "tests to stderr.\n");
+            "tests to stderr.\n");
     fprintf(stderr, "-v --version : Print current version number\n");
     fprintf(stderr, "-h --help : Print this help screen\n");
     fprintf(stderr,
             "-f --bedFiles : The location of bed file(s) used to filter the "
-                "pairwise comparisons, separated by commas.\n");
+            "pairwise comparisons, separated by commas.\n");
     fprintf(stderr,
             "-g --near : The number of bases in either sequence to allow a "
-                "match to slip by.\n");
+            "match to slip by.\n");
+    fprintf(stderr,
+            "-s --seed : an integer used to seed the random number generator "
+            "used to perform sampling. If omitted a seed is pseudorandomly "
+            "generated.\n");
 }
 
 void version() {
@@ -212,6 +218,7 @@ int main(int argc, char *argv[]) {
                     (void(*)(void *)) stSortedSet_destruct);
     char * bedFiles = NULL;
     int32_t sampleNumber = 1000000; // by default do a million samples per pair.
+    int32_t randomSeed = (time(NULL) << 16) | (getpid() & 65535); // Likely to be unique
     int32_t near = 0;
     int32_t i;
 
@@ -220,20 +227,24 @@ int main(int argc, char *argv[]) {
     ///////////////////////////////////////////////////////////////////////////
 
     while (1) {
-        static struct option long_options[] = { { "logLevel",
-                required_argument, 0, 'a' }, { "mafFile1", required_argument,
-                0, 'b' }, { "mafFile2", required_argument, 0, 'c' }, {
-                "outputFile", required_argument, 0, 'd' }, { "sampleNumber",
-                required_argument, 0, 'e' }, { "printFailed", no_argument, 0,
-                'p' }, { "version", no_argument, 0, 'v' }, { "help",
-                no_argument, 0, 'h' },
-                { "bedFiles", required_argument, 0, 'f' }, { "near",
-                        required_argument, 0, 'g' }, { 0, 0, 0, 0 } };
+        static struct option long_options[] = { 
+            { "logLevel", required_argument, 0, 'a' }, 
+            { "mafFile1", required_argument, 0, 'b' }, 
+            { "mafFile2", required_argument, 0, 'c' }, 
+            { "outputFile", required_argument, 0, 'd' }, 
+            { "sampleNumber", required_argument, 0, 'e' }, 
+            { "printFailed", no_argument, 0, 'p' }, 
+            { "version", no_argument, 0, 'v' }, 
+            { "help", no_argument, 0, 'h' },
+            { "bedFiles", required_argument, 0, 'f' }, 
+            { "near", required_argument, 0, 'g' },
+            { "seed", required_argument, 0, 's' },
+            { 0, 0, 0, 0 } };
 
         int option_index = 0;
 
-        int key = getopt_long(argc, argv, "a:b:c:d:e:p:v:h:f:g:", long_options,
-                &option_index);
+        int key = getopt_long(argc, argv, "a:b:c:d:e:p:v:h:f:g:s:", long_options,
+                              &option_index);
 
         if (key == -1)
             break;
@@ -261,6 +272,10 @@ int main(int argc, char *argv[]) {
                 i = sscanf(optarg, "%i", &sampleNumber);
                 assert(i == 1);
                 break;
+            case 's':
+                i = sscanf(optarg, "%i", &randomSeed);
+                assert(i == 1);
+                break;
             case 'h':
                 usage();
                 return 0;
@@ -282,7 +297,9 @@ int main(int argc, char *argv[]) {
     //////////////////////////////////////////////
 
     st_setLogLevelFromString(logLevelString);
-
+    st_logDebug("Seeding the random number generator with the value %lo\n", randomSeed);
+    st_randomSeed(randomSeed);
+    
     ///////////////////////////////////////////////////////////////////////////
     // (0) Check the inputs.
     ///////////////////////////////////////////////////////////////////////////
@@ -342,11 +359,9 @@ int main(int argc, char *argv[]) {
     // Create sequence name hashtable from the first MAF file.
     //////////////////////////////////////////////
 
-    stSortedSet *seqNames1 = stSortedSet_construct3(
-            (int(*)(const void *, const void *)) strcmp, free);
+    stSortedSet *seqNames1 = stSortedSet_construct3((int(*)(const void *, const void *)) strcmp, free);
     populateNames(mAFFile1, seqNames1);
-    stSortedSet *seqNames2 = stSortedSet_construct3(
-            (int(*)(const void *, const void *)) strcmp, free);
+    stSortedSet *seqNames2 = stSortedSet_construct3((int(*)(const void *, const void *)) strcmp, free);
     populateNames(mAFFile2, seqNames2);
     stSortedSet *seqNames = stSortedSet_getIntersection(seqNames1, seqNames2);
 
@@ -358,14 +373,14 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "# Comparing %s to %s\n", mAFFile1, mAFFile2);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2,
-            sampleNumber, seqNames, intervalsHash, VERBOSEFAILURES, near);
+    struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, 
+                                                  intervalsHash, VERBOSEFAILURES, near);
     if (VERBOSEFAILURES) {
         fprintf(stderr, "# Comparing %s to %s\n", mAFFile2, mAFFile1);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1,
-            sampleNumber, seqNames, intervalsHash, VERBOSEFAILURES, near);
+    struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, 
+                                                  intervalsHash, VERBOSEFAILURES, near);
     fileHandle = fopen(outputFile, "w");
     if (fileHandle == NULL) {
         fprintf(stderr, "ERROR, unable to open %s for writing.\n", outputFile);
@@ -381,8 +396,7 @@ int main(int argc, char *argv[]) {
         fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\">\n",
                 sampleNumber);
     else
-        fprintf(
-                fileHandle,
+        fprintf(fileHandle,
                 "<alignment_comparisons sampleNumber=\"%i\" bedFiles=\"%s\">\n",
                 sampleNumber, bedFiles);
     reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near, seqNames);
