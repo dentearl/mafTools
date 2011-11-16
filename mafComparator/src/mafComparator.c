@@ -46,7 +46,7 @@
 
 #include "ComparatorAPI.h"
 
-float VERSION = 0.2;
+float VERSION = 0.3;
 int32_t VERBOSEFAILURES = 0;
 
 /*
@@ -187,8 +187,6 @@ void usage() {
     fprintf(stderr,
             "-p --printFailures : Print tab-delimited details about failed "
             "tests to stderr.\n");
-    fprintf(stderr, "-v --version : Print current version number\n");
-    fprintf(stderr, "-h --help : Print this help screen\n");
     fprintf(stderr,
             "-f --bedFiles : The location of bed file(s) used to filter the "
             "pairwise comparisons, separated by commas.\n");
@@ -199,6 +197,8 @@ void usage() {
             "-s --seed : an integer used to seed the random number generator "
             "used to perform sampling. If omitted a seed is pseudorandomly "
             "generated.\n");
+    fprintf(stderr, "-v --version : Print current version number\n");
+    fprintf(stderr, "-h --help : Print this help screen\n");
 }
 
 void version() {
