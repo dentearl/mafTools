@@ -223,6 +223,18 @@ class VerifyMafRead(unittest.TestCase):
                     {'test1' : {'chrA' : {'test2' : {'chrA': [(85, 89), (92, 96)]}}},
                      'test2' : {'chrA' : {'test1' : {'chrA': [(91, 99)]}}},}
                     ),
+                   # case 23
+                   ('case 23',
+                    'a score=0\n'
+                    's test1.chrA  1 14 - 100 ACGTACGACGTACG\n'
+                    's test2.chrA  1  8 - 100 ---ACGT---ACGT\n'
+                    's test1.chrB  1 14 - 100 ACGTACGACGTACG\n',
+                    {'test1' : {'chrA' : {'test2' : {'chrA': [(85, 89), (92, 96)]}},
+                                'chrB' : {'test2' : {'chrA': [(85, 89), (92, 96)]}}},
+                     'test2' : {'chrA' : {'test1' : {'chrA': [(91, 99)],
+                                                     'chrB': [(91, 99)]}}},
+                     },
+                    ),
                    )
     options = GenericObject()
     options.genome1 = 'test1'
