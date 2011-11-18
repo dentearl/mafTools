@@ -884,7 +884,7 @@ void *reportResults_fn(void *arg, void *arg2) {
 }
 
 void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle,
-        int32_t near, stSortedSet *legitimateSequences) {
+                   int32_t near, stSortedSet *legitimateSequences, const char *bedFiles) {
     /*
      * Report results in an XML formatted document.
      */
@@ -900,10 +900,12 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
             "\t\t<aggregate_results>\n", 
             mAFFileA, mAFFileB, near);
     reportResult("all", aggregateResults->total, aggregateResults->inAll, fileHandle, 3);
-    reportResult("both", aggregateResults->totalBoth, aggregateResults->inBoth, fileHandle, 3);
-    reportResult("A", aggregateResults->totalA, aggregateResults->inA, fileHandle, 3);
-    reportResult("B", aggregateResults->totalB, aggregateResults->inB, fileHandle, 3);
-    reportResult("neither", aggregateResults->totalNeither, aggregateResults->inNeither, fileHandle, 3);
+    if (bedFiles != NULL){
+        reportResult("both", aggregateResults->totalBoth, aggregateResults->inBoth, fileHandle, 3);
+        reportResult("A", aggregateResults->totalA, aggregateResults->inA, fileHandle, 3);
+        reportResult("B", aggregateResults->totalB, aggregateResults->inB, fileHandle, 3);
+        reportResult("neither", aggregateResults->totalNeither, aggregateResults->inNeither, fileHandle, 3);
+    }
     fprintf(fileHandle, "\t\t</aggregate_results>\n\t\t<homology_pair_tests>\n");
 
     while ((resultPair = avl_t_prev(&iterator)) != NULL) {
@@ -911,19 +913,23 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
                 "\t\t\t\t<aggregate_results>\n",
                 resultPair->aPair.seq1, resultPair->aPair.seq2);
         reportResult("all", resultPair->total, resultPair->inAll, fileHandle, 5);
-        reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 5);
-        reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, 5);
-        reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 5);
-        reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 5);
+        if (bedFiles != NULL){
+            reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 5);
+            reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, 5);
+            reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 5);
+            reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 5);
+        }
         fprintf(fileHandle, "\t\t\t\t</aggregate_results>\n\t\t\t\t<single_homology_tests>\n");
         fprintf(fileHandle, "\t\t\t\t\t<single_homology_test sequenceA=\"%s\" sequenceB=\"%s\">\n"
                 "\t\t\t\t\t\t<aggregate_results>\n",
                 resultPair->aPair.seq1, resultPair->aPair.seq2);
         reportResult("all", resultPair->total, resultPair->inAll, fileHandle, 6);
-        reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 6);
-        reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, 6);
-        reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 6);
-        reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 6);
+        if (bedFiles != NULL){
+            reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 6);
+            reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, 6);
+            reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 6);
+            reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 6);
+        }
         fprintf(fileHandle,"\t\t\t\t\t\t</aggregate_results>\n"
                 "\t\t\t\t\t</single_homology_test>\n"
                 "\t\t\t\t</single_homology_tests>\n"

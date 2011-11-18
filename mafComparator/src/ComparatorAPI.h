@@ -110,7 +110,7 @@ struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int
 struct avl_table *compareMAFs_AB_Trio(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples, 
                                       struct hashtable *ht, struct List *speciesList);
 void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, 
-                   FILE *fileHandle, int32_t near, stSortedSet *legitimateSequences);
+                   FILE *fileHandle, int32_t near, stSortedSet *legitimateSequences, const char *bedFiles);
 void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle);
 void aPair_destruct(APair *pair, void *extraArgument);
 void aTrio_destruct(ATrio *trio, void *extraArgument);

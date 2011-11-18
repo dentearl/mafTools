@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.6
 """
 """
 ##############################
@@ -66,7 +66,7 @@ class BedParsing(unittest.TestCase):
                     's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
                     's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
                     '',
-                    20, 0),
+                    20, None),
                    # test 3 - 50% bed coverage
                    ('a score=0\n'
                     's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
@@ -112,8 +112,13 @@ class BedParsing(unittest.TestCase):
             system(" ".join(cmd)) #Much nicer, huh? It will capture all the bugs
             tree = ET.parse(os.path.join('tempTestFiles', 'output.xml'))
             homTests = tree.findall('homology_tests')
-            self.assertAlmostEquals(totalTrue, float(homTests[0].find('aggregate_results').find('all').attrib['totalTrue']))
-            self.assertAlmostEquals(totalTrueInInterval, float(homTests[0].find('aggregate_results').find('A').attrib['totalTrue']))
+            self.assertAlmostEquals(totalTrue, 
+                                    float(homTests[0].find('aggregate_results').find('all').attrib['totalTrue']))
+            if totalTrueInInterval is None:
+                self.assertEqual(None, homTests[0].find('aggregate_results').find('A'))
+            else:
+                self.assertAlmostEquals(totalTrueInInterval, 
+                                        float(homTests[0].find('aggregate_results').find('A').attrib['totalTrue']))
             shutil.rmtree(os.path.dirname(self.maf1path))
 
 class setDifferenceTests(unittest.TestCase):
