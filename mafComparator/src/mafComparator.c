@@ -401,8 +401,8 @@ int main(int argc, char *argv[]) {
                 "<alignment_comparisons sampleNumber=\"%i\" seed=\"%u\" "
                 "bedFiles=\"%s\">\n",
                 sampleNumber, randomSeed, bedFiles);
-    reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near, seqNames);
-    reportResults(results_21, mAFFile2, mAFFile1, fileHandle, near, seqNames);
+    reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near, seqNames, bedFiles);
+    reportResults(results_21, mAFFile2, mAFFile1, fileHandle, near, seqNames, bedFiles);
     fprintf(fileHandle, "</alignment_comparisons>\n");
     fclose(fileHandle);
 
