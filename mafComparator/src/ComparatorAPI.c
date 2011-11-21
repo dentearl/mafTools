@@ -900,9 +900,9 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
 
     addReferencesAndDups(results_AB, legitimateSequences);
 
-    fprintf(fileHandle, "\t<homology_tests fileA=\"%s\" fileB=\"%s\" near=\"%i\">\n"
+    fprintf(fileHandle, "\t<homology_tests fileA=\"%s\" fileB=\"%s\">\n"
             "\t\t<aggregate_results>\n", 
-            mAFFileA, mAFFileB, near);
+            mAFFileA, mAFFileB);
     reportResult("all", aggregateResults->total, aggregateResults->inAll, fileHandle, 3);
     if (bedFiles != NULL){
         reportResult("both", aggregateResults->totalBoth, aggregateResults->inBoth, fileHandle, 3);
