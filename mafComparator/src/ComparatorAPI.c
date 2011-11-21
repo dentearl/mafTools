@@ -900,8 +900,8 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
 
     addReferencesAndDups(results_AB, legitimateSequences);
 
-    fprintf(fileHandle, "\t<homology_tests fileA=\"%s\" fileB=\"%s\">\n"
-            "\t\t<aggregate_results>\n", 
+    fprintf(fileHandle, "\t<homologyTests fileA=\"%s\" fileB=\"%s\">\n"
+            "\t\t<aggregateResults>\n", 
             mAFFileA, mAFFileB);
     reportResult("all", aggregateResults->total, aggregateResults->inAll, fileHandle, 3);
     if (bedFiles != NULL){
@@ -910,11 +910,11 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
         reportResult("B", aggregateResults->totalB, aggregateResults->inB, fileHandle, 3);
         reportResult("neither", aggregateResults->totalNeither, aggregateResults->inNeither, fileHandle, 3);
     }
-    fprintf(fileHandle, "\t\t</aggregate_results>\n\t\t<homology_pair_tests>\n");
+    fprintf(fileHandle, "\t\t</aggregateResults>\n\t\t<homologyPairTests>\n");
 
     while ((resultPair = avl_t_prev(&iterator)) != NULL) {
-        fprintf(fileHandle, "\t\t\t<homology_test sequenceA=\"%s\" sequenceB=\"%s\">\n"
-                "\t\t\t\t<aggregate_results>\n",
+        fprintf(fileHandle, "\t\t\t<homologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n"
+                "\t\t\t\t<aggregateResults>\n",
                 resultPair->aPair.seq1, resultPair->aPair.seq2);
         reportResult("all", resultPair->total, resultPair->inAll, fileHandle, 5);
         if (bedFiles != NULL){
@@ -923,9 +923,9 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
             reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 5);
             reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 5);
         }
-        fprintf(fileHandle, "\t\t\t\t</aggregate_results>\n\t\t\t\t<single_homology_tests>\n");
-        fprintf(fileHandle, "\t\t\t\t\t<single_homology_test sequenceA=\"%s\" sequenceB=\"%s\">\n"
-                "\t\t\t\t\t\t<aggregate_results>\n",
+        fprintf(fileHandle, "\t\t\t\t</aggregateResults>\n\t\t\t\t<singleHomologyTests>\n");
+        fprintf(fileHandle, "\t\t\t\t\t<singleHomologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n"
+                "\t\t\t\t\t\t<aggregateResults>\n",
                 resultPair->aPair.seq1, resultPair->aPair.seq2);
         reportResult("all", resultPair->total, resultPair->inAll, fileHandle, 6);
         if (bedFiles != NULL){
@@ -934,13 +934,13 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
             reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 6);
             reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 6);
         }
-        fprintf(fileHandle,"\t\t\t\t\t\t</aggregate_results>\n"
-                "\t\t\t\t\t</single_homology_test>\n"
-                "\t\t\t\t</single_homology_tests>\n"
-                "\t\t\t</homology_test>\n");
+        fprintf(fileHandle,"\t\t\t\t\t\t</aggregateResults>\n"
+                "\t\t\t\t\t</singleHomologyTest>\n"
+                "\t\t\t\t</singleHomologyTests>\n"
+                "\t\t\t</homologyTest>\n");
     }
 
-    fprintf(fileHandle, "\t\t</homology_pair_tests>\n\t</homology_tests>\n");
+    fprintf(fileHandle, "\t\t</homologyPairTests>\n\t</homologyTests>\n");
     return;
 }
 
@@ -968,14 +968,14 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA,
 
     fprintf(
             fileHandle,
-            "\t<trio_tests fileA=\"%s\" fileB=\"%s\" totalTests=\"%.0f\" "
+            "\t<trioTests fileA=\"%s\" fileB=\"%s\" totalTests=\"%.0f\" "
             "totalTrue=\"%.0f\" totalFalse=\"%.0f\" average=\"%f\">\n",
             mAFFileA, mAFFileB, total, positive, total - positive, positive / total);
     while ((resultTrio = avl_t_prev(&iterator)) != NULL) {
         assert(resultTrio->pos2 >= resultTrio->pos1);
         fprintf(
                 fileHandle,
-                "\t\t<trio_test sequenceA=\"%s\" sequenceB=\"%s\" sequenceC=\"%s\" "
+                "\t\t<trioTest sequenceA=\"%s\" sequenceB=\"%s\" sequenceC=\"%s\" "
                 "totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\">\n",
                 resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos2, resultTrio->pos1,
                 resultTrio->pos2 - resultTrio->pos1, ((double) resultTrio->pos1) / resultTrio->pos2);
@@ -1000,7 +1000,7 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA,
 
         fprintf(
                 fileHandle,
-                "\t\t\t<single_trio_test sequenceA=\"%s\" sequenceB=\"%s\" "
+                "\t\t\t<singleTrioTest sequenceA=\"%s\" sequenceB=\"%s\" "
                 "sequenceC=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" "
                 "average=\"%f\" topGoodAvg=\"%f\" topAllAvg=\"%f\">\n",
                 resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos2, resultTrio->pos1,
@@ -1010,19 +1010,19 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA,
         for (i = 0; i < 4; i++) {
             for (j = i; j < 4; j++) {
                 fprintf(fileHandle,
-                        "\t\t\t\t<trio_test_instance topStateA=\"%d\" "
+                        "\t\t\t\t<trioTestInstance topStateA=\"%d\" "
                         "topStateB = \"%d\" count = \"%d\"/>\n", i, j,
                         resultTrio->topMat[encodeTopoMatIdx(i, j)]);
             }
         }
 
-        fprintf(fileHandle, "\t\t\t</single_trio_test>\n");
+        fprintf(fileHandle, "\t\t\t</singleTrioTest>\n");
         //      free(topString);
         //      topString = NULL;
 
-        fprintf(fileHandle, "\t\t</trio_test>\n");
+        fprintf(fileHandle, "\t\t</trioTest>\n");
     }
-    fprintf(fileHandle, "\t</trio_tests>\n");
+    fprintf(fileHandle, "\t</trioTests>\n");
 
     return;
 }
@@ -1343,6 +1343,6 @@ void trioDecoder_destruct(TrioDecoder *decoder) {
 }
 
 void writeXMLHeader( FILE *fileHandle ){
-   fprintf( fileHandle, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n");
+   fprintf(fileHandle, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n");
    return;
 }

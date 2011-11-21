@@ -46,7 +46,7 @@
 
 #include "ComparatorAPI.h"
 
-float VERSION = 0.3;
+float VERSION = 0.4;
 int32_t VERBOSEFAILURES = 0;
 
 /*
@@ -393,17 +393,17 @@ int main(int argc, char *argv[]) {
 
     writeXMLHeader(fileHandle);
     if (bedFiles == NULL)
-        fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\" "
+        fprintf(fileHandle, "<alignmentComparisons sampleNumber=\"%i\" "
                 "near=\"%i\" seed=\"%u\">\n",
                 sampleNumber, near, randomSeed);
     else
         fprintf(fileHandle,
-                "<alignment_comparisons sampleNumber=\"%i\" near=\"%i\" seed=\"%u\" "
+                "<alignmentComparisons sampleNumber=\"%i\" near=\"%i\" seed=\"%u\" "
                 "bedFiles=\"%s\">\n",
                 sampleNumber, near, randomSeed, bedFiles);
     reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near, seqNames, bedFiles);
     reportResults(results_21, mAFFile2, mAFFile1, fileHandle, near, seqNames, bedFiles);
-    fprintf(fileHandle, "</alignment_comparisons>\n");
+    fprintf(fileHandle, "</alignmentComparisons>\n");
     fclose(fileHandle);
 
     ///////////////////////////////////////////////////////////////////////////

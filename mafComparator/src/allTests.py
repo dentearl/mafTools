@@ -111,14 +111,14 @@ class BedParsing(unittest.TestCase):
             cmd.append('--sampleNumber=1000 --logLevel %s' % getLogLevelString())
             system(" ".join(cmd)) #Much nicer, huh? It will capture all the bugs
             tree = ET.parse(os.path.join('tempTestFiles', 'output.xml'))
-            homTests = tree.findall('homology_tests')
+            homTests = tree.findall('homologyTests')
             self.assertAlmostEquals(totalTrue, 
-                                    float(homTests[0].find('aggregate_results').find('all').attrib['totalTrue']))
+                                    float(homTests[0].find('aggregateResults').find('all').attrib['totalTrue']))
             if totalTrueInInterval is None:
-                self.assertEqual(None, homTests[0].find('aggregate_results').find('A'))
+                self.assertEqual(None, homTests[0].find('aggregateResults').find('A'))
             else:
                 self.assertAlmostEquals(totalTrueInInterval, 
-                                        float(homTests[0].find('aggregate_results').find('A').attrib['totalTrue']))
+                                        float(homTests[0].find('aggregateResults').find('A').attrib['totalTrue']))
             shutil.rmtree(os.path.dirname(self.maf1path))
 
 class setDifferenceTests(unittest.TestCase):
