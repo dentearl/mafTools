@@ -182,6 +182,7 @@ class randomSeedTests(unittest.TestCase):
                                      origHomTests[0].find('aggregateResults').find('all').attrib[elm])
                     self.assertEqual(homTests[1].find('aggregateResults').find('all').attrib[elm],
                                      origHomTests[1].find('aggregateResults').find('all').attrib[elm])
+                os.remove(os.path.join('tempTestFiles', 'output.xml'))
             shutil.rmtree(os.path.dirname(self.maf1path))
 
 class setDifferenceTests(unittest.TestCase):
