@@ -175,8 +175,9 @@ class randomSeedTests(unittest.TestCase):
             for i in xrange(0, 10):
                 system(" ".join(cmd))
                 tree = ET.parse(os.path.join('tempTestFiles', 'output.xml'))
-                ac = tree.findall('alignmentComparisons')
+                ac = tree.getroot()
                 homTests = tree.findall('homologyTests')
+                self.assertEqual(seed, int(ac.attrib['seed']))
                 for elm in ['totalTrue', 'totalFalse', 'average']:
                     self.assertEqual(homTests[0].find('aggregateResults').find('all').attrib[elm],
                                      origHomTests[0].find('aggregateResults').find('all').attrib[elm])
