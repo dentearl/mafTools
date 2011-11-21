@@ -302,7 +302,7 @@ class setDifferenceTests(unittest.TestCase):
         self.assertTrue(m in result)
 
     def test_intersect_5(self):
-        """.setDiffDroppedMissing.intersect() should return intersecting pairs. Testing ending edges."""
+        """setDiffDroppedMissing.intersect() should return intersecting pairs. Testing ending edges."""
         missing = []
         m = setD.Miss()
         m.file = 'banana.maf'
