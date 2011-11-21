@@ -394,13 +394,13 @@ int main(int argc, char *argv[]) {
     writeXMLHeader(fileHandle);
     if (bedFiles == NULL)
         fprintf(fileHandle, "<alignment_comparisons sampleNumber=\"%i\" "
-                "seed=\"%u\">\n",
-                sampleNumber, randomSeed);
+                "near=\"%i\" seed=\"%u\">\n",
+                sampleNumber, near, randomSeed);
     else
         fprintf(fileHandle,
-                "<alignment_comparisons sampleNumber=\"%i\" seed=\"%u\" "
+                "<alignment_comparisons sampleNumber=\"%i\" near=\"%i\" seed=\"%u\" "
                 "bedFiles=\"%s\">\n",
-                sampleNumber, randomSeed, bedFiles);
+                sampleNumber, near, randomSeed, bedFiles);
     reportResults(results_12, mAFFile1, mAFFile2, fileHandle, near, seqNames, bedFiles);
     reportResults(results_21, mAFFile2, mAFFile1, fileHandle, near, seqNames, bedFiles);
     fprintf(fileHandle, "</alignment_comparisons>\n");
