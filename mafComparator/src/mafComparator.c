@@ -47,7 +47,7 @@
 #include "ComparatorAPI.h"
 
 float VERSION = 0.4;
-int32_t VERBOSEFAILURES = 0;
+int32_t ISVERBOSEFAILURES = 0;
 
 /*
  * The script takes two MAF files and for each ordered pair of sequences 
@@ -266,7 +266,7 @@ int main(int argc, char *argv[]) {
                 version();
                 return 0;
             case 'p':
-                VERBOSEFAILURES = 1;
+                ISVERBOSEFAILURES = 1;
                 break;
             case 'e':
                 i = sscanf(optarg, "%i", &sampleNumber);
@@ -293,7 +293,7 @@ int main(int argc, char *argv[]) {
     }
 
     //////////////////////////////////////////////
-    //Set up logging
+    // Set up logging
     //////////////////////////////////////////////
 
     st_setLogLevelFromString(logLevelString);
@@ -366,21 +366,21 @@ int main(int argc, char *argv[]) {
     stSortedSet *seqNames = stSortedSet_getIntersection(seqNames1, seqNames2);
 
     //////////////////////////////////////////////
-    //Do comparisons.
+    // Do comparisons.
     //////////////////////////////////////////////
 
-    if (VERBOSEFAILURES) {
+    if (ISVERBOSEFAILURES) {
         fprintf(stderr, "# Comparing %s to %s\n", mAFFile1, mAFFile2);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
     struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, 
-                                                  intervalsHash, VERBOSEFAILURES, near);
-    if (VERBOSEFAILURES) {
+                                                  intervalsHash, ISVERBOSEFAILURES, near);
+    if (ISVERBOSEFAILURES) {
         fprintf(stderr, "# Comparing %s to %s\n", mAFFile2, mAFFile1);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
     struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, 
-                                                  intervalsHash, VERBOSEFAILURES, near);
+                                                  intervalsHash, ISVERBOSEFAILURES, near);
     fileHandle = fopen(outputFile, "w");
     if (fileHandle == NULL) {
         fprintf(stderr, "ERROR, unable to open %s for writing.\n", outputFile);
@@ -388,7 +388,7 @@ int main(int argc, char *argv[]) {
     }
 
     //////////////////////////////////////////////
-    //Report results.
+    // Report results.
     //////////////////////////////////////////////
 
     writeXMLHeader(fileHandle);
