@@ -809,7 +809,11 @@ void reportResult(const char *tagName, double total, double totalTrue, FILE *fil
             (int32_t) (total - totalTrue), total == 0 ? 0.0 : totalTrue / total);
 }
 
-ResultPair *aggregateResult(void *(*getNextPair)(void *, void *), void *arg1, void *arg2, const char *name1, const char *name2) {
+ResultPair *aggregateResult(void *(*getNextPair)(void *, void *), void *arg1, void *arg2, 
+                            const char *name1, const char *name2) {
+    /* loop through all ResultPairs available via the getNextPair() iterator and aggregate their
+     * results into a single ResultPair, return this struct.
+     */
     ResultPair *resultPair;
     ResultPair *resultPair2 = resultPair_construct(name1, name2);
 
