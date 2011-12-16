@@ -6,6 +6,30 @@ February -- November 2011
 
 [Benedict Paten](https://github.com/benedictpaten/), [Dent Earl](https://github.com/dentearl/)
 
+##Description
+The script takes two MAF files and for each ordered pair of sequences 
+in the MAFS calculates a predefined number of sample homology tests 
+(see below), then reports the statistics in an XML formatted file.
+It is suitable for running over very large numbers of alignments, 
+because it does not attempt to hold everything in memory, and instead 
+takes a sampling approach.
+
+For two sets of pairwise alignments, A and B, a homology test is 
+defined as follows. Pick a pair of aligned positions in A, called a 
+homology pair - the AB homology test returns true if the pair is in B, 
+otherwise it returns false. The set of possible homology tests for the 
+ordered pair (A, B) is not necessarily equivalent to the set of 
+possible (B, A) homology tests. We call the proportion of true tests 
+as a percentage of the total of a set of homology tests C from 
+(A, B)  A~B.
+
+If A is the set of true pairwise alignments and B the predicted set of 
+alignments then A~B (over large enough  C), is a proxy to sensitivity 
+of B in predicted the set of correctly aligned pairs in A. Conversely 
+B~A (over large enough C) is a proxy to the specificity of the 
+aligned pairs in B with respect to the set of correctly aligned pairs 
+in A.
+
 ##Dependencies
 * sonLib https://github.com/benedictpaten/sonLib/
 
