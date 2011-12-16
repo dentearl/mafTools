@@ -53,11 +53,12 @@ for each species S:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 ##############################
-import xml.etree.ElementTree as ET
+import cPickle
 import numpy
 from optparse import OptionParser
 import os
 import re
+import xml.etree.ElementTree as ET
 
 seqRegex = r'[ACGTUMRWSYKVHDBXN]+'
 seqPat = re.compile(seqRegex)
@@ -81,7 +82,14 @@ def initOptions(parser):
     parser.add_option('--species', dest = 'species', 
                       help = 'comma separated list of species names to include in output')
     parser.add_option('--outfile', dest = 'outfile', default = 'summary.xml',
-                      help = 'directory where outfile will be written default = %default')
+                      help = 'location where outfile will be written default = %default')
+    parser.add_option('--pickle', dest = 'pickle',
+                      help = ('location where python pickle will be written, for use '
+                      'with downstream analyses. By default this file is not created.'))
+    parser.add_option('--noEdges', dest = 'noEdges', action = 'store_true', default = False,
+                      help = ('Gaps redefined to occur only between areas of alignments. Has '
+                              'the effect of turning off gaps that occur at the edges of chromosomes. '
+                              'default=%default.'))
 
 def checkOptions(options, args, parser):
     for k, v in [('maf', options.maf), ('outfile', options.outfile),
@@ -292,15 +300,21 @@ def analyzeOne(array, options):
     """
     result = []
     count = 0
+    startEdge = True
     for a in array:
         if a == 0:
             count += 1
         else:
+            if options.noEdges and startEdge:
+                startEdge = False
+                count = 0
+                continue
             if count != 0:
                 result.append(count)
                 count = 0
-    if count != 0:
-        result.append(count)
+    if not options.noEdges:
+        if count != 0:
+            result.append(count)
     return result
 
 def writeAnalysis(gapsList, alignments, options):
@@ -327,6 +341,15 @@ def calcBasesCovered(array, options):
     """ Function-ized for unittesting.
     """
     return len(numpy.nonzero(array)[0])
+
+def pickleData(alignmentDict, options):
+    """ record data to a pickle.
+    """
+    if options.pickle is None:
+        return
+    f = open(options.pickle, 'wb')
+    cPickle.dump(alignmentDict, f, 2) # 2 is the format protocol, 2 = binary
+    f.close()
 
 def main():
     usage = ('usage: %prog --maf path/to/file.maf --species=species1,species2,...\n\n'
@@ -358,6 +381,7 @@ def main():
     alignmentDict = readMaf(options.maf, options)
     gapsList = analyzeAll(alignmentDict, options)
     writeAnalysis(gapsList, alignmentDict, options)
+    pickleData(alignmentDict, options)
     
 if __name__ == '__main__':
     main()
