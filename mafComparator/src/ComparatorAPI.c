@@ -36,7 +36,7 @@ void aPair_fillOut(APair *aPair, char *seq1, char *seq2, int32_t pos1,
                    int32_t pos2, int32_t origPos1, int32_t origPos2) {
     int32_t i = strcmp(seq1, seq2);
     if (i > 0 || (i == 0 && pos1 > pos2)) { 
-        //we construct the sequence so that seq1 < seq2 || seq1 == seq2 and pos1 < pos2
+        // we construct the sequence so that seq1 < seq2 || seq1 == seq2 and pos1 < pos2
         aPair_fillOut(aPair, seq2, seq1, pos2, pos1, origPos2, origPos1);
     } else {
         aPair->seq1 = seq1;
@@ -216,7 +216,7 @@ int32_t aTrio_cmpFunction(ATrio *aTrio1, ATrio *aTrio2, void *a) {
 void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extraArgument1, void *extraArgument2,
                                  void *extraArgument3, int32_t, int32_t), 
                stHash *intervalsHash, void *extraArgument1, void *extraArgument2,
-               void *extraArgument3, int32_t verboseFailures, int32_t near, 
+               void *extraArgument3, int32_t isVerboseFailures, int32_t near, 
                int *bytesRead, int *nBytes, char **cA, FILE *fileHandle) {
     int32_t length, start, seqLength, i, j, k, pos1, pos2, inc1, inc2, origPos1, origPos2;
     struct List *ranges = constructEmptyList(0, free);
@@ -225,10 +225,10 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
     char strand;
     static APair aPair;
 
-    //process block function iterates through successive lines while we have not reached
-    //the end of the file and the newline starts with 's'
-    //for each line grep the sequence, start position and the length.
-    //all the lengths must be equal.
+    // process block function iterates through successive lines while we have not reached
+    // the end of the file and the newline starts with 's'
+    // for each line grep the sequence, start position and the length.
+    // all the lengths must be equal.
     *bytesRead = benLine(cA, nBytes, fileHandle);
 
     length = INT32_MAX;
@@ -288,7 +288,7 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
                     if (sequence2[k] != '-') {
                        aPair_fillOut(&aPair, seq1, seq2, pos1, pos2, origPos1, origPos2);
                         passPairFn(&aPair, intervalsHash, extraArgument1, extraArgument2, 
-                                   extraArgument3, verboseFailures, near);
+                                   extraArgument3, isVerboseFailures, near);
                         pos2 += inc2;
                         origPos2 ++;
                     }
@@ -460,10 +460,10 @@ void getTriosP(void(*passTrioFn)(ATrio *trio, void *extraArgument1, void *extraA
 
 void getPairs(const char *mAFFile1, 
               void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extraArgument1, void *extraArgument2, 
-                                void *extraArgument3, int32_t verboseFailures, int32_t near), 
+                                void *extraArgument3, int32_t isVerboseFailures, int32_t near), 
               stHash *intervalsHash,
               void *extraArgument1, void *extraArgument2, void *extraArgument3, 
-              int32_t verboseFailures, int32_t near) {
+              int32_t isVerboseFailures, int32_t near) {
     /*
      * Iterates through all pairs of bases in a set of MAFs, calling the given function for each one.
      */
@@ -475,12 +475,12 @@ void getPairs(const char *mAFFile1,
     cA = st_malloc(nBytes + 1);
     bytesRead = benLine(&cA, &nBytes, fileHandle);
 
-    //read through lines until reaching a line starting with an 'a':
-    //then call process block function passing it the next line.
+    // read through lines until reaching a line starting with an 'a':
+    // then call process block function passing it the next line.
     while (bytesRead != -1) {
         if (bytesRead > 0 && cA[0] == 'a') {
             getPairsP(passPairFn, intervalsHash, extraArgument1, extraArgument2, 
-                      extraArgument3, verboseFailures, near,
+                      extraArgument3, isVerboseFailures, near,
                       &bytesRead, &nBytes, &cA, fileHandle);
         } else { //deal with empty, white space lines.
             bytesRead = benLine(&cA, &nBytes, fileHandle);
@@ -548,7 +548,7 @@ int32_t encodeTopoMatIdx(int32_t top1, int32_t top2) {
 }
 
 void countPairs(APair *pair, stHash *intervalsHash, int64_t *counter, 
-                stSortedSet *legitPairs, void *a, int32_t verboseFailures, int32_t near) {
+                stSortedSet *legitPairs, void *a, int32_t isVerboseFailures, int32_t near) {
     /*
      * Counts the number of pairs in the MAF file.
      */
@@ -574,17 +574,15 @@ void countTrios(ATrio *trio, int64_t *counter, struct hashtable *legitTrios, voi
 }
 
 void samplePairs(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs, 
-                 double *acceptProbability, stSortedSet *legitPairs, int32_t verboseFailures, int32_t near) {
+                 double *acceptProbability, stSortedSet *legitPairs, int32_t isVerboseFailures, 
+                 int32_t near) {
     /*
      * Adds *thisPair to *pairs with a given probability.
      */
-    if (stSortedSet_search(legitPairs, thisPair->seq1) != NULL) {
-       if (stSortedSet_search(legitPairs, thisPair->seq2) != NULL) {
-            if (RANDOM() <= *acceptProbability) {
+    if (stSortedSet_search(legitPairs, thisPair->seq1) != NULL)
+        if (stSortedSet_search(legitPairs, thisPair->seq2) != NULL)
+            if (st_random() <= *acceptProbability)
                 avl_insert(pairs, aPair_copyConstruct(thisPair));
-            }
-       }
-    }
 }
 
 void sampleTrios(ATrio *trio, struct avl_table *trios, double *acceptProbability, struct hashtable *legitTrios) {
@@ -594,7 +592,7 @@ void sampleTrios(ATrio *trio, struct avl_table *trios, double *acceptProbability
     if (hashtable_search(legitTrios, trio->seq1) != NULL)
         if (hashtable_search(legitTrios, trio->seq2) != NULL)
             if (hashtable_search(legitTrios, trio->seq3) != NULL)
-                if (RANDOM() >= *acceptProbability)
+                if (st_random() >= *acceptProbability)
                     avl_insert(trios, aTrio_copyConstruct(trio));
 }
 
@@ -616,28 +614,32 @@ bool inInterval(stHash *intervalsHash, char *seq, int32_t position) {
     return stIntTuple_getPosition(j, 0) <= position && position < stIntTuple_getPosition(j, 1);
 }
 
-void getNearPairs(APair *thisPair, struct avl_table *pairs, int32_t near, stSortedSet *nearPairs) {
-    APair *aPair2;
+void getNearPairs(APair *thisPair, struct avl_table *pairs, int32_t near, stSortedSet *positivePairs) {
+    /* given thisPair, if thisPair is in the table `pairs' then record it in the positivePairs set.
+     * if the `near' option is set, do this not only for thisPair but for all pairs within +- `near'.
+     * if near = 0 this will just look at thisPair->pos1 and thisPair->pos2 and record those values.
+     */
+    APair *aPair;
     int32_t i = thisPair->pos1;
-    //Try modifying position 1
+    // Try modifying position 1
     for (thisPair->pos1 -= near; thisPair->pos1 < i + near + 1; thisPair->pos1++) {
-        if ((aPair2 = avl_find(pairs, thisPair)) != NULL) {
-            stSortedSet_insert(nearPairs, aPair2);
+        if ((aPair = avl_find(pairs, thisPair)) != NULL) {
+            stSortedSet_insert(positivePairs, aPair);
         }
     }
     thisPair->pos1 = i;
-    //Try modifying position 2
+    // Try modifying position 2
     i = thisPair->pos2;
     for (thisPair->pos2 -= near; thisPair->pos2 < i + near + 1; thisPair->pos2++) {
-        if ((aPair2 = avl_find(pairs, thisPair)) != NULL) {
-            stSortedSet_insert(nearPairs, aPair2);
+        if ((aPair = avl_find(pairs, thisPair)) != NULL) {
+            stSortedSet_insert(positivePairs, aPair);
         }
     }
     thisPair->pos2 = i;
 }
 
 void homologyTests1(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs, 
-                    stSortedSet *positivePairs, stSortedSet *legitPairs, int32_t verboseFailures, 
+                    stSortedSet *positivePairs, stSortedSet *legitPairs, int32_t isVerboseFailures, 
                     int32_t near) {
     /*
      * If both members of *thisPair are in the intersection of MAFFileA and MAFFileB,
@@ -676,7 +678,7 @@ void homologyTestsTrio1(ATrio *trio, struct avl_table *trios, struct avl_table *
 }
 
 void homologyTests2(struct avl_table *pairs, struct avl_table *resultPairs, stHash *intervalsHash,
-                    stSortedSet *positivePairs, int32_t verboseFailures) {
+                    stSortedSet *positivePairs, int32_t isVerboseFailures) {
     /*
      * For every pair in 'pairs', add 1 to the total number of homology tests for the sequence-pair.
      * We don't bother with the seqNames hashtable here because the ht was used to build *pairs
@@ -721,7 +723,7 @@ void homologyTests2(struct avl_table *pairs, struct avl_table *resultPairs, stHa
         if (b) {
             resultPair->inAll++;
         } else {
-           if (verboseFailures){
+           if (isVerboseFailures){
               fprintf(stderr, "%s\t%d\t%d\t%s\t%d\t%d\n", pair->seq1, pair->pos1, 
                       pair->origPos1, pair->seq2, pair->pos2, pair->origPos2);
            }
@@ -750,28 +752,27 @@ void homologyTestsTrio2(struct avl_table *trios, struct avl_table *resultTrios) 
 
 struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples,
                                  stSortedSet *legitimateSequences, stHash *intervalsHash, 
-                                 int32_t verboseFailures, int32_t near) {
+                                 int32_t isVerboseFailures, int32_t near) {
     /*
      * Gets samples.
      */
     int64_t pairNumber = 0;
     getPairs(mAFFileA, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) countPairs,
-             intervalsHash, &pairNumber, legitimateSequences, NULL, verboseFailures, near);
+             intervalsHash, &pairNumber, legitimateSequences, NULL, isVerboseFailures, near);
 
     double acceptProbability = ((double) numberOfSamples) / pairNumber;
     struct avl_table *pairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction, 
                                          NULL, NULL);
     getPairs(mAFFileA, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) samplePairs,
-             intervalsHash, pairs, &acceptProbability, legitimateSequences, verboseFailures, near);
+             intervalsHash, pairs, &acceptProbability, legitimateSequences, isVerboseFailures, near);
 
     stSortedSet *positivePairs = stSortedSet_construct();
     getPairs(mAFFileB, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) homologyTests1,
-             intervalsHash, pairs, positivePairs, legitimateSequences, verboseFailures, near);
+             intervalsHash, pairs, positivePairs, legitimateSequences, isVerboseFailures, near);
 
-    struct avl_table *resultPairs = avl_create(
-                (int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction_seqsOnly, NULL, NULL);
+    struct avl_table *resultPairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction_seqsOnly, NULL, NULL);
 
-    homologyTests2(pairs, resultPairs, intervalsHash, positivePairs, verboseFailures);
+    homologyTests2(pairs, resultPairs, intervalsHash, positivePairs, isVerboseFailures);
     avl_destroy(pairs, (void(*)(void *, void *)) aPair_destruct);
     stSortedSet_destruct(positivePairs);
     return resultPairs;
@@ -811,7 +812,11 @@ void reportResult(const char *tagName, double total, double totalTrue, FILE *fil
             (int32_t) (total - totalTrue), total == 0 ? 0.0 : totalTrue / total);
 }
 
-ResultPair *aggregateResult(void *(*getNextPair)(void *, void *), void *arg1, void *arg2, const char *name1, const char *name2) {
+ResultPair *aggregateResult(void *(*getNextPair)(void *, void *), void *arg1, void *arg2, 
+                            const char *name1, const char *name2) {
+    /* loop through all ResultPairs available via the getNextPair() iterator and aggregate their
+     * results into a single ResultPair, return this struct.
+     */
     ResultPair *resultPair;
     ResultPair *resultPair2 = resultPair_construct(name1, name2);
 
@@ -886,7 +891,7 @@ void *reportResults_fn(void *arg, void *arg2) {
 }
 
 void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle,
-        int32_t near, stSortedSet *legitimateSequences) {
+                   int32_t near, stSortedSet *legitimateSequences, const char *bedFiles) {
     /*
      * Report results in an XML formatted document.
      */
@@ -898,41 +903,47 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
 
     addReferencesAndDups(results_AB, legitimateSequences);
 
-    fprintf(fileHandle, "\t<homology_tests fileA=\"%s\" fileB=\"%s\" near=\"%i\">\n"
-            "\t\t<aggregate_results>\n", 
-            mAFFileA, mAFFileB, near);
+    fprintf(fileHandle, "\t<homologyTests fileA=\"%s\" fileB=\"%s\">\n"
+            "\t\t<aggregateResults>\n", 
+            mAFFileA, mAFFileB);
     reportResult("all", aggregateResults->total, aggregateResults->inAll, fileHandle, 3);
-    reportResult("both", aggregateResults->totalBoth, aggregateResults->inBoth, fileHandle, 3);
-    reportResult("A", aggregateResults->totalA, aggregateResults->inA, fileHandle, 3);
-    reportResult("B", aggregateResults->totalB, aggregateResults->inB, fileHandle, 3);
-    reportResult("neither", aggregateResults->totalNeither, aggregateResults->inNeither, fileHandle, 3);
-    fprintf(fileHandle, "\t\t</aggregate_results>\n\t\t<homology_pair_tests>\n");
+    if (bedFiles != NULL){
+        reportResult("both", aggregateResults->totalBoth, aggregateResults->inBoth, fileHandle, 3);
+        reportResult("A", aggregateResults->totalA, aggregateResults->inA, fileHandle, 3);
+        reportResult("B", aggregateResults->totalB, aggregateResults->inB, fileHandle, 3);
+        reportResult("neither", aggregateResults->totalNeither, aggregateResults->inNeither, fileHandle, 3);
+    }
+    fprintf(fileHandle, "\t\t</aggregateResults>\n\t\t<homologyPairTests>\n");
 
     while ((resultPair = avl_t_prev(&iterator)) != NULL) {
-        fprintf(fileHandle, "\t\t\t<homology_test sequenceA=\"%s\" sequenceB=\"%s\">\n"
-                "\t\t\t\t<aggregate_results>\n",
+        fprintf(fileHandle, "\t\t\t<homologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n"
+                "\t\t\t\t<aggregateResults>\n",
                 resultPair->aPair.seq1, resultPair->aPair.seq2);
         reportResult("all", resultPair->total, resultPair->inAll, fileHandle, 5);
-        reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 5);
-        reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, 5);
-        reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 5);
-        reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 5);
-        fprintf(fileHandle, "\t\t\t\t</aggregate_results>\n\t\t\t\t<single_homology_tests>\n");
-        fprintf(fileHandle, "\t\t\t\t\t<single_homology_test sequenceA=\"%s\" sequenceB=\"%s\">\n"
-                "\t\t\t\t\t\t<aggregate_results>\n",
+        if (bedFiles != NULL){
+            reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 5);
+            reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, 5);
+            reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 5);
+            reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 5);
+        }
+        fprintf(fileHandle, "\t\t\t\t</aggregateResults>\n\t\t\t\t<singleHomologyTests>\n");
+        fprintf(fileHandle, "\t\t\t\t\t<singleHomologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n"
+                "\t\t\t\t\t\t<aggregateResults>\n",
                 resultPair->aPair.seq1, resultPair->aPair.seq2);
         reportResult("all", resultPair->total, resultPair->inAll, fileHandle, 6);
-        reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 6);
-        reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, 6);
-        reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 6);
-        reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 6);
-        fprintf(fileHandle,"\t\t\t\t\t\t</aggregate_results>\n"
-                "\t\t\t\t\t</single_homology_test>\n"
-                "\t\t\t\t</single_homology_tests>\n"
-                "\t\t\t</homology_test>\n");
+        if (bedFiles != NULL){
+            reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 6);
+            reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, 6);
+            reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 6);
+            reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 6);
+        }
+        fprintf(fileHandle,"\t\t\t\t\t\t</aggregateResults>\n"
+                "\t\t\t\t\t</singleHomologyTest>\n"
+                "\t\t\t\t</singleHomologyTests>\n"
+                "\t\t\t</homologyTest>\n");
     }
 
-    fprintf(fileHandle, "\t\t</homology_pair_tests>\n\t</homology_tests>\n");
+    fprintf(fileHandle, "\t\t</homologyPairTests>\n\t</homologyTests>\n");
     return;
 }
 
@@ -960,14 +971,14 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA,
 
     fprintf(
             fileHandle,
-            "\t<trio_tests fileA=\"%s\" fileB=\"%s\" totalTests=\"%.0f\" "
+            "\t<trioTests fileA=\"%s\" fileB=\"%s\" totalTests=\"%.0f\" "
             "totalTrue=\"%.0f\" totalFalse=\"%.0f\" average=\"%f\">\n",
             mAFFileA, mAFFileB, total, positive, total - positive, positive / total);
     while ((resultTrio = avl_t_prev(&iterator)) != NULL) {
         assert(resultTrio->pos2 >= resultTrio->pos1);
         fprintf(
                 fileHandle,
-                "\t\t<trio_test sequenceA=\"%s\" sequenceB=\"%s\" sequenceC=\"%s\" "
+                "\t\t<trioTest sequenceA=\"%s\" sequenceB=\"%s\" sequenceC=\"%s\" "
                 "totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\">\n",
                 resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos2, resultTrio->pos1,
                 resultTrio->pos2 - resultTrio->pos1, ((double) resultTrio->pos1) / resultTrio->pos2);
@@ -992,7 +1003,7 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA,
 
         fprintf(
                 fileHandle,
-                "\t\t\t<single_trio_test sequenceA=\"%s\" sequenceB=\"%s\" "
+                "\t\t\t<singleTrioTest sequenceA=\"%s\" sequenceB=\"%s\" "
                 "sequenceC=\"%s\" totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" "
                 "average=\"%f\" topGoodAvg=\"%f\" topAllAvg=\"%f\">\n",
                 resultTrio->seq1, resultTrio->seq2, resultTrio->seq3, resultTrio->pos2, resultTrio->pos1,
@@ -1002,19 +1013,19 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA,
         for (i = 0; i < 4; i++) {
             for (j = i; j < 4; j++) {
                 fprintf(fileHandle,
-                        "\t\t\t\t<trio_test_instance topStateA=\"%d\" "
+                        "\t\t\t\t<trioTestInstance topStateA=\"%d\" "
                         "topStateB = \"%d\" count = \"%d\"/>\n", i, j,
                         resultTrio->topMat[encodeTopoMatIdx(i, j)]);
             }
         }
 
-        fprintf(fileHandle, "\t\t\t</single_trio_test>\n");
+        fprintf(fileHandle, "\t\t\t</singleTrioTest>\n");
         //      free(topString);
         //      topString = NULL;
 
-        fprintf(fileHandle, "\t\t</trio_test>\n");
+        fprintf(fileHandle, "\t\t</trioTest>\n");
     }
-    fprintf(fileHandle, "\t</trio_tests>\n");
+    fprintf(fileHandle, "\t</trioTests>\n");
 
     return;
 }
@@ -1334,7 +1345,7 @@ void trioDecoder_destruct(TrioDecoder *decoder) {
     return;
 }
 
-void writeXMLHeader( FILE *fileHandle ){
-   fprintf( fileHandle, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n");
+void writeXMLHeader(FILE *fileHandle){
+   fprintf(fileHandle, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n");
    return;
 }

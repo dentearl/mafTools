@@ -19,6 +19,13 @@ hg19.chr22
 For slightly more detailed examples, check the 
 test.mafIndelDistribution.py unittest.
 
+Comparisons are between a species' chromosome and all other
+specified species. So,
+for each species S:
+    for each chromosome C in S:
+        for every species T, T != S:
+            paint all positions in C where T aligns (any chrom in T)
+
 """
 ##############################
 # Copyright (C) 2009-2012 by 
@@ -46,11 +53,12 @@ test.mafIndelDistribution.py unittest.
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 ##############################
-import xml.etree.ElementTree as ET
+import cPickle
 import numpy
 from optparse import OptionParser
 import os
 import re
+import xml.etree.ElementTree as ET
 
 seqRegex = r'[ACGTUMRWSYKVHDBXN]+'
 seqPat = re.compile(seqRegex)
@@ -74,7 +82,14 @@ def initOptions(parser):
     parser.add_option('--species', dest = 'species', 
                       help = 'comma separated list of species names to include in output')
     parser.add_option('--outfile', dest = 'outfile', default = 'summary.xml',
-                      help = 'directory where outfile will be written default = %default')
+                      help = 'location where outfile will be written default = %default')
+    parser.add_option('--pickle', dest = 'pickle',
+                      help = ('location where python pickle will be written, for use '
+                      'with downstream analyses. By default this file is not created.'))
+    parser.add_option('--noEdges', dest = 'noEdges', action = 'store_true', default = False,
+                      help = ('Gaps redefined to occur only between areas of alignments. Has '
+                              'the effect of turning off gaps that occur at the edges of chromosomes. '
+                              'default=%default.'))
 
 def checkOptions(options, args, parser):
     for k, v in [('maf', options.maf), ('outfile', options.outfile),
@@ -156,13 +171,11 @@ def addBlockPairs(alignments, mafLineList, options):
             if a.chrom not in alignments[a.genome]:
                 alignments[a.genome][a.chrom] = {}
             if b.genome not in alignments[a.genome][a.chrom]:
-                alignments[a.genome][a.chrom][b.genome] = {}
-            if b.chrom not in alignments[a.genome][a.chrom][b.genome]:                
-                # each a chrom will have an array for each b chrom, so long
+                # each 'a' chrom will have an array for each 'b' genome, so long
                 # as they appear together in an alignment block.
-                alignments[a.genome][a.chrom][b.genome][b.chrom] = numpy.zeros(a.totalLength, 
-                                                                               dtype = numpy.uint16)
-            addBlocksToArray(alignments[a.genome][a.chrom][b.genome][b.chrom], a, b)
+                alignments[a.genome][a.chrom][b.genome] = numpy.zeros(a.totalLength, 
+                                                                      dtype = numpy.uint16)
+            addBlocksToArray(alignments[a.genome][a.chrom][b.genome], a, b)
     
     # explicitly throw this away to help with memory
     mafLineList = []
@@ -278,8 +291,7 @@ def analyzeAll(alignments, options):
     for g1 in alignments:
         for c1 in alignments[g1]:
             for g2 in alignments[g1][c1]:
-                for c2 in alignments[g1][c1][g2]:
-                    gaps += analyzeOne(alignments[g1][c1][g2][c2], options)
+                gaps += analyzeOne(alignments[g1][c1][g2], options)
     return gaps
 
 def analyzeOne(array, options):
@@ -288,15 +300,21 @@ def analyzeOne(array, options):
     """
     result = []
     count = 0
+    startEdge = True
     for a in array:
         if a == 0:
             count += 1
         else:
+            if options.noEdges and startEdge:
+                startEdge = False
+                count = 0
+                continue
             if count != 0:
                 result.append(count)
                 count = 0
-    if count != 0:
-        result.append(count)
+    if not options.noEdges:
+        if count != 0:
+            result.append(count)
     return result
 
 def writeAnalysis(gapsList, alignments, options):
@@ -305,17 +323,15 @@ def writeAnalysis(gapsList, alignments, options):
     for g1 in alignments:
         for c1 in alignments[g1]:
             for g2 in alignments[g1][c1]:
-                for c2 in alignments[g1][c1][g2]:
-                    tlen = len(alignments[g1][c1][g2][c2])
-                    basesCovered = calcBasesCovered(alignments[g1][c1][g2][c2], options)
-                    e = ET.SubElement(pc, 'coverage')
-                    e.attrib['targetGenome'] = g1
-                    e.attrib['targetChromosome'] = c1
-                    e.attrib['queryGenome'] = g2
-                    e.attrib['queryChromosome'] = c2
-                    e.attrib['targetLength'] = str(tlen)
-                    e.attrib['targetNumberBasesCovered'] = str(basesCovered)
-                    e.attrib['targetPercentCovered'] = str(basesCovered / float(tlen))
+                tlen = len(alignments[g1][c1][g2])
+                basesCovered = calcBasesCovered(alignments[g1][c1][g2], options)
+                e = ET.SubElement(pc, 'coverage')
+                e.attrib['targetGenome'] = g1
+                e.attrib['targetChromosome'] = c1
+                e.attrib['queryGenome'] = g2
+                e.attrib['targetLength'] = str(tlen)
+                e.attrib['targetNumberBasesCovered'] = str(basesCovered)
+                e.attrib['targetPercentCovered'] = str(basesCovered / float(tlen))
     e = ET.SubElement(root, 'gaps')
     e.text = ','.join(map(str, gapsList))
     info = ET.ElementTree(root)
@@ -325,6 +341,15 @@ def calcBasesCovered(array, options):
     """ Function-ized for unittesting.
     """
     return len(numpy.nonzero(array)[0])
+
+def pickleData(alignmentDict, options):
+    """ record data to a pickle.
+    """
+    if options.pickle is None:
+        return
+    f = open(options.pickle, 'wb')
+    cPickle.dump(alignmentDict, f, 2) # 2 is the format protocol, 2 = binary
+    f.close()
 
 def main():
     usage = ('usage: %prog --maf path/to/file.maf --species=species1,species2,...\n\n'
@@ -340,7 +365,14 @@ def main():
              'e.g.\n'
              'hg19.chr22\n\n'
              'For slightly more detailed examples, check the \n'
-             'test.mafIndelDistribution.py unittest.')
+             'test.mafIndelDistribution.py unittest.\n\n'
+             'Comparisons are between a species\' chromosome and all other\n'
+             'specified species. So,\n'
+             'for each species S:\n'
+             '    for each chromosome C in S:\n'
+             '        for every species T, T != S:\n'
+             '            paint all positions in C where T aligns (any chrom in T)'
+             )
     parser = OptionParser(usage = usage)
     initOptions(parser)
     options, args = parser.parse_args()
@@ -349,6 +381,7 @@ def main():
     alignmentDict = readMaf(options.maf, options)
     gapsList = analyzeAll(alignmentDict, options)
     writeAnalysis(gapsList, alignmentDict, options)
+    pickleData(alignmentDict, options)
     
 if __name__ == '__main__':
     main()

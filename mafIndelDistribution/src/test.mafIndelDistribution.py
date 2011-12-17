@@ -49,24 +49,24 @@ class VerifyMafRead(unittest.TestCase):
                     'a score=0\n'
                     's test1.chrA  0 10 + 100 ATGCATGCAT\n'
                     's test2.chrA  0 10 + 100 ATGCATGCAT\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(0, 10)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 10)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(0, 10)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 10)]}},}
                     ),
                    # case 2
                    ('case 2',
                     'a score=0\n'
                     's test1.chrA  0 10 - 100 ATGCATGCAT\n'
                     's test2.chrA  0 10 + 100 ATGCATGCAT\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(90, 100)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 10)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(90, 100)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 10)]}},}
                     ),
                    # case 3
                    ('case 3',
                     'a score=0\n'
                     's test1.chrA 90 10 - 100 ATGCATGCAT\n'
                     's test2.chrA  0 10 + 100 ATGCATGCAT\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(0, 10)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 10)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(0, 10)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 10)]}},}
                     ),
                    # case 4
                    ('case 4',
@@ -74,8 +74,8 @@ class VerifyMafRead(unittest.TestCase):
                     's test1.chrA 90 10 - 100 ATGCATGCAT\n'
                     's test1.chrA 10 10 + 100 ATGCATGCAT\n'
                     's test2.chrA  0 10 + 100 ATGCATGCAT\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(0, 10), (10, 20)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 10), (0, 10)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(0, 10), (10, 20)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 10), (0, 10)]}},}
                     ),
                    # case 5
                    ('case 5',
@@ -84,144 +84,155 @@ class VerifyMafRead(unittest.TestCase):
                     's test1.chrA  9 10 + 100 ATGCATGCAT\n'
                     's test2.chrA 20 10 + 100 ATGCATGCAT\n'
                     's test2.chrA  0 10 + 100 ATGCATGCAT\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(9, 19), (0, 10), (9, 19), (0, 10)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(20, 30), (0, 10), (20, 30), (0, 10),]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(9, 19), (0, 10), (9, 19), (0, 10)]}},
+                     'test2' : {'chrA' : {'test1' : [(20, 30), (0, 10), (20, 30), (0, 10),]}},}
                     ),
                    # case 6
                    ('case 6',
                     'a score=0\n'
                     's test1.chrA 30 10 + 100 AT-GC-AT-GC-AT\n'
                     's test2.chrA  9 10 + 100 AT-GC-AT-GC-AT\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(30, 40)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(9, 19)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(30, 40)]}},
+                     'test2' : {'chrA' : {'test1' : [(9, 19)]}},}
                     ),
                    # case 7
                    ('case 7',
                     'a score=0\n'
                     's test1.chrA 30  3 + 100 ATC----\n'
                     's test2.chrA  9  3 + 100 ----ACT\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(0, 0)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 0)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(0, 0)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 0)]}},}
                     ),
                    # case 8
                    ('case 8',
                     'a score=0\n'
                     's test1.chrA 30  3 + 100 ----ACT\n'
                     's test2.chrA  9  3 + 100 ACT----\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(0, 0)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 0)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(0, 0)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 0)]}},}
                     ),
                    # case 9
                    ('case 9',
                     'a score=0\n'
                     's test1.chrA  0  4 + 100 ACGT--\n'
                     's test2.chrA  0  4 + 100 --ACGT\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(2, 4)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 2)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(2, 4)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 2)]}},}
                     ),
                    # case 10
                    ('case 10',
                     'a score=0\n'
                     's test1.chrA  0  4 + 100 ACGT---\n'
                     's test2.chrA  0  4 + 100 ---ACGT\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(3, 4)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 1)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(3, 4)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 1)]}},}
                     ),
                    # case 11
                    ('case 11',
                     'a score=0\n'
                     's test1.chrA  0  4 - 100 ACGT--\n'
                     's test2.chrA  0  4 + 100 --ACGT\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(96, 98)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 2)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(96, 98)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 2)]}},}
                     ),
                    # case 12
                    ('case 12',
                     'a score=0\n'
                     's test2.chrA  0  4 + 100 --ACGT\n'
                     's test1.chrA  0  4 + 100 ACGT--\n',
-                    {'test2' : {'chrA' : {'test1' : {'chrA': [(0, 2)]}}},
-                     'test1' : {'chrA' : {'test2' : {'chrA': [(2, 4)]}}},}
+                    {'test2' : {'chrA' : {'test1' : [(0, 2)]}},
+                     'test1' : {'chrA' : {'test2' : [(2, 4)]}},}
                     ),
                    # case 13
                    ('case 13',
                     'a score=0\n'
                     's test2.chrA  0  4 + 100 ---ACGT\n'
                     's test1.chrA  0  4 + 100 ACGT---\n',
-                    {'test2' : {'chrA' : {'test1' : {'chrA': [(0, 1)]}}},
-                     'test1' : {'chrA' : {'test2' : {'chrA': [(3, 4)]}}},}
+                    {'test2' : {'chrA' : {'test1' : [(0, 1)]}},
+                     'test1' : {'chrA' : {'test2' : [(3, 4)]}},}
                     ),
                    # case 14
                    ('case 14',
                     'a score=0\n'
                     's test2.chrA  0  4 + 100 --ACGT\n'
                     's test1.chrA  0  4 - 100 ACGT--\n',
-                    {'test2' : {'chrA' : {'test1' : {'chrA': [(0, 2)]}}},
-                     'test1' : {'chrA' : {'test2' : {'chrA': [(96, 98)]}}},}
+                    {'test2' : {'chrA' : {'test1' : [(0, 2)]}},
+                     'test1' : {'chrA' : {'test2' : [(96, 98)]}},}
                     ),
                    # case 15
                    ('case 15',
                     'a score=0\n'
                     's test1.chrA  0  4 + 100 -ACGT--\n'
                     's test2.chrA  0  7 + 100 ACGTACG\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(0, 4)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(1, 5)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(0, 4)]}},
+                     'test2' : {'chrA' : {'test1' : [(1, 5)]}},}
                     ),
                    # case 16
                    ('case 16',
                     'a score=0\n'
                     's test1.chrA  0  4 + 100 ACGT---\n'
                     's test2.chrA  0  7 + 100 ACGTACG\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(0, 4)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 4)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(0, 4)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 4)]}},}
                     ),
                    # case 17
                    ('case 17',
                     'a score=0\n'
                     's test1.chrA  0  4 + 100 ---ACGT\n'
                     's test2.chrA  0  7 + 100 ACGTACG\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(0, 4)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(3, 7)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(0, 4)]}},
+                     'test2' : {'chrA' : {'test1' : [(3, 7)]}},}
                     ),
                    # case 18
                    ('case 18',
                     'a score=0\n'
                     's test1.chrA  0  7 + 100 ACGTACG\n'
                     's test2.chrA  0  4 + 100 -ACGT--\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(1, 5)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 4)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(1, 5)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 4)]}},}
                     ),
                    # case 19
                    ('case 19',
                     'a score=0\n'
                     's test1.chrA  0  7 + 100 ACGTACG\n'
                     's test2.chrA  0  4 + 100 ACGT---\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(0, 4)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 4)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(0, 4)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 4)]}},}
                     ),
                    # case 20
                    ('case 20',
                     'a score=0\n'
                     's test1.chrA  0  7 + 100 ACGTACG\n'
                     's test2.chrA  0  4 + 100 ---ACGT\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(3, 7)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 4)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(3, 7)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 4)]}},}
                     ),
                    # case 21
                    ('case 21',
                     'a score=0\n'
                     's test1.chrA  0 14 + 100 ACGTACGACGTACG\n'
                     's test2.chrA  0  8 + 100 ---ACGT---ACGT\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(3, 7), (10, 14)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(0, 8)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(3, 7), (10, 14)]}},
+                     'test2' : {'chrA' : {'test1' : [(0, 8)]}},}
                     ),
                    # case 22
                    ('case 22',
                     'a score=0\n'
                     's test1.chrA  1 14 - 100 ACGTACGACGTACG\n'
                     's test2.chrA  1  8 - 100 ---ACGT---ACGT\n',
-                    {'test1' : {'chrA' : {'test2' : {'chrA': [(85, 89), (92, 96)]}}},
-                     'test2' : {'chrA' : {'test1' : {'chrA': [(91, 99)]}}},}
+                    {'test1' : {'chrA' : {'test2' : [(85, 89), (92, 96)]}},
+                     'test2' : {'chrA' : {'test1' : [(91, 99)]}},}
+                    ),
+                   # case 23
+                   ('case 23',
+                    'a score=0\n'
+                    's test1.chrA  1 14 - 100 ACGTACGACGTACG\n'
+                    's test2.chrA  1  8 - 100 ---ACGT---ACGT\n'
+                    's test1.chrB  1 14 - 100 ACGTACGACGTACG\n',
+                    {'test1' : {'chrA' : {'test2' : [(85, 89), (92, 96)]},
+                                'chrB' : {'test2' : [(85, 89), (92, 96)]}},
+                     'test2' : {'chrA' : {'test1' : [(91, 99), (91, 99)]}},
+                     },
                     ),
                    )
     options = GenericObject()
@@ -239,11 +250,9 @@ class VerifyMafRead(unittest.TestCase):
             for chromA in post[genomeA]:
                 truth[genomeA][chromA] = {}
                 for genomeB in post[genomeA][chromA]:
-                    truth[genomeA][chromA][genomeB] = {}
-                    for chromB in post[genomeA][chromA][genomeB]:
-                        truth[genomeA][chromA][genomeB][chromB] = numpy.zeros(100, dtype = numpy.uint16)
-                        for start, stop in post[genomeA][chromA][genomeB][chromB]:
-                            truth[genomeA][chromA][genomeB][chromB][start : stop] += 1
+                    truth[genomeA][chromA][genomeB] = numpy.zeros(100, dtype = numpy.uint16)
+                    for start, stop in post[genomeA][chromA][genomeB]:
+                        truth[genomeA][chromA][genomeB][start : stop] += 1
         return truth
     
     def test_oneWay(self):
@@ -264,16 +273,15 @@ class VerifyMafRead(unittest.TestCase):
                    self.assertTrue(c1 in trueAlignments[g1])
                    for g2 in alignments[g1][c1]:
                        self.assertTrue(g2 in trueAlignments[g1][c1])
-                       for c2 in alignments[g1][c1][g2]:
-                           self.assertTrue(c2 in trueAlignments[g1][c1][g2])
-                           # print alignments[g1][c1][g2][c2]
-                           # print trueAlignments[g1][c1][g2][c2]
-                           # print sum(alignments[g1][c1][g2][c2] == trueAlignments[g1][c1][g2][c2])
-                           self.assertTrue(sum(alignments[g1][c1][g2][c2] == trueAlignments[g1][c1][g2][c2]) == 
-                                           len(alignments[g1][c1][g2][c2]))            
+                       # print alignments[g1][c1][g2][c2]
+                       # print trueAlignments[g1][c1][g2][c2]
+                       # print sum(alignments[g1][c1][g2][c2] == trueAlignments[g1][c1][g2][c2])
+                       self.assertTrue((sum(alignments[g1][c1][g2] == trueAlignments[g1][c1][g2]) == 
+                                        len(alignments[g1][c1][g2])))
         shutil.rmtree(os.path.dirname(self.options.maf))
 
 class VerifyAnalysis(unittest.TestCase):
+    # gaps defined to exist anywhere, even at the edges of alignments
     knownValues = [('case 1',
                     [numpy.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype = numpy.uint16),
                      numpy.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype = numpy.uint16)], 
@@ -297,6 +305,33 @@ class VerifyAnalysis(unittest.TestCase):
                     [4, 3, 3, 2, 1, 1, 1, 1, 2], [3, 5, 4], ),
                    ]
     options = GenericObject()
+    options.noEdges = False
+
+    # gaps defined to exist only between regions of alignment
+    knownValuesNoEdges = [('case 1',
+                           [numpy.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype = numpy.uint16),
+                            numpy.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype = numpy.uint16)], 
+                           [], [10, 10] ),
+                          ('case 2',
+                           [numpy.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype = numpy.uint16),
+                            numpy.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype = numpy.uint16)],
+                           [], [0, 0], ),
+                          ('case 3',
+                           [numpy.array([0, 0, 0, 0, 1, 1, 1, 0, 0, 0], dtype = numpy.uint16),
+                            numpy.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype = numpy.uint16)],
+                           [], [3, 0], ),
+                          ('case 4',
+                           [numpy.array([0, 0, 0, 0, 1, 1, 1, 0, 0, 0], dtype = numpy.uint16),
+                            numpy.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 0], dtype = numpy.uint16)],
+                           [1, 1, 1], [3, 4], ),
+                          ('case 5',
+                           [numpy.array([0, 0, 0, 0, 1, 1, 1, 0, 0, 0], dtype = numpy.uint16),
+                            numpy.array([1, 0, 0, 0, 1, 1, 1, 1, 0, 0], dtype = numpy.uint16),
+                            numpy.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 0], dtype = numpy.uint16)],
+                           [3, 1, 1, 1], [3, 5, 4], ),
+                          ]
+    optionsNoEdges = GenericObject()
+    optionsNoEdges.noEdges = True
     
     def buildArray(intervalList):
         a = numpy.zeros(100, dtype = numpy.uint16)
@@ -312,6 +347,16 @@ class VerifyAnalysis(unittest.TestCase):
             for a in arrayList:
                 predicted += MID.analyzeOne(a, self.options)
             self.assertEqual(predicted, gapTruth)
+            
+    def test_oneWayNoEdges(self):
+        """ analyze() should return the correct values for a given vector when NoEdges is turned on
+        """ 
+        for name, arrayList, gapTruth, coveredTruth in self.knownValuesNoEdges:
+            predicted = []
+            for a in arrayList:
+                predicted += MID.analyzeOne(a, self.optionsNoEdges)
+            self.assertEqual(predicted, gapTruth)
+
     def test_coverage(self):
         """ calcBasesCovered() should return the correct values for a given vector
         """

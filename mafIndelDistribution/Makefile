@@ -1,6 +1,6 @@
 include ../include.mk
 binPath := ../bin
-srcPath := src/
+srcPath := src
 .PHONY := all test clean
 
 ${binPath}/mafIndelDistribution.py: ${srcPath}/mafIndelDistribution.py

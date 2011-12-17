@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.6
 """
 """
 ##############################
@@ -38,8 +38,8 @@ import sys
 from sonLib.bioio import system
 from sonLib.bioio import logger
 from sonLib.bioio import getLogLevelString
-
-from cactus.shared.test import parseCactusSuiteTestOptions
+from sonLib.bioio import getBasicOptionParser
+from sonLib.bioio import parseSuiteTestOptions
 
 class BedParsing(unittest.TestCase):
     header = '##maf version=1\n\n'
@@ -66,7 +66,7 @@ class BedParsing(unittest.TestCase):
                     's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
                     's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
                     '',
-                    20, 0),
+                    20, None),
                    # test 3 - 50% bed coverage
                    ('a score=0\n'
                     's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
@@ -109,16 +109,86 @@ class BedParsing(unittest.TestCase):
             if bed != '':
                 cmd.append('--bedFiles=%s' % os.path.join('tempTestFiles', 'bed.bed'))
             cmd.append('--sampleNumber=1000 --logLevel %s' % getLogLevelString())
-            system(" ".join(cmd)) #Much nicer, huh? It will capture all the bugs
+            system(" ".join(cmd))
             tree = ET.parse(os.path.join('tempTestFiles', 'output.xml'))
-            homTests = tree.findall('homology_tests')
-            self.assertAlmostEquals(totalTrue, float(homTests[0].find('aggregate_results').find('all').attrib['totalTrue']))
-            self.assertAlmostEquals(totalTrueInInterval, float(homTests[0].find('aggregate_results').find('A').attrib['totalTrue']))
+            homTests = tree.findall('homologyTests')
+            self.assertAlmostEquals(totalTrue, 
+                                    float(homTests[0].find('aggregateResults').find('all').attrib['totalTrue']))
+            if totalTrueInInterval is None:
+                self.assertEqual(None, homTests[0].find('aggregateResults').find('A'))
+            else:
+                self.assertAlmostEquals(totalTrueInInterval, 
+                                        float(homTests[0].find('aggregateResults').find('A').attrib['totalTrue']))
+            shutil.rmtree(os.path.dirname(self.maf1path))
+
+class randomSeedTests(unittest.TestCase):
+    header = '##maf version=1\n\n'
+    footer = '\n'
+    maf1path = os.path.join('tempTestFiles', 'maf1.maf')
+    maf2path = os.path.join('tempTestFiles', 'maf2.maf')
+    knownValues = [('a score=0\n'
+                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                    's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
+                    'a score=0\n'
+                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                    's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
+                    ),
+                   ('a score=0\n'
+                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                    's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
+                    'a score=0\n'
+                    's test1.chr0 10 30 + 100 ACGTACGTACGTACGTACGT\n'
+                    's test2.chr0 10 30 + 100 ACGTACGTACGTACGTACGT\n',
+                    ),
+                   ('a score=0\n'
+                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                    's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
+                    'a score=0\n'
+                    's test1.chr0 40 60 + 100 ACGTACGTACGTACGTACGT\n'
+                    's test2.chr0 40 60 + 100 ACGTACGTACGTACGTACGT\n',
+                    ),
+                   ]
+    
+    def test_seedTesting(self):
+        """ mafComparator should have replicatable runs via the --seed command
+        """
+        for maf1, maf2  in self.knownValues:
+            if not os.path.exists('tempTestFiles'):
+                os.mkdir('tempTestFiles')
+            f = open(self.maf1path, 'w')
+            f.write('%s%s%s' % (self.header, maf1, self.footer))
+            f.close()
+            f = open(self.maf2path, 'w')
+            f.write('%s%s%s' % (self.header, maf2, self.footer))
+            f.close()
+            cmd = ['mafComparator']
+            cmd.append('--mafFile1=%s' % self.maf1path)
+            cmd.append('--mafFile2=%s' % self.maf2path)
+            cmd.append('--outputFile=%s' % os.path.join('tempTestFiles', 'output.xml'))
+            cmd.append('--sampleNumber=10 --logLevel %s' % getLogLevelString())
+            system(" ".join(cmd))
+            tree = ET.parse(os.path.join('tempTestFiles', 'output.xml'))
+            ac = tree.getroot()
+            seed = int(ac.attrib['seed'])
+            origHomTests = tree.findall('homologyTests')
+            cmd.append('--seed=%d' % seed)
+            for i in xrange(0, 10):
+                system(" ".join(cmd))
+                tree = ET.parse(os.path.join('tempTestFiles', 'output.xml'))
+                ac = tree.getroot()
+                homTests = tree.findall('homologyTests')
+                self.assertEqual(seed, int(ac.attrib['seed']))
+                for elm in ['totalTrue', 'totalFalse', 'average']:
+                    self.assertEqual(homTests[0].find('aggregateResults').find('all').attrib[elm],
+                                     origHomTests[0].find('aggregateResults').find('all').attrib[elm])
+                    self.assertEqual(homTests[1].find('aggregateResults').find('all').attrib[elm],
+                                     origHomTests[1].find('aggregateResults').find('all').attrib[elm])
+                os.remove(os.path.join('tempTestFiles', 'output.xml'))
             shutil.rmtree(os.path.dirname(self.maf1path))
 
 class setDifferenceTests(unittest.TestCase):
     def test_intersect_1(self):
-        """intersect() should return intersecting pairs. Testing starting positions"""
+        """setDiffDroppedMissing.intersect() should return intersecting pairs. Testing starting positions"""
         missing = []
         m = setD.Miss()
         m.file = 'banana.maf'
@@ -140,7 +210,7 @@ class setDifferenceTests(unittest.TestCase):
         self.assertTrue(m in result)
 
     def test_intersect_2(self):
-        """intersect() should return empty list when things do not intersect. checking apple.chr1 seq position."""
+        """setDiffDroppedMissing.intersect() should return empty list when things do not intersect."""
         missing = []
         m = setD.Miss()
         m.file = 'banana.maf'
@@ -162,7 +232,7 @@ class setDifferenceTests(unittest.TestCase):
         self.assertTrue(len(result) == 0)
 
     def test_intersect_3(self):
-        """intersect() should return empty list when the Missing sample pair is self-self."""
+        """setDiffDroppedMissing.intersect() should return empty list when the Missing sample pair is self-self."""
         missing = []
         m = setD.Miss()
         m.file = 'banana.maf'
@@ -184,7 +254,7 @@ class setDifferenceTests(unittest.TestCase):
         self.assertTrue(len(result) == 0)
 
     def test_setDiff_1(self):
-        """setDiff() should return things that do not intersect."""
+        """setDiffDroppedMissing.setDiff() should return things that do not intersect."""
         missing = []
         m = setD.Miss()
         m.file = 'banana.maf'
@@ -210,7 +280,7 @@ class setDifferenceTests(unittest.TestCase):
         self.assertEqual(m.seq2, result[0].seq2)
         self.assertEqual(m.pos2, result[0].pos2)
     def test_intersect_4(self):
-        """intersect() should return intersecting pairs. Testing ending edges."""
+        """setDiffDroppedMissing.intersect() should return intersecting pairs. Testing ending edges."""
         missing = []
         m = setD.Miss()
         m.file = 'banana.maf'
@@ -232,7 +302,7 @@ class setDifferenceTests(unittest.TestCase):
         self.assertTrue(m in result)
 
     def test_intersect_5(self):
-        """intersect() should return intersecting pairs. Testing ending edges."""
+        """setDiffDroppedMissing.intersect() should return intersecting pairs. Testing ending edges."""
         missing = []
         m = setD.Miss()
         m.file = 'banana.maf'
@@ -254,7 +324,7 @@ class setDifferenceTests(unittest.TestCase):
         self.assertTrue(len(result) == 0)
 
     def test_intersect_6(self):
-        """intersect() should return intersecting pairs. Testing starting positions."""
+        """setDiffDroppedMissing.intersect() should return intersecting pairs. Testing starting positions."""
         missing = []
         m = setD.Miss()
         m.file = 'banana.maf'
@@ -275,9 +345,19 @@ class setDifferenceTests(unittest.TestCase):
         result = setD.intersect(dropped, missing)
         self.assertTrue(len(result) == 0)
 
+def parseTestOptions():
+    parser = getBasicOptionParser('usage: %prog [options]', '%prog 0.1')
+    parser.add_option('-v', '--verbose', dest = 'verbose', default = False,
+                      action = 'store_true',
+                      help = 'perserve the default verbose behavior for unittest.')
+    options, args = parseSuiteTestOptions(parser)
+    return options, args
+
 def main():
-    parseCactusSuiteTestOptions()
+    options, args = parseTestOptions()
     sys.argv = sys.argv[:1]
+    if options.verbose:
+        sys.argv.append('-v')
     unittest.main()
         
 if __name__ == '__main__':
