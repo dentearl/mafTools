@@ -83,7 +83,7 @@ def checkOptions(options, args, parser):
         if not os.path.exists(a):
             parser.error('File %s does not exist.' % a)
 
-def readPickles(args):
+def readPickles(args, *vargs):
     """ read data from the pickles specified as positional arguments
     """
     dataDict = {}
@@ -91,7 +91,7 @@ def readPickles(args):
         dataDict[p] = readPickle(p)
     return dataDict
 
-def readPickle(filename):
+def readPickle(filename, *vargs):
     """ Pulled out of readPickles like this so that other scripts may 
     use it as a module.
     """
