@@ -60,8 +60,6 @@ import xml.etree.ElementTree as ET
 def initOptions(parser):
     parser.add_option('--pickle', dest = 'pickle',
                       help = 'input pickle file')
-    parser.add_option('--species', dest = 'species', 
-                      help = 'comma separated list of species names to include in output')
     parser.add_option('--outfile', dest = 'outfile', default = 'summary.xml',
                       help = 'location where outfile will be written default = %default')
     parser.add_option('--noEdges', dest = 'noEdges', action = 'store_true', default = False,
@@ -71,15 +69,11 @@ def initOptions(parser):
 
 def checkOptions(options, args, parser):
     for k, v in [('pickle', options.pickle), ('outfile', options.outfile),
-                 ('species', options.species)]:
+                 ]:
         if v is None:
             parser.error('specify --%s' % k)
     if not os.path.exists(options.pickle):
         parser.error('--pickle %s does not exist' % options.pickle)
-    if options.species is None:
-        options.speciesList = set()
-    else:
-        options.speciesList = set(options.species.split(','))
 
 def analyzeAll(alignments, options):
     """ alignments is a multi dict keyed genome1:chrom1:genome2:chrom2: numpy.array()
@@ -142,7 +136,7 @@ def calcBasesCovered(array, options):
     return len(numpy.nonzero(array)[0])
 
 def main():
-    usage = ('usage: %prog --pickle path/to/file.pickle --species=species1,species2,...\n\n'
+    usage = ('usage: %prog --pickle path/to/file.pickle\n\n'
              '%prog is a script that operates on a single maf\n'
              'mafCoveragePickleGapAnalysis is a script that operates on a single \n'
              'coverage pickle file and extracts information from\n'
