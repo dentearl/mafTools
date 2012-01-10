@@ -4,6 +4,9 @@ mafCoveragePicklePlotter.py
 6 January 2012
 dent earl
 
+script to create proportional coverage plots of one 
+species onto another species+chromosome using
+alignment pickles.
 
 """
 ##############################
@@ -38,6 +41,7 @@ import matplotlib.backends.backend_pdf as pltBack
 import matplotlib.pyplot as plt
 import numpy
 from optparse import OptionParser
+import os
 
 def initOptions(parser):
     parser.add_option('--spp1', dest = 'spp1',
@@ -47,10 +51,10 @@ def initOptions(parser):
     parser.add_option('--spp2', dest = 'spp2',
                      help = 'Species 2.')
     parser.add_option('--windowLength', dest = 'windowLength', 
-                      default = 500*(10**3), type = 'int',
+                      default = 500 * 10**3, type = 'int',
                       help = 'Size of sliding window. default=%default')
     parser.add_option('--windowOverlap', dest = 'windowOverlap', 
-                      default = 250*(10**3), type = 'int',
+                      default = 250 * 10**3, type = 'int',
                       help = 'Size of sliding window step. default=%default')
     parser.add_option('--dpi', dest = 'dpi', default = 300,
                       type = 'int',
@@ -75,16 +79,26 @@ def checkOptions(options, args, parser):
          options.out.endswith('.eps')):
         options.out = options.out[:-4]
     options.windowStep = options.windowLength - options.windowOverlap
+    for a in args:
+        if not os.path.exists(a):
+            parser.error('File %s does not exist.' % a)
 
 def readPickles(args):
     """ read data from the pickles specified as positional arguments
     """
     dataDict = {}
     for p in args:
-        FILE = open(p, 'r')
-        dataDict[p] = data = cPickle.load(FILE)
-        FILE.close()
+        dataDict[p] = readPickle(p)
     return dataDict
+
+def readPickle(filename):
+    """ Pulled out of readPickles like this so that other scripts may 
+    use it as a module.
+    """
+    FILE = open(filename, 'r')
+    t = cPickle.load(FILE)
+    FILE.close()
+    return t
 
 def parseDataDict(dataDict, options, parser):
     """ look in the data and find out what species are available
@@ -203,8 +217,10 @@ def window(a, options):
     return xdata, wind
 
 def main():
-    usage = ('usage: %prog --\n\n'
-             '%prog takes ')
+    usage = ('usage: %prog --spp1 species1 --spp1chr chrom1 --spp2 species2 maf1.pickle maf2.pickle ...\n\n'
+             '%prog takes a species+chromosome to other species alignment pair and a set of \n'
+             'alignment pickles (as positional arguments) and produces a plot showing the\n'
+             'proportional coverage of --spp2 onto --spp1 along --spp1chr.')
     parser = OptionParser(usage = usage)
     initOptions(parser)
     options, args = parser.parse_args()
@@ -213,17 +229,20 @@ def main():
     dataDict = readPickles(args)
     speciesSet, speciesChrDict = parseDataDict(dataDict, options, parser)
     
-    # for p in dataDict:
-    #     for d in dataDict[p]:
-    #         for c in dataDict[p][d]:
-    #             for b in dataDict[p][d][c]:
-    #                 print d, p, d, c, b
-
     fig, pdf = initImage(8.5, 5.0, options)
     ax = establishAxis(fig, options)
     plotList = []
     filenames = []
-    colorList = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78']
+    # colorList = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78']
+    colorList = ['#4B4C5E', # dark slate gray
+                 '#9edae5', # light blue 
+                 '#7F80AB', # purple-ish slate blue
+                 '#c7c7c7', # light gray
+                 '#ff7f0e', # bright orange
+                 '#ffbb78', # light orange
+                 '#9467bd', # dark purple
+                 '#c5b0d5',  # light purple
+                 ]
     for i, a in enumerate(args, 0):
         if options.spp2 not in dataDict[a][options.spp1][options.spp1chr]:
             print 'Warning: %s onto %s %s is not present in %s' % (options.spp2, options.spp1,
