@@ -1,4 +1,4 @@
-import mafIndelDistribution as MID
+import mafCoveragePickleCreator as MCPC
 import numpy
 import os
 import re
@@ -12,13 +12,13 @@ class GenericObject:
 
 class VerifyMafLineExtraction(unittest.TestCase):
     knownValues = [('s test1.chrA 0 10 + 100 ACTG---ACTGAC',
-                    MID.MafLine('test1', 'chrA', 0, 10, 100, 1, 'ACTG---ACTGAC', 9)),
+                    MCPC.MafLine('test1', 'chrA', 0, 10, 100, 1, 'ACTG---ACTGAC', 9)),
                    ('s test2.chrA+chrB.chr1.chr2+chr10 0 10 + 100 ACTG---ACTGAC',
-                    MID.MafLine('test2', 'chrA+chrB.chr1.chr2+chr10', 0, 10, 100, 1, 'ACTG---ACTGAC', 9)),
+                    MCPC.MafLine('test2', 'chrA+chrB.chr1.chr2+chr10', 0, 10, 100, 1, 'ACTG---ACTGAC', 9)),
                    ('s test2.chrA 0 17 + 100 -ACGTUMRWSYKVHDBXN-',
-                    MID.MafLine('test2', 'chrA', 0, 17, 100, 1, '-ACGTUMRWSYKVHDBXN-', 9)),
+                    MCPC.MafLine('test2', 'chrA', 0, 17, 100, 1, '-ACGTUMRWSYKVHDBXN-', 9)),
                    ('s test1.chrA 0 10 - 100 ACTG---ACTGAC',
-                    MID.MafLine('test1', 'chrA', 0, 10, 100, -1, 'ACTG---ACTGAC', 9)),
+                    MCPC.MafLine('test1', 'chrA', 0, 10, 100, -1, 'ACTG---ACTGAC', 9)),
                    ]
     nameRegex = r'(.+?)\.(chr.+)'
     namePat = re.compile(nameRegex)
@@ -31,7 +31,7 @@ class VerifyMafLineExtraction(unittest.TestCase):
         """ ensure that the function extractMafLine() parses lines as expected.
         """
         for pre, post in self.knownValues:
-            x = MID.extractMafLine(self.namePat, pre, 9, self.options)
+            x = MCPC.extractMafLine(self.namePat, pre, 9, self.options)
             if x is None or x == 'notOurGenome':
                 self.assertEqual(x, post)
                 continue
@@ -263,7 +263,7 @@ class VerifyMafRead(unittest.TestCase):
             f.write('%s%s%s' % (self.header, pre, self.footer))
             f.close()
             
-            alignments = MID.readMaf(self.options.maf, self.options)
+            alignments = MCPC.readMaf(self.options.maf, self.options)
             trueAlignments = self.buildTruth(post)
             
             # print name
@@ -279,92 +279,6 @@ class VerifyMafRead(unittest.TestCase):
                        self.assertTrue((sum(alignments[g1][c1][g2] == trueAlignments[g1][c1][g2]) == 
                                         len(alignments[g1][c1][g2])))
         shutil.rmtree(os.path.dirname(self.options.maf))
-
-class VerifyAnalysis(unittest.TestCase):
-    # gaps defined to exist anywhere, even at the edges of alignments
-    knownValues = [('case 1',
-                    [numpy.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype = numpy.uint16),
-                     numpy.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype = numpy.uint16)], 
-                    [], [10, 10] ),
-                   ('case 2',
-                   [numpy.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype = numpy.uint16),
-                     numpy.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype = numpy.uint16)],
-                    [10, 10], [0, 0], ),
-                   ('case 3',
-                   [numpy.array([0, 0, 0, 0, 1, 1, 1, 0, 0, 0], dtype = numpy.uint16),
-                    numpy.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype = numpy.uint16)],
-                    [4, 3, 10], [3, 0], ),
-                   ('case 4',
-                   [numpy.array([0, 0, 0, 0, 1, 1, 1, 0, 0, 0], dtype = numpy.uint16),
-                    numpy.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 0], dtype = numpy.uint16)],
-                    [4, 3, 1, 1, 1, 1, 2], [3, 4], ),
-                   ('case 5',
-                   [numpy.array([0, 0, 0, 0, 1, 1, 1, 0, 0, 0], dtype = numpy.uint16),
-                    numpy.array([1, 0, 0, 0, 1, 1, 1, 1, 0, 0], dtype = numpy.uint16),
-                    numpy.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 0], dtype = numpy.uint16)],
-                    [4, 3, 3, 2, 1, 1, 1, 1, 2], [3, 5, 4], ),
-                   ]
-    options = GenericObject()
-    options.noEdges = False
-
-    # gaps defined to exist only between regions of alignment
-    knownValuesNoEdges = [('case 1',
-                           [numpy.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype = numpy.uint16),
-                            numpy.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype = numpy.uint16)], 
-                           [], [10, 10] ),
-                          ('case 2',
-                           [numpy.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype = numpy.uint16),
-                            numpy.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype = numpy.uint16)],
-                           [], [0, 0], ),
-                          ('case 3',
-                           [numpy.array([0, 0, 0, 0, 1, 1, 1, 0, 0, 0], dtype = numpy.uint16),
-                            numpy.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype = numpy.uint16)],
-                           [], [3, 0], ),
-                          ('case 4',
-                           [numpy.array([0, 0, 0, 0, 1, 1, 1, 0, 0, 0], dtype = numpy.uint16),
-                            numpy.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 0], dtype = numpy.uint16)],
-                           [1, 1, 1], [3, 4], ),
-                          ('case 5',
-                           [numpy.array([0, 0, 0, 0, 1, 1, 1, 0, 0, 0], dtype = numpy.uint16),
-                            numpy.array([1, 0, 0, 0, 1, 1, 1, 1, 0, 0], dtype = numpy.uint16),
-                            numpy.array([0, 1, 0, 1, 0, 1, 0, 1, 0, 0], dtype = numpy.uint16)],
-                           [3, 1, 1, 1], [3, 5, 4], ),
-                          ]
-    optionsNoEdges = GenericObject()
-    optionsNoEdges.noEdges = True
-    
-    def buildArray(intervalList):
-        a = numpy.zeros(100, dtype = numpy.uint16)
-        for start, stop in intervalList:
-            a[start : stop] += 1
-        return a
-    
-    def test_oneWay(self):
-        """ analyze() should return the correct values for a given vector
-        """ 
-        for name, arrayList, gapTruth, coveredTruth in self.knownValues:
-            predicted = []
-            for a in arrayList:
-                predicted += MID.analyzeOne(a, self.options)
-            self.assertEqual(predicted, gapTruth)
-            
-    def test_oneWayNoEdges(self):
-        """ analyze() should return the correct values for a given vector when NoEdges is turned on
-        """ 
-        for name, arrayList, gapTruth, coveredTruth in self.knownValuesNoEdges:
-            predicted = []
-            for a in arrayList:
-                predicted += MID.analyzeOne(a, self.optionsNoEdges)
-            self.assertEqual(predicted, gapTruth)
-
-    def test_coverage(self):
-        """ calcBasesCovered() should return the correct values for a given vector
-        """
-        for name, arrayList, gapTruth, coveredTruth in self.knownValues:
-            predicted = []
-            for a in arrayList:
-                predicted.append(MID.calcBasesCovered(a, self.options))
-            self.assertEqual(predicted, coveredTruth)
 
 if __name__ == '__main__':
    unittest.main()

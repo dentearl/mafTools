@@ -89,7 +89,7 @@ def initOptions(parser):
     parser.add_option('--noEdges', dest = 'noEdges', action = 'store_true', default = False,
                       help = ('Gaps redefined to occur only between areas of alignments. Has '
                               'the effect of turning off gaps that occur at the edges of chromosomes. '
-                              'default=%default.'))
+                              'default = %default.'))
 
 def checkOptions(options, args, parser):
     for k, v in [('maf', options.maf), ('outfile', options.outfile),
@@ -342,13 +342,13 @@ def calcBasesCovered(array, options):
     """
     return len(numpy.nonzero(array)[0])
 
-def pickleData(alignmentDict, options):
+def pickleData(data, filename, options):
     """ record data to a pickle.
     """
-    if options.pickle is None:
+    if filename is None:
         return
-    f = open(options.pickle, 'wb')
-    cPickle.dump(alignmentDict, f, 2) # 2 is the format protocol, 2 = binary
+    f = open(filename, 'wb')
+    cPickle.dump(data, f, 2) # 2 is the format protocol, 2 = binary
     f.close()
 
 def main():
@@ -381,7 +381,7 @@ def main():
     alignmentDict = readMaf(options.maf, options)
     gapsList = analyzeAll(alignmentDict, options)
     writeAnalysis(gapsList, alignmentDict, options)
-    pickleData(alignmentDict, options)
+    pickleData(alignmentDict, options.pickle, options)
     
 if __name__ == '__main__':
     main()
