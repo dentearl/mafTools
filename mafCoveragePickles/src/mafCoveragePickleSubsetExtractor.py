@@ -37,8 +37,8 @@ and store it in its own pickle to make plotting faster.
 # THE SOFTWARE.
 ##############################
 import cPickle
+import mafCoveragePickleCreator as mcpc
 import mafCoveragePicklePlotter as mcpp
-import mafIndelDistribution as mid
 import numpy
 from optparse import OptionParser
 import os
@@ -83,7 +83,7 @@ def main():
     export = {options.spp1 : 
               {options.spp1chr :
                    {options.spp2 : dataDict[options.pickle][options.spp1][options.spp1chr][options.spp2]}}}
-    mid.pickleData(export, options.out, options)
+    mcpc.pickleData(export, options.out, options)
     
 if __name__ == '__main__':
     main()
