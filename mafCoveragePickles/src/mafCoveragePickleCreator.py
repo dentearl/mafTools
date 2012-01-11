@@ -1,23 +1,19 @@
 #!/usr/bin/env python2.6
 """ 
-mafIndelDistribution.py
-14 November 2011
+mafCoveragePickleCreator.py
+10 January 2011
 dent earl
 
-mafIndelDistribution is a script that operates on a single maf
+mafCoveragePickleCreator is a script that operates on a single maf
 (multiple alignment format) file and extracts information from
-the alignments of pairs of sequences. Output is xml which will
-contain a 'gaps' tag that contains a comma separated list of all
-indels within the maf for specified pairs. Additionally, 
-information on inter-chromosome coverage between pairs is 
-provided. To this end, the maf sequence name field must have the
-format
+the alignments of pairs of sequences. Output is a pickle.
+The maf sequence name field must have the format
 species.chromosome
 e.g.
 hg19.chr22
 
 For slightly more detailed examples, check the 
-test.mafIndelDistribution.py unittest.
+test.mafCoveragePickleCreator.py unittest.
 
 Comparisons are between a species' chromosome and all other
 specified species. So,
@@ -58,7 +54,6 @@ import numpy
 from optparse import OptionParser
 import os
 import re
-import xml.etree.ElementTree as ET
 
 seqRegex = r'[ACGTUMRWSYKVHDBXN]+'
 seqPat = re.compile(seqRegex)
@@ -81,18 +76,12 @@ def initOptions(parser):
                       help = 'input maf file')
     parser.add_option('--species', dest = 'species', 
                       help = 'comma separated list of species names to include in output')
-    parser.add_option('--outfile', dest = 'outfile', default = 'summary.xml',
-                      help = 'location where outfile will be written default = %default')
     parser.add_option('--pickle', dest = 'pickle',
                       help = ('location where python pickle will be written, for use '
                       'with downstream analyses. By default this file is not created.'))
-    parser.add_option('--noEdges', dest = 'noEdges', action = 'store_true', default = False,
-                      help = ('Gaps redefined to occur only between areas of alignments. Has '
-                              'the effect of turning off gaps that occur at the edges of chromosomes. '
-                              'default=%default.'))
 
 def checkOptions(options, args, parser):
-    for k, v in [('maf', options.maf), ('outfile', options.outfile),
+    for k, v in [('maf', options.maf), ('pickle', options.pickle),
                  ('species', options.species)]:
         if v is None:
             parser.error('specify --%s' % k)
@@ -282,90 +271,26 @@ def incrementArrayIndices(array, totalLength, forStart, forEnd, strand):
         # revEnd   = chromLength - forStart
         array[totalLength - forEnd : totalLength - forStart] += 1
 
-def analyzeAll(alignments, options):
-    """ alignments is a multi dict keyed genome1:chrom1:genome2:chrom2: numpy.array()
-    where the array is length of genome1:chrom1 and contains 0s in all of the positions
-    where genome2:chrom2 does not align.
-    """
-    gaps = []
-    for g1 in alignments:
-        for c1 in alignments[g1]:
-            for g2 in alignments[g1][c1]:
-                gaps += analyzeOne(alignments[g1][c1][g2], options)
-    return gaps
-
-def analyzeOne(array, options):
-    """ array is a numpy.array(), 1 by n. 0s indicate no alignment,
-    x > 0 indicate that x bases aligned to that position.
-    """
-    result = []
-    count = 0
-    startEdge = True
-    for a in array:
-        if a == 0:
-            count += 1
-        else:
-            if options.noEdges and startEdge:
-                startEdge = False
-                count = 0
-                continue
-            if count != 0:
-                result.append(count)
-                count = 0
-    if not options.noEdges:
-        if count != 0:
-            result.append(count)
-    return result
-
-def writeAnalysis(gapsList, alignments, options):
-    root = ET.Element('data')
-    pc = ET.SubElement(root, 'pairwiseCoverage')
-    for g1 in alignments:
-        for c1 in alignments[g1]:
-            for g2 in alignments[g1][c1]:
-                tlen = len(alignments[g1][c1][g2])
-                basesCovered = calcBasesCovered(alignments[g1][c1][g2], options)
-                e = ET.SubElement(pc, 'coverage')
-                e.attrib['targetGenome'] = g1
-                e.attrib['targetChromosome'] = c1
-                e.attrib['queryGenome'] = g2
-                e.attrib['targetLength'] = str(tlen)
-                e.attrib['targetNumberBasesCovered'] = str(basesCovered)
-                e.attrib['targetPercentCovered'] = str(basesCovered / float(tlen))
-    e = ET.SubElement(root, 'gaps')
-    e.text = ','.join(map(str, gapsList))
-    info = ET.ElementTree(root)
-    info.write(options.outfile)
-
-def calcBasesCovered(array, options):
-    """ Function-ized for unittesting.
-    """
-    return len(numpy.nonzero(array)[0])
-
-def pickleData(alignmentDict, options):
+def pickleData(data, filename, options):
     """ record data to a pickle.
     """
-    if options.pickle is None:
+    if filename is None:
         return
-    f = open(options.pickle, 'wb')
-    cPickle.dump(alignmentDict, f, 2) # 2 is the format protocol, 2 = binary
+    f = open(filename, 'wb')
+    cPickle.dump(data, f, 2) # 2 is the format protocol, 2 = binary
     f.close()
 
 def main():
     usage = ('usage: %prog --maf path/to/file.maf --species=species1,species2,...\n\n'
              '%prog is a script that operates on a single maf\n'
              '(multiple alignment format) file and extracts information from\n'
-             'the alignments of pairs of sequences. Output is xml which will\n'
-             'contain a \'gaps\' tag that contains a comma separated list of all\n'
-             'indels within the maf for specified pairs. Additionally, \n'
-             'information on inter-chromosome coverage between pairs is \n'
-             'provided. To this end, the maf sequence name field must have the\n'
-             'format\n'
+             'the alignments of pairs of sequences. Output is a pickle.\n'
+             'The maf sequence name field must have the format\n'
              'species.chromosome\n'
              'e.g.\n'
              'hg19.chr22\n\n'
              'For slightly more detailed examples, check the \n'
-             'test.mafIndelDistribution.py unittest.\n\n'
+             'test.mafCoveragePickleCreator.py unittest.\n\n'
              'Comparisons are between a species\' chromosome and all other\n'
              'specified species. So,\n'
              'for each species S:\n'
@@ -379,9 +304,7 @@ def main():
     checkOptions(options, args, parser)
     
     alignmentDict = readMaf(options.maf, options)
-    gapsList = analyzeAll(alignmentDict, options)
-    writeAnalysis(gapsList, alignmentDict, options)
-    pickleData(alignmentDict, options)
+    pickleData(alignmentDict, options.pickle, options)
     
 if __name__ == '__main__':
     main()
