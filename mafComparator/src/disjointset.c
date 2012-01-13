@@ -4,7 +4,7 @@
  * Implementation of the disjoint-set forest data structure.
  * Based off pseudocode in "Introduction to Algorithms" by Cormen, et al.
  *
- * Copyright (C) 2009-2011 by 
+ * Copyright (C) 2009-2012 by 
  * Bernard Suh (bsuh@soe.ucsc.edu)
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * Benedict Paten (benedict@soe.ucsc.edu, benedictpaten@gmail.com)

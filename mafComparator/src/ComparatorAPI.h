@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2009-2011 by 
+ * Copyright (C) 2009-2012 by 
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * Benedict Paten (benedict@soe.ucsc.edu, benedictpaten@gmail.com)
  * Mark Diekhans (markd@soe.ucsc.edu)
