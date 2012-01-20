@@ -37,6 +37,7 @@ alignment pickles.
 ##############################
 import cPickle
 from math import ceil
+from mafCoveragePickleCreator import readPickles
 import matplotlib.backends.backend_pdf as pltBack
 import matplotlib.pyplot as plt
 import numpy
@@ -82,23 +83,6 @@ def checkOptions(options, args, parser):
     for a in args:
         if not os.path.exists(a):
             parser.error('File %s does not exist.' % a)
-
-def readPickles(args, *vargs):
-    """ read data from the pickles specified as positional arguments
-    """
-    dataDict = {}
-    for p in args:
-        dataDict[p] = readPickle(p)
-    return dataDict
-
-def readPickle(filename, *vargs):
-    """ Pulled out of readPickles like this so that other scripts may 
-    use it as a module.
-    """
-    FILE = open(filename, 'r')
-    t = cPickle.load(FILE)
-    FILE.close()
-    return t
 
 def parseDataDict(dataDict, options, parser):
     """ look in the data and find out what species are available

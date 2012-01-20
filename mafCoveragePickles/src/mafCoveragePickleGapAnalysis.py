@@ -50,7 +50,7 @@ for each species S:
 # THE SOFTWARE.
 ##############################
 import cPickle
-from mafCoveragePicklePlotter import readPickle
+from mafCoveragePickleCreator import readPickle
 import numpy
 from optparse import OptionParser
 import os
