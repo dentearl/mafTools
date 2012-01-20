@@ -50,7 +50,7 @@ for each species S:
 # THE SOFTWARE.
 ##############################
 import cPickle
-import mafCoveragePicklePlotter as mcpp
+from mafCoveragePicklePlotter import readPickle
 import numpy
 from optparse import OptionParser
 import os
@@ -159,7 +159,7 @@ def main():
     options, args = parser.parse_args()
     checkOptions(options, args, parser)
     
-    alignmentDict = mcpp.readPickle(options.pickle, options)
+    alignmentDict = readPickle(options.pickle, options)
     gapsList = analyzeAll(alignmentDict, options)
     writeAnalysis(gapsList, alignmentDict, options)
     
