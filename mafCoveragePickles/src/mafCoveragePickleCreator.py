@@ -280,6 +280,23 @@ def pickleData(data, filename, options):
     cPickle.dump(data, f, 2) # 2 is the format protocol, 2 = binary
     f.close()
 
+def readPickles(args, *vargs):
+    """ read data from the pickles specified as positional arguments
+    """
+    dataDict = {}
+    for p in args:
+        dataDict[p] = readPickle(p)
+    return dataDict
+
+def readPickle(filename, *vargs):
+    """ Pulled out of readPickles like this so that other scripts may 
+    use it as a module.
+    """
+    FILE = open(filename, 'r')
+    t = cPickle.load(FILE)
+    FILE.close()
+    return t
+
 def main():
     usage = ('usage: %prog --maf path/to/file.maf --species=species1,species2,...\n\n'
              '%prog is a script that operates on a single maf\n'
