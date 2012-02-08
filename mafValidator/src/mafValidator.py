@@ -162,7 +162,7 @@ def validateHeader(header, filename):
    """ tests the first line of the maf file to make sure it is valid
    """
    if not header.startswith('##'):
-      raise HeaderError('maf %s has bad header, fails to start with #: %s' 
+      raise HeaderError('maf %s has bad header, fails to start with `##\': %s' 
                            % (filename, header))
    data = header.split()
    version = False
