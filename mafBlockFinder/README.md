@@ -27,6 +27,6 @@ mafBlockFinder is a program that will look through a maf file for a particular s
 * <code>-v, --verbose</code>   turns on verbose output.
 
 ##Example
-<code>$ ../bin/mafBlockFinder --seq hg19.chr20 --pos 500 < test/evoHg19-evoPanTro2.maf
-4: s hg19.chr20 0 795 + 73767698 ...</code>
+    $ ./mafBlockFinder --seq hg19.chr20 --pos 500 < example.maf 
+    4: s hg19.chr20 0 795 + 73767698 ...
 
