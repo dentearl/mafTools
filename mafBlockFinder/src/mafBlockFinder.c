@@ -133,9 +133,9 @@ void usage(void) {
             "] --pos [position to search for] [options] < myFile.maf\n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
-            "  -s, --seq      sequence name.chr e.g. `hg18.chr2'\n"
+            "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
             "  -p, --pos      position along the chromosome you are searching for.\n"
-            "                 Must be a positive number\n"
+            "                 Must be a positive number.\n"
             "  -v, --verbose  turns on verbose output.\n");
     exit(1);
 }
