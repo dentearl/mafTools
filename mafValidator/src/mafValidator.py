@@ -70,7 +70,7 @@ def checkOptions(options, args, parser):
 def validateMaf(filename, testChromNames = False):
    """ returns true on valid maf file
    """ 
-   nameRegex = r'(.+?)\.(chr.+)'  
+   nameRegex = r'(.+?)\.(chr.+)'
    namePat = re.compile(nameRegex)
    f = open(filename, 'r')
    header = f.next()
