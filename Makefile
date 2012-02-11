@@ -2,7 +2,7 @@ include include.mk
 SHELL:=/bin/bash -e
 export SHELLOPTS=pipefail
 
-modules = mafComparator mafCoveragePickles mafJoin mafValidator 
+modules = mafComparator mafCoveragePickles  mafValidator mafBlockFinder mafJoin
 
 .PHONY: all %.all clean %.clean test %.test
 
