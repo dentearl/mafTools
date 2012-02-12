@@ -56,7 +56,7 @@ void* de_malloc(size_t n) {
     i = malloc(n);
     if (i == NULL) {
         fprintf(stderr, "malloc failed on a request for %zu bytes\n", n);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     return i;
 }
@@ -96,7 +96,7 @@ void verbose(char const *fmt, ...) {
         if (n >= d_MAX_MESSAGE_LENGTH) {
             fprintf(stderr, "Error, failure in verbose(), (n = %d) > "
                     "(d_MAX_MESSAGE_LENGTH %d)\n", n, d_MAX_MESSAGE_LENGTH);
-            exit(1);
+            exit(EXIT_FAILURE);
         }
         message("Verbose", str, args);
     }
@@ -113,7 +113,7 @@ void debug(char const *fmt, ...) {
         if (n >= d_MAX_MESSAGE_LENGTH) {
             fprintf(stderr, "Error, failure in debug(), (n = %d) > "
                     "(d_MAX_MESSAGE_LENGTH %d)\n", n, d_MAX_MESSAGE_LENGTH);
-            exit(1);
+            exit(EXIT_FAILURE);
         }
         message("Debug", str, args);
     }
@@ -137,7 +137,7 @@ void usage(void) {
             "  -p, --pos      position along the chromosome you are searching for.\n"
             "                 Must be a positive number.\n"
             "  -v, --verbose  turns on verbose output.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 void parseOptions(int argc, char **argv, char *seqName, uint32_t *position) {
@@ -247,7 +247,7 @@ void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
                 fprintf(stderr, "Error on line %u, length (%u) greater than "
                         "or equal to UINT32_MAX.\n",
                         lineno, UINT32_MAX);
-                exit(1);
+                exit(EXIT_FAILURE);
             }
             tkn = strtok(NULL, search); // strand
             if ((strcmp(tkn, "+") == 0) || (strcmp(tkn, "-") == 0))
@@ -258,7 +258,7 @@ void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
                 fprintf(stderr, "Error on line %u, source length (%u) greater "
                         "than or equal to UINT32_MAX.\n",
                         lineno, UINT32_MAX);
-                exit(1);
+                exit(EXIT_FAILURE);
             }
             tkn = strtok(NULL, search); // sequence field
             checkRegion(lineno, fullname, pos, start, length, sourceLength, strand);
@@ -273,5 +273,5 @@ int main(int argc, char **argv) {
     parseOptions(argc, argv,  targetName, &targetPos);
     searchInput(stdin, targetName, targetPos);
    
-    return 0;
+    return EXIT_SUCCESS;
 }
