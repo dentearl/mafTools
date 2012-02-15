@@ -1,0 +1,17 @@
+SHELL:=/bin/bash
+cc = gcc
+args = -Wall -Wextra -std=c99 -pedantic
+bin = ../bin
+PROGS = mafBlockFinder
+
+.PHONY: all clean
+
+all: $(foreach f,${PROGS}, ${bin}/$f)
+
+${bin}/%: src/%.c 
+	mkdir -p $(dir $@)
+	${cc} ${args} $^ -o $@.tmp 
+	mv $@.tmp $@
+
+clean:
+	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o
