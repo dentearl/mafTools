@@ -77,21 +77,32 @@ def validateMaf(filename, testChromNames = False):
    validateHeader(header, filename)
    sources = {}
    prevLineWasAlignmentBlock = False
+   alignmentFieldLength = None
    for lineno, line in enumerate(f, 2):
       line = line.strip()
       
       if line.startswith('#'):
          prevLineWasAlignmentBlock = False
+         alignmentFieldLength = None
          continue
       elif line.startswith('a'):
          validateAlignmentLine(lineno, line, filename)
          prevLineWasAlignmentBlock = True
+         alignmentFieldLength = None
       elif line.startswith('s'):
          if not prevLineWasAlignmentBlock:
             raise MissingAlignmentBlockLineError('maf %s has a sequence line that was not preceded '
                                                  'by an alignment line on lineno %d: %s' 
                                                  % (filename, lineno, line))
-         species, chrom, length = validateSeqLine(namePat, testChromNames, lineno, line, filename)
+         species, chrom, length, alFieldLen = validateSeqLine(namePat, testChromNames, 
+                                                              lineno, line, filename)
+         if alignmentFieldLength is None:
+            alignmentFieldLength = alFieldLen
+         else:
+            if alignmentFieldLength != alFieldLen:
+               raise AlignmentLengthError('maf %s has a sequence line with an alignment field of different '
+                                          'length than the other sequences in the block on lineno %d: %s'
+                                          % (filename, lineno, line))
          if (species, chrom)  in sources:
             if sources[(species, chrom)] != length:
                raise SourceLengthError('maf %s has different source lengths for '
@@ -116,6 +127,7 @@ def validateMaf(filename, testChromNames = False):
                                                  % (filename, lineno, line))
       elif line == '':
          prevLineWasAlignmentBlock = False
+         alignmentFieldLength = None
          
    if line != '':
       raise FooterError('maf %s has a bad footer, should end with two new lines.' 
@@ -156,7 +168,7 @@ def validateSeqLine(namePat, testChromNames, lineno, line, filename):
          raise SpeciesFieldError('maf %s has name (src) field without ".chr" suffix: "%s" lineno %d: %s' 
                                  % (filename, data[1], lineno, line))
       return m.group(1), m.group(2), data[5]
-   return data[1], None, data[5]
+   return data[1], None, data[5], len(data[6])
 
 def validateHeader(header, filename):
    """ tests the first line of the maf file to make sure it is valid
