@@ -59,9 +59,9 @@ seqRegex = r'[ACGTUMRWSYKVHDBXN]+'
 seqPat = re.compile(seqRegex)
 
 class MafLine:
-    def __init__(self, genome = '', chrom = '', start = -1, 
-                 seqLength = -1, totalLength = -1, strand = 0,
-                 sequence = -1, lineno = -1):
+    def __init__(self, genome='', chrom='', start=-1, 
+                 seqLength=-1, totalLength=-1, strand=0,
+                 sequence=-1, lineno=-1):
         self.genome = genome
         self.chrom = chrom
         self.start = start
@@ -72,12 +72,12 @@ class MafLine:
         self.lineno = lineno
 
 def initOptions(parser):
-    parser.add_option('--maf', dest = 'maf', 
-                      help = 'input maf file')
-    parser.add_option('--species', dest = 'species', 
-                      help = 'comma separated list of species names to include in output')
-    parser.add_option('--pickle', dest = 'pickle',
-                      help = ('location where python pickle will be written, for use '
+    parser.add_option('--maf', dest='maf', 
+                      help='input maf file')
+    parser.add_option('--species', dest='species', 
+                      help='comma separated list of species names to include in output')
+    parser.add_option('--pickle', dest='pickle',
+                      help=('location where python pickle will be written, for use '
                       'with downstream analyses. By default this file is not created.'))
 
 def checkOptions(options, args, parser):
@@ -163,7 +163,7 @@ def addBlockPairs(alignments, mafLineList, options):
                 # each 'a' chrom will have an array for each 'b' genome, so long
                 # as they appear together in an alignment block.
                 alignments[a.genome][a.chrom][b.genome] = numpy.zeros(a.totalLength, 
-                                                                      dtype = numpy.uint16)
+                                                                      dtype=numpy.uint16)
             addBlocksToArray(alignments[a.genome][a.chrom][b.genome], a, b)
     
     # explicitly throw this away to help with memory
@@ -315,7 +315,7 @@ def main():
              '        for every species T, T != S:\n'
              '            paint all positions in C where T aligns (any chrom in T)'
              )
-    parser = OptionParser(usage = usage)
+    parser = OptionParser(usage=usage)
     initOptions(parser)
     options, args = parser.parse_args()
     checkOptions(options, args, parser)

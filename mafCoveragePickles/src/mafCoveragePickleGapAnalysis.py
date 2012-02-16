@@ -58,14 +58,14 @@ import re
 import xml.etree.ElementTree as ET
 
 def initOptions(parser):
-    parser.add_option('--pickle', dest = 'pickle',
-                      help = 'input pickle file')
-    parser.add_option('--outfile', dest = 'outfile', default = 'summary.xml',
-                      help = 'location where outfile will be written default = %default')
-    parser.add_option('--noEdges', dest = 'noEdges', action = 'store_true', default = False,
-                      help = ('Gaps redefined to occur only between areas of alignments. Has '
-                              'the effect of turning off gaps that occur at the edges of chromosomes. '
-                              'default = %default.'))
+    parser.add_option('--pickle', dest='pickle',
+                      help='input pickle file')
+    parser.add_option('--outfile', dest='outfile', default='summary.xml',
+                      help='location where outfile will be written default = %default')
+    parser.add_option('--noEdges', dest='noEdges', action='store_true', default=False,
+                      help=('Gaps redefined to occur only between areas of alignments. Has '
+                            'the effect of turning off gaps that occur at the edges of chromosomes. '
+                            'default = %default.'))
 
 def checkOptions(options, args, parser):
     for k, v in [('pickle', options.pickle), ('outfile', options.outfile),
@@ -76,7 +76,7 @@ def checkOptions(options, args, parser):
         parser.error('--pickle %s does not exist' % options.pickle)
 
 def analyzeAll(alignments, options):
-    """ alignments is a multi dict keyed genome1:chrom1:genome2:chrom2: numpy.array()
+    """ alignments is a multi dict keyed genome1:chrom1:genome2:chrom2: numpy.ndarray()
     where the array is length of genome1:chrom1 and contains 0s in all of the positions
     where genome2:chrom2 does not align.
     """
@@ -88,7 +88,7 @@ def analyzeAll(alignments, options):
     return gaps
 
 def analyzeOne(array, options):
-    """ array is a numpy.array(), 1 by n. 0s indicate no alignment,
+    """ array is a numpy.ndarray(), 1 by n. 0s indicate no alignment,
     x > 0 indicate that x bases aligned to that position.
     """
     result = []
