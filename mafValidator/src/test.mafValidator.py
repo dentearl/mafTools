@@ -303,6 +303,36 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
          self.assertRaises(mafval.AlignmentLengthError, mafval.validateMaf, mafFile)
          removeTempDir()
 
+class AlignmentFieldLengthChecks(unittest.TestCase):
+   badLengths = ['''##maf version=1 scoring=tba.v8 
+
+a score=23262.0     
+s hg18.7       27578828 42 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTGacgt
+s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s baboon.chr0    116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+
+''',
+                 '''##maf version=1 scoring=tba.v8 
+
+a score=23262.0     
+s hg18         27578828 36 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGG
+s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s baboon.chr0    116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243 42 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTGGG
+
+''',
+      ]
+   def testAlignmentLengths(self):
+      """mafValidator should fail when alignment fields in a block are not all of equal length
+      """
+      for b in self.badLengths:
+         mafFile = testFile(b)
+         self.assertRaises(mafval.AlignmentLengthError, mafval.validateMaf, mafFile)
+         removeTempDir()
+
 class AlignmentBlockLinesChecks(unittest.TestCase):
    badAlignmentBlockStarts = ['''##maf version=1 scoring=tba.v8 
 
