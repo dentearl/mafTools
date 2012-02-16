@@ -81,8 +81,8 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *position) {
         case 'p':
             setPos = 1;
             tempPos = strtoll(optarg, NULL, 10);
-            if (tempPos < 1) {
-                fprintf(stderr, "Error, --pos %d must be positive\n", tempPos);
+            if (tempPos < 0) {
+                fprintf(stderr, "Error, --pos %d must be nonnegative.\n", tempPos);
                 usage();
             }
             *position = tempPos;
@@ -133,7 +133,6 @@ void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start,
 void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
     int32_t n = d_MAX_STRING_LENGTH;
     char *buffer = (char *) de_malloc(n);
-    const char search[] = " \t";
     char *tkn = NULL;
     char *endPtr = NULL;
     char strand = '\0';
@@ -142,37 +141,37 @@ void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
     verbose("searching for %s %u\n", fullname, pos);
     while (de_getline(&buffer, &n, ifp) != -1) {
         lineno++;
-        tkn = strtok(buffer, search); // ^a or ^s
+        tkn = strtok(buffer, " \t"); // ^a or ^s
         if (tkn == NULL)
             continue;
         if (tkn[0] == '#')
             continue;
         if (tkn[0] != 's')
             continue;
-        tkn = strtok(NULL, search); // name field
+        tkn = strtok(NULL, " \t"); // name field
         if (strncmp(fullname, tkn, strlen(fullname)) == 0) {
-            tkn = strtok(NULL, search); // start position
+            tkn = strtok(NULL, " \t"); // start position
             start = strtoul(tkn, &endPtr, 10);
-            tkn = strtok(NULL, search); // length position
+            tkn = strtok(NULL, " \t"); // length position
             length = strtoul(tkn, &endPtr, 10);
             if (length == UINT32_MAX) {
                 fprintf(stderr, "Error on line %u, length (%u) greater than "
-                        "or equal to UINT32_MAX.\n",
-                        lineno, UINT32_MAX);
+                        "or equal to UINT32_MAX (%u).\n",
+                        lineno, length, UINT32_MAX);
                 exit(EXIT_FAILURE);
             }
-            tkn = strtok(NULL, search); // strand
+            tkn = strtok(NULL, " \t"); // strand
             if ((strcmp(tkn, "+") == 0) || (strcmp(tkn, "-") == 0))
                 strcpy(&strand, tkn);
-            tkn = strtok(NULL, search); // source length
+            tkn = strtok(NULL, " \t"); // source length
             sourceLength = strtoul(tkn, &endPtr, 10);
             if (sourceLength == UINT32_MAX) {
                 fprintf(stderr, "Error on line %u, source length (%u) greater "
-                        "than or equal to UINT32_MAX.\n",
-                        lineno, UINT32_MAX);
+                        "than or equal to UINT32_MAX (%u).\n",
+                        lineno, length, UINT32_MAX);
                 exit(EXIT_FAILURE);
             }
-            tkn = strtok(NULL, search); // sequence field
+            tkn = strtok(NULL, " \t"); // sequence field
             checkRegion(lineno, fullname, pos, start, length, sourceLength, strand);
         }
     }
