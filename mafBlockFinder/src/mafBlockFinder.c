@@ -33,100 +33,12 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include "common.h"
 
-#define d_MAX_STRING_LENGTH 2048
-#define d_MAX_MESSAGE_LENGTH 1024
-
-static int verbose_flag;
-static int debug_flag;
-
-void usage(void);
-void verbose(char const *fmt, ...);
-void debug(char const *fmt, ...);
-void message(char const *type, char const *fmt, ...);
 void parseOptions(int argc, char **argv, char *seqName, uint32_t *position);
 void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start, 
                  uint32_t length, uint32_t sourceLength, char strand);
 void searchInput(FILE *ifp, char *fullname, unsigned long pos);
-void* de_malloc(size_t n);
-int32_t de_getline(char **s, int32_t *n, FILE *f);
-
-void* de_malloc(size_t n) {
-    void *i;
-    i = malloc(n);
-    if (i == NULL) {
-        fprintf(stderr, "malloc failed on a request for %zu bytes\n", n);
-        exit(EXIT_FAILURE);
-    }
-    return i;
-}
-
-int32_t de_getline(char **s, int32_t *n, FILE *f) {
-    register int32_t nMinus1 = ((*n) - 1), i = 0;
-    char *s2 = *s;
-    while (1) {
-        register int32_t ch = (char) getc(f);
-        if (ch == '\r')
-            ch = getc(f);
-        if (i == nMinus1) {
-            *n = 2 * (*n) + 1;
-            *s = realloc(*s, (*n + 1));
-            assert(*s != NULL);
-            s2 = *s + i;
-            nMinus1 = ((*n) - 1);
-        }
-        if ((ch == '\n') || (ch == EOF)) {
-            *s2 = '\0';
-            return(feof(f) ? -1 : i);
-        } else {
-            *s2 = ch;
-            s2++;
-        }
-        ++i;
-    }
-}
-
-void verbose(char const *fmt, ...) {
-    extern int verbose_flag;
-    char str[d_MAX_MESSAGE_LENGTH];
-    va_list args;
-    va_start(args, fmt);
-    if (verbose_flag) {
-        int n = vsprintf(str, fmt, args);
-        if (n >= d_MAX_MESSAGE_LENGTH) {
-            fprintf(stderr, "Error, failure in verbose(), (n = %d) > "
-                    "(d_MAX_MESSAGE_LENGTH %d)\n", n, d_MAX_MESSAGE_LENGTH);
-            exit(EXIT_FAILURE);
-        }
-        message("Verbose", str, args);
-    }
-    va_end(args);
-}
-
-void debug(char const *fmt, ...) {
-    extern int debug_flag;
-    char str[d_MAX_MESSAGE_LENGTH];
-    va_list args;
-    va_start(args, fmt);
-    if (debug_flag) {
-        int n = vsprintf(str, fmt, args);
-        if (n >= d_MAX_MESSAGE_LENGTH) {
-            fprintf(stderr, "Error, failure in debug(), (n = %d) > "
-                    "(d_MAX_MESSAGE_LENGTH %d)\n", n, d_MAX_MESSAGE_LENGTH);
-            exit(EXIT_FAILURE);
-        }
-        message("Debug", str, args);
-    }
-    va_end(args);
-}
-
-void message(char const *type, char const *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    fprintf(stderr, "%s: ", type);
-    vfprintf(stderr, fmt, args);
-    va_end(args);
-}
 
 void usage(void) {
     fprintf(stderr, "Usage: mafBlockFinder --seq [sequence name (and possibly chr)"
@@ -169,8 +81,8 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *position) {
         case 'p':
             setPos = 1;
             tempPos = strtoll(optarg, NULL, 10);
-            if (tempPos < 1) {
-                fprintf(stderr, "Error, --pos %d must be positive\n", tempPos);
+            if (tempPos < 0) {
+                fprintf(stderr, "Error, --pos %d must be nonnegative.\n", tempPos);
                 usage();
             }
             *position = tempPos;
@@ -221,7 +133,6 @@ void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start,
 void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
     int32_t n = d_MAX_STRING_LENGTH;
     char *buffer = (char *) de_malloc(n);
-    const char search[] = " \t";
     char *tkn = NULL;
     char *endPtr = NULL;
     char strand = '\0';
@@ -230,37 +141,37 @@ void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
     verbose("searching for %s %u\n", fullname, pos);
     while (de_getline(&buffer, &n, ifp) != -1) {
         lineno++;
-        tkn = strtok(buffer, search); // ^a or ^s
+        tkn = strtok(buffer, " \t"); // ^a or ^s
         if (tkn == NULL)
             continue;
         if (tkn[0] == '#')
             continue;
         if (tkn[0] != 's')
             continue;
-        tkn = strtok(NULL, search); // name field
+        tkn = strtok(NULL, " \t"); // name field
         if (strncmp(fullname, tkn, strlen(fullname)) == 0) {
-            tkn = strtok(NULL, search); // start position
+            tkn = strtok(NULL, " \t"); // start position
             start = strtoul(tkn, &endPtr, 10);
-            tkn = strtok(NULL, search); // length position
+            tkn = strtok(NULL, " \t"); // length position
             length = strtoul(tkn, &endPtr, 10);
             if (length == UINT32_MAX) {
                 fprintf(stderr, "Error on line %u, length (%u) greater than "
-                        "or equal to UINT32_MAX.\n",
-                        lineno, UINT32_MAX);
+                        "or equal to UINT32_MAX (%u).\n",
+                        lineno, length, UINT32_MAX);
                 exit(EXIT_FAILURE);
             }
-            tkn = strtok(NULL, search); // strand
+            tkn = strtok(NULL, " \t"); // strand
             if ((strcmp(tkn, "+") == 0) || (strcmp(tkn, "-") == 0))
                 strcpy(&strand, tkn);
-            tkn = strtok(NULL, search); // source length
+            tkn = strtok(NULL, " \t"); // source length
             sourceLength = strtoul(tkn, &endPtr, 10);
             if (sourceLength == UINT32_MAX) {
                 fprintf(stderr, "Error on line %u, source length (%u) greater "
-                        "than or equal to UINT32_MAX.\n",
-                        lineno, UINT32_MAX);
+                        "than or equal to UINT32_MAX (%u).\n",
+                        lineno, length, UINT32_MAX);
                 exit(EXIT_FAILURE);
             }
-            tkn = strtok(NULL, search); // sequence field
+            tkn = strtok(NULL, " \t"); // sequence field
             checkRegion(lineno, fullname, pos, start, length, sourceLength, strand);
         }
     }

@@ -35,6 +35,8 @@ alignment pickles.
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 ##############################
+import matplotlib
+matplotlib.use('Agg')
 import cPickle
 from math import ceil
 from mafCoveragePickleCreator import readPickles
@@ -45,27 +47,27 @@ from optparse import OptionParser
 import os
 
 def initOptions(parser):
-    parser.add_option('--spp1', dest = 'spp1',
-                      help = 'Species 1.')
-    parser.add_option('--spp1chr', dest = 'spp1chr',
-                      help = 'Species 1 chromosome.')
-    parser.add_option('--spp2', dest = 'spp2',
-                     help = 'Species 2.')
-    parser.add_option('--windowLength', dest = 'windowLength', 
-                      default = 500 * 10**3, type = 'int',
-                      help = 'Size of sliding window. default=%default')
-    parser.add_option('--windowOverlap', dest = 'windowOverlap', 
-                      default = 250 * 10**3, type = 'int',
-                      help = 'Size of sliding window step. default=%default')
-    parser.add_option('--dpi', dest = 'dpi', default = 300,
-                      type = 'int',
-                      help = 'Dots per inch of the output, if --outFormat is all or png. default=%default')
-    parser.add_option('--outFormat', dest = 'outFormat', default = 'pdf',
-                      type = 'string',
-                      help = 'output format [pdf|png|all|eps]. default=%default')
-    parser.add_option('--out', dest = 'out', default = 'myPlot',
-                      type = 'string',
-                      help = 'filename where figure will be created. No extension needed. default=%default')
+    parser.add_option('--spp1', dest='spp1',
+                      help='Species 1.')
+    parser.add_option('--spp1chr', dest='spp1chr',
+                      help='Species 1 chromosome.')
+    parser.add_option('--spp2', dest='spp2',
+                     help='Species 2.')
+    parser.add_option('--windowLength', dest='windowLength', 
+                      default=500 * 10**3, type='int',
+                      help='Size of sliding window. default=%default')
+    parser.add_option('--windowOverlap', dest='windowOverlap', 
+                      default=250 * 10**3, type='int',
+                      help='Size of sliding window step. default=%default')
+    parser.add_option('--dpi', dest='dpi', default=300,
+                      type='int',
+                      help='Dots per inch of the output, if --outFormat is all or png. default=%default')
+    parser.add_option('--outFormat', dest='outFormat', default='pdf',
+                      type='string',
+                      help='output format [pdf|png|all|eps]. default=%default')
+    parser.add_option('--out', dest='out', default='myPlot',
+                      type='string',
+                      help='filename where figure will be created. No extension needed. default=%default')
     
 def checkOptions(options, args, parser):
     for k, v in [('spp1', options.spp1), ('spp2', options.spp2),
@@ -121,7 +123,7 @@ def initImage(width, height, options):
     pdf = None
     if options.outFormat == 'pdf' or options.outFormat == 'all':
         pdf = pltBack.PdfPages(options.out + '.pdf')
-    fig = plt.figure(figsize = (width, height), dpi = options.dpi, facecolor = 'w')
+    fig = plt.figure(figsize=(width, height), dpi=options.dpi, facecolor='w')
     return (fig, pdf)
 
 def writeImage(fig, pdf, options):
@@ -129,25 +131,25 @@ def writeImage(fig, pdf, options):
     writeImage assumes options contains outFormat and dpi.
     """
     if options.outFormat == 'pdf':
-        fig.savefig(pdf, format = 'pdf')
+        fig.savefig(pdf, format='pdf')
         pdf.close()
     elif options.outFormat == 'png':
-        fig.savefig(options.out + '.png', format = 'png', dpi = options.dpi)
+        fig.savefig(options.out + '.png', format='png', dpi=options.dpi)
     elif options.outFormat == 'all':
-        fig.savefig(pdf, format = 'pdf')
+        fig.savefig(pdf, format='pdf')
         pdf.close()
-        fig.savefig(options.out + '.png', format = 'png', dpi = options.dpi)
-        fig.savefig(options.out + '.eps', format = 'eps')
+        fig.savefig(options.out + '.png', format='png', dpi=options.dpi)
+        fig.savefig(options.out + '.eps', format='eps')
     elif options.outFormat == 'eps':
-        fig.savefig(options.out + '.eps', format = 'eps')
+        fig.savefig(options.out + '.eps', format='eps')
 
 def establishAxis(fig, options):
    """ creates the axis that the plot is drawn upon
    """
    options.axLeft  = 0.09
    options.axWidth = 0.88
-   options.axBottom  = 0.12
-   options.axHeight  = 0.80
+   options.axBottom = 0.12
+   options.axHeight = 0.80
    ax = fig.add_axes([options.axLeft, options.axBottom,
                        options.axWidth, options.axHeight])
    return ax
@@ -157,16 +159,15 @@ def drawAnnotations(ax, plotList, filenames, options):
     plt.ylabel('Prop. Coverage (Win. = %s Overl. = %s)' % (prettyBase(options.windowLength, 1), 
                                                            prettyBase(options.windowOverlap, 1)))
     plt.xlabel('Position along %s %s (Mb)' % (options.spp1, options.spp1chr))
-    
 
     if len(plotList) > 0:
         leg = plt.legend(plotList, filenames)
-        plt.setp(leg.get_texts(), fontsize = 'small') # legend fontsize
+        plt.setp(leg.get_texts(), fontsize='small') # legend fontsize
         leg._drawFrame = False
 
 def drawOne(xdata, data, color, plotList, ax, options):
     xdata /= 10**6
-    plotList.append(ax.plot(xdata, data, color = color))
+    plotList.append(ax.plot(xdata, data, color=color))
 
 def prettyBase(n, decimals = 2):
     """ takes an int, assumed to be a number of basepairs and 
@@ -189,8 +190,8 @@ def window(a, options):
     window size / total length(a) is small, say less than 0.02
     """
     aLength = len(a)
-    wind = numpy.zeros(ceil(aLength/float(options.windowStep)), dtype = numpy.float32)
-    xdata = numpy.zeros(ceil(aLength/float(options.windowStep)), dtype = numpy.float32)
+    wind = numpy.zeros(ceil(aLength/float(options.windowStep)), dtype=numpy.float32)
+    xdata = numpy.zeros(ceil(aLength/float(options.windowStep)), dtype=numpy.float32)
     halfWind = (options.windowLength / 2.0)
     i = -1
     for start in xrange(0, aLength, options.windowStep):
@@ -205,7 +206,7 @@ def main():
              '%prog takes a species+chromosome to other species alignment pair and a set of \n'
              'alignment pickles (as positional arguments) and produces a plot showing the\n'
              'proportional coverage of --spp2 onto --spp1 along --spp1chr.')
-    parser = OptionParser(usage = usage)
+    parser = OptionParser(usage=usage)
     initOptions(parser)
     options, args = parser.parse_args()
     checkOptions(options, args, parser)

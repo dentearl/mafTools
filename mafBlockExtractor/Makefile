@@ -1,18 +1,18 @@
 SHELL:=/bin/bash
 cc = gcc
-args = -Wall -Wextra -std=c99 -pedantic
+args = -g -Wall -Wextra -std=c99 -pedantic
 bin = ../bin
-PROGS = mafBlockFinder
-includes = src/common.c
-dependencies = ${includes} src/common.h
+PROGS = mafBlockExtractor
+INCL = src/common.c
+dependencies = ${INCL} src/common.h
 
 .PHONY: all clean
 
 all: $(foreach f,${PROGS}, ${bin}/$f)
 
-${bin}/mafBlockFinder: src/mafBlockFinder.c ${dependencies}
+${bin}/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies}
 	mkdir -p $(dir $@)
-	${cc} ${args} $< ${includes} -o $@.tmp 
+	${cc} ${args} $< ${INCL} -o $@.tmp 
 	mv $@.tmp $@
 
 ${bin}/%: src/%.c 
