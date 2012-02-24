@@ -3,9 +3,6 @@
 
 #include <stdint.h>
 
-#define d_MAX_STRING_LENGTH 2048
-#define d_MAX_MESSAGE_LENGTH 1024
-
 static int verbose_flag;
 static int debug_flag;
 
