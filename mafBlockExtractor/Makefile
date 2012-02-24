@@ -3,7 +3,7 @@ cc = gcc
 args = -g -Wall -Wextra -std=c99 -pedantic
 bin = ../bin
 PROGS = mafBlockExtractor
-INCL = src/common.c
+INCL = src/common.o
 dependencies = ${INCL} src/common.h
 
 .PHONY: all clean
@@ -18,6 +18,11 @@ ${bin}/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies}
 ${bin}/%: src/%.c 
 	mkdir -p $(dir $@)
 	${cc} ${args} $^ -o $@.tmp 
+	mv $@.tmp $@
+
+src/common.o: src/common.c src/common.h
+	mkdir -p $(dir $@)
+	${cc} ${args} $< -c -o $@.tmp 
 	mv $@.tmp $@
 
 clean:

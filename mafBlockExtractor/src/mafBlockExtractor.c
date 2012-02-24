@@ -30,7 +30,7 @@
 #include <string.h>
 #include "common.h"
 
-#define d_MAX_SEQNAME (1<<9)
+const int kMaxSeqName = 1 << 9;
 
 int verbose_flag = 0;
 int debug_flag = 0;
@@ -85,7 +85,7 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *start, uint32_
             break;
         case 's':
             setSName = true;
-            strncpy(seqName, optarg, d_MAX_SEQNAME);
+            strncpy(seqName, optarg, kMaxSeqName);
             break;
         case 'v':
             verbose_flag++;
@@ -112,7 +112,8 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *start, uint32_
     }
     // Check there's nothing left over on the command line 
     if (optind < argc) {
-        char errorString[d_MAX_SEQNAME] = "Unexpected arguments:";
+        char *errorString = de_malloc(kMaxSeqName);
+        strcpy(errorString, "Unexpected arguments:");
         while (optind < argc) {
             strcat(errorString, " ");
             strcat(errorString, argv[optind++]);
@@ -137,7 +138,7 @@ void usage(void) {
 
 void processHeader(void) {
     FILE *ifp = stdin;
-    int32_t n = d_MAX_SEQNAME;
+    int32_t n = kMaxSeqName;
     char *line = (char*) de_malloc(n);
     int status = de_getline(&line, &n, ifp);
     if (status == -1) {
@@ -297,7 +298,7 @@ void destroyBlock(mafBlock_t *b) {
 
 void processBody(char *seq, uint32_t start, uint32_t stop) {
     FILE *ifp = stdin;
-    int32_t n = d_MAX_SEQNAME;
+    int32_t n = kMaxSeqName;
     char *line = (char*) de_malloc(n);
     char *cline = NULL;
     mafBlock_t *head = NULL, *tail = NULL;
@@ -331,7 +332,7 @@ void processBody(char *seq, uint32_t start, uint32_t stop) {
 }
 
 int main(int argc, char **argv) {
-    char seq[d_MAX_SEQNAME];
+    char seq[kMaxSeqName];
     uint32_t start, stop;
     parseOptions(argc, argv, seq, &start, &stop);
 
