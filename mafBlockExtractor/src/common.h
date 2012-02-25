@@ -1,10 +1,6 @@
 #ifndef COMMON_H_
 #define COMMON_H_
-
 #include <stdint.h>
-
-#define d_MAX_STRING_LENGTH 2048
-#define d_MAX_MESSAGE_LENGTH 1024
 
 void verbose(char const *fmt, ...);
 void debug(char const *fmt, ...);

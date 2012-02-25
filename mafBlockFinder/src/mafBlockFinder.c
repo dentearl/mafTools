@@ -22,7 +22,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
-
 #include <assert.h>
 #include <getopt.h>
 #include <limits.h>
@@ -34,6 +33,8 @@
 #include <time.h>
 #include <unistd.h>
 #include "common.h"
+
+const int kMaxStringLength = 2048;
 
 void parseOptions(int argc, char **argv, char *seqName, uint32_t *position);
 void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start, 
@@ -131,7 +132,7 @@ void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start,
 }
 
 void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
-    int32_t n = d_MAX_STRING_LENGTH;
+    int32_t n = kMaxStringLength;
     char *buffer = (char *) de_malloc(n);
     char *tkn = NULL;
     char *endPtr = NULL;
@@ -178,7 +179,7 @@ void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
 }
 
 int main(int argc, char **argv) {
-    char targetName[d_MAX_STRING_LENGTH];
+    char targetName[kMaxStringLength];
     uint32_t targetPos;
 
     parseOptions(argc, argv,  targetName, &targetPos);

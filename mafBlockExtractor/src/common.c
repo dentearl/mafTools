@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include "common.h"
 
+const int kMaxStringLength = 2048;
+const int kMaxMessageLength = 1024;
+
 void* de_malloc(size_t n) {
     void *i;
     i = malloc(n);
@@ -13,7 +16,6 @@ void* de_malloc(size_t n) {
     }
     return i;
 }
-
 int32_t de_getline(char **s, int32_t *n, FILE *f) {
     register int32_t nMinus1 = ((*n) - 1), i = 0;
     char *s2 = *s;
@@ -38,41 +40,38 @@ int32_t de_getline(char **s, int32_t *n, FILE *f) {
         ++i;
     }
 }
-
 void verbose(char const *fmt, ...) {
     extern int verbose_flag;
-    char str[d_MAX_MESSAGE_LENGTH];
+    char str[kMaxMessageLength];
     va_list args;
     va_start(args, fmt);
     if (verbose_flag) {
         int n = vsprintf(str, fmt, args);
-        if (n >= d_MAX_MESSAGE_LENGTH) {
+        if (n >= kMaxMessageLength) {
             fprintf(stderr, "Error, failure in verbose(), (n = %d) > "
-                    "(d_MAX_MESSAGE_LENGTH %d)\n", n, d_MAX_MESSAGE_LENGTH);
+                    "(kMaxMessageLength %d)\n", n, kMaxMessageLength);
             exit(EXIT_FAILURE);
         }
         message("Verbose", str, args);
     }
     va_end(args);
 }
-
 void debug(char const *fmt, ...) {
     extern int debug_flag;
-    char str[d_MAX_MESSAGE_LENGTH];
+    char str[kMaxMessageLength];
     va_list args;
     va_start(args, fmt);
     if (debug_flag) {
         int n = vsprintf(str, fmt, args);
-        if (n >= d_MAX_MESSAGE_LENGTH) {
+        if (n >= kMaxMessageLength) {
             fprintf(stderr, "Error, failure in debug(), (n = %d) > "
-                    "(d_MAX_MESSAGE_LENGTH %d)\n", n, d_MAX_MESSAGE_LENGTH);
+                    "(kMaxMessageLength %d)\n", n, kMaxMessageLength);
             exit(EXIT_FAILURE);
         }
         message("Debug", str, args);
     }
     va_end(args);
 }
-
 void message(char const *type, char const *fmt, ...) {
     va_list args;
     va_start(args, fmt);
