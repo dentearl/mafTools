@@ -51,6 +51,7 @@ class StartFieldError(ValidatorError): pass
 class SourceSizeFieldError(ValidatorError): pass
 class OutOfRangeError(ValidatorError): pass
 class HeaderError(ValidatorError): pass
+class ILineFormatError(ValidatorError): pass
 
 def initOptions(parser):
    parser.add_option('--maf', dest = 'filename', 
@@ -73,17 +74,18 @@ def validateMaf(filename, testChromNames = False):
    nameRegex = r'(.+?)\.(chr.+)'
    namePat = re.compile(nameRegex)
    f = open(filename, 'r')
-   header = f.next()
-   validateHeader(header, filename)
+   validateHeader(f, filename)
    sources = {}
    prevLineWasAlignmentBlock = False
    alignmentFieldLength = None
+   prevline = ''
    for lineno, line in enumerate(f, 2):
       line = line.strip()
       
       if line.startswith('#'):
          prevLineWasAlignmentBlock = False
          alignmentFieldLength = None
+         prevline = line
          continue
       elif line.startswith('a'):
          validateAlignmentLine(lineno, line, filename)
@@ -92,7 +94,7 @@ def validateMaf(filename, testChromNames = False):
       elif line.startswith('s'):
          if not prevLineWasAlignmentBlock:
             raise MissingAlignmentBlockLineError('maf %s has a sequence line that was not preceded '
-                                                 'by an alignment line on lineno %d: %s' 
+                                                 'by an alignment line on line number %d: %s' 
                                                  % (filename, lineno, line))
          species, chrom, length, alFieldLen = validateSeqLine(namePat, testChromNames, 
                                                               lineno, line, filename)
@@ -101,7 +103,7 @@ def validateMaf(filename, testChromNames = False):
          else:
             if alignmentFieldLength != alFieldLen:
                raise AlignmentLengthError('maf %s has a sequence line with an alignment field of different '
-                                          'length than the other sequences in the block on lineno %d: %s'
+                                          'length than the other sequences in the block on line number %d: %s'
                                           % (filename, lineno, line))
          if (species, chrom)  in sources:
             if sources[(species, chrom)] != length:
@@ -113,39 +115,99 @@ def validateMaf(filename, testChromNames = False):
       elif line.startswith('i'):
          if not prevLineWasAlignmentBlock:
             raise MissingAlignmentBlockLineError('maf %s has a sequence line that was not preceded '
-                                                 'by an alignment line on lineno %d: %s' 
+                                                 'by an alignment line on line number %d: %s' 
                                                  % (filename, lineno, line))
+         validateILine(lineno, line, prevline, filename)
       elif line.startswith('e'):
          if not prevLineWasAlignmentBlock:
             raise MissingAlignmentBlockLineError('maf %s has a sequence line that was not preceded '
-                                                 'by an alignment line on lineno %d: %s' 
+                                                 'by an alignment line on line number %d: %s' 
                                                  % (filename, lineno, line))
       elif line.startswith('q'):
          if not prevLineWasAlignmentBlock:
             raise MissingAlignmentBlockLineError('maf %s has a sequence line that was not preceded '
-                                                 'by an alignment line on lineno %d: %s' 
+                                                 'by an alignment line on line number %d: %s' 
                                                  % (filename, lineno, line))
       elif line == '':
          prevLineWasAlignmentBlock = False
          alignmentFieldLength = None
-         
+      prevline = line
+
    if line != '':
       raise FooterError('maf %s has a bad footer, should end with two new lines.' 
                         % filename)
    return True
 
+def validateILine(lineno, line, prevline, filename):
+   """ Checks all lines that start with 'i' and raises an exepction if
+   the line is malformed.
+   i lines are made up of five fields after the 'i':
+   From http://genome.ucsc.edu/FAQ/FAQformat#format5 :
+   src -- The name of the source sequence for the alignment. 
+          Should be the same as the 's' line immediately above this line.
+   leftStatus -- A character that specifies the relationship between the 
+                 sequence in this block and the sequence that appears in 
+                 the previous block.
+   leftCount -- Usually the number of bases in the aligning species between 
+                the start of this alignment and the end of the previous one.
+   rightStatus -- A character that specifies the relationship between the 
+                  sequence in this block and the sequence that appears in 
+                  the subsequent block.
+   rightCount -- Usually the number of bases in the aligning species between 
+                 the end of this alignment and the start of the next one.
+   The status characters can be one of the following values:
+   C -- the sequence before or after is contiguous with this block.
+   I -- there are bases between the bases in this block and the one before or after it.
+   N -- this is the first sequence from this src chrom or scaffold.
+   n -- this is the first sequence from this src chrom or scaffold but it is 
+        bridged by another alignment from a different chrom or scaffold.
+   M -- there is missing data before or after this block (Ns in the sequence).
+   T -- the sequence in this block has been used before in a previous block (likely a tandem duplication)
+   """
+   d = line.split()
+   p = prevline.split()
+   if len(d) != 6:
+      raise ILineFormatError('maf %s contains an "i" line that has too many fields on line number %d: '
+                             '%s' % (filename, lineno, line))
+   if p[0] != 's':
+      raise ILineFormatError('maf %s contains an "i" line that does not follow an "s" line on line number %d: '
+                             '%s' % (filename, lineno, line))
+   for i in [3, 5]:
+      try:
+         n = int(d[i])
+      except ValueError:
+         raise ILineFormatError('maf %s contains an "i" line that has non integer Count "%s" on line number %d: '
+                                '%s' % (filename, d[i], lineno, line))
+      if int(d[i]) < 0:
+         raise ILineFormatError('maf %s contains an "i" line that has negative Count "%s" on line number %d: '
+                                '%s' % (filename, d[i], lineno, line))
+   for i in [2, 4]:
+      if d[i] not in ['C', 'I', 'N', 'n', 'M', 'T']:
+         raise ILineFormatError('maf %s contains an "i" line with an invalid Status "%s" on line number %d: '
+                                '%s' % (filename, d[i], lineno, line))
+      if d[i] == 'I' and int(d[i + 1]) < 1:
+         raise ILineFormatError('maf %s contains an "i" line with an invalid Count "%s" on line number %d: '
+                                '%s' % (filename, d[i + 1], lineno, line))
+   if p[1] != d[1]:
+      raise ILineFormatError('maf %s contains an "i" line with a different src value "%s" than on the previous '
+                             '"s" line "%s" on line number %d: '
+                             '%s' % (filename, d[1], p[1], lineno, line))
+
 def validateAlignmentLine(lineno, line, filename):
+   """ Checks all lines that start with 'a' and raises an exception if 
+   the line is malformed.
+   """
    d = line.split()
    for i in xrange(1, len(d)):
       if len(d[i].split('=')) != 2:
          raise AlignmentBlockLineKeyValuePairError('maf %s has an alignment line that does not contain '
-                                                   'good key-value pairs on lineno %d: %s' 
+                                                   'good key-value pairs on line number %d: %s' 
                                                    % (filename, lineno, line))
 
 def validateSeqLine(namePat, testChromNames, lineno, line, filename):
    data = line.split()
    if len(data) != 7:
-      raise FieldNumberError('maf %s has incorrect number of fields on lineno %d: %s' 
+      raise FieldNumberError('maf %s has incorrect number of fields on line number %d: %s' 
                              % (filename, lineno, line))
    if data[4] not in ('-', '+'):
       raise StrandCharacterError('maf %s has unexpected character in strand field "%s" lineno %d: %s' 
@@ -170,10 +232,14 @@ def validateSeqLine(namePat, testChromNames, lineno, line, filename):
       return m.group(1), m.group(2), data[5]
    return data[1], None, data[5], len(data[6])
 
-def validateHeader(header, filename):
-   """ tests the first line of the maf file to make sure it is valid
+def validateHeader(f, filename):
+   """ tests the first line of the maf file to make sure it is valid. 
+   valid starts are either "track ..." or "##maf..."
    """
-   if not header.startswith('##'):
+   header = f.next()
+   if header.startswith('track'):
+      header = f.next()
+   if not header.startswith('##maf'):
       raise HeaderError('maf %s has bad header, fails to start with `##\': %s' 
                            % (filename, header))
    data = header.split()
