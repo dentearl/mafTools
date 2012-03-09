@@ -412,6 +412,7 @@ s hg18         27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGT
 
 class StartFieldChecks(unittest.TestCase):
    badFields = ['''##maf version=1 scoring=tba.v8 
+# start field cannot be negative
 
 a score=23262.0     
 s hg18         27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
@@ -432,6 +433,7 @@ s dae.chr0         -100 30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGT
 
 class SourceSizeFieldChecks(unittest.TestCase):
    badFields = ['''##maf version=1 scoring=tba.v8 
+# src length cannot be negative
 
 a score=23262.0     
 s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
@@ -491,6 +493,250 @@ s dae.chr0            5  6 -        10 A----------CTAA--------------------------
       for b in self.badRanges:
          mafFile = testFile(b)
          self.assertRaises(mafval.OutOfRangeError, mafval.validateMaf, mafFile)
+         removeTempDir()
+
+class LinesStartingWithIChecks(unittest.TestCase):
+   badBlocks = ['''##maf version=1 scoring=tba.v8 
+# wrong number of fields on i line
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 N 0 C 0 extra
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# non numerics for fields 4 and 6 on the i line
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 N 0 C steve
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# non numerics for fields 4 and 6 on the i line
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 N brian C steve
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# non numerics for fields 4 and 6 on the i line
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 N william C 0
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# negative numbers in the i line numerical fields
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 N -1 C -5
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# negative numbers in the i line numerical fields
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 N -1 C -5
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# negative numbers in the i line numerical fields
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 N 0 C -5
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# negative numbers in the i line numerical fields
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 N -1 C 0
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# floats in the i line numerical fields
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 N 0.7 C 0.35
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# floats in the i line numerical fields
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 I 255.7 I 9.35
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# floats in the i line numerical fields
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 I 255 I 9.35
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +      100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# floats in the i line numerical fields
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 I 255.000001 I 9
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# invalid Status codes for i line
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 & 255 C 0
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +      100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# invalid Status codes for i line
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 I 255 z 0
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +      100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# invalid Status codes for i line
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 a 255 M 0
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# I status must yield value
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i panTro1.chr6 I 0 C 0
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# i line has wrong src field name
+
+a score=23262.0     
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+i banana I 1 C 0
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                '''##maf version=1 scoring=tba.v8 
+# i line must follow s line
+
+a score=23262.0
+i banana I 1 C 0
+s hg18         27578828  38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140  38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s baboon.chr0    116834  38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344  38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243  40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGTG
+
+''',
+                ]
+   def testFields(self):
+      """mafValidator should fail when "i" lines are malformed
+      """
+      for b in self.badBlocks:
+         mafFile = testFile(b)
+         self.assertRaises(mafval.ILineFormatError, mafval.validateMaf, mafFile)
          removeTempDir()
 
 class GoodKnownMafs(unittest.TestCase):
