@@ -74,8 +74,7 @@ def validateMaf(filename, testChromNames = False):
    nameRegex = r'(.+?)\.(chr.+)'
    namePat = re.compile(nameRegex)
    f = open(filename, 'r')
-   header = f.next()
-   validateHeader(header, filename)
+   validateHeader(f, filename)
    sources = {}
    prevLineWasAlignmentBlock = False
    alignmentFieldLength = None
@@ -233,10 +232,14 @@ def validateSeqLine(namePat, testChromNames, lineno, line, filename):
       return m.group(1), m.group(2), data[5]
    return data[1], None, data[5], len(data[6])
 
-def validateHeader(header, filename):
-   """ tests the first line of the maf file to make sure it is valid
+def validateHeader(f, filename):
+   """ tests the first line of the maf file to make sure it is valid. 
+   valid starts are either "track ..." or "##maf..."
    """
-   if not header.startswith('##'):
+   header = f.next()
+   if header.startswith('track'):
+      header = f.next()
+   if not header.startswith('##maf'):
       raise HeaderError('maf %s has bad header, fails to start with `##\': %s' 
                            % (filename, header))
    data = header.split()
