@@ -7,18 +7,15 @@
 
 ##Dependencies
 * sonLib https://github.com/benedictpaten/sonLib/
-* mafJoin will not compile without the kentSource installed: <code>git clone git://genome-source.cse.ucsc.edu/kent.git</code>
 
 ##Installation
 1. Download the package. Consider making it a sibling directory to <code>sonLib/</code>.
 2. <code>cd</code> into the directory.
 3. Type <code>make</code>.
-    * If you want to build mafJoin you will need to set kentDir on the command line via <code>make kentDir=/path/to/kent/src</code>
 
 ##Components
 * **mafBlockExtractor** A program to extract all alignment blocks that contain a region in a particular sequence. Useful for isolating regions of interest in large maf files.
 * **mafBlockFinder** A program to search for a position in a particular sequence. Useful for determining where in maf a particular part of the alignment resides.
 * **mafComparator** A program to compare two maf files by sampling and record differences. Useful when testing predicted alignments against known true alignments.
 * **mafCoveragePickles** A set of programs to assess the pairwise coverage between sequences and to extract the indel distribution of a set of sequences contained in the maf.
-* **mafJoin** A program to join together two mafs that share a common sequence. The program maintains the phylogenetic relationships of the blocks it joins and produces a "tree-maf" output.
 * **mafValidator** A program to assess whether or not a given maf has a valid format. 
