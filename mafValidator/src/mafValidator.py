@@ -213,8 +213,8 @@ def validateSeqLine(namePat, testChromNames, lineno, line, filename):
       raise StrandCharacterError('maf %s has unexpected character in strand field "%s" on line number %d: %s' 
                                  % (filename, data[4], lineno, line))
    if int(data[3]) != len(data[6].replace('-', '')):
-      raise AlignmentLengthError('maf %s has incorrect sequence length field (should be %d but reports %d) or alignment field on line number %d: %s'
-                                 % (filename, len(data[6].replace('-', '')), int(data[3]), lineno, line))
+      raise AlignmentLengthError('maf %s sequence length field (%d) contradicts alignment field (non-gapped length %d) on line number %d: %s'
+                                 % (filename, int(data[3]), len(data[6].replace('-', '')), lineno, line))
    if int(data[2]) < 0:
       raise StartFieldError('maf %s has bad start field on line number %d: %s'
                            % (filename, lineno, line))
