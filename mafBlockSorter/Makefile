@@ -28,5 +28,5 @@ src/common.o: src/common.c src/common.h
 clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o
 
-test:
+test: ${bin}/mafBlockSorter
 	python2.6 src/test.mafBlockSorter.py --verbose

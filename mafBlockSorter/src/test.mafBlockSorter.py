@@ -196,7 +196,8 @@ class SortTest(unittest.TestCase):
                 shuffledBlocks.insert(index, nonTargetBlocks[j])
                 lower = index + 1
             testMaf = testFile(''.join(shuffledBlocks))
-            cmd = [os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'bin', 'mafBlockSorter'))]
+            binParent = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            cmd = [os.path.abspath(os.path.join(binParent, 'bin', 'mafBlockSorter'))]
             cmd += ['--seq', 'hg18.chr7']
             inpipes = [testMaf]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'sorted.maf'))]
