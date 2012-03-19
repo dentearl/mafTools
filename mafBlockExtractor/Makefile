@@ -4,7 +4,7 @@ args = -g -Wall -Wextra -std=c99 -pedantic
 bin = ../bin
 PROGS = mafBlockExtractor
 INCL = src/common.o
-dependencies = ${INCL} src/common.h
+dependencies = ${INCL} src/common.h src/common.c
 
 .PHONY: all clean
 
@@ -27,3 +27,6 @@ src/common.o: src/common.c src/common.h
 
 clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o
+
+test:
+	echo "No tests."
