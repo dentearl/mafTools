@@ -18,7 +18,7 @@ mafBlockExtractor is a program that will look through a maf file for a particula
 3. Type <code>make</code>.
 
 ##Use
-<code>mafBlockFinder --seq [sequence name (and possibly chr)] --pos [position to search for] [options] < myFile.maf</code>
+<code>mafBlockExtractor --seq [sequence name (and possibly chr)] --pos [position to search for] [options] < myFile.maf</code>
 
 ###Options
 * <code>-h, --help</code>   show this help message and exit.
