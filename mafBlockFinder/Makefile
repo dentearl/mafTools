@@ -4,7 +4,7 @@ args = -Wall -Wextra -std=c99 -pedantic
 bin = ../bin
 PROGS = mafBlockFinder
 includes = src/common.c
-dependencies = ${includes} src/common.h
+dependencies = ${includes} src/common.h src/common.c
 
 .PHONY: all clean
 
@@ -22,3 +22,6 @@ ${bin}/%: src/%.c
 
 clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o
+
+test:
+	echo "No tests."
