@@ -108,24 +108,24 @@ def validateMaf(filename, testChromNames = False):
          if (species, chrom)  in sources:
             if sources[(species, chrom)] != length:
                raise SourceLengthError('maf %s has different source lengths for '
-                                       'species %s on line number %d: %s'
-                                       % (filename, species, lineno, line))
+                                       'species %s (read %d but was previously %d) on line number %d: %s'
+                                       % (filename, species, sources[(species, chrom)], length, lineno, line))
          else:
             sources[(species, chrom)] = length
       elif line.startswith('i'):
          if not prevLineWasAlignmentBlock:
-            raise MissingAlignmentBlockLineError('maf %s has a sequence line that was not preceded '
+            raise MissingAlignmentBlockLineError('maf %s has an "i" line that was not preceded '
                                                  'by an alignment line on line number %d: %s' 
                                                  % (filename, lineno, line))
          validateILine(lineno, line, prevline, filename)
       elif line.startswith('e'):
          if not prevLineWasAlignmentBlock:
-            raise MissingAlignmentBlockLineError('maf %s has a sequence line that was not preceded '
+            raise MissingAlignmentBlockLineError('maf %s has a "e" line that was not preceded '
                                                  'by an alignment line on line number %d: %s' 
                                                  % (filename, lineno, line))
       elif line.startswith('q'):
          if not prevLineWasAlignmentBlock:
-            raise MissingAlignmentBlockLineError('maf %s has a sequence line that was not preceded '
+            raise MissingAlignmentBlockLineError('maf %s has a "q" line that was not preceded '
                                                  'by an alignment line on line number %d: %s' 
                                                  % (filename, lineno, line))
       elif line == '':
@@ -213,7 +213,7 @@ def validateSeqLine(namePat, testChromNames, lineno, line, filename):
       raise StrandCharacterError('maf %s has unexpected character in strand field "%s" on line number %d: %s' 
                                  % (filename, data[4], lineno, line))
    if int(data[3]) != len(data[6].replace('-', '')):
-      raise AlignmentLengthError('maf %s has incorrect seq len (should be %d but reports %d) or alignment field on line number %d: %s'
+      raise AlignmentLengthError('maf %s has incorrect sequence length field (should be %d but reports %d) or alignment field on line number %d: %s'
                                  % (filename, len(data[6].replace('-', '')), int(data[3]), lineno, line))
    if int(data[2]) < 0:
       raise StartFieldError('maf %s has bad start field on line number %d: %s'
@@ -227,7 +227,7 @@ def validateSeqLine(namePat, testChromNames, lineno, line, filename):
    if testChromNames:
       m = re.match(namePat, data[1])
       if m is None:
-         raise SpeciesFieldError('maf %s has name (src) field without ".chr" suffix: "%s" on line number %d: %s' 
+         raise SpeciesFieldError('maf %s has name (source) field without ".chr" suffix: "%s" on line number %d: %s' 
                                  % (filename, data[1], lineno, line))
       return m.group(1), m.group(2), data[5]
    return data[1], None, data[5], len(data[6])
@@ -246,13 +246,13 @@ def validateHeader(f, filename):
    version = False
    for d in data[1:]:
       if d.startswith('=') or d == '=' or d.endswith('='):
-         raise HeaderError('maf %s has bad header, there may be '
+         raise HeaderError('maf %s has bad header, there should be '
                               'no whitespace surrounding "=": %s' 
                               % (filename, header))
       try:
          k,v = d.split('=')
       except ValueError:
-         raise HeaderError('maf %s has bad header, there may be '
+         raise HeaderError('maf %s has bad header, there should be '
                               'no whitespace surrounding "=": %s' 
                               % (filename, header))
       if k == 'version':
