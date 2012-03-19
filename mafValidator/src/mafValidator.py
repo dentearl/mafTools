@@ -108,7 +108,7 @@ def validateMaf(filename, testChromNames = False):
          if (species, chrom)  in sources:
             if sources[(species, chrom)] != length:
                raise SourceLengthError('maf %s has different source lengths for '
-                                       'species %s lineno %d: %s'
+                                       'species %s on line number %d: %s'
                                        % (filename, species, lineno, line))
          else:
             sources[(species, chrom)] = length
@@ -210,24 +210,24 @@ def validateSeqLine(namePat, testChromNames, lineno, line, filename):
       raise FieldNumberError('maf %s has incorrect number of fields on line number %d: %s' 
                              % (filename, lineno, line))
    if data[4] not in ('-', '+'):
-      raise StrandCharacterError('maf %s has unexpected character in strand field "%s" lineno %d: %s' 
+      raise StrandCharacterError('maf %s has unexpected character in strand field "%s" on line number %d: %s' 
                                  % (filename, data[4], lineno, line))
    if int(data[3]) != len(data[6].replace('-', '')):
-      raise AlignmentLengthError('maf %s has incorrect seq len (should be %d) or alignment field lineno %d: %s'
-                                 % (filename, len(data[6].replace('-', '')), lineno, line))
+      raise AlignmentLengthError('maf %s has incorrect seq len (should be %d but reports %d) or alignment field on line number %d: %s'
+                                 % (filename, len(data[6].replace('-', '')), int(data[3]), lineno, line))
    if int(data[2]) < 0:
-      raise StartFieldError('maf %s has bad start field lineno %d: %s'
+      raise StartFieldError('maf %s has bad start field on line number %d: %s'
                            % (filename, lineno, line))
    if int(data[5]) < 0:
-      raise SourceSizeFieldError('maf %s has bad srcSize field lineno %d: %s'
+      raise SourceSizeFieldError('maf %s has bad source size field on line number %d: %s'
                                  % (filename, lineno, line))
    if int(data[2]) + int(data[3]) > int(data[5]):
-      raise OutOfRangeError('maf %s out of range sequence lineno %d: %s'
+      raise OutOfRangeError('maf %s out of range sequence on line number %d: %s'
                             % (filename, lineno, line))
    if testChromNames:
       m = re.match(namePat, data[1])
       if m is None:
-         raise SpeciesFieldError('maf %s has name (src) field without ".chr" suffix: "%s" lineno %d: %s' 
+         raise SpeciesFieldError('maf %s has name (src) field without ".chr" suffix: "%s" on line number %d: %s' 
                                  % (filename, data[1], lineno, line))
       return m.group(1), m.group(2), data[5]
    return data[1], None, data[5], len(data[6])
