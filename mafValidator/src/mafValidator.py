@@ -83,7 +83,6 @@ def validateMaf(filename, testChromNames = False):
       line = line.strip()
       
       if line.startswith('#'):
-         prevLineWasAlignmentBlock = False
          alignmentFieldLength = None
          prevline = line
          continue
@@ -108,7 +107,7 @@ def validateMaf(filename, testChromNames = False):
          if (species, chrom)  in sources:
             if sources[(species, chrom)] != length:
                raise SourceLengthError('maf %s has different source lengths for '
-                                       'species %s (read %d but was previously %d) on line number %d: %s'
+                                       'species %s (read %s but was previously %s) on line number %d: %s'
                                        % (filename, species, sources[(species, chrom)], length, lineno, line))
          else:
             sources[(species, chrom)] = length
@@ -134,8 +133,13 @@ def validateMaf(filename, testChromNames = False):
       prevline = line
 
    if line != '':
-      raise FooterError('maf %s has a bad footer, should end with two new lines.' 
-                        % filename)
+      if prevLineWasAlignmentBlock:
+         raise FooterError('maf %s has a bad footer, last alignment block was not closed with a new line.' 
+                           % filename)
+      else:
+         if not line.startswith('#'):
+            raise FooterError('maf %s has a bad footer, should end with a blank line: %s' 
+                              % (filename, line))
    return True
 
 def validateILine(lineno, line, prevline, filename):
