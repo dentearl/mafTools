@@ -1,7 +1,7 @@
 SHELL:=/bin/bash
 cc = gcc
 args = -g -Wall -Wextra -Werror -std=c99 -pedantic
-bin = ./bin
+bin = ../bin
 PROGS = mafBlockSorter
 INCL = src/common.o
 dependencies = ${INCL} src/common.h src/common.c
