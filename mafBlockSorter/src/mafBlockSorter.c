@@ -53,7 +53,11 @@ typedef struct mafBlock {
 
 void usage(void) {
     fprintf(stderr, "Usage: mafBlockSorter --seq [sequence name (and possibly chr)] "
-            "[options] < myFile.maf\n\n");
+            "[options] < myFile.maf\n\n"
+            "mafBlockSorter is a program that will sort the blocks of a maf in ascending\n"
+            "order of the sequence start field of the specified sequence name. Blocks\n"
+            "that do not contain the specified sequence will be output at the start of\n"
+            "the maf in the order they appear in the input, followed by the sorted blocks.\n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
             "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
