@@ -24,6 +24,7 @@
  */
 #include <assert.h>
 #include <ctype.h>
+#include <getopt.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,15 +51,70 @@ typedef struct mafBlock {
     struct mafBlock *next;
 } mafBlock_t;
 
+void usage(void) {
+    fprintf(stderr, "Usage: mafBlockSorter --seq [sequence name (and possibly chr)] "
+            "[options] < myFile.maf\n\n");
+    fprintf(stderr, "Options: \n"
+            "  -h, --help     show this help message and exit.\n"
+            "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
+            "  -v, --verbose  turns on verbose output.\n");
+    exit(EXIT_FAILURE);
+}
 void parseOptions(int argc, char **argv, char *seqName) {
     extern int g_verbose_flag;
     extern int g_debug_flag;
-    strcpy(seqName, "hg18.chr7");
-    argc++;
-    argv[0][0] = seqName[0];
-    g_verbose_flag = g_debug_flag;
+    int c;
+    bool setSName = false;
+    while (1) {
+        static struct option long_options[] = {
+            {"debug", no_argument, 0, 'd'},
+            {"verbose", no_argument, 0, 'v'},
+            {"help", no_argument, 0, 'h'},
+            {"seq",  required_argument, 0, 's'},
+            {0, 0, 0, 0}
+        };
+        int option_index = 0;
+        c = getopt_long(argc, argv, "n:c:p:v",
+                        long_options, &option_index);
+        if (c == -1)
+            break;
+        switch (c) {
+        case 's':
+            setSName = true;
+            strncpy(seqName, optarg, kMaxSeqName);
+            break;
+        case 'v':
+            g_verbose_flag++;
+            break;
+        case 'd':
+            g_debug_flag = 1;
+            break;
+        case 'h':
+        case '?':
+            usage();
+            break;
+        default:
+            abort();
+        }
+    }
+    if (!(setSName)) {
+        fprintf(stderr, "Error, specify --seq\n");
+        usage();
+    }
+    // Check there's nothing left over on the command line 
+    if (optind < argc) {
+        char *errorString = de_malloc(kMaxSeqName);
+        strcpy(errorString, "Unexpected arguments:");
+        while (optind < argc) {
+            strcat(errorString, " ");
+            strcat(errorString, argv[optind++]);
+        }
+        fprintf(stderr, "%s\n", errorString);
+        usage();
+    }
 }
 void processHeader(void) {
+    // Read in the header and spit it back out
     FILE *ifp = stdin;
     int32_t n = 1 << 10;
     char *line = (char*) de_malloc(n);
@@ -78,6 +134,7 @@ void processHeader(void) {
     }
 }
 bool blankLine(char *s) {
+    // return true of line is only whitespaces
     size_t n = strlen(s);
     for (size_t i = 0; i < n; ++i) {
         if (!isspace(*(s + i))) {
@@ -91,6 +148,9 @@ void badFormat(void) {
     exit(EXIT_FAILURE);
 }
 int getTargetStart(char *line, char *targetSeq) {
+    // read a maf sequence line and if the line contains
+    // the target sequence, return the value of the start field
+    // otherwise return 0.
     char *cline = (char*) de_malloc(strlen(line) + 1);
     strcpy(cline, line);
     char *tkn = NULL;
@@ -121,6 +181,7 @@ int max(int a, int b) {
     return (a > b ? a : b);
 }
 unsigned processBody(mafBlock_t *head, char *targetSeq) {
+    // process the body of the maf, block by block.
     FILE *ifp = stdin;
     int32_t n = 1 << 10;
     char *line = (char*) de_malloc(n);
@@ -135,6 +196,8 @@ unsigned processBody(mafBlock_t *head, char *targetSeq) {
             prevLineBlank = true;
         } else {
             if (prevLineBlank) {
+                // if this line is not blank and the previous line was blank
+                // then this is the start of a new maf block.
                 ++numBlocks;
                 mafBlock_t *nextBlock = (mafBlock_t*) de_malloc(sizeof(mafBlock_t));
                 nextBlock->next = NULL;
@@ -149,6 +212,8 @@ unsigned processBody(mafBlock_t *head, char *targetSeq) {
             strcpy(copy, line);
             thisBlock->targetStart = max(thisBlock->targetStart, getTargetStart(copy, targetSeq));
             if (thisBlock->head == NULL) {
+                // if thisBlock->head is null then this is a brand new mafBlock and it needs
+                // a new mafLine to be created.
                 thisBlock->head = (mafLine_t*) de_malloc(sizeof(mafLine_t));
                 thisBlock->head->next = NULL;
                 thisBlock->head->line = copy;
@@ -181,6 +246,7 @@ int cmp_by_targetStart(const void *a, const void *b) {
     return ((*ia)->targetStart - (*ib)->targetStart);
 }
 void reportBlock(mafBlock_t *mb) {
+    // print out the single block pointed to by mb
     mafLine_t *ml = mb->head;
     while(ml != NULL) {
         assert(ml->line != NULL);
@@ -189,6 +255,7 @@ void reportBlock(mafBlock_t *mb) {
     }
 }
 void reportBlocks(mafBlock_t **array, unsigned numBlocks) {
+    // look over the block array and print out all the blocks
     for (unsigned i = 0; i < numBlocks; ++i) {
         reportBlock(array[i]);
         printf("\n");
@@ -209,6 +276,7 @@ void destroyBlocks(mafBlock_t *head) {
     }
 }
 void printblockarrayvalues(mafBlock_t **blockArray, unsigned numBlocks) {
+    // debug
     for (unsigned i = 0; i < numBlocks; ++i) {
         printf("%d%s", blockArray[i]->targetStart, i == numBlocks - 1 ? "\n" : ", ");
     }
@@ -218,18 +286,21 @@ int main(int argc, char **argv) {
     mafBlock_t mafObj;
     unsigned numBlocks = 0;
     parseOptions(argc, argv, targetSequence);
+    // initialize
     processHeader();
-    
     mafObj.next = NULL;
     mafObj.head = NULL;
     mafObj.tail = NULL;
     mafObj.targetStart = 0;
+    // read input
     numBlocks = processBody(&mafObj, targetSequence);
     mafBlock_t *blockArray[numBlocks];
+    // sort
     populateArray(&mafObj, blockArray);
     qsort(blockArray, numBlocks, sizeof(mafBlock_t*), cmp_by_targetStart);
+    // write output
     reportBlocks(blockArray, numBlocks);
+    // cleanup
     destroyBlocks(&mafObj);
-    
     return EXIT_SUCCESS;
 }

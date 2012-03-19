@@ -197,6 +197,7 @@ class SortTest(unittest.TestCase):
                 lower = index + 1
             testMaf = testFile(''.join(shuffledBlocks))
             cmd = [os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'bin', 'mafBlockSorter'))]
+            cmd += ['--seq', 'hg18.chr7']
             inpipes = [testMaf]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'sorted.maf'))]
             runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
