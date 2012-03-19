@@ -1,8 +1,8 @@
 SHELL:=/bin/bash
 cc = gcc
-args = -g -Wall -Wextra -std=c99 -pedantic
+args = -g -Wall -Wextra -Werror -std=c99 -pedantic
 bin = ../bin
-PROGS = mafBlockExtractor
+PROGS = mafBlockSorter
 INCL = src/common.o
 dependencies = ${INCL} src/common.h src/common.c
 
@@ -10,7 +10,7 @@ dependencies = ${INCL} src/common.h src/common.c
 
 all: $(foreach f,${PROGS}, ${bin}/$f)
 
-${bin}/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies}
+${bin}/mafBlockSorter: src/mafBlockSorter.c ${dependencies}
 	mkdir -p $(dir $@)
 	${cc} ${args} $< ${INCL} -o $@.tmp 
 	mv $@.tmp $@
@@ -28,5 +28,5 @@ src/common.o: src/common.c src/common.h
 clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o
 
-test:
-	echo "No tests."
+test: ${bin}/mafBlockSorter
+	python2.6 src/test.mafBlockSorter.py --verbose

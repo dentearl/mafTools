@@ -102,7 +102,7 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *start, uint32_
         }
     }
     if (!(setSName && setStart && setStop)) {
-        fprintf(stderr, "specify --seq --start --stop\n");
+        fprintf(stderr, "Error, specify --seq --start --stop\n");
         usage();
     }
     if (*start > *stop) {
@@ -126,7 +126,10 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *start, uint32_
 void usage(void) {
     fprintf(stderr, "Usage: mafBlockExtractor --seq [sequence name (and possibly chr)] "
             "--start [start of region, inclusive --stop [end of region, inclusive] "
-            "[options] < myFile.maf\n\n");
+            "[options] < myFile.maf\n\n"
+            "mafBlockExtractor is a program that will look through a maf file for a\n"
+            "particular sequence name and region. If a match is found then the block\n"
+            "containing the querry will be printed to standard out.\n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
             "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
