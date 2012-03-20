@@ -1,43 +1,47 @@
-#mafIndelDistribution.py
+# mafCoveragePickles
 
 14 November 2011
 
-##Authors
+## Authors
 [Dent Earl](https://github.com/dentearl/)
 
-##Description
-mafIndelDistribution is a script that operates on a single maf
-(multiple alignment format) file and extracts information from
-the alignments of pairs of sequences. Output is xml which will
-contain a 'gaps' tag that contains a comma separated list of all
-indels within the maf for specified pairs. Additionally, 
-information on inter-chromosome coverage between pairs is 
-provided. To this end, the maf sequence name field must have the
-format
-species.chromosome
-e.g.
-hg19.chr22
+## Description
+mafCoveragePickles is a collection of scripts that perform simple
+coverage based analyses on multiple alignment format (maf) files. 
+All analyses use the pickle format, hense the name.
 
-For slightly more detailed examples, check the 
-test.mafIndelDistribution.py unittest.
+Fundamental to this tool is a naming convention for the name field.
+Sequences should be named "`species.chrom`". This is important because
+the tool `mafCoveragePickleGapAnalysis` performs an analysis by 
+looking at all alignments of an entire genome to a specific sequence
+(i.e. chromosome) of a second genome. The `chrom` aspect of the name
+may contain periods, the `chrom` is defined as the string of 
+characters in the name field that follow the first period.
 
-##Dependencies
-* Python 2.6 &le; version &lt; 3.0
+## Dependencies
+* Python 2.6 or 2.7
+* [matplotlib](http://matplotlib.sourceforge.net/) if you intend to create coverage plots using `mafCoveragePicklePlotter`
 
-##Installation
+## Installation
 1. Download the package.
 2. <code>cd</code> into the directory.
 3. Type <code>make</code>.
 
-##Use
+## Workflow
+Below is an example workflow. 
+1. Run `mafCoveragePickleCreator` on a maf to decompose the maf into the pickle format.
+2. Use the pickle format as input to `mafCoveragePickleSubsetExtractor` to pull out just the sequences of interest.
+3. Use a subseted pickle as input to `mafCoveragePickleGapAnalysis` to perform a coverage and gap analysis of the alignment of a query genome onto a target sequence (specific chromosome).
+4. Use a subseted pickle as input to `mafCoveragePicklePlotter` to create a dot plot between two sequences.
+
+## Components
+* `mafCoveragePickleCreator` - Takes as an input a maf file and creates a pickle format file. Output is pickle.
+* `mafCoveragePickleGapAnalysis` - Takes as an input a pickle format file and a target and query sequence and performs an analysis to assess coverage and gap length distribution. Output is an xml.
+* `mafCoveragePicklePlotter` - Takes as an input a pickle format file and a pair of sequences and produces a [dot-plot](http://en.wikipedia.org/wiki/Dot_plot_(bioinformatics)) showing the alignment between the two sequences. Output is pdf/eps/png.
+* `mafCoveragePickleSubsetExtractor` - The pickle format files can be very large and can take a long time to read it can be beneficial to extract a subset of the pickle before performing analyses. This tool facilitates trimming the pickle. Output is pickle.
+
+## Use
 <code>mafIndelDistribution.py --maf path/to/file.maf --species=species1,species2,...</code>
 
-###Options
-* <code>mafIndelDistribution.py</code>
-* <code>-h, --help</code>         show this help message and exit
-* <code>--maf=MAF</code>          input maf file
-* <code>--species=SPECIES</code>  comma separated list of species names to include in output
-* <code>--outfile=OUTFILE</code>  directory where outfile will be written default = summary.xml
-
-##Test
+## Test
 <code>make test</code>
