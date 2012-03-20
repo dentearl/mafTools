@@ -57,7 +57,9 @@ void usage(void) {
             "mafBlockSorter is a program that will sort the blocks of a maf in ascending\n"
             "order of the sequence start field of the specified sequence name. Blocks\n"
             "that do not contain the specified sequence will be output at the start of\n"
-            "the maf in the order they appear in the input, followed by the sorted blocks.\n\n");
+            "the maf in the order they appear in the input, followed by the sorted blocks.\n"
+            "If a block has multiple instances of the target sequence, the largest starting\n"
+            "position is used for that block.\n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
             "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
