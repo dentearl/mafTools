@@ -43,7 +43,11 @@ void searchInput(FILE *ifp, char *fullname, unsigned long pos);
 
 void usage(void) {
     fprintf(stderr, "Usage: mafBlockFinder --seq [sequence name (and possibly chr)"
-            "] --pos [position to search for] [options] < myFile.maf\n\n");
+            "] --pos [position to search for] [options] < myFile.maf\n\n"
+            "mafBlockFinder is a program that will look through a maf file for a\n"
+            "particular sequence name and location. If a match is found the line\n"
+            "number and first few fields are returned. If no match is found\n"
+            "nothing is returned.\n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
             "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
