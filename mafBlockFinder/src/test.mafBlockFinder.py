@@ -177,7 +177,7 @@ class FindTest(unittest.TestCase):
             runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
             self.assertTrue(foundLines(g_overlappingBlocks[i][2], os.path.join(tmpDir, 'found.txt')))
             removeTempDir()
-    def testNonExtraction(self):
+    def testNonFind(self):
         """ mafBlockFinder should not report any lines when blocks do not match.
         """
         for i in xrange(0, len(g_nonOverlappingBlocks)):
