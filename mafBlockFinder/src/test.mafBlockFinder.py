@@ -187,9 +187,9 @@ class FindTest(unittest.TestCase):
             cmd = [os.path.abspath(os.path.join(binParent, 'bin', 'mafBlockFinder'))]
             cmd += ['--seq', g_targetSeq, '--pos', '%d' % g_nonOverlappingBlocks[i][1]]
             inpipes = [testMaf]
-            outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.maf'))]
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
             runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
-            self.assertTrue(fileIsEmpty(os.path.join(tmpDir, 'found.maf')))
+            self.assertTrue(fileIsEmpty(os.path.join(tmpDir, 'found.txt')))
             removeTempDir()
 
 if __name__ == '__main__':
