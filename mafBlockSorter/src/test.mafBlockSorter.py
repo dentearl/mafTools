@@ -151,11 +151,6 @@ def mafIsSorted(maf):
         nonTBlocks.append(extractBlockStr(f).replace(' ', ''))
         expectedNonTargetBlocks[i] = expectedNonTargetBlocks[i].replace(' ', '')
     if nonTBlocks != expectedNonTargetBlocks:
-        print '\nexpected'
-        print expectedNonTargetBlocks
-        print 'observed'
-        print nonTBlocks
-
         f.close()
         return False
     sortedBlocks = []
@@ -178,9 +173,7 @@ def extractBlockStr(f):
     
 class SortTest(unittest.TestCase):
     def testSorting(self):
-        """ Blocks should be sorted by the start field of the target sequence,
-        blocks that do not contain the target sequence should appear in the 
-        output at the start of the file, in the same order they appear in the input.
+        """ Blocks should be sorted by the start field of the target sequence, blocks that do not contain the target sequence should appear in the output at the start of the file, in the same order they appear in the input.
         """
         shuffledTargets = list(targetBlocks)
         for i in xrange(0, 100):

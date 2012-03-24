@@ -7,7 +7,7 @@
 [Dent Earl](https://github.com/dentearl/)
 
 ##Description
-mafBlockSorter is a program that will sort the blocks of a maf in ascending order of the sequence start field of the specified sequence name. Blocks that do not contain the specified sequence will be output at the start of the maf in the order they appear in the input, followed by the sorted blocks.
+mafBlockSorter is a program that will sort the blocks of a maf in ascending order of the sequence start field of the specified sequence name. Blocks that do not contain the specified sequence will be output at the start of the maf in the order they appear in the input, followed by the sorted blocks. Blocks where the target sequence appears twice will be tagged with the largest start value.
 
 ##Dependencies
 * 

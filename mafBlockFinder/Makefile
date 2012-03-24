@@ -23,5 +23,5 @@ ${bin}/%: src/%.c
 clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o
 
-test:
-	echo "No tests."
+test: ${bin}/mafBlockFinder
+	python2.6 src/test.mafBlockFinder.py -v

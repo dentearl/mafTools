@@ -47,7 +47,7 @@ typedef struct mafBlock {
     // and itself can be part of a mafBlock linked list.
     mafLine_t *head;
     mafLine_t *tail;
-    int targetStart;
+    uint32_t targetStart;
     struct mafBlock *next;
 } mafBlock_t;
 
@@ -57,7 +57,9 @@ void usage(void) {
             "mafBlockSorter is a program that will sort the blocks of a maf in ascending\n"
             "order of the sequence start field of the specified sequence name. Blocks\n"
             "that do not contain the specified sequence will be output at the start of\n"
-            "the maf in the order they appear in the input, followed by the sorted blocks.\n\n");
+            "the maf in the order they appear in the input, followed by the sorted blocks.\n"
+            "If a block has multiple instances of the target sequence, the largest starting\n"
+            "position is used for that block.\n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
             "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
@@ -151,7 +153,7 @@ void badFormat(void) {
     fprintf(stderr, "The maf sequence lines are incorrectly formatted, exiting\n");
     exit(EXIT_FAILURE);
 }
-int getTargetStart(char *line, char *targetSeq) {
+uint32_t getTargetStart(char *line, char *targetSeq) {
     // read a maf sequence line and if the line contains
     // the target sequence, return the value of the start field
     // otherwise return 0.
@@ -181,7 +183,7 @@ int getTargetStart(char *line, char *targetSeq) {
     free(cline);
     return 0;
 }
-int max(int a, int b) {
+uint32_t max(uint32_t a, uint32_t b) {
     return (a > b ? a : b);
 }
 unsigned processBody(mafBlock_t *head, char *targetSeq) {
@@ -235,7 +237,7 @@ unsigned processBody(mafBlock_t *head, char *targetSeq) {
 void populateArray(mafBlock_t *head, mafBlock_t **array) {
     // walk the linked list pointed to by head and stuff pointers to
     // the structs into the array.
-    int i = 0;
+    unsigned i = 0;
     mafBlock_t *thisBlock = head;
     while(thisBlock != NULL) {
         array[i++] = thisBlock;

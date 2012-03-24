@@ -125,7 +125,7 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *start, uint32_
 
 void usage(void) {
     fprintf(stderr, "Usage: mafBlockExtractor --seq [sequence name (and possibly chr)] "
-            "--start [start of region, inclusive --stop [end of region, inclusive] "
+            "--start [start of region, inclusive, 0 based] --stop [end of region, inclusive] "
             "[options] < myFile.maf\n\n"
             "mafBlockExtractor is a program that will look through a maf file for a\n"
             "particular sequence name and region. If a match is found then the block\n"
@@ -133,8 +133,8 @@ void usage(void) {
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
             "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
-            "  --start        start of region, inclusive.\n"
-            "  --stop         end of region, inclusive.\n"
+            "  --start        start of region, inclusive, 0 based.\n"
+            "  --stop         end of region, inclusive, 0 based.\n"
             "  -v, --verbose  turns on verbose output.\n");
     exit(EXIT_FAILURE);
 }
@@ -165,7 +165,7 @@ bool checkRegion(uint32_t start, uint32_t stop, uint32_t str,
     // check to see if pos is in this block
     static unsigned long absStart, absEnd;
     if (strand == '-') {
-        absStart =  src - (str + lng);
+        absStart = src - (str + lng);
         absEnd = lng - str - 1;
     } else {
         absStart = str;
@@ -276,20 +276,18 @@ int searchMatched(char *origLine, char *seq, uint32_t start, uint32_t stop) {
     free(cline);
     return 0;
 }
-
 void checkBlock(mafBlock_t *b, char *seq, uint32_t start, uint32_t stop) {
-    // read through a mafBlock and if a sequence in the block matches the region
+    // read through each line of a mafBlock and if the sequence matches the region
     // we're looking for, report the block.
     mafBlock_t *head = b;
     while (b != NULL) {
         if (searchMatched(b->line, seq, start, stop)) {
             reportBlock(head);
             break;
-        }
+        } 
         b = b->next;
     }
 }
-
 void destroyBlock(mafBlock_t *b) {
     mafBlock_t *tmp = NULL;
     while (b != NULL) {
@@ -298,7 +296,6 @@ void destroyBlock(mafBlock_t *b) {
         free(tmp);
     }
 }
-
 void processBody(char *seq, uint32_t start, uint32_t stop) {
     FILE *ifp = stdin;
     int32_t n = kMaxSeqName;
