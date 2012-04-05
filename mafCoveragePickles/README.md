@@ -41,7 +41,9 @@ Below is an example workflow.
 * `mafCoveragePickleSubsetExtractor` - The pickle format files can be very large and can take a long time to read it can be beneficial to extract a subset of the pickle before performing analyses. This tool facilitates trimming the pickle. Output is pickle.
 
 ## Use
-<code>mafIndelDistribution.py --maf path/to/file.maf --species=species1,species2,...</code>
+    mafCoveragePickleCreator.py --maf path/to/file.maf --species=species1,species2,... --pickle=output.pickle
+    mafCoveragePickleGapAnalysis.py --pickle path/to/file.pickle --outfile=output.xml
+    ...
 
 ## Test
 <code>make test</code>

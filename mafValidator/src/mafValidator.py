@@ -106,9 +106,14 @@ def validateMaf(filename, testChromNames = False):
                                           % (filename, lineno, line))
          if (species, chrom)  in sources:
             if sources[(species, chrom)] != length:
-               raise SourceLengthError('maf %s has different source lengths for '
+               if chrom is None:
+                  raise SourceLengthError('maf %s has different source lengths for '
                                        'species %s (read %s but was previously %s) on line number %d: %s'
                                        % (filename, species, sources[(species, chrom)], length, lineno, line))
+               else:
+                  raise SourceLengthError('maf %s has different source lengths for '
+                                          'species %s chrom %s (read %s but was previously %s) on line number %d: %s'
+                                          % (filename, species, chrom, sources[(species, chrom)], length, lineno, line))
          else:
             sources[(species, chrom)] = length
       elif line.startswith('i'):
