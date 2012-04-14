@@ -44,7 +44,7 @@ in A.
 ###Options
 * <code>mafComparator, version 0.3</code>
 * <code>-a --logLevel</code> : Set the log level. [off, critical, info, debug] in ascending order.
-* <code>-b --mafFile1</code> : The location of the first MAF file (used to create sequence name hash.)
+* <code>-b --mafFile1</code> : The location of the first MAF file. If comparing true to predicted alignments, this is the truth.
 * <code>-c --mafFile2</code> : The location of the second MAF file
 * <code>-d --outputFile</code> : The output XML formatted results file.
 * <code>-e --sampleNumber</code> : The number of sample homology tests to perform (total) [default 1000000].
@@ -60,4 +60,4 @@ Two mafs are included in the example/ directory and can be compared using the co
 
 <code>$ mafComparator --mafFile1 example/a.maf --mafFile2 example/b.maf --outputFile comparison_a-b.xml</code>
 
-You may note in the output that there are no comparisons for the sequences that are found only in b.maf, i.e. sequences D, E and F. The hash of sequence names used for comparisons is populated using the --mafFile1 input. Sequences that only appear in the --mafFile2 input are ignored.
+You may note in the output that there are no comparisons for the sequences that are found only in b.maf, i.e. sequences D, E and F. The hash of sequence names used for comparisons is populated using the intersection of the sequence names from the --mafFile1 and --mafFile2 inputs. Sequences that only appear in --mafFile1 or only appear in --mafFile2 input are ignored.

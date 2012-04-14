@@ -176,8 +176,8 @@ void usage() {
             "-a --logLevel : Set the log level. [off, critical, info, debug] "
             "in ascending order.\n");
     fprintf(stderr,
-            "-b --mafFile1 : The location of the first MAF file (used to "
-            "create sequence name hash.) If comparing true to predicted "
+            "-b --mafFile1 : The location of the first MAF file. "
+            "If comparing true to predicted "
             "alignments, this is the truth.\n");
     fprintf(stderr, "-c --mafFile2 : The location of the second MAF file. "
             "If comparing true to predicted "
