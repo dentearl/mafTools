@@ -757,16 +757,19 @@ struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int
      * Gets samples.
      */
     int64_t pairNumber = 0;
+    // count the number of pairs in mafFileA
     getPairs(mAFFileA, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) countPairs,
              intervalsHash, &pairNumber, legitimateSequences, NULL, isVerboseFailures, near);
 
     double acceptProbability = ((double) numberOfSamples) / pairNumber;
     struct avl_table *pairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction, 
                                          NULL, NULL);
+    // sample pairs from mafFileA
     getPairs(mAFFileA, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) samplePairs,
              intervalsHash, pairs, &acceptProbability, legitimateSequences, isVerboseFailures, near);
 
     stSortedSet *positivePairs = stSortedSet_construct();
+    // perform homology tests on mafFileB using sampled pairs from mafFileA
     getPairs(mAFFileB, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) homologyTests1,
              intervalsHash, pairs, positivePairs, legitimateSequences, isVerboseFailures, near);
 
