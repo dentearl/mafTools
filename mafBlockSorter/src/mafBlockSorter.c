@@ -116,27 +116,8 @@ void parseOptions(int argc, char **argv, char *seqName) {
             strcat(errorString, argv[optind++]);
         }
         fprintf(stderr, "%s\n", errorString);
+        free(errorString);
         usage();
-    }
-}
-void processHeader(void) {
-    // Read in the header and spit it back out
-    FILE *ifp = stdin;
-    int32_t n = 1 << 10;
-    char *line = (char*) de_malloc(n);
-    int status = de_getline(&line, &n, ifp);
-    if (status == -1) {
-        fprintf(stderr, "Error, empty file\n");
-        exit(EXIT_FAILURE);
-    }
-    if (strncmp(line, "##maf", 5) != 0) {
-        fprintf(stderr, "Error, bad maf format. File should start with ##maf\n");
-        exit(EXIT_FAILURE);
-    }
-    printf("%s\n", line);
-    while (*line != 0 && status != -1) {
-        status = de_getline(&line, &n, ifp);
-        printf("%s\n", line);
     }
 }
 bool blankLine(char *s) {
@@ -149,10 +130,6 @@ bool blankLine(char *s) {
     }
     return true;
 }
-void badFormat(void) {
-    fprintf(stderr, "The maf sequence lines are incorrectly formatted, exiting\n");
-    exit(EXIT_FAILURE);
-}
 uint32_t getTargetStart(char *line, char *targetSeq) {
     // read a maf sequence line and if the line contains
     // the target sequence, return the value of the start field
@@ -162,7 +139,7 @@ uint32_t getTargetStart(char *line, char *targetSeq) {
     char *tkn = NULL;
     tkn = strtok(cline, " \t");
     if (tkn == NULL) {
-        badFormat();
+        failBadFormat();
     }
     if (tkn[0] != 's') {
         free (cline);
@@ -171,12 +148,12 @@ uint32_t getTargetStart(char *line, char *targetSeq) {
     tkn = strtok(NULL, " \t"); // name field
     if (tkn == NULL) {
         printf("cline: %s\n", cline);
-        badFormat();
+        failBadFormat();
     }
     if (strncmp(targetSeq, tkn, strlen(targetSeq)) == 0) {
         tkn = strtok(NULL, " \t"); // start position
         if (tkn == NULL)
-            badFormat();
+            failBadFormat();
         free(cline);
         return strtoul(tkn, NULL, 10);
     }
@@ -214,7 +191,7 @@ unsigned processBody(mafBlock_t *head, char *targetSeq) {
                 thisBlock = nextBlock;
             }
             prevLineBlank = false;
-            char *copy = (char*) de_malloc(n + 1);
+            char *copy = (char*) de_malloc(n + 1); // freed in destroy lines
             strcpy(copy, line);
             thisBlock->targetStart = max(thisBlock->targetStart, getTargetStart(copy, targetSeq));
             if (thisBlock->head == NULL) {
@@ -232,6 +209,7 @@ unsigned processBody(mafBlock_t *head, char *targetSeq) {
             }
         }
     }
+    free(line);
     return numBlocks;
 }
 void populateArray(mafBlock_t *head, mafBlock_t **array) {

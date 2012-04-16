@@ -184,6 +184,7 @@ void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
             checkRegion(lineno, fullname, pos, start, length, sourceLength, strand);
         }
     }
+    free(buffer);
 }
 
 int main(int argc, char **argv) {

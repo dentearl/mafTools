@@ -2,10 +2,11 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "common.h"
 
-extern const int kMaxStringLength = 2048;
-extern const int kMaxMessageLength = 1024;
+const int kMaxStringLength = 2048;
+const int kMaxMessageLength = 1024;
 
 void* de_malloc(size_t n) {
     void *i;
@@ -78,4 +79,29 @@ void message(char const *type, char const *fmt, ...) {
     fprintf(stderr, "%s: ", type);
     vfprintf(stderr, fmt, args);
     va_end(args);
+}
+void processHeader(void) {
+    // Read in the header and spit it back out
+    FILE *ifp = stdin;
+    int32_t n = kMaxStringLength;
+    char *line = (char*) de_malloc(n);
+    int status = de_getline(&line, &n, ifp);
+    if (status == -1) {
+        fprintf(stderr, "Error, empty file\n");
+        exit(EXIT_FAILURE);
+    }
+    if (strncmp(line, "##maf", 5) != 0) {
+        fprintf(stderr, "line: %s\n", line);
+        fprintf(stderr, "Error, bad maf format. File should start with ##maf\n");
+        exit(EXIT_FAILURE);
+    }
+    printf("%s\n", line);
+    while (*line != 0 && status != -1) {
+        status = de_getline(&line, &n, ifp);
+        printf("%s\n", line);
+    }
+}
+void failBadFormat(void) {
+    fprintf(stderr, "The maf sequence lines are incorrectly formatted, exiting\n");
+    exit(EXIT_FAILURE);
 }
