@@ -32,8 +32,8 @@
 
 const int kMaxSeqName = 1 << 9;
 
-int verbose_flag = 0;
-int debug_flag = 0;
+int g_verbose_flag = 0;
+int g_debug_flag = 0;
 
 typedef struct mafBlock {
     struct mafBlock *next;
@@ -43,8 +43,8 @@ typedef struct mafBlock {
 void usage(void);
 
 void parseOptions(int argc, char **argv, char *seqName, uint32_t *start, uint32_t *stop) {
-    extern int debug_flag;
-    extern int verbose_flag;
+    extern int g_debug_flag;
+    extern int g_verbose_flag;
     int c;
     bool setSName = false, setStart = false, setStop = false;
     int32_t value = 0;
@@ -88,10 +88,10 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *start, uint32_
             strncpy(seqName, optarg, kMaxSeqName);
             break;
         case 'v':
-            verbose_flag++;
+            g_verbose_flag++;
             break;
         case 'd':
-            debug_flag = 1;
+            g_debug_flag = 1;
             break;
         case 'h':
         case '?':

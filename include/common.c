@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include "common.h"
 
-const int kMaxStringLength = 2048;
-const int kMaxMessageLength = 1024;
+extern const int kMaxStringLength = 2048;
+extern const int kMaxMessageLength = 1024;
 
 void* de_malloc(size_t n) {
     void *i;

@@ -3,8 +3,8 @@ cc = gcc
 args = -Wall -Wextra -std=c99 -pedantic
 bin = ../bin
 PROGS = mafBlockFinder
-includes = src/common.c
-dependencies = ${includes} src/common.h src/common.c
+includes = ../include/common.o
+dependencies = ${includes} ../include/common.h ../include/common.c
 
 .PHONY: all clean
 
@@ -12,12 +12,17 @@ all: $(foreach f,${PROGS}, ${bin}/$f)
 
 ${bin}/mafBlockFinder: src/mafBlockFinder.c ${dependencies}
 	mkdir -p $(dir $@)
-	${cc} ${args} $< ${includes} -o $@.tmp 
+	${cc} ${args} $< -I ../include -o $@.tmp ${includes}
 	mv $@.tmp $@
 
 ${bin}/%: src/%.c 
 	mkdir -p $(dir $@)
 	${cc} ${args} $^ -o $@.tmp 
+	mv $@.tmp $@
+
+../include/common.o: ../include/common.c ../include/common.h
+	mkdir -p $(dir $@)
+	${cc} ${args} $< -c -o $@.tmp 
 	mv $@.tmp $@
 
 clean:
