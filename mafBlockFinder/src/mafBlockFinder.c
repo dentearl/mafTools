@@ -34,7 +34,8 @@
 #include <unistd.h>
 #include "common.h"
 
-const int kMaxStringLength = 2048;
+int g_verbose_flag = 0;
+int g_debug_flag = 0;
 
 void parseOptions(int argc, char **argv, char *seqName, uint32_t *position);
 void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start, 
@@ -58,12 +59,14 @@ void usage(void) {
 }
 
 void parseOptions(int argc, char **argv, char *seqName, uint32_t *position) {
+    extern int g_debug_flag;
+    extern int g_verbose_flag;
     int c;
     int setSName = 0, setPos = 0;
     int32_t tempPos = 0;
     while (1) {
         static struct option long_options[] = {
-            {"debug", no_argument, &debug_flag, 1},
+            {"debug", no_argument, &g_debug_flag, 1},
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
             {"seq",  required_argument, 0, 's'},
@@ -93,7 +96,7 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *position) {
             *position = tempPos;
             break;
         case 'v':
-            verbose_flag++;
+            g_verbose_flag++;
             break;
         case 'h':
         case '?':
@@ -136,6 +139,7 @@ void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start,
 }
 
 void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
+    extern const int kMaxStringLength;
     int32_t n = kMaxStringLength;
     char *buffer = (char *) de_malloc(n);
     char *tkn = NULL;
@@ -183,6 +187,7 @@ void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
 }
 
 int main(int argc, char **argv) {
+    extern const int kMaxStringLength;
     char targetName[kMaxStringLength];
     uint32_t targetPos;
 
