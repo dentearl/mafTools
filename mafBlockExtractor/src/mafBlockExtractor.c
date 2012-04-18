@@ -284,7 +284,7 @@ void processBody(char *seq, uint32_t start, uint32_t stop) {
         }
         if (head == NULL) {
             // new block
-            head = (mafBlock_t *) de_malloc(sizeof(mafBlock_t *));
+            head = (mafBlock_t *) de_malloc(sizeof(*head));
             cline = (char *) de_malloc(n);
             strcpy(cline, line);
             head->line = cline;
@@ -292,7 +292,7 @@ void processBody(char *seq, uint32_t start, uint32_t stop) {
             tail = head;
         } else {
             // extend block
-            tail->next = (mafBlock_t *) de_malloc(sizeof(mafBlock_t *));
+            tail->next = (mafBlock_t *) de_malloc(sizeof(*tail));
             cline = (char *) de_malloc(n);
             strcpy(cline, line);
             tail = tail->next;
