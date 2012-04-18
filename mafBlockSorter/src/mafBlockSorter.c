@@ -134,7 +134,7 @@ uint32_t getTargetStart(char *line, char *targetSeq) {
     // read a maf sequence line and if the line contains
     // the target sequence, return the value of the start field
     // otherwise return 0.
-    char *cline = (char*) de_malloc(strlen(line) + 1);
+    char *cline = (char *) de_malloc(strlen(line) + 1);
     strcpy(cline, line);
     char *tkn = NULL;
     tkn = strtok(cline, " \t");
@@ -167,7 +167,7 @@ unsigned processBody(mafBlock_t *head, char *targetSeq) {
     // process the body of the maf, block by block.
     FILE *ifp = stdin;
     int32_t n = 1 << 10;
-    char *line = (char*) de_malloc(n);
+    char *line = (char *) de_malloc(n);
     mafBlock_t *thisBlock = head;
     unsigned numBlocks = 1;
     bool prevLineBlank = false;
@@ -182,7 +182,7 @@ unsigned processBody(mafBlock_t *head, char *targetSeq) {
                 // if this line is not blank and the previous line was blank
                 // then this is the start of a new maf block.
                 ++numBlocks;
-                mafBlock_t *nextBlock = (mafBlock_t*) de_malloc(sizeof(mafBlock_t));
+                mafBlock_t *nextBlock = (mafBlock_t *) de_malloc(sizeof(mafBlock_t));
                 nextBlock->next = NULL;
                 nextBlock->head = NULL;
                 nextBlock->tail = NULL;
@@ -191,18 +191,18 @@ unsigned processBody(mafBlock_t *head, char *targetSeq) {
                 thisBlock = nextBlock;
             }
             prevLineBlank = false;
-            char *copy = (char*) de_malloc(n + 1); // freed in destroy lines
+            char *copy = (char *) de_malloc(n + 1); // freed in destroy lines
             strcpy(copy, line);
             thisBlock->targetStart = max(thisBlock->targetStart, getTargetStart(copy, targetSeq));
             if (thisBlock->head == NULL) {
                 // if thisBlock->head is null then this is a brand new mafBlock and it needs
                 // a new mafLine to be created.
-                thisBlock->head = (mafLine_t*) de_malloc(sizeof(mafLine_t));
+                thisBlock->head = (mafLine_t *) de_malloc(sizeof(mafLine_t));
                 thisBlock->head->next = NULL;
                 thisBlock->head->line = copy;
                 thisBlock->tail = thisBlock->head;
             } else {
-                thisBlock->tail->next = (mafLine_t*) de_malloc(sizeof(mafLine_t));
+                thisBlock->tail->next = (mafLine_t *) de_malloc(sizeof(mafLine_t));
                 thisBlock->tail->next->next = NULL;
                 thisBlock->tail->next->line = copy;
                 thisBlock->tail = thisBlock->tail->next;
@@ -217,7 +217,7 @@ void populateArray(mafBlock_t *head, mafBlock_t **array) {
     // the structs into the array.
     unsigned i = 0;
     mafBlock_t *thisBlock = head;
-    while(thisBlock != NULL) {
+    while (thisBlock != NULL) {
         array[i++] = thisBlock;
         thisBlock = thisBlock->next;
     }
@@ -225,8 +225,8 @@ void populateArray(mafBlock_t *head, mafBlock_t **array) {
 int cmp_by_targetStart(const void *a, const void *b) {
     // mafBlock_t * const *ia = a;
     // mafBlock_t * const *ib = b;
-    mafBlock_t **ia = (mafBlock_t**) a;
-    mafBlock_t **ib = (mafBlock_t**) b;
+    mafBlock_t **ia = (mafBlock_t **) a;
+    mafBlock_t **ib = (mafBlock_t **) b;
     return ((*ia)->targetStart - (*ib)->targetStart);
 }
 void reportBlock(mafBlock_t *mb) {
@@ -281,7 +281,7 @@ int main(int argc, char **argv) {
     mafBlock_t *blockArray[numBlocks];
     // sort
     populateArray(&mafObj, blockArray);
-    qsort(blockArray, numBlocks, sizeof(mafBlock_t*), cmp_by_targetStart);
+    qsort(blockArray, numBlocks, sizeof(mafBlock_t *), cmp_by_targetStart);
     // write output
     reportBlocks(blockArray, numBlocks);
     // cleanup
