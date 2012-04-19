@@ -235,12 +235,6 @@ def which(program):
             if is_exe(exe_file):
                 return exe_file
     return None
-def mafIsEmpty(maf):
-    f = open(maf)
-    s = f.read()
-    if s == g_header:
-        return True
-    return False
 def noMemoryErrors(xml):
     try:
         tree = ET.parse(xml)
@@ -254,6 +248,12 @@ def noMemoryErrors(xml):
     if len(errorcounts):
         return False
     return True
+def mafIsEmpty(maf):
+    f = open(maf)
+    s = f.read()
+    if s == g_header:
+        return True
+    return False
 def mafIsFiltered(maf, blockList):
     f = open(maf)
     # header lines
