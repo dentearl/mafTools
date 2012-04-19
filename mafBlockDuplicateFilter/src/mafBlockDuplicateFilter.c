@@ -22,6 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
+#include <ctype.h>
 #include <getopt.h>
 #include <stdbool.h>
 #include <stdint.h>
