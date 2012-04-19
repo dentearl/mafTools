@@ -4,9 +4,10 @@ import shutil
 import subprocess
 import sys
 import unittest
+import xml.etree.ElementTree as ET
+import xml.parsers.expat
 
 target = 'hg18.chr7'
-
 header = '''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
 
@@ -138,6 +139,36 @@ def handleReturnCode(retcode, cmd):
         else:
             raise RuntimeError('Experienced an error while trying to execute: '
                                '%s retcode:%d' %(' '.join(cmd), retcode))
+def which(program):
+    """which() acts like the unix utility which, but is portable between os.
+    If the program does not exist in the PATH then 'None' is returned. 
+    """
+    def is_exe(fpath):
+        return os.path.exists(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath != '':
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+    return None
+def noMemoryErrors(xml):
+    try:
+        tree = ET.parse(xml)
+    except xml.parsers.expat.ExpatError:
+        raise RuntimeError('Input xml, %s is not a well formed xml document.' % xml)
+    root = tree.getroot()
+    errors = root.findall('error')
+    if len(errors):
+        return False
+    errorcounts = root.find('errorcounts')
+    if len(errorcounts):
+        return False
+    return True
 def mafIsSorted(maf):
     f = open(maf)
     # header lines
@@ -196,6 +227,36 @@ class SortTest(unittest.TestCase):
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'sorted.maf'))]
             runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
             self.assertTrue(mafIsSorted(os.path.join(tmpDir, 'sorted.maf')))
+            removeTempDir()
+    def testMemory1(self):
+        """ If valgrind is installed on the system, check for memory related errors (1).
+        """
+        valgrind = which('valgrind')
+        if valgrind is None:
+            return
+        shuffledTargets = list(targetBlocks)
+        for i in xrange(0, 20):
+            tmpDir = os.path.abspath(makeTempDir())
+            random.shuffle(nonTargetBlocks)
+            random.shuffle(shuffledTargets)
+            shuffledBlocks = list(shuffledTargets)
+            lower = 0
+            for j in xrange(0, len(nonTargetBlocks)):
+                # randomly insert the non target blocks, but keep a record
+                # of their relative order.
+                index = random.randint(lower, len(shuffledBlocks))
+                shuffledBlocks.insert(index, nonTargetBlocks[j])
+                lower = index + 1
+            testMaf = testFile(''.join(shuffledBlocks))
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
+                   '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockSorter')))
+            cmd += ['--seq', 'hg18.chr7']
+            inpipes = [testMaf]
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'sorted.maf'))]
+            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            self.assertTrue(noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             removeTempDir()
 
 if __name__ == '__main__':

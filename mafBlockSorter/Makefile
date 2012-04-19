@@ -6,13 +6,18 @@ PROGS = mafBlockSorter
 INCL = ../include/common.o
 dependencies = ${INCL} ../include/common.h ../include/common.c
 
-.PHONY: all clean
+.PHONY: all clean test
 
 all: $(foreach f,${PROGS}, ${bin}/$f)
 
 ${bin}/mafBlockSorter: src/mafBlockSorter.c ${dependencies}
 	mkdir -p $(dir $@)
 	${cc} ${args} $< ${INCL} -I ../include -o $@.tmp 
+	mv $@.tmp $@
+
+test/mafBlockSorter: src/mafBlockSorter.c ${dependencies}
+	mkdir -p $(dir $@)
+	${cc} ${args} -O0 $< ${INCL} -I ../include -o $@.tmp 
 	mv $@.tmp $@
 
 ${bin}/%: src/%.c 
@@ -26,7 +31,7 @@ ${bin}/%: src/%.c
 	mv $@.tmp $@
 
 clean:
-	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o
+	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
 
-test: ${bin}/mafBlockSorter
-	python2.6 src/test.mafBlockSorter.py --verbose
+test: test/mafBlockSorter
+	python2.6 src/test.mafBlockSorter.py --verbose && rm -rf test/
