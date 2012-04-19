@@ -138,28 +138,6 @@ void usage(void) {
             "  -v, --verbose  turns on verbose output.\n");
     exit(EXIT_FAILURE);
 }
-
-void processHeader(void) {
-    FILE *ifp = stdin;
-    int32_t n = kMaxSeqName;
-    char *line = (char*) de_malloc(n);
-    int status = de_getline(&line, &n, ifp);
-    if (status == -1) {
-        fprintf(stderr, "Error, empty file\n");
-        exit(EXIT_FAILURE);
-    }
-    if (strncmp(line, "##maf", 5) != 0) {
-        printf("line: %s\n", line);
-        fprintf(stderr, "Error, bad maf format. File should start with ##maf\n");
-        exit(EXIT_FAILURE);
-    }
-    printf("%s\n", line);
-    while (*line != 0 && status != -1) {
-        status = de_getline(&line, &n, ifp);
-        printf("%s\n", line);
-    }
-}
-
 bool checkRegion(uint32_t start, uint32_t stop, uint32_t str, 
                  uint32_t lng, uint32_t src, char strand) {
     // check to see if pos is in this block
@@ -183,7 +161,6 @@ bool checkRegion(uint32_t start, uint32_t stop, uint32_t str,
         return true;
     return false;
 }
-
 void reportBlock(mafBlock_t *b) {
     while (b != NULL) {
         printf("%s\n", b->line);
@@ -191,12 +168,6 @@ void reportBlock(mafBlock_t *b) {
     }
     printf("\n");
 }
-
-void badFormat(void) {
-    fprintf(stderr, "The maf sequence lines are incorrectly formatted, exiting\n");
-    exit(EXIT_FAILURE);
-}
-
 void hardPrint(char *s, size_t n) {
     printf("hardPrint %s(%zu): ", s, n);
     for (unsigned i = 0; i < n; ++i){
@@ -207,7 +178,6 @@ void hardPrint(char *s, size_t n) {
     }
     printf("\n");
 }
-
 int searchMatched(char *origLine, char *seq, uint32_t start, uint32_t stop) {
     // report 0 if search did not match, 1 if it did
     char *tkn = NULL;
@@ -226,18 +196,18 @@ int searchMatched(char *origLine, char *seq, uint32_t start, uint32_t stop) {
     debug("tkn: %s\n", tkn);
     tkn = strtok(NULL, " \t"); // name field
     if (tkn == NULL)
-        badFormat();
-    debug("banana: %s\n", tkn);
+        failBadFormat();
+    debug("tkn 2: %s\n", tkn);
     if (strcmp(seq, tkn) == 0) {
         tkn = strtok(NULL, " \t"); // start position
         if (tkn == NULL)
-            badFormat();
-        debug("apple: %s\n", tkn);
+            failBadFormat();
+        debug("tkn 3: %s\n", tkn);
         str = strtoul(tkn, NULL, 10);
         tkn = strtok(NULL, " \t"); // length position
         if (tkn == NULL)
-            badFormat();
-        debug("carrot: %s\n", tkn);
+            failBadFormat();
+        debug("tkn 4: %s\n", tkn);
         lng = strtoul(tkn, NULL, 10);
         if (lng == UINT32_MAX) {
             fprintf(stderr, "Error, length (%u) greater than "
@@ -246,8 +216,8 @@ int searchMatched(char *origLine, char *seq, uint32_t start, uint32_t stop) {
         }
         tkn = strtok(NULL, " \t"); // strand
         if (tkn == NULL)
-            badFormat();
-        debug("plum: %s\n", tkn);
+            failBadFormat();
+        debug("tkn 5: %s\n", tkn);
         if ((strcmp(tkn, "+") == 0) || (strcmp(tkn, "-") == 0)) {
             strcpy(&strand, tkn);
         } else {
@@ -256,8 +226,8 @@ int searchMatched(char *origLine, char *seq, uint32_t start, uint32_t stop) {
         }
         tkn = strtok(NULL, " \t"); // source length
         if (tkn == NULL)
-            badFormat();
-        debug("strawberry: %s\n", tkn);
+            failBadFormat();
+        debug("tkn 6: %s\n", tkn);
         src = strtoul(tkn, NULL, 10);
         if (src == UINT32_MAX) {
             fprintf(stderr, "Error, source length (%u) greater "
@@ -266,8 +236,8 @@ int searchMatched(char *origLine, char *seq, uint32_t start, uint32_t stop) {
         }
         tkn = strtok(NULL, " \t"); // sequence field
         if (tkn == NULL)
-            badFormat();
-        debug("cherry: %s\n", tkn);
+            failBadFormat();
+        debug("tkn 7: %s\n", tkn);
         if (checkRegion(start, stop, str, lng, src, strand)) {
             free(cline);
             return 1;
@@ -293,6 +263,7 @@ void destroyBlock(mafBlock_t *b) {
     while (b != NULL) {
         tmp = b;
         b = b->next;
+        free(tmp->line);
         free(tmp);
     }
 }
@@ -313,7 +284,7 @@ void processBody(char *seq, uint32_t start, uint32_t stop) {
         }
         if (head == NULL) {
             // new block
-            head = (mafBlock_t *) de_malloc(sizeof(mafBlock_t *));
+            head = (mafBlock_t *) de_malloc(sizeof(*head));
             cline = (char *) de_malloc(n);
             strcpy(cline, line);
             head->line = cline;
@@ -321,7 +292,7 @@ void processBody(char *seq, uint32_t start, uint32_t stop) {
             tail = head;
         } else {
             // extend block
-            tail->next = (mafBlock_t *) de_malloc(sizeof(mafBlock_t *));
+            tail->next = (mafBlock_t *) de_malloc(sizeof(*tail));
             cline = (char *) de_malloc(n);
             strcpy(cline, line);
             tail = tail->next;
@@ -329,6 +300,7 @@ void processBody(char *seq, uint32_t start, uint32_t stop) {
             tail->next = NULL;
         }
     }
+    free(line);
 }
 
 int main(int argc, char **argv) {

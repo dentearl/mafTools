@@ -14,6 +14,7 @@
 3. Type <code>make</code>.
 
 ## Components
+* **mafBlockDuplicateFilter** A program to filter alignment blocks to remove duplicate species. One sequence per species is allowed to remain, chosen by comparing the sequence to the consensus for the block and computing a similarity bit score between the IUPAC formatted consensus and the sequence. The highest scoreing duplicate stays, or in the case of ties, the sequence closest to the start of the file stays.
 * **mafBlockExtractor** A program to extract all alignment blocks that contain a region in a particular sequence. Useful for isolating regions of interest in large maf files.
 * **mafBlockFinder** A program to search for a position in a particular sequence. Useful for determining where in maf a particular part of the alignment resides.
 * **mafBlockSorter** A program to sort all of the blocks in a MAF based on the (absolute) start position of one of the sequences. Blocks without the sequence are placed at the start of the output in their original order.
