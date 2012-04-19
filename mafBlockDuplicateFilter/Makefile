@@ -31,7 +31,7 @@ ${bin}/%: src/%.c
 	mv $@.tmp $@
 
 clean:
-	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o ./test/
+	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
 
 test: test/mafBlockDuplicateFilter
-	python2.6 src/test.mafBlockDuplicateFilter.py --verbose && rm -rf ./test/
+	python2.6 src/test.mafBlockDuplicateFilter.py --verbose && rm -rf test/
