@@ -4,6 +4,8 @@ import shutil
 import subprocess
 import sys
 import unittest
+import xml.etree.ElementTree as ET
+import xml.parsers.expat
 
 g_header = '''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
@@ -216,6 +218,36 @@ def handleReturnCode(retcode, cmd):
         else:
             raise RuntimeError('Experienced an error while trying to execute: '
                                '%s retcode:%d' %(' '.join(cmd), retcode))
+def which(program):
+    """which() acts like the unix utility which, but is portable between os.
+    If the program does not exist in the PATH then 'None' is returned. 
+    """
+    def is_exe(fpath):
+        return os.path.exists(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath != '':
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+    return None
+def noMemoryErrors(xml):
+    try:
+        tree = ET.parse(xml)
+    except xml.parsers.expat.ExpatError:
+        raise RuntimeError('Input xml, %s is not a well formed xml document.' % xml)
+    root = tree.getroot()
+    errors = root.findall('error')
+    if len(errors):
+        return False
+    errorcounts = root.find('errorcounts')
+    if len(errorcounts):
+        return False
+    return True
 def mafIsEmpty(maf):
     f = open(maf)
     s = f.read()
@@ -291,6 +323,60 @@ class ExtractionTest(unittest.TestCase):
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
             runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
             self.assertTrue(mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), expectedOutput))
+            removeTempDir()
+    def testMemory1(self):
+        """ If valgrind is installed on the system, check for memory related errors (1).
+        """
+        valgrind = which('valgrind')
+        if valgrind is None:
+            return
+        for i in xrange(0, 10):
+            shuffledBlocks = []
+            expectedOutput = []
+            tmpDir = os.path.abspath(makeTempDir())
+            order = [1] * len(g_duplicateBlocks) + [0] * len(g_nonDuplicateBlocks)
+            random.shuffle(order)
+            random.shuffle(g_duplicateBlocks)
+            random.shuffle(g_nonDuplicateBlocks)
+            j, k = 0, 0
+            for dupBlock in order:
+                if dupBlock:
+                    shuffledBlocks.append(g_duplicateBlocks[j][0])
+                    expectedOutput.append(g_duplicateBlocks[j][1])
+                    j += 1
+                else:
+                    shuffledBlocks.append(g_nonDuplicateBlocks[k])
+                    expectedOutput.append(g_nonDuplicateBlocks[k])
+                    k += 1
+            testMaf = testFile(''.join(shuffledBlocks))
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
+                   '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')))
+            inpipes = [testMaf]
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            self.assertTrue(noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+            removeTempDir()
+    def testMemory2(self):
+        """ If valgrind is installed on the system, check for memory related errors (2).
+        """
+        valgrind = which('valgrind')
+        if valgrind is None:
+            return
+        for i in xrange(0, 10):
+            tmpDir = os.path.abspath(makeTempDir())
+            random.shuffle(g_nonDuplicateBlocks)
+            testMaf = testFile(''.join(g_nonDuplicateBlocks))
+            expectedOutput = g_nonDuplicateBlocks
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
+                   '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')))
+            inpipes = [testMaf]
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            self.assertTrue(noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             removeTempDir()
 
 if __name__ == '__main__':

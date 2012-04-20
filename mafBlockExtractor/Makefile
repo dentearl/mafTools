@@ -6,13 +6,18 @@ PROGS = mafBlockExtractor
 INCL = ../include/common.o
 dependencies = ${INCL} ../include/common.h ../include/common.c
 
-.PHONY: all clean
+.PHONY: all clean test
 
 all: $(foreach f,${PROGS}, ${bin}/$f)
 
 ${bin}/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies}
 	mkdir -p $(dir $@)
 	${cc} ${args} $< ${INCL} -I ../include -o $@.tmp 
+	mv $@.tmp $@
+
+test/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies}
+	mkdir -p $(dir $@)
+	${cc} ${args} -O0 $< ${INCL} -I ../include -o $@.tmp 
 	mv $@.tmp $@
 
 ${bin}/%: src/%.c 
@@ -26,7 +31,7 @@ ${bin}/%: src/%.c
 	mv $@.tmp $@
 
 clean:
-	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o
+	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
 
-test: ${bin}/mafBlockExtractor
-	python2.6 src/test.mafBlockExtractor.py -v
+test: test/mafBlockExtractor
+	python2.6 src/test.mafBlockExtractor.py --verbose && rm -rf ./test/

@@ -4,6 +4,8 @@ import shutil
 import subprocess
 import sys
 import unittest
+import xml.etree.ElementTree as ET
+import xml.parsers.expat
 
 g_targetSeq = 'target.chr0'
 g_targetRange = (50, 70) # zero based, inclusive
@@ -146,6 +148,36 @@ def handleReturnCode(retcode, cmd):
         else:
             raise RuntimeError('Experienced an error while trying to execute: '
                                '%s retcode:%d' %(' '.join(cmd), retcode))
+def which(program):
+    """which() acts like the unix utility which, but is portable between os.
+    If the program does not exist in the PATH then 'None' is returned. 
+    """
+    def is_exe(fpath):
+        return os.path.exists(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath != '':
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+    return None
+def noMemoryErrors(xml):
+    try:
+        tree = ET.parse(xml)
+    except xml.parsers.expat.ExpatError:
+        raise RuntimeError('Input xml, %s is not a well formed xml document.' % xml)
+    root = tree.getroot()
+    errors = root.findall('error')
+    if len(errors):
+        return False
+    errorcounts = root.find('errorcounts')
+    if len(errorcounts):
+        return False
+    return True
 def foundLines(lineList, text):
     f = open(text, 'r')
     for line in f:
@@ -165,7 +197,6 @@ class FindTest(unittest.TestCase):
     def testFind(self):
         """ mafBlockFinder should report information about matching sequences within blocks.
         """
-        shuffledBlocks = []
         for i in xrange(0, len(g_overlappingBlocks)):
             tmpDir = os.path.abspath(makeTempDir())
             testMaf = testFile(g_overlappingBlocks[i][0])
@@ -190,6 +221,44 @@ class FindTest(unittest.TestCase):
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
             runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
             self.assertTrue(fileIsEmpty(os.path.join(tmpDir, 'found.txt')))
+            removeTempDir()
+    def testMemory1(self):
+        """ If valgrind is installed on the system, check for memory related errors (1).
+        """
+        valgrind = which('valgrind')
+        if valgrind is None:
+            return
+        for i in xrange(0, len(g_overlappingBlocks)):
+            tmpDir = os.path.abspath(makeTempDir())
+            testMaf = testFile(g_overlappingBlocks[i][0])
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
+                   '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder')))
+            cmd += ['--seq', g_targetSeq, '--pos', '%d' % g_overlappingBlocks[i][1]]
+            inpipes = [testMaf]
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
+            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            self.assertTrue(noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+            removeTempDir()
+    def testMemory2(self):
+        """ If valgrind is installed on the system, check for memory related errors (2).
+        """
+        valgrind = which('valgrind')
+        if valgrind is None:
+            return
+        for i in xrange(0, len(g_nonOverlappingBlocks)):
+            tmpDir = os.path.abspath(makeTempDir())
+            testMaf = testFile(''.join(g_nonOverlappingBlocks[i][0]))
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
+                   '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder')))
+            cmd += ['--seq', g_targetSeq, '--pos', '%d' % g_nonOverlappingBlocks[i][1]]
+            inpipes = [testMaf]
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
+            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            self.assertTrue(noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             removeTempDir()
 
 if __name__ == '__main__':

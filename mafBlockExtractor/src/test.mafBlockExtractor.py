@@ -4,6 +4,8 @@ import shutil
 import subprocess
 import sys
 import unittest
+import xml.etree.ElementTree as ET
+import xml.parsers.expat
 
 g_targetSeq = 'target.chr0'
 g_targetRange = (50, 70) # zero based, inclusive
@@ -150,6 +152,36 @@ def mafIsEmpty(maf):
     if s == g_header:
         return True
     return False
+def which(program):
+    """which() acts like the unix utility which, but is portable between os.
+    If the program does not exist in the PATH then 'None' is returned. 
+    """
+    def is_exe(fpath):
+        return os.path.exists(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath != '':
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+    return None
+def noMemoryErrors(xml):
+    try:
+        tree = ET.parse(xml)
+    except xml.parsers.expat.ExpatError:
+        raise RuntimeError('Input xml, %s is not a well formed xml document.' % xml)
+    root = tree.getroot()
+    errors = root.findall('error')
+    if len(errors):
+        return False
+    errorcounts = root.find('errorcounts')
+    if len(errorcounts):
+        return False
+    return True
 def mafIsExtracted(maf):
     f = open(maf)
     # header lines
@@ -174,8 +206,8 @@ class ExtractionTest(unittest.TestCase):
     def testExtraction(self):
         """ mafBlockExtractor should output blocks that meet the criteria for extraction. That is they contain the taget sequence and have at least one base in the target range.
         """
-        shuffledBlocks = []
         for i in xrange(0, 10):
+            shuffledBlocks = []
             tmpDir = os.path.abspath(makeTempDir())
             order = [1] * len(g_overlappingBlocks) + [0] * len(g_nonOverlappingBlocks)
             random.shuffle(order)
@@ -214,6 +246,60 @@ class ExtractionTest(unittest.TestCase):
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
             runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
             self.assertTrue(mafIsEmpty(os.path.join(tmpDir, 'extracted.maf')))
+            removeTempDir()
+    def testMemory1(self):
+        """ If valgrind is installed on the system, check for memory related errors (1).
+        """
+        valgrind = which('valgrind')
+        if valgrind is None:
+            return
+        for i in xrange(0, 10):
+            shuffledBlocks = []
+            tmpDir = os.path.abspath(makeTempDir())
+            order = [1] * len(g_overlappingBlocks) + [0] * len(g_nonOverlappingBlocks)
+            random.shuffle(order)
+            random.shuffle(g_overlappingBlocks)
+            random.shuffle(g_nonOverlappingBlocks)
+            j, k = 0, 0
+            for isOverlapping in order:
+                if isOverlapping:
+                    shuffledBlocks.append(g_overlappingBlocks[j])
+                    j += 1
+                else:
+                    shuffledBlocks.append(g_nonOverlappingBlocks[k])
+                    k += 1
+            testMaf = testFile(''.join(shuffledBlocks))
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
+                   '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor')))
+            cmd += ['--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
+                    '--stop', '%d' % g_targetRange[1]]
+            inpipes = [testMaf]
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
+            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            self.assertTrue(noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+            removeTempDir()
+    def testMemory2(self):
+        """ If valgrind is installed on the system, check for memory related errors (2).
+        """
+        valgrind = which('valgrind')
+        if valgrind is None:
+            return
+        for i in xrange(0, 10):
+            tmpDir = os.path.abspath(makeTempDir())
+            random.shuffle(g_nonOverlappingBlocks)
+            testMaf = testFile(''.join(g_nonOverlappingBlocks))
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
+                   '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor')))
+            cmd += ['--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
+                    '--stop', '%d' % g_targetRange[1]]
+            inpipes = [testMaf]
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
+            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            self.assertTrue(noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             removeTempDir()
 
 if __name__ == '__main__':
