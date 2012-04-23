@@ -120,7 +120,7 @@ void processHeader(void) {
         exit(EXIT_FAILURE);
     }
     printf("%s\n", line);
-    while (*line != 0 && status != -1) {
+    while (*line != 0 && status != -1 && line[0] != 'a') {
         status = de_getline(&line, &n, ifp);
         printf("%s\n", line);
     }
