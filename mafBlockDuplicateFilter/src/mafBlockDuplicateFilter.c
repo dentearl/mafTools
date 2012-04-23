@@ -628,6 +628,7 @@ void processBody(void) {
         removeTrailingWhitespace(buf);
         if (head == NULL) {
             // new block
+            debug("new block\n");
             head = newMafLine();
             cline = (char *) de_malloc(n);
             species = (char *) de_malloc(kMaxSeqName);
@@ -641,6 +642,7 @@ void processBody(void) {
             tail = head;
         } else {
             // extend block
+            debug("extending block\n");
             tail->next = newMafLine();
             cline = (char *) de_malloc(n);
             species = (char *) de_malloc(kMaxSeqName);
