@@ -110,7 +110,16 @@ void parseOptions(int argc, char **argv) {
 }
 void usage(void) {
     fprintf(stderr, "Usage: mafBlockDuplicateFilter < mafWithDuplicates.maf > pruned.maf \n\n"
-            "mafBlockDuplicateFilter is a program that will \n\n");
+            "mafBlockDuplicateFilter is a program to filter out duplications from a Multiple \n"
+            "Alignment Format (maf) file. This program assumes the sequence name field is \n"
+            "formatted as in \"speciesName.chromosomeName\" using the first period charater, \".\",\n"
+            "as the delimiter between the species name and the chromosome name. For every \n"
+            "block present in the alignment, mBDF looks for any duplicated species within the \n"
+            "block. Instead of stripping out all copies of the duplication, the sequence with \n"
+            "the highest similarity to the consensus of the block is left, all others are \n"
+            "removed. Sequence similarity is computed as a bit score in comparison to the \n"
+            "IUPAC-enabled consensus. Ties are resolved by picking the sequence that appears \n"
+            "earliest in the file. \n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
             "  -v, --verbose  turns on verbose output.\n");
