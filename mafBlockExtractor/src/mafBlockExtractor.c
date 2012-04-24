@@ -267,13 +267,25 @@ void destroyBlock(mafBlock_t *b) {
         free(tmp);
     }
 }
-void processBody(char *seq, uint32_t start, uint32_t stop) {
+void processBody(char *seq, uint32_t start, uint32_t stop, char* lastLine) {
     FILE *ifp = stdin;
     int32_t n = kMaxSeqName;
-    char *line = (char*) de_malloc(n);
+    char *line = NULL;
+    if (lastLine == NULL) {
+        line = (char*) de_malloc(n);
+        if (de_getline(&line, &n, ifp) == -1) {
+            fprintf(stderr, "Error reading first body line of alignment!\n");
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        if (n < (int32_t) strlen(lastLine) + 1)
+            n = (int32_t) strlen(lastLine) + 1;
+        line = (char*) de_malloc(n);
+        strcpy(line, lastLine);
+    }
     char *cline = NULL;
     mafBlock_t *head = NULL, *tail = NULL;
-    while (de_getline(&line, &n, ifp) != -1) {
+    do {
         if (*line == 0 && head != NULL) {
             // empty line or end of file
             checkBlock(head, seq, start, stop);
@@ -299,7 +311,7 @@ void processBody(char *seq, uint32_t start, uint32_t stop) {
             tail->line = cline;
             tail->next = NULL;
         }
-    }
+    } while (de_getline(&line, &n, ifp) != -1);
     free(line);
 }
 
@@ -308,8 +320,9 @@ int main(int argc, char **argv) {
     uint32_t start, stop;
     parseOptions(argc, argv, seq, &start, &stop);
 
-    processHeader();
-    processBody(seq, start, stop);
+    char *lastLine = processHeader();
+    processBody(seq, start, stop, lastLine);
+    free(lastLine);
     
     return EXIT_SUCCESS;
 }

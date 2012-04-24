@@ -104,27 +104,36 @@ void message(char const *type, char const *fmt, ...) {
     vfprintf(stderr, fmt, args);
     va_end(args);
 }
-void processHeader(void) {
+char* processHeader(void) {
     // Read in the header and spit it back out
+    // IF the header does not end in an empty line,
+    // but instead transitions directly to an alignment line, 
+    // the return value is a pointer to that alignment line. 
+    // ELSE the return value is null.
     FILE *ifp = stdin;
     int32_t n = kMaxStringLength;
     char *line = (char*) de_malloc(n);
     int status = de_getline(&line, &n, ifp);
     if (status == -1) {
         fprintf(stderr, "Error, empty file\n");
+        free(line);
         exit(EXIT_FAILURE);
     }
     if (strncmp(line, "##maf", 5) != 0) {
         fprintf(stderr, "line: %s\n", line);
         fprintf(stderr, "Error, bad maf format. File should start with ##maf\n");
+        free(line);
         exit(EXIT_FAILURE);
     }
     printf("%s\n", line);
-    while (*line != 0 && status != -1 && line[0] != 'a') {
+    while (*line != 0 && status != -1) {
         status = de_getline(&line, &n, ifp);
+        if (line[0] == 'a')
+            return line;
         printf("%s\n", line);
     }
     free(line);
+    return 0;
 }
 void failBadFormat(void) {
     fprintf(stderr, "The maf sequence lines are incorrectly formatted, exiting\n");
