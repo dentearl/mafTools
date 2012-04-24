@@ -34,7 +34,7 @@
 
 int g_verbose_flag = 0;
 int g_debug_flag = 0;
-const int kMaxSeqName = 1<< 8;
+const int kMaxSeqName = 1 << 8;
 
 typedef struct mafLine {
     // a mafLine struct is a single line of a mafBlock
@@ -179,15 +179,28 @@ mafLine_t* newMafLine(void) {
     ml->next = NULL;
     return ml;
 }
-unsigned processBody(mafBlock_t *head, char *targetSeq) {
+unsigned processBody(mafBlock_t *head, char *targetSeq, char *lastLine) {
     // process the body of the maf, block by block.
+    extern const int kMaxStringLength;
     FILE *ifp = stdin;
-    int32_t n = 1 << 10;
-    char *line = (char *) de_malloc(n);
+    int32_t n = kMaxStringLength;
+    char *line = NULL;
+    if (lastLine == NULL) {
+        line = (char*) de_malloc(n);
+        if (de_getline(&line, &n, ifp) == -1) {
+            fprintf(stderr, "Error reading first body line of alignment!\n");
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        if (n < (int32_t) strlen(lastLine) + 1)
+            n = (int32_t) strlen(lastLine) + 1;
+        line = (char*) de_malloc(n);
+        strcpy(line, lastLine);
+    }
     mafBlock_t *thisBlock = head;
     unsigned numBlocks = 1;
     bool prevLineBlank = false;
-    while (de_getline(&line, &n, ifp) != -1) {
+    do {
         if (blankLine(line)) {
             if (prevLineBlank) {
                 continue;
@@ -218,7 +231,7 @@ unsigned processBody(mafBlock_t *head, char *targetSeq) {
                 thisBlock->tail = thisBlock->tail->next;
             }
         }
-    }
+    } while (de_getline(&line, &n, ifp) != -1);
     free(line);
     return numBlocks;
 }
@@ -285,9 +298,9 @@ int main(int argc, char **argv) {
     unsigned numBlocks = 0;
     parseOptions(argc, argv, targetSequence);
     // initialize
-    processHeader();
+    char *lastLine = processHeader();
     // read input
-    numBlocks = processBody(mafObj, targetSequence);
+    numBlocks = processBody(mafObj, targetSequence, lastLine);
     mafBlock_t *blockArray[numBlocks];
     // sort
     populateArray(mafObj, blockArray);
@@ -296,5 +309,6 @@ int main(int argc, char **argv) {
     reportBlocks(blockArray, numBlocks);
     // cleanup
     destroyBlocks(mafObj);
+    free(lastLine);
     return EXIT_SUCCESS;
 }

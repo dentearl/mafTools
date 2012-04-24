@@ -29,7 +29,7 @@
 void verbose(char const *fmt, ...);
 void debug(char const *fmt, ...);
 void message(char const *type, char const *fmt, ...);
-void processHeader(void);
+char* processHeader(void);
 void failBadFormat(void);
 
 void* de_malloc(size_t n);

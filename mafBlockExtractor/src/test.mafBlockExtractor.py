@@ -184,7 +184,7 @@ def noMemoryErrors(xml):
     return True
 def mafIsExtracted(maf):
     f = open(maf)
-    # header lines
+    # three header lines
     l = f.next()
     l = f.next()
     l = f.next()
@@ -222,8 +222,8 @@ class ExtractionTest(unittest.TestCase):
                     shuffledBlocks.append(g_nonOverlappingBlocks[k])
                     k += 1
             testMaf = testFile(''.join(shuffledBlocks))
-            binParent = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            cmd = [os.path.abspath(os.path.join(binParent, 'bin', 'mafBlockExtractor'))]
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor'))]
             cmd += ['--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1]]
             inpipes = [testMaf]
@@ -238,8 +238,8 @@ class ExtractionTest(unittest.TestCase):
             tmpDir = os.path.abspath(makeTempDir())
             random.shuffle(g_nonOverlappingBlocks)
             testMaf = testFile(''.join(g_nonOverlappingBlocks))
-            binParent = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            cmd = [os.path.abspath(os.path.join(binParent, 'bin', 'mafBlockExtractor'))]
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor'))]
             cmd += ['--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1]]
             inpipes = [testMaf]

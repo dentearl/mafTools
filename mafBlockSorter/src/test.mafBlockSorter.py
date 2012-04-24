@@ -8,10 +8,13 @@ import xml.etree.ElementTree as ET
 import xml.parsers.expat
 
 target = 'hg18.chr7'
-header = '''##maf version=1 scoring=tba.v8
+headers = ['''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
 
-'''
+''',
+           '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+''',]
 
 # does not contain target
 nonTargetBlocks = ['''a score=23261.0
@@ -38,6 +41,7 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
 
 # target is hg18.chr7, blocks are in correct order.
 targetBlocks = ['''a score=23263.0
+# sorted block 1
 s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s baboon.chr0    116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
@@ -46,6 +50,7 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
                    
 ''',
                 '''a score=5062.0                    
+# sorted block 2
 s hg18.chr7    27699739 6 + 158545518 TAAAGA
 s panTro1.chr6 28862317 6 + 161576975 TAAAGA
 s baboon.chr0    241163 6 +   4622798 TAAAGA 
@@ -54,6 +59,7 @@ s rn3.chr4     81444246 6 + 187371129 taagga
 
 ''',
                 '''a score=23264.0
+# sorted block 3
 s hg18.chr7    27707000 13 + 158545518 gcagctgaaaaca
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
@@ -61,6 +67,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 ''',
                 '''a score=6636.0
+# sorted block 4
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
@@ -68,6 +75,7 @@ s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
 
 ''',
                 '''a score=0
+# sorted block 5
 s hg18.chr7              237249719 26 - 247249719 TTTTTGAAAAACAAACAACAAGTTGG
 s panTro2.chrUn            9697231 26 +  58616431 TTTTTGAAAAACAAACAACAAGTTGG
 q panTro2.chrUn                                   99999999999999999999999999
@@ -80,7 +88,8 @@ def testFile(s):
     makeTempDir()
     mafFile = os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))
     f = open(mafFile, 'w')
-    f.write(header)
+    # choose one of the headers at random
+    f.write(headers[random.sample(xrange(len(headers)), 1)[0]]) 
     f.write(s)
     f.close()
     return mafFile
@@ -169,32 +178,53 @@ def noMemoryErrors(xml):
     if len(errorcounts):
         return False
     return True
+def processHeader(f):
+    for line in f:
+        line = line.strip()
+        if line == '':
+            return None
+        if line.startswith('a'):
+            return line
 def mafIsSorted(maf):
     f = open(maf)
-    # header lines
-    l = f.next()
-    l = f.next()
-    l = f.next()
-    nonTBlocks = []
+    lastLine = processHeader(f)
+    observedNonTargetBlocks = []
     expectedNonTargetBlocks = list(nonTargetBlocks)
-    expectedTargetBlocks = list(targetBlocks)
     for i in xrange(0, len(expectedNonTargetBlocks)):
-        nonTBlocks.append(extractBlockStr(f).replace(' ', ''))
+        observedNonTargetBlocks.append(extractBlockStr(f, lastLine).replace(' ', ''))
+        lastLine = None
         expectedNonTargetBlocks[i] = expectedNonTargetBlocks[i].replace(' ', '')
-    if nonTBlocks != expectedNonTargetBlocks:
+    if observedNonTargetBlocks != expectedNonTargetBlocks:
         f.close()
+        print '\nnon-target block failure observed:'
+        print ''.join(observedNonTargetBlocks)
+        print '!= expected:'
+        print ''.join(expectedNonTargetBlocks)
         return False
     sortedBlocks = []
+    expectedTargetBlocks = list(targetBlocks)
     for i in xrange(0, len(expectedTargetBlocks)):
         sortedBlocks.append(extractBlockStr(f).replace(' ', ''))
         expectedTargetBlocks[i] = expectedTargetBlocks[i].replace(' ', '')
-    if sortedBlocks != expectedTargetBlocks:
-        f.close()
-        return False
+    for i in xrange(0, len(sortedBlocks)):
+        if sortedBlocks[i] != expectedTargetBlocks[i]:
+            f.close()
+            print '\nsorted block failure'
+            print sortedBlocks[i]
+            print '!='
+            print expectedTargetBlocks[i]
+            print 'observed '
+            print sortedBlocks
+            print '!= expected '
+            print expectedTargetBlocks
+            return False
     f.close()
     return True
-def extractBlockStr(f):
-    block = ''
+def extractBlockStr(f, lastLine=None):
+    if lastLine is None:
+        block = ''
+    else:
+        block = lastLine + '\n'
     for line in f:
         line = line.strip()
         if line == '':
@@ -203,7 +233,7 @@ def extractBlockStr(f):
     return block + '\n'
     
 class SortTest(unittest.TestCase):
-    def testSorting(self):
+    def dtestSorting(self):
         """ Blocks should be sorted by the start field of the target sequence, blocks that do not contain the target sequence should appear in the output at the start of the file, in the same order they appear in the input.
         """
         shuffledTargets = list(targetBlocks)
@@ -220,8 +250,8 @@ class SortTest(unittest.TestCase):
                 shuffledBlocks.insert(index, nonTargetBlocks[j])
                 lower = index + 1
             testMaf = testFile(''.join(shuffledBlocks))
-            binParent = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            cmd = [os.path.abspath(os.path.join(binParent, 'bin', 'mafBlockSorter'))]
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockSorter'))]
             cmd += ['--seq', 'hg18.chr7']
             inpipes = [testMaf]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'sorted.maf'))]

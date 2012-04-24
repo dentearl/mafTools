@@ -54,7 +54,7 @@ typedef struct duplicate {
 void usage(void);
 void speciesNameCopy(char *species, char *line, int n);
 void sequenceCopy(char *seq, char *line);
-void processBody(void);
+void processBody(char *lastLine);
 void destroyBlock(mafLine_t *m);
 void destroyDuplicates(duplicate_t *d);
 void destroyStringArray(char **sArray, int n);
@@ -110,7 +110,16 @@ void parseOptions(int argc, char **argv) {
 }
 void usage(void) {
     fprintf(stderr, "Usage: mafBlockDuplicateFilter < mafWithDuplicates.maf > pruned.maf \n\n"
-            "mafBlockDuplicateFilter is a program that will \n\n");
+            "mafBlockDuplicateFilter is a program to filter out duplications from a Multiple \n"
+            "Alignment Format (maf) file. This program assumes the sequence name field is \n"
+            "formatted as in \"speciesName.chromosomeName\" using the first period charater, \".\",\n"
+            "as the delimiter between the species name and the chromosome name. For every \n"
+            "block present in the alignment, mBDF looks for any duplicated species within the \n"
+            "block. Instead of stripping out all copies of the duplication, the sequence with \n"
+            "the highest similarity to the consensus of the block is left, all others are \n"
+            "removed. Sequence similarity is computed as a bit score in comparison to the \n"
+            "IUPAC-enabled consensus. Ties are resolved by picking the sequence that appears \n"
+            "earliest in the file. \n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
             "  -v, --verbose  turns on verbose output.\n");
@@ -604,18 +613,30 @@ void removeTrailingWhitespace(char *s) {
             return;
     }
 }
-void processBody(void) {
+void processBody(char *lastLine) {
     // walk the body of the maf file and process it, block by block.
     extern const int kMaxStringLength;
     FILE *ifp = stdin;
     unsigned lineno = 0;
     int32_t n = kMaxStringLength;
-    char *buf = (char *) de_malloc(n);
+    char *buf = NULL;
+    if (lastLine == NULL) {
+        buf = (char*) de_malloc(n);
+        if (de_getline(&buf, &n, ifp) == -1) {
+            fprintf(stderr, "Error reading first body line of alignment!\n");
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        if (n < (int32_t) strlen(lastLine) + 1)
+            n = (int32_t) strlen(lastLine) + 1;
+        buf = (char*) de_malloc(n);
+        strcpy(buf, lastLine);
+    }
     char *cline = NULL; // freed in destroyBlock
     char *species = NULL; // freed in destroyBlock
     char *sequence = NULL; // freed in destroyBlock
     mafLine_t *head = NULL, *tail = NULL;
-    while (de_getline(&buf, &n, ifp) != -1) {
+    do {
         lineno++;
         if (*buf == 0 && head != NULL) {
             // empty line or end of file
@@ -628,6 +649,7 @@ void processBody(void) {
         removeTrailingWhitespace(buf);
         if (head == NULL) {
             // new block
+            debug("new block: %s\n", buf);
             head = newMafLine();
             cline = (char *) de_malloc(n);
             species = (char *) de_malloc(kMaxSeqName);
@@ -641,6 +663,7 @@ void processBody(void) {
             tail = head;
         } else {
             // extend block
+            debug("extending block\n");
             tail->next = newMafLine();
             cline = (char *) de_malloc(n);
             species = (char *) de_malloc(kMaxSeqName);
@@ -654,15 +677,16 @@ void processBody(void) {
             tail->line = cline;
             tail->next = NULL;
         }
-    }
+    } while (de_getline(&buf, &n, ifp) != -1);
     destroyBlock(head);
     free(buf);
 }
 int main(int argc, char **argv) {
     parseOptions(argc, argv);
 
-    processHeader();
-    processBody();
+    char *lastLine = processHeader();
+    processBody(lastLine);
     
+    free(lastLine);
     return EXIT_SUCCESS;
 }
