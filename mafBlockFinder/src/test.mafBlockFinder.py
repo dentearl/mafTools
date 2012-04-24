@@ -1,5 +1,6 @@
 import os
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -9,11 +10,14 @@ import xml.parsers.expat
 
 g_targetSeq = 'target.chr0'
 g_targetRange = (50, 70) # zero based, inclusive
-
-g_header = '''##maf version=1 scoring=tba.v8
+g_header = None
+g_headers = ['''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
 
-'''
+''', 
+             '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+''',]
 
 # these are triples of blocks, target positions for True, 
 # line numbers where the target occurs.
@@ -84,11 +88,12 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 ''', 0, None),
     ]
 
-
 def testFile(s):
+    global g_header
     makeTempDir()
     mafFile = os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))
     f = open(mafFile, 'w')
+    g_header = random.choice(g_headers)
     f.write(g_header)
     f.write(s)
     f.close()
@@ -179,11 +184,13 @@ def noMemoryErrors(xml):
         return False
     return True
 def foundLines(lineList, text):
+    global g_header
     f = open(text, 'r')
+    n = len(re.findall(re.compile('\n'), g_header))
     for line in f:
         line = line.strip()
         data = line.split(':')
-        if int(data[0]) - 3 not in lineList:
+        if int(data[0]) - n not in lineList:
             return False
     return True
 def fileIsEmpty(filename):

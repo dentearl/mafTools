@@ -41,7 +41,6 @@ typedef struct mafBlock {
 } mafBlock_t;
 
 void usage(void);
-
 void parseOptions(int argc, char **argv, char *seqName, uint32_t *start, uint32_t *stop) {
     extern int g_debug_flag;
     extern int g_verbose_flag;
@@ -122,7 +121,6 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *start, uint32_
         usage();
     }
 }
-
 void usage(void) {
     fprintf(stderr, "Usage: mafBlockExtractor --seq [sequence name (and possibly chr)] "
             "--start [start of region, inclusive, 0 based] --stop [end of region, inclusive] "
