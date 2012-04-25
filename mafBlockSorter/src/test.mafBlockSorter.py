@@ -7,8 +7,8 @@ import unittest
 import xml.etree.ElementTree as ET
 import xml.parsers.expat
 
-target = 'hg18.chr7'
-headers = ['''##maf version=1 scoring=tba.v8
+g_target = 'hg18.chr7'
+g_headers = ['''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
 
 ''',
@@ -17,7 +17,7 @@ headers = ['''##maf version=1 scoring=tba.v8
 ''',]
 
 # does not contain target
-nonTargetBlocks = ['''a score=23261.0
+g_nonTargetBlocks = ['''a score=23261.0
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
@@ -40,7 +40,7 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
                    ]
 
 # target is hg18.chr7, blocks are in correct order.
-targetBlocks = ['''a score=23263.0
+g_targetBlocks = ['''a score=23263.0
 # sorted block 1
 s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
@@ -89,7 +89,7 @@ def testFile(s):
     mafFile = os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))
     f = open(mafFile, 'w')
     # choose one of the headers at random
-    f.write(headers[random.sample(xrange(len(headers)), 1)[0]]) 
+    f.write(random.choice(g_headers))
     f.write(s)
     f.close()
     return mafFile
@@ -189,7 +189,7 @@ def mafIsSorted(maf):
     f = open(maf)
     lastLine = processHeader(f)
     observedNonTargetBlocks = []
-    expectedNonTargetBlocks = list(nonTargetBlocks)
+    expectedNonTargetBlocks = list(g_nonTargetBlocks)
     for i in xrange(0, len(expectedNonTargetBlocks)):
         observedNonTargetBlocks.append(extractBlockStr(f, lastLine).replace(' ', ''))
         lastLine = None
@@ -202,7 +202,7 @@ def mafIsSorted(maf):
         print ''.join(expectedNonTargetBlocks)
         return False
     sortedBlocks = []
-    expectedTargetBlocks = list(targetBlocks)
+    expectedTargetBlocks = list(g_targetBlocks)
     for i in xrange(0, len(expectedTargetBlocks)):
         sortedBlocks.append(extractBlockStr(f).replace(' ', ''))
         expectedTargetBlocks[i] = expectedTargetBlocks[i].replace(' ', '')
@@ -233,21 +233,21 @@ def extractBlockStr(f, lastLine=None):
     return block + '\n'
     
 class SortTest(unittest.TestCase):
-    def dtestSorting(self):
+    def testSorting(self):
         """ Blocks should be sorted by the start field of the target sequence, blocks that do not contain the target sequence should appear in the output at the start of the file, in the same order they appear in the input.
         """
-        shuffledTargets = list(targetBlocks)
+        shuffledTargets = list(g_targetBlocks)
         for i in xrange(0, 100):
             tmpDir = os.path.abspath(makeTempDir())
-            random.shuffle(nonTargetBlocks)
+            random.shuffle(g_nonTargetBlocks)
             random.shuffle(shuffledTargets)
             shuffledBlocks = list(shuffledTargets)
             lower = 0
-            for j in xrange(0, len(nonTargetBlocks)):
+            for j in xrange(0, len(g_nonTargetBlocks)):
                 # randomly insert the non target blocks, but keep a record
                 # of their relative order.
                 index = random.randint(lower, len(shuffledBlocks))
-                shuffledBlocks.insert(index, nonTargetBlocks[j])
+                shuffledBlocks.insert(index, g_nonTargetBlocks[j])
                 lower = index + 1
             testMaf = testFile(''.join(shuffledBlocks))
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -264,18 +264,18 @@ class SortTest(unittest.TestCase):
         valgrind = which('valgrind')
         if valgrind is None:
             return
-        shuffledTargets = list(targetBlocks)
+        shuffledTargets = list(g_targetBlocks)
         for i in xrange(0, 20):
             tmpDir = os.path.abspath(makeTempDir())
-            random.shuffle(nonTargetBlocks)
+            random.shuffle(g_nonTargetBlocks)
             random.shuffle(shuffledTargets)
             shuffledBlocks = list(shuffledTargets)
             lower = 0
-            for j in xrange(0, len(nonTargetBlocks)):
+            for j in xrange(0, len(g_nonTargetBlocks)):
                 # randomly insert the non target blocks, but keep a record
                 # of their relative order.
                 index = random.randint(lower, len(shuffledBlocks))
-                shuffledBlocks.insert(index, nonTargetBlocks[j])
+                shuffledBlocks.insert(index, g_nonTargetBlocks[j])
                 lower = index + 1
             testMaf = testFile(''.join(shuffledBlocks))
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

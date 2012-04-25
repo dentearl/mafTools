@@ -10,10 +10,13 @@ import xml.parsers.expat
 g_targetSeq = 'target.chr0'
 g_targetRange = (50, 70) # zero based, inclusive
 
-g_header = '''##maf version=1 scoring=tba.v8
+g_headers = ['''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
 
-'''
+''',
+             '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+''',]
 
 g_overlappingBlocks = ['''a score=0
 s target.chr0        38 13 + 158545518 gcagctgaaaaca
@@ -87,7 +90,7 @@ def testFile(s):
     makeTempDir()
     mafFile = os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))
     f = open(mafFile, 'w')
-    f.write(g_header)
+    f.write(random.choice(g_headers))
     f.write(s)
     f.close()
     return mafFile
@@ -149,8 +152,9 @@ def handleReturnCode(retcode, cmd):
 def mafIsEmpty(maf):
     f = open(maf)
     s = f.read()
-    if s == g_header:
-        return True
+    for h in g_headers:
+        if s == h:
+            return True
     return False
 def which(program):
     """which() acts like the unix utility which, but is portable between os.
@@ -185,16 +189,25 @@ def noMemoryErrors(xml):
 def mafIsExtracted(maf):
     f = open(maf)
     # three header lines
-    l = f.next()
-    l = f.next()
-    l = f.next()
+    lastLine = processHeader(f)
     for i in xrange(0, len(g_overlappingBlocks)):
-        b = extractBlockStr(f)
+        b = extractBlockStr(f, lastLine)
+        lastLine = None
         if b not in g_overlappingBlocks:
             return False
     return True
-def extractBlockStr(f):
-    block = ''
+def processHeader(f):
+    for line in f:
+        line = line.strip()
+        if line == '':
+            return None
+        if line.startswith('a'):
+            return line
+def extractBlockStr(f, lastLine=None):
+    if lastLine is None:
+        block = ''
+    else:
+        block = lastLine + '\n'
     for line in f:
         line = line.strip()
         if line == '':

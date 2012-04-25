@@ -153,8 +153,6 @@ void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
         tkn = strtok(buffer, " \t"); // ^a or ^s
         if (tkn == NULL)
             continue;
-        if (tkn[0] == '#')
-            continue;
         if (tkn[0] != 's')
             continue;
         tkn = strtok(NULL, " \t"); // name field

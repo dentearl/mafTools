@@ -162,7 +162,7 @@ def testFile(s):
     makeTempDir()
     mafFile = os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))
     f = open(mafFile, 'w')
-    f.write(g_headers[random.sample(xrange(0, len(g_headers)), 1)[0]])
+    f.write(random.choice(g_headers))
     f.write(s)
     f.close()
     return mafFile
