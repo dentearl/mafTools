@@ -104,7 +104,7 @@ def readMaf(filename, options):
     blocks = []
     mafLineList = []
     
-    namepat = re.compile(r'(.+?)\.(.*)')
+    namepat = re.compile(r'^(.+?)\.(.*)')
     
     for lineno, line in enumerate(f, 1):
         line = line.strip()
@@ -112,7 +112,7 @@ def readMaf(filename, options):
             ml = extractMafLine(namepat, line, lineno, options)
             if ml is not None:
                 mafLineList.append(ml)
-        else:
+        elif line == '':
             if len(mafLineList) > 0:
                 addBlockPairs(alignments, mafLineList, options)
             mafLineList = []

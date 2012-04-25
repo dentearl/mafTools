@@ -1,4 +1,4 @@
-import mafCoveragePickleGapAnalysis as MCPGA
+import mafCoveragePickleAnalysis as MCPA
 import numpy
 import os
 import re
@@ -75,7 +75,7 @@ class VerifyAnalysis(unittest.TestCase):
         for name, arrayList, gapTruth, coveredTruth in self.knownValues:
             predicted = []
             for a in arrayList:
-                predicted += MCPGA.analyzeOne(a, self.options)
+                predicted += MCPA.analyzeOne(a, self.options)
             self.assertEqual(predicted, gapTruth)
             
     def test_oneWayNoEdges(self):
@@ -84,7 +84,7 @@ class VerifyAnalysis(unittest.TestCase):
         for name, arrayList, gapTruth, coveredTruth in self.knownValuesNoEdges:
             predicted = []
             for a in arrayList:
-                predicted += MCPGA.analyzeOne(a, self.optionsNoEdges)
+                predicted += MCPA.analyzeOne(a, self.optionsNoEdges)
             self.assertEqual(predicted, gapTruth)
 
     def test_coverage(self):
@@ -93,7 +93,7 @@ class VerifyAnalysis(unittest.TestCase):
         for name, arrayList, gapTruth, coveredTruth in self.knownValues:
             predicted = []
             for a in arrayList:
-                predicted.append(MCPGA.calcBasesCovered(a, self.options))
+                predicted.append(MCPA.calcBasesCovered(a, self.options))
             self.assertEqual(predicted, coveredTruth)
 
 if __name__ == '__main__':
