@@ -21,7 +21,6 @@ for each species S:
     for each chromosome C in S:
         for every species T, T != S:
             paint all positions in C where T aligns (any chrom in T)
-
 """
 ##############################
 # Copyright (C) 2009-2012 by 
@@ -79,7 +78,6 @@ def initOptions(parser):
     parser.add_option('--pickle', dest='pickle',
                       help=('location where python pickle will be written, for use '
                       'with downstream analyses. By default this file is not created.'))
-
 def checkOptions(options, args, parser):
     for k, v in [('maf', options.maf), ('pickle', options.pickle),
                  ('species', options.species)]:
@@ -91,7 +89,6 @@ def checkOptions(options, args, parser):
         options.speciesList = set()
     else:
         options.speciesList = set(options.species.split(','))
-
 def readMaf(filename, options):
     """ read a given maf file and create an array 'alignments'
     which is a multilayered dict:
@@ -100,12 +97,9 @@ def readMaf(filename, options):
     """
     alignments = {}
     f = open(filename, 'r')
-    
     blocks = []
     mafLineList = []
-    
     namepat = re.compile(r'^(.+?)\.(.*)')
-    
     for lineno, line in enumerate(f, 1):
         line = line.strip()
         if line.startswith('s'):
@@ -116,13 +110,11 @@ def readMaf(filename, options):
             if len(mafLineList) > 0:
                 addBlockPairs(alignments, mafLineList, options)
             mafLineList = []
-    
     if len(mafLineList) > 0:
         addBlockPairs(alignments, mafLineList, options)
         mafLineList = []
     f.close()
     return alignments
-
 def extractMafLine(namepat, line, lineno, options):
     """ parse a given line from a maf file into a 
     MafLine object.
@@ -145,7 +137,6 @@ def extractMafLine(namepat, line, lineno, options):
     ml.sequence = data[6]
     ml.lineno = lineno
     return ml
-
 def addBlockPairs(alignments, mafLineList, options):
     """ loop through all pairs of mafLines in the block list, store
     the discovered alignments in the alignments dict.
@@ -165,10 +156,8 @@ def addBlockPairs(alignments, mafLineList, options):
                 alignments[a.genome][a.chrom][b.genome] = numpy.zeros(a.totalLength, 
                                                                       dtype=numpy.uint16)
             addBlocksToArray(alignments[a.genome][a.chrom][b.genome], a, b)
-    
     # explicitly throw this away to help with memory
     mafLineList = []
-
 def addBlocksToArray(array, a, b):
     """ array is a numpy array of columns in genome/chrom a that 
     are aligned to any position in genome/chrom b.
@@ -176,7 +165,6 @@ def addBlocksToArray(array, a, b):
     a and b are both mafline objects.
     """
     global seqPat
-    
     aList = [] # ranges as tuples
     bList = [] 
     # offsets allow us to keep track of the 
@@ -185,7 +173,6 @@ def addBlocksToArray(array, a, b):
     # and are in the sequence strand direction
     aOffsets = [] 
     bOffsets = [] 
-    
     ##########
     # find all of the contiguous intervals of gapless sequence
     # in the sequence fields of a and b.
@@ -202,7 +189,6 @@ def addBlocksToArray(array, a, b):
             bOffsets.append(0)
         else:
             bOffsets.append(bOffsets[-1] + m.end() - m.start())
-    
     i, j = 0, 0 # index
     prevI, prevJ = -1, -1
     while i < len(aList) and j < len(bList):
@@ -260,7 +246,6 @@ def addBlocksToArray(array, a, b):
             continue
         print locals()
         raise RuntimeError('Unanticipated condition.')
-
 def incrementArrayIndices(array, totalLength, forStart, forEnd, strand):
     """ strand can be either 1 or -1. interval is half open: [forStart, forEnd)
     """
@@ -270,7 +255,6 @@ def incrementArrayIndices(array, totalLength, forStart, forEnd, strand):
         # revStart = chromLength - forEnd
         # revEnd   = chromLength - forStart
         array[totalLength - forEnd : totalLength - forStart] += 1
-
 def pickleData(data, filename, options):
     """ record data to a pickle.
     """
@@ -279,7 +263,6 @@ def pickleData(data, filename, options):
     f = open(filename, 'wb')
     cPickle.dump(data, f, 2) # 2 is the format protocol, 2 = binary
     f.close()
-
 def readPickles(args, *vargs):
     """ read data from the pickles specified as positional arguments
     """
@@ -287,7 +270,6 @@ def readPickles(args, *vargs):
     for p in args:
         dataDict[p] = readPickle(p)
     return dataDict
-
 def readPickle(filename, *vargs):
     """ Pulled out of readPickles like this so that other scripts may 
     use it as a module.
