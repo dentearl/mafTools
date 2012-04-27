@@ -27,7 +27,7 @@ class VerifyMafLineExtraction(unittest.TestCase):
     options.genome2 = 'test2'
     options.speciesList = set(['test1', 'test2'])
 
-    def dtest_extractMafLine(self):
+    def test_extractMafLine(self):
         """ ensure that the function extractMafLine() parses lines as expected.
         """
         for pre, post in self.knownValues:
