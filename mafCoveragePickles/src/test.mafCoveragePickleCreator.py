@@ -43,11 +43,14 @@ class VerifyMafLineExtraction(unittest.TestCase):
                 self.assertEqual(post.__dict__[v], x.__dict__[v])
 
 class VerifyMafRead(unittest.TestCase):
-    header = '##maf version=1\n\n'
+    header = '##maf version=1\n'
     footer = '\n'
     knownValues = (('case 1',
                     'a score=0\n'
+                    '# case 1\n'
                     's test1.chrA  0 10 + 100 ATGCATGCAT\n'
+                    'q test1.chrA             9999999999\n'
+                    '# comment line to mess with file reading\n'
                     's test2.chrA  0 10 + 100 ATGCATGCAT\n',
                     {'test1' : {'chrA' : {'test2' : [(0, 10)]}},
                      'test2' : {'chrA' : {'test1' : [(0, 10)]}},}
@@ -55,6 +58,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 2
                    ('case 2',
                     'a score=0\n'
+                    '# case 2\n'
                     's test1.chrA  0 10 - 100 ATGCATGCAT\n'
                     's test2.chrA  0 10 + 100 ATGCATGCAT\n',
                     {'test1' : {'chrA' : {'test2' : [(90, 100)]}},
@@ -63,6 +67,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 3
                    ('case 3',
                     'a score=0\n'
+                    '# case 3\n'
                     's test1.chrA 90 10 - 100 ATGCATGCAT\n'
                     's test2.chrA  0 10 + 100 ATGCATGCAT\n',
                     {'test1' : {'chrA' : {'test2' : [(0, 10)]}},
@@ -71,6 +76,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 4
                    ('case 4',
                     'a score=0\n'
+                    '# case 4\n'
                     's test1.chrA 90 10 - 100 ATGCATGCAT\n'
                     's test1.chrA 10 10 + 100 ATGCATGCAT\n'
                     's test2.chrA  0 10 + 100 ATGCATGCAT\n',
@@ -80,6 +86,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 5
                    ('case 5',
                     'a score=0\n'
+                    '# case 5\n'
                     's test1.chrA 90 10 - 100 ATGCATGCAT\n'
                     's test1.chrA  9 10 + 100 ATGCATGCAT\n'
                     's test2.chrA 20 10 + 100 ATGCATGCAT\n'
@@ -90,6 +97,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 6
                    ('case 6',
                     'a score=0\n'
+                    '# case 6\n'
                     's test1.chrA 30 10 + 100 AT-GC-AT-GC-AT\n'
                     's test2.chrA  9 10 + 100 AT-GC-AT-GC-AT\n',
                     {'test1' : {'chrA' : {'test2' : [(30, 40)]}},
@@ -98,6 +106,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 7
                    ('case 7',
                     'a score=0\n'
+                    '# case 7\n'
                     's test1.chrA 30  3 + 100 ATC----\n'
                     's test2.chrA  9  3 + 100 ----ACT\n',
                     {'test1' : {'chrA' : {'test2' : [(0, 0)]}},
@@ -106,6 +115,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 8
                    ('case 8',
                     'a score=0\n'
+                    '# case 8\n'
                     's test1.chrA 30  3 + 100 ----ACT\n'
                     's test2.chrA  9  3 + 100 ACT----\n',
                     {'test1' : {'chrA' : {'test2' : [(0, 0)]}},
@@ -114,6 +124,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 9
                    ('case 9',
                     'a score=0\n'
+                    '# case 9\n'
                     's test1.chrA  0  4 + 100 ACGT--\n'
                     's test2.chrA  0  4 + 100 --ACGT\n',
                     {'test1' : {'chrA' : {'test2' : [(2, 4)]}},
@@ -122,6 +133,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 10
                    ('case 10',
                     'a score=0\n'
+                    '# case 10\n'
                     's test1.chrA  0  4 + 100 ACGT---\n'
                     's test2.chrA  0  4 + 100 ---ACGT\n',
                     {'test1' : {'chrA' : {'test2' : [(3, 4)]}},
@@ -130,6 +142,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 11
                    ('case 11',
                     'a score=0\n'
+                    '# case 11\n'
                     's test1.chrA  0  4 - 100 ACGT--\n'
                     's test2.chrA  0  4 + 100 --ACGT\n',
                     {'test1' : {'chrA' : {'test2' : [(96, 98)]}},
@@ -138,6 +151,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 12
                    ('case 12',
                     'a score=0\n'
+                    '# case 12\n'
                     's test2.chrA  0  4 + 100 --ACGT\n'
                     's test1.chrA  0  4 + 100 ACGT--\n',
                     {'test2' : {'chrA' : {'test1' : [(0, 2)]}},
@@ -146,6 +160,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 13
                    ('case 13',
                     'a score=0\n'
+                    '# case 13\n'
                     's test2.chrA  0  4 + 100 ---ACGT\n'
                     's test1.chrA  0  4 + 100 ACGT---\n',
                     {'test2' : {'chrA' : {'test1' : [(0, 1)]}},
@@ -154,6 +169,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 14
                    ('case 14',
                     'a score=0\n'
+                    '# case 14\n'
                     's test2.chrA  0  4 + 100 --ACGT\n'
                     's test1.chrA  0  4 - 100 ACGT--\n',
                     {'test2' : {'chrA' : {'test1' : [(0, 2)]}},
@@ -162,6 +178,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 15
                    ('case 15',
                     'a score=0\n'
+                    '# case 15\n'
                     's test1.chrA  0  4 + 100 -ACGT--\n'
                     's test2.chrA  0  7 + 100 ACGTACG\n',
                     {'test1' : {'chrA' : {'test2' : [(0, 4)]}},
@@ -170,6 +187,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 16
                    ('case 16',
                     'a score=0\n'
+                    '# case 16\n'
                     's test1.chrA  0  4 + 100 ACGT---\n'
                     's test2.chrA  0  7 + 100 ACGTACG\n',
                     {'test1' : {'chrA' : {'test2' : [(0, 4)]}},
@@ -178,6 +196,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 17
                    ('case 17',
                     'a score=0\n'
+                    '# case 17\n'
                     's test1.chrA  0  4 + 100 ---ACGT\n'
                     's test2.chrA  0  7 + 100 ACGTACG\n',
                     {'test1' : {'chrA' : {'test2' : [(0, 4)]}},
@@ -186,6 +205,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 18
                    ('case 18',
                     'a score=0\n'
+                    '# case 18\n'
                     's test1.chrA  0  7 + 100 ACGTACG\n'
                     's test2.chrA  0  4 + 100 -ACGT--\n',
                     {'test1' : {'chrA' : {'test2' : [(1, 5)]}},
@@ -194,6 +214,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 19
                    ('case 19',
                     'a score=0\n'
+                    '# case 19\n'
                     's test1.chrA  0  7 + 100 ACGTACG\n'
                     's test2.chrA  0  4 + 100 ACGT---\n',
                     {'test1' : {'chrA' : {'test2' : [(0, 4)]}},
@@ -202,6 +223,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 20
                    ('case 20',
                     'a score=0\n'
+                    '# case 20\n'
                     's test1.chrA  0  7 + 100 ACGTACG\n'
                     's test2.chrA  0  4 + 100 ---ACGT\n',
                     {'test1' : {'chrA' : {'test2' : [(3, 7)]}},
@@ -210,6 +232,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 21
                    ('case 21',
                     'a score=0\n'
+                    '# case 21\n'
                     's test1.chrA  0 14 + 100 ACGTACGACGTACG\n'
                     's test2.chrA  0  8 + 100 ---ACGT---ACGT\n',
                     {'test1' : {'chrA' : {'test2' : [(3, 7), (10, 14)]}},
@@ -218,6 +241,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 22
                    ('case 22',
                     'a score=0\n'
+                    '# case 22\n'
                     's test1.chrA  1 14 - 100 ACGTACGACGTACG\n'
                     's test2.chrA  1  8 - 100 ---ACGT---ACGT\n',
                     {'test1' : {'chrA' : {'test2' : [(85, 89), (92, 96)]}},
@@ -226,6 +250,7 @@ class VerifyMafRead(unittest.TestCase):
                    # case 23
                    ('case 23',
                     'a score=0\n'
+                    '# case 23\n'
                     's test1.chrA  1 14 - 100 ACGTACGACGTACG\n'
                     's test2.chrA  1  8 - 100 ---ACGT---ACGT\n'
                     's test1.chrB  1 14 - 100 ACGTACGACGTACG\n',
@@ -254,7 +279,6 @@ class VerifyMafRead(unittest.TestCase):
                     for start, stop in post[genomeA][chromA][genomeB]:
                         truth[genomeA][chromA][genomeB][start : stop] += 1
         return truth
-    
     def test_oneWay(self):
         """ readMaf() should parse a maf file as expected
         """ 
@@ -265,17 +289,13 @@ class VerifyMafRead(unittest.TestCase):
             
             alignments = MCPC.readMaf(self.options.maf, self.options)
             trueAlignments = self.buildTruth(post)
-            
-            # print name
+            self.assertTrue(alignments != {})
             for g1 in alignments:
                self.assertTrue(g1 in trueAlignments)
                for c1 in alignments[g1]:
                    self.assertTrue(c1 in trueAlignments[g1])
                    for g2 in alignments[g1][c1]:
                        self.assertTrue(g2 in trueAlignments[g1][c1])
-                       # print alignments[g1][c1][g2][c2]
-                       # print trueAlignments[g1][c1][g2][c2]
-                       # print sum(alignments[g1][c1][g2][c2] == trueAlignments[g1][c1][g2][c2])
                        self.assertTrue((sum(alignments[g1][c1][g2] == trueAlignments[g1][c1][g2]) == 
                                         len(alignments[g1][c1][g2])))
         shutil.rmtree(os.path.dirname(self.options.maf))
