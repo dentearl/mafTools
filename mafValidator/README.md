@@ -1,30 +1,32 @@
-#mafValidator
+# mafValidator
 
 10 October 2011
 
-##Authors
+## Authors
 
 [Dent Earl](https://github.com/dentearl/)
 
-##Description
+## Description
 mafValidator is a script to validate the formatting and basic data contained in a maf file.
 
-##Dependencies
+## Dependencies
 * Python 2.6 &le; version &lt; 3.0
 
-##Installation
+## Installation
 1. Download the package.
 2. <code>cd</code> into the directory.
 3. Type <code>make</code>.
 
-##Use
+## Use
 <code>mafValidator.py --maf=FILE [options]</code>
 
-###Options
+### Options
 * <code>mafValidator.py</code>
+* <code>--help</code> : show this help message and exit
 * <code>--maf</code> : path to the maf file to test
-* <code>--testChromNames</code> : Expects that the source field will be formatted with .chrN e.g. "hg19.chr1"
-* <code>--help</code> : Print this help screen
+* <code>--testChromNames</code> : Expects that the source field will be formatted with .chrN e.g. "hg19.chr1" default=False
+* <code>--ignoreDuplicateColumns</code> : Turn off the checks for duplicate columns, may be useful for pairwise-only alignments. default=duplicate checking is on.
 
-##Test
+
+## Test
 <code>make test</code>

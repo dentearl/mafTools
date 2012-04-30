@@ -62,7 +62,7 @@ def initOptions(parser):
                      action='store_true',
                      default=False,
                      help = ('Test that all species fields contain chrom name, i.e.: '
-                             's hg19.chr1 ... default = %default'))
+                             's hg19.chr1 ... default=%default'))
    parser.add_option('--ignoreDuplicateColumns', dest='lookForDuplicateColumns', 
                      default=True, action='store_false',
                      help=('Turn off the checks for duplicate columns, may be useful for pairwise-only '
