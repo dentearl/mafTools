@@ -40,9 +40,9 @@ q dasNov1.scaffold_179265                         99----------32239---------
 # tba.v8 (((human chimp) baboon) (mouse rat))
 
 a score=23262.0
-s hg16.chr7     1 13 + 20 gcagctgaaaaca
-s panTro1.chr6  1 13 + 20 gcagctgaaaaca
-s baboon.chr0   1 13 + 20 gcagctgaaaaca
+s hg16.chr7     0 13 + 20 gcagctgaaaaca
+s panTro1.chr6  0 13 + 20 gcagctgaaaaca
+s baboon.chr0   0 13 + 20 gcagctgaaaaca
 
 a score=23262.0
 s hg16.chr7     13 7 + 20 gcagctg
@@ -54,37 +54,37 @@ s baboon.chr0   13 7 + 20 gcagctg
 # tba.v8 (((human chimp) baboon) (mouse rat))
 
 a score=23262.0
-s hg16.chr7     1 13 + 20 gcagctgaaaaca
-s panTro1.chr6  1 13 + 20 gcagctgaaaaca
-s baboon.chr0   1 13 + 20 gcagctgaaaaca
+s hg16.chr7     0 13 + 20 gcagctgaaaaca
+s panTro1.chr6  0 13 + 20 gcagctgaaaaca
+s baboon.chr0   0 13 + 20 gcagctgaaaaca
 
 a score=23262.0
-s hg16.chr7     1 7 - 20 gcagctg
-s panTro1.chr6  1 7 - 20 gcagctg
-s baboon.chr0   1 7 - 20 gcagctg
+s hg16.chr7     0 7 - 20 gcagctg
+s panTro1.chr6  0 7 - 20 gcagctg
+s baboon.chr0   0 7 - 20 gcagctg
 
 ''',
             '''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
 
 a score=23262.0
-s hg16.chr7     1 13 - 20 gcagctgaaaaca
-s panTro1.chr6  1 13 - 20 gcagctgaaaaca
-s baboon.chr0   1 13 - 20 gcagctgaaaaca
+s hg16.chr7     0 13 - 20 gcagctgaaaaca
+s panTro1.chr6  0 13 - 20 gcagctgaaaaca
+s baboon.chr0   0 13 - 20 gcagctgaaaaca
 
 a score=23262.0
-s hg16.chr7     1 7 + 20 gcagctg
-s panTro1.chr6  1 7 + 20 gcagctg
-s baboon.chr0   1 7 + 20 gcagctg
+s hg16.chr7     0 7 + 20 gcagctg
+s panTro1.chr6  0 7 + 20 gcagctg
+s baboon.chr0   0 7 + 20 gcagctg
 
 ''',
             '''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
 
 a score=23262.0
-s hg16.chr7     1 13 - 20 gcagctgaaaaca
-s panTro1.chr6  1 13 - 20 gcagctgaaaaca
-s baboon.chr0   1 13 - 20 gcagctgaaaaca
+s hg16.chr7     0 13 - 20 gcagctgaaaaca
+s panTro1.chr6  0 13 - 20 gcagctgaaaaca
+s baboon.chr0   0 13 - 20 gcagctgaaaaca
 
 a score=23262.0
 s hg16.chr7     13 7 - 20 gcagctg
@@ -94,6 +94,10 @@ s baboon.chr0   13 7 - 20 gcagctg
 ''',
             '''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7     0 1 + 10 g
+s panTro1.chr6  0 1 - 10 g
 
 a score=23262.0
 s hg16.chr7     1 1 + 10 g
@@ -112,8 +116,8 @@ s hg16.chr7     4 1 + 10 g
 s panTro1.chr6  4 1 - 10 g
 
 a score=23262.0
-s hg16.chr7     5 1 + 10 g
-s panTro1.chr6  5 1 - 10 g
+s hg16.chr7     0 1 - 10 g
+s panTro1.chr6  0 1 + 10 g
 
 a score=23262.0
 s hg16.chr7     1 1 - 10 g
@@ -130,10 +134,6 @@ s panTro1.chr6  3 1 + 10 g
 a score=23262.0
 s hg16.chr7     4 1 - 10 g
 s panTro1.chr6  4 1 + 10 g
-
-a score=23262.0
-s hg16.chr7     5 1 - 10 g
-s panTro1.chr6  5 1 + 10 g
 
 ''',
             '''##maf version=1 scoring=tba.v8
@@ -965,7 +965,7 @@ s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
             mafFile = testFile(g)
             self.assertRaises(mafval.DuplicateColumnError, mafval.validateMaf, mafFile, options)
             removeTempDir()
-    def testDuplicateColumns(self):
+    def testNotTestingDuplicateColumns(self):
         """ mafValidator should ignore when a column is duplicated if option is switched off
         """
         customOpts = GenericObject()

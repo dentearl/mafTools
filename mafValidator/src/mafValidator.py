@@ -253,17 +253,20 @@ def checkForDuplicateColumns(data, scd, filename, lineno, line):
    # data[3] seq length
    # data[4] strand
    # data[5] total source length
-   if data[1] not in scd:
-      scd[data[1]] = numpy.zeros(int(data[5]), dtype=numpy.bool)
-   if data[4] == '-':
-      start, stop = int(data[5]) - (int(data[2]) - 1 + int(data[3])), int(data[5]) - int(data[2]) 
+   name = data[1]
+   start, length = map(int, data[2:4])
+   strand = data[4]
+   totalSrcLength = int(data[5])
+   if name not in scd:
+      scd[name] = numpy.zeros(int(totalSrcLength), dtype=numpy.bool)
+   if data[4] == '+':
+      stop = start + length
    else:
-      start, stop = int(data[2]) - 1, int(data[2]) + int(data[3]) - 2
-   if scd[data[1]][start:stop].any():
+      start, stop = totalSrcLength - (start + length), totalSrcLength - start
+   if scd[name][start:stop].any():
       raise DuplicateColumnError('maf %s has duplicate columns, first detected on line number %d: %s' 
                                  % (filename, lineno, line))
    scd[data[1]][start:stop] = True
-      
 def validateHeader(f, filename):
    """ tests the first line of the maf file to make sure it is valid. 
    valid starts are either "track ..." or "##maf..."
