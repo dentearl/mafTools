@@ -34,6 +34,7 @@ files.
 # THE SOFTWARE.
 ##############################
 from optparse import OptionParser
+import numpy
 import os
 import re
 import sys
@@ -52,36 +53,39 @@ class SourceSizeFieldError(ValidatorError): pass
 class OutOfRangeError(ValidatorError): pass
 class HeaderError(ValidatorError): pass
 class ILineFormatError(ValidatorError): pass
+class DuplicateColumnError(ValidatorError): pass
 
 def initOptions(parser):
-   parser.add_option('--maf', dest = 'filename', 
-                     help = 'path to maf file to validate.')
-   parser.add_option('--testChromNames', dest = 'testChromNames', 
-                     action = 'store_true',
-                     default = False,
+   parser.add_option('--maf', dest='filename', 
+                     help='path to maf file to validate.')
+   parser.add_option('--testChromNames', dest='testChromNames', 
+                     action='store_true',
+                     default=False,
                      help = ('Test that all species fields contain chrom name, i.e.: '
-                             's hg19.chr1 ... default = %default'))
-   
+                             's hg19.chr1 ... default=%default'))
+   parser.add_option('--ignoreDuplicateColumns', dest='lookForDuplicateColumns', 
+                     default=True, action='store_false',
+                     help=('Turn off the checks for duplicate columns, may be useful for pairwise-only '
+                           'alignments. default=duplicate checking is on.'))
 def checkOptions(options, args, parser):
    if options.filename is None:
       parser.error('specify --maf')
    if not os.path.exists(options.filename):
       parser.error('--maf %s does not exist.' % options.filename)
-
-def validateMaf(filename, testChromNames = False):
+def validateMaf(filename, options):
    """ returns true on valid maf file
    """ 
    nameRegex = r'(.+?)\.(chr.+)'
    namePat = re.compile(nameRegex)
+   sequenceColumnDict = {}
    f = open(filename, 'r')
-   validateHeader(f, filename)
+   headerProcessedLines = validateHeader(f, filename)
    sources = {}
    prevLineWasAlignmentBlock = False
    alignmentFieldLength = None
    prevline = ''
-   for lineno, line in enumerate(f, 2):
+   for lineno, line in enumerate(f, headerProcessedLines + 1):
       line = line.strip()
-      
       if line.startswith('#'):
          alignmentFieldLength = None
          prevline = line
@@ -95,8 +99,8 @@ def validateMaf(filename, testChromNames = False):
             raise MissingAlignmentBlockLineError('maf %s has a sequence line that was not preceded '
                                                  'by an alignment line on line number %d: %s' 
                                                  % (filename, lineno, line))
-         species, chrom, length, alFieldLen = validateSeqLine(namePat, testChromNames, 
-                                                              lineno, line, filename)
+         species, chrom, length, alFieldLen = validateSeqLine(namePat, options, lineno, line, 
+                                                              filename, sequenceColumnDict)
          if alignmentFieldLength is None:
             alignmentFieldLength = alFieldLen
          else:
@@ -146,7 +150,6 @@ def validateMaf(filename, testChromNames = False):
             raise FooterError('maf %s has a bad footer, should end with a blank line: %s' 
                               % (filename, line))
    return True
-
 def validateILine(lineno, line, prevline, filename):
    """ Checks all lines that start with 'i' and raises an exepction if
    the line is malformed.
@@ -201,7 +204,6 @@ def validateILine(lineno, line, prevline, filename):
       raise ILineFormatError('maf %s contains an "i" line with a different src value "%s" than on the previous '
                              '"s" line "%s" on line number %d: '
                              '%s' % (filename, d[1], p[1], lineno, line))
-
 def validateAlignmentLine(lineno, line, filename):
    """ Checks all lines that start with 'a' and raises an exception if 
    the line is malformed.
@@ -212,8 +214,7 @@ def validateAlignmentLine(lineno, line, filename):
          raise AlignmentBlockLineKeyValuePairError('maf %s has an alignment line that does not contain '
                                                    'good key-value pairs on line number %d: %s' 
                                                    % (filename, lineno, line))
-
-def validateSeqLine(namePat, testChromNames, lineno, line, filename):
+def validateSeqLine(namePat, options, lineno, line, filename, sequenceColumnDict):
    data = line.split()
    if len(data) != 7:
       raise FieldNumberError('maf %s has incorrect number of fields on line number %d: %s' 
@@ -233,21 +234,48 @@ def validateSeqLine(namePat, testChromNames, lineno, line, filename):
    if int(data[2]) + int(data[3]) > int(data[5]):
       raise OutOfRangeError('maf %s out of range sequence on line number %d: %s'
                             % (filename, lineno, line))
-   if testChromNames:
+   if options.lookForDuplicateColumns:
+      checkForDuplicateColumns(data, sequenceColumnDict, filename, lineno, line)
+   if options.testChromNames:
       m = re.match(namePat, data[1])
       if m is None:
          raise SpeciesFieldError('maf %s has name (source) field without ".chr" suffix: "%s" on line number %d: %s' 
                                  % (filename, data[1], lineno, line))
-      return m.group(1), m.group(2), data[5]
+      return m.group(1), m.group(2), data[5], len(data[6])
    return data[1], None, data[5], len(data[6])
-
+def checkForDuplicateColumns(data, scd, filename, lineno, line):
+   """ scd = sequenceColumnDict, a dictionary keyed on sequence field names and valued with
+   numpy arrays (dtype boolean) that indicates whether or not a column has already appeared in
+   the alignment.
+   """
+   # data[1] sequence name
+   # data[2] start position
+   # data[3] seq length
+   # data[4] strand
+   # data[5] total source length
+   name = data[1]
+   start, length = map(int, data[2:4])
+   strand = data[4]
+   totalSrcLength = int(data[5])
+   if name not in scd:
+      scd[name] = numpy.zeros(int(totalSrcLength), dtype=numpy.bool)
+   if data[4] == '+':
+      stop = start + length
+   else:
+      start, stop = totalSrcLength - (start + length), totalSrcLength - start
+   if scd[name][start:stop].any():
+      raise DuplicateColumnError('maf %s has duplicate columns, first detected on line number %d: %s' 
+                                 % (filename, lineno, line))
+   scd[data[1]][start:stop] = True
 def validateHeader(f, filename):
    """ tests the first line of the maf file to make sure it is valid. 
    valid starts are either "track ..." or "##maf..."
    """
    header = f.next()
+   lineno = 2
    if header.startswith('track'):
       header = f.next()
+      lineno += 1
    if not header.startswith('##maf'):
       raise HeaderError('maf %s has bad header, fails to start with `##\': %s' 
                            % (filename, header))
@@ -269,6 +297,7 @@ def validateHeader(f, filename):
    if not version:
       raise HeaderError('maf %s has bad header, no version information: %s' 
                            % (filename, header))
+   return lineno
          
 def main():
    parser = OptionParser()
@@ -276,7 +305,7 @@ def main():
    options, args = parser.parse_args()
    checkOptions(options, args, parser)
    
-   validateMaf(options.filename, options.testChromNames)
+   validateMaf(options.filename, options)
 
 if __name__ == '__main__':
    main()

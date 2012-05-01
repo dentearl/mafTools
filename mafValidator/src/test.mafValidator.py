@@ -3,6 +3,11 @@ import os
 import unittest
 import shutil
 
+class GenericObject:
+    pass
+options = GenericObject()
+options.lookForDuplicateColumns = True
+options.testChromNames = False
 goodMafs = ['''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
 
@@ -13,15 +18,143 @@ s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 a score=0
-s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca 
-s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s hg16.chr7    17707221 13 + 158545518 gcagctgaaaaca 
+s panTro1.chr6 18869787 13 + 161576975 gcagctgaaaaca
 i panTro1.chr6 N 0 C 0
-s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s baboon.chr0   1249182 13 +   4622798 gcagctgaaaaca
 i baboon.chr0   I 234 n 19
 
 a score=0
+s hg16.chr7     7707221 13 + 158545518 gcagctgaaaaca
+e mm4.chr6      3310102 13 + 151104725 I
+
+a score=0
+s hg18.chr1                  32741 26 + 247249719 TTTTTGAAAAACAAACAACAAGTTGG
+s panTro2.chrUn            9697231 26 +  58616431 TTTTTGAAAAACAAACAACAAGTTGG
+q panTro2.chrUn                                   99999999999999999999999999
+s dasNov1.scaffold_179265     1474  7 +      4584 TT----------AAGCA---------
+q dasNov1.scaffold_179265                         99----------32239--------- 
+
+''',
+            '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7     0 13 + 20 gcagctgaaaaca
+s panTro1.chr6  0 13 + 20 gcagctgaaaaca
+s baboon.chr0   0 13 + 20 gcagctgaaaaca
+
+a score=23262.0
+s hg16.chr7     13 7 + 20 gcagctg
+s panTro1.chr6  13 7 + 20 gcagctg
+s baboon.chr0   13 7 + 20 gcagctg
+
+''',
+            '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7     0 13 + 20 gcagctgaaaaca
+s panTro1.chr6  0 13 + 20 gcagctgaaaaca
+s baboon.chr0   0 13 + 20 gcagctgaaaaca
+
+a score=23262.0
+s hg16.chr7     0 7 - 20 gcagctg
+s panTro1.chr6  0 7 - 20 gcagctg
+s baboon.chr0   0 7 - 20 gcagctg
+
+''',
+            '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7     0 13 - 20 gcagctgaaaaca
+s panTro1.chr6  0 13 - 20 gcagctgaaaaca
+s baboon.chr0   0 13 - 20 gcagctgaaaaca
+
+a score=23262.0
+s hg16.chr7     0 7 + 20 gcagctg
+s panTro1.chr6  0 7 + 20 gcagctg
+s baboon.chr0   0 7 + 20 gcagctg
+
+''',
+            '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7     0 13 - 20 gcagctgaaaaca
+s panTro1.chr6  0 13 - 20 gcagctgaaaaca
+s baboon.chr0   0 13 - 20 gcagctgaaaaca
+
+a score=23262.0
+s hg16.chr7     13 7 - 20 gcagctg
+s panTro1.chr6  13 7 - 20 gcagctg
+s baboon.chr0   13 7 - 20 gcagctg
+
+''',
+            '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7     0 1 + 10 g
+s panTro1.chr6  0 1 - 10 g
+
+a score=23262.0
+s hg16.chr7     1 1 + 10 g
+s panTro1.chr6  1 1 - 10 g
+
+a score=23262.0
+s hg16.chr7     2 1 + 10 g
+s panTro1.chr6  2 1 - 10 g
+
+a score=23262.0
+s hg16.chr7     3 1 + 10 g
+s panTro1.chr6  3 1 - 10 g
+
+a score=23262.0
+s hg16.chr7     4 1 + 10 g
+s panTro1.chr6  4 1 - 10 g
+
+a score=23262.0
+s hg16.chr7     0 1 - 10 g
+s panTro1.chr6  0 1 + 10 g
+
+a score=23262.0
+s hg16.chr7     1 1 - 10 g
+s panTro1.chr6  1 1 + 10 g
+
+a score=23262.0
+s hg16.chr7     2 1 - 10 g
+s panTro1.chr6  2 1 + 10 g
+
+a score=23262.0
+s hg16.chr7     3 1 - 10 g
+s panTro1.chr6  3 1 + 10 g
+
+a score=23262.0
+s hg16.chr7     4 1 - 10 g
+s panTro1.chr6  4 1 + 10 g
+
+''',
+            '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+# there is no break between the header and the first alignment block
+a score=23262.0
 s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
-e mm4.chr6     53310102 13 + 151104725 I
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=0
+s hg16.chr7    17707221 13 + 158545518 gcagctgaaaaca 
+s panTro1.chr6 18869787 13 + 161576975 gcagctgaaaaca
+i panTro1.chr6 N 0 C 0
+s baboon.chr0   1249182 13 +   4622798 gcagctgaaaaca
+i baboon.chr0   I 234 n 19
+
+a score=0
+s hg16.chr7     7707221 13 + 158545518 gcagctgaaaaca
+e mm4.chr6      3310102 13 + 151104725 I
 
 a score=0
 s hg18.chr1                  32741 26 + 247249719 TTTTTGAAAAACAAACAACAAGTTGG
@@ -147,7 +280,7 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
         for b in self.badHeaders:
             makeTempDir()
             mafFile = testFile(b)
-            self.assertRaises(mafval.HeaderError, mafval.validateMaf, mafFile)
+            self.assertRaises(mafval.HeaderError, mafval.validateMaf, mafFile, options)
             removeTempDir()
       
 
@@ -185,7 +318,7 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
         for b in self.badFooters:
             makeTempDir()
             mafFile = testFile(b)
-            self.assertRaises(mafval.FooterError, mafval.validateMaf, mafFile)
+            self.assertRaises(mafval.FooterError, mafval.validateMaf, mafFile, options)
             removeTempDir()
 
 class FieldNumberCheck(unittest.TestCase):
@@ -215,7 +348,7 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
         """
         for b in self.badFieldNumbers:
             mafFile = testFile(b)
-            self.assertRaises(mafval.FieldNumberError, mafval.validateMaf, mafFile)
+            self.assertRaises(mafval.FieldNumberError, mafval.validateMaf, mafFile, options)
             removeTempDir()
 
 class StrandCheck(unittest.TestCase):
@@ -245,7 +378,7 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
         """
         for b in self.badStrands:
             mafFile = testFile(b)
-            self.assertRaises(mafval.StrandCharacterError, mafval.validateMaf, mafFile)
+            self.assertRaises(mafval.StrandCharacterError, mafval.validateMaf, mafFile, options)
             removeTempDir()
 
 class NamesCheck(unittest.TestCase):
@@ -273,9 +406,12 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
     def testSrcNames(self):
         """mafValidator should fail when name (src) field is malformed
         """
+        customOpts = GenericObject()
+        customOpts.lookForDuplicateColumns = True
+        customOpts.testChromNames = True
         for b in self.badNames:
             mafFile = testFile(b)
-            self.assertRaises(mafval.SpeciesFieldError, mafval.validateMaf, mafFile, testChromNames = True)
+            self.assertRaises(mafval.SpeciesFieldError, mafval.validateMaf, mafFile, customOpts)
             removeTempDir()
 
 class SourceLengthChecks(unittest.TestCase):
@@ -300,11 +436,14 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
     def testSourceLengths(self):
         """mafValidator should fail when source length changes
         """
+        customOpts = GenericObject()
+        customOpts.lookForDuplicateColumns = True
+        customOpts.testChromNames = True
         for i, b in enumerate(self.badSources):
             mafFile = testFile(b)
             if b == 0:
-                self.assertRaises(mafval.SourceLengthError, mafval.validateMaf, mafFile, testChromNames = True)
-            self.assertRaises(mafval.SourceLengthError, mafval.validateMaf, mafFile)
+                self.assertRaises(mafval.SourceLengthError, mafval.validateMaf, mafFile, customOpts)
+            self.assertRaises(mafval.SourceLengthError, mafval.validateMaf, mafFile, options)
             removeTempDir()
 
 class AlignmentLengthChecks(unittest.TestCase):
@@ -334,7 +473,7 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
         """
         for b in self.badLengths:
             mafFile = testFile(b)
-            self.assertRaises(mafval.AlignmentLengthError, mafval.validateMaf, mafFile)
+            self.assertRaises(mafval.AlignmentLengthError, mafval.validateMaf, mafFile, options)
             removeTempDir()
 
 class AlignmentFieldLengthChecks(unittest.TestCase):
@@ -364,7 +503,7 @@ s rn3.chr4     81344243 42 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
         """
         for b in self.badLengths:
             mafFile = testFile(b)
-            self.assertRaises(mafval.AlignmentLengthError, mafval.validateMaf, mafFile)
+            self.assertRaises(mafval.AlignmentLengthError, mafval.validateMaf, mafFile, options)
             removeTempDir()
 
 class AlignmentBlockLinesChecks(unittest.TestCase):
@@ -377,8 +516,8 @@ s baboon.chr0    116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGT
 s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
 s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
 
-s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
-s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+s mm4.chr6      3215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4      1344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
 
 ''',
                                '''##maf version=1 scoring=tba.v8 
@@ -391,9 +530,9 @@ s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGT
 s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
 
 a score=23262.0
-s hg18         27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s hg18         37578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 
-s hg18         27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s hg18          7578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 
 ''',
                                ]
@@ -421,10 +560,10 @@ s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGT
 s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
 
 a score=23262.0
-s hg18         27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s hg18          7578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 
 a score=0 banana=apple cheeseburger
-s hg18         27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s hg18         37578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 
 ''',
                                       ]
@@ -433,14 +572,14 @@ s hg18         27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGT
         """
         for b in self.badAlignmentBlockStarts:
             mafFile = testFile(b)
-            self.assertRaises(mafval.MissingAlignmentBlockLineError, mafval.validateMaf, mafFile)
+            self.assertRaises(mafval.MissingAlignmentBlockLineError, mafval.validateMaf, mafFile, options)
             removeTempDir()
     def testAlignmentBlockLineKeyValuePairs(self):
         """mafValidator should fail when an alignment block has mal-formed key-value pairs
         """
         for b in self.badAlignmentBlockKeyValuePairs:
             mafFile = testFile(b)
-            self.assertRaises(mafval.AlignmentBlockLineKeyValuePairError, mafval.validateMaf, mafFile)
+            self.assertRaises(mafval.AlignmentBlockLineKeyValuePairError, mafval.validateMaf, mafFile, options)
             removeTempDir()
 
 class StartFieldChecks(unittest.TestCase):
@@ -462,7 +601,7 @@ s dae.chr0         -100 30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGGT
         """
         for b in self.badFields:
             mafFile = testFile(b)
-            self.assertRaises(mafval.StartFieldError, mafval.validateMaf, mafFile)
+            self.assertRaises(mafval.StartFieldError, mafval.validateMaf, mafFile, options)
             removeTempDir()
 
 class SourceSizeFieldChecks(unittest.TestCase):
@@ -484,7 +623,7 @@ s dae.chr0          100  30 +      -100 AAA-GGGAATGTTAACCAAATGA-----------TTACGG
         """
         for b in self.badFields:
             mafFile = testFile(b)
-            self.assertRaises(mafval.SourceSizeFieldError, mafval.validateMaf, mafFile)
+            self.assertRaises(mafval.SourceSizeFieldError, mafval.validateMaf, mafFile, options)
             removeTempDir()
 
 class RangeChecks(unittest.TestCase):
@@ -527,7 +666,7 @@ s dae.chr0            5  6 -        10 A----------CTAA--------------------------
         """
         for b in self.badRanges:
             mafFile = testFile(b)
-            self.assertRaises(mafval.OutOfRangeError, mafval.validateMaf, mafFile)
+            self.assertRaises(mafval.OutOfRangeError, mafval.validateMaf, mafFile, options)
             removeTempDir()
 
 class LinesStartingWithIChecks(unittest.TestCase):
@@ -771,7 +910,71 @@ s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGG
         """
         for b in self.badBlocks:
             mafFile = testFile(b)
-            self.assertRaises(mafval.ILineFormatError, mafval.validateMaf, mafFile)
+            self.assertRaises(mafval.ILineFormatError, mafval.validateMaf, mafFile, options)
+            removeTempDir()
+
+class DuplicateColumnChecks(unittest.TestCase):
+    badMafs = ['''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=23262.0
+# hg16.chr7 in this block contains duplicate columns
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6        1 13 + 161576975 gcagctgaaaaca
+s baboon.chr0         2 13 +   4622798 gcagctgaaaaca
+s mm4.chr6            2 13 + 151104725 ACAGCTGAAAATA
+
+''',
+               '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+# there is no break between the header and the first alignment block
+a score=23262.0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca 
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+i panTro1.chr6 N 0 C 0
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+i baboon.chr0   I 234 n 19
+
+a score=0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+e mm4.chr6     53310102 13 + 151104725 I
+
+a score=0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca 
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+
+'''
+               ]
+    def testDuplicateColumns(self):
+        """ mafValidator should fail when a column is duplicated
+        """
+        for g in self.badMafs:
+            makeTempDir()
+            mafFile = testFile(g)
+            self.assertRaises(mafval.DuplicateColumnError, mafval.validateMaf, mafFile, options)
+            removeTempDir()
+    def testNotTestingDuplicateColumns(self):
+        """ mafValidator should ignore when a column is duplicated if option is switched off
+        """
+        customOpts = GenericObject()
+        customOpts.lookForDuplicateColumns = False
+        customOpts.testChromNames = True
+        for g in self.badMafs:
+            makeTempDir()
+            mafFile = testFile(g)
+            self.assertTrue(mafval.validateMaf(mafFile, customOpts))
             removeTempDir()
 
 class GoodKnownMafs(unittest.TestCase):
@@ -781,7 +984,7 @@ class GoodKnownMafs(unittest.TestCase):
         for g in goodMafs:
             makeTempDir()
             mafFile = testFile(g)
-            self.assertTrue(mafval.validateMaf(mafFile))
+            self.assertTrue(mafval.validateMaf(mafFile, options))
             removeTempDir()
 
 if __name__ == '__main__':
