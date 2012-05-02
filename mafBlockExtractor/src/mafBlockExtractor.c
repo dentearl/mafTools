@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "common.h"
+#include "common2.h"
 
 const int kMaxSeqName = 1 << 9;
 

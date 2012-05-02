@@ -320,7 +320,7 @@ class ExtractionTest(unittest.TestCase):
             runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
             self.assertTrue(mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), expectedOutput))
             removeTempDir()
-    def dtestNonExtraction(self):
+    def testNonExtraction(self):
         """ mafBlockExtractor should not filter out any sequences from blocks when there are no duplicates.
         """
         for i in xrange(0, 10):
@@ -335,7 +335,7 @@ class ExtractionTest(unittest.TestCase):
             runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
             self.assertTrue(mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), expectedOutput))
             removeTempDir()
-    def dtestMemory1(self):
+    def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
         valgrind = which('valgrind')
@@ -369,7 +369,7 @@ class ExtractionTest(unittest.TestCase):
             runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
             self.assertTrue(noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             removeTempDir()
-    def dtestMemory2(self):
+    def testMemory2(self):
         """ If valgrind is installed on the system, check for memory related errors (2).
         """
         valgrind = which('valgrind')
