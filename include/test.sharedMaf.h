@@ -36,7 +36,6 @@ int createTmpFolder(void) {
     // create a temporary directory with permissions only for the owner
     return mkdir("test_tmp", S_IRWXU | S_IRUSR | S_IXUSR | S_IWUSR);
 }
-
 void writeStringToTmpFile(char *s) {
     FILE *f = de_open("test_tmp/test.maf", "w+");
     fprintf(f, "%s", s);
@@ -191,7 +190,6 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA\n\
     CuAssertStrEquals(testCase, ml->sequence, "AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG");
     CuAssertTrue(testCase, ml->next != NULL);
     ml = ml->next;
-    
     // clean up
     maf_destroyMafBlockList(mb);
     unlink("test_tmp/test.maf");
