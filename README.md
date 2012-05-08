@@ -6,7 +6,7 @@
 [Dent Earl](https://github.com/dentearl/), [Benedict Paten](https://github.com/benedictpaten/), [Mark Diekhans](https://github.com/diekhans)
 
 ## Dependencies
-* sonLib https://github.com/benedictpaten/sonLib/
+* [sonLib](https://github.com/benedictpaten/sonLib/)
 
 ## Installation
 1. Download the package. Consider making it a sibling directory to <code>sonLib/</code>.
@@ -21,3 +21,7 @@
 * **mafComparator** A program to compare two maf files by sampling. Useful when testing predicted alignments against known true alignments.
 * **mafCoveragePickles** A set of programs to assess the pairwise coverage between sequences and to extract the indel distribution of a set of sequences contained in the maf.
 * **mafValidator** A program to assess whether or not a given maf file's formatting is valid. 
+
+## External tools
+* mafTools internal tests use Asim Jalis' [CuTest](http://cutest.sourceforge.net/) C unit testing framework. The license for CuTest is spelled out in external/license.txt.
+* mafTools internal tests will use [valgrind](http://www.valgrind.org/) if installed on your system. 
