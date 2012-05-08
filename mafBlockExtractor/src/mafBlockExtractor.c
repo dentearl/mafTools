@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "common2.h"
+#include "common.h"
 
 const int kMaxSeqName = 1 << 9;
 
@@ -318,7 +318,7 @@ int main(int argc, char **argv) {
     uint32_t start, stop;
     parseOptions(argc, argv, seq, &start, &stop);
 
-    char *lastLine = processHeader();
+    char *lastLine = processHeader(stdin);
     processBody(seq, start, stop, lastLine);
     free(lastLine);
     

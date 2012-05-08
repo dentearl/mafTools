@@ -52,8 +52,8 @@ typedef struct mafBlock {
 } mafBlock_t;
 
 void usage(void) {
-    fprintf(stderr, "Usage: mafBlockSorter --seq [sequence name (and possibly chr)] "
-            "[options] < myFile.maf\n\n"
+    fprintf(stderr, "Usage: mafBlockSorter --maf [maf file] --seq [sequence name (and possibly chr)] "
+            "[options]\n\n"
             "mafBlockSorter is a program that will sort the blocks of a maf in ascending\n"
             "order of the sequence start field of the specified sequence name. Blocks\n"
             "that do not contain the specified sequence will be output at the start of\n"
@@ -66,16 +66,17 @@ void usage(void) {
             "  -v, --verbose  turns on verbose output.\n");
     exit(EXIT_FAILURE);
 }
-void parseOptions(int argc, char **argv, char *seqName) {
+void parseOptions(int argc, char **argv, char *filename, char *seqName) {
     extern int g_verbose_flag;
     extern int g_debug_flag;
     int c;
-    bool setSName = false;
+    bool setMName = false, setSName = false;
     while (1) {
         static struct option long_options[] = {
             {"debug", no_argument, 0, 'd'},
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
+            {"maf",  required_argument, 0, 'm'},
             {"seq",  required_argument, 0, 's'},
             {0, 0, 0, 0}
         };
@@ -85,6 +86,10 @@ void parseOptions(int argc, char **argv, char *seqName) {
         if (c == -1)
             break;
         switch (c) {
+        case 'm':
+            setMName = true;
+            strncpy(filename, optarg, kMaxSeqName);
+            break;
         case 's':
             setSName = true;
             strncpy(seqName, optarg, kMaxSeqName);
@@ -103,8 +108,8 @@ void parseOptions(int argc, char **argv, char *seqName) {
             abort();
         }
     }
-    if (!(setSName)) {
-        fprintf(stderr, "Error, specify --seq\n");
+    if (!(setMName && setSName)) {
+        fprintf(stderr, "Error, specify --maf --seq\n");
         usage();
     }
     // Check there's nothing left over on the command line 
@@ -121,7 +126,7 @@ void parseOptions(int argc, char **argv, char *seqName) {
     }
 }
 bool blankLine(char *s) {
-    // return true of line is only whitespaces
+    // return true if line is only whitespaces
     size_t n = strlen(s);
     for (size_t i = 0; i < n; ++i) {
         if (!isspace(*(s + i))) {
@@ -140,6 +145,7 @@ uint32_t getTargetStart(char *line, char *targetSeq) {
     tkn = strtok(cline, " \t");
     long unsigned start;
     if (tkn == NULL) {
+        free (cline);
         failBadFormat();
     }
     if (tkn[0] != 's') {
@@ -179,10 +185,9 @@ mafLine_t* newMafLine(void) {
     ml->next = NULL;
     return ml;
 }
-unsigned processBody(mafBlock_t *head, char *targetSeq, char *lastLine) {
+unsigned processBody(FILE *ifp, mafBlock_t *head, char *targetSeq, char *lastLine) {
     // process the body of the maf, block by block.
     extern const int kMaxStringLength;
-    FILE *ifp = stdin;
     int32_t n = kMaxStringLength;
     char *line = NULL;
     if (lastLine == NULL) {
@@ -293,14 +298,16 @@ void printblockarrayvalues(mafBlock_t **blockArray, unsigned numBlocks) {
     }
 }
 int main(int argc, char **argv) {
+    char filename[kMaxSeqName];
     char targetSequence[kMaxSeqName];
     mafBlock_t *mafObj = newMafBlock();
     unsigned numBlocks = 0;
-    parseOptions(argc, argv, targetSequence);
+    parseOptions(argc, argv, filename, targetSequence);
     // initialize
-    char *lastLine = processHeader();
+    FILE *maf = de_open(filename, "r");
+    char *lastLine = processHeader(maf);
     // read input
-    numBlocks = processBody(mafObj, targetSequence, lastLine);
+    numBlocks = processBody(maf, mafObj, targetSequence, lastLine);
     mafBlock_t *blockArray[numBlocks];
     // sort
     populateArray(mafObj, blockArray);

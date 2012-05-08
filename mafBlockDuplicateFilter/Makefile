@@ -3,7 +3,7 @@ cc = gcc
 args = -g -Wall -Wextra -Werror -std=c99 -pedantic
 bin = ../bin
 PROGS = mafBlockDuplicateFilter
-dependencies = ../include/common.h
+dependencies = ../include/common.h 
 
 .PHONY: all clean test
 
@@ -11,12 +11,12 @@ all: $(foreach f,${PROGS}, ${bin}/$f)
 
 ${bin}/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies}
 	mkdir -p $(dir $@)
-	${cc} ${args} $< -I ../include -o $@.tmp 
+	${cc} ${args} $< -I ../include -I ../external -o $@.tmp 
 	mv $@.tmp $@
 
 test/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies}
 	mkdir -p $(dir $@)
-	${cc} ${args} -O0 $< -I ../include -o $@.tmp 
+	${cc} ${args} -O0 $< -I ../include -I ../external -o $@.tmp 
 	mv $@.tmp $@
 
 ${bin}/%: src/%.c 
@@ -33,4 +33,4 @@ clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
 
 test: test/mafBlockDuplicateFilter
-	python2.6 src/test.mafBlockDuplicateFilter.py --verbose && rm -rf test/
+	python2.7 src/test.mafBlockDuplicateFilter.py --verbose && rm -rf test/

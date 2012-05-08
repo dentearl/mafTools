@@ -11,12 +11,12 @@ all: $(foreach f,${PROGS}, ${bin}/$f)
 
 ${bin}/mafBlockFinder: src/mafBlockFinder.c ${dependencies}
 	mkdir -p $(dir $@)
-	${cc} ${args} $< -I ../include -o $@.tmp ${includes}
+	${cc} ${args} $< -I ../include -I ../external -o $@.tmp ${includes}
 	mv $@.tmp $@
 
 test/mafBlockFinder: src/mafBlockFinder.c ${dependencies}
 	mkdir -p $(dir $@)
-	${cc} ${args} -O0 $< -I ../include -o $@.tmp ${includes}
+	${cc} ${args} -O0 $< -I ../include -I ../external -o $@.tmp ${includes}
 	mv $@.tmp $@
 
 ${bin}/%: src/%.c 

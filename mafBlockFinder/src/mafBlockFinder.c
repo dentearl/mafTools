@@ -23,6 +23,7 @@
  * THE SOFTWARE. 
  */
 #include <assert.h>
+#include <errno.h> // file existence via ENOENT
 #include <getopt.h>
 #include <limits.h>
 #include <stdarg.h>
@@ -30,27 +31,28 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <time.h>
 #include <unistd.h>
 #include "common.h"
 
 int g_verbose_flag = 0;
 int g_debug_flag = 0;
 
-void parseOptions(int argc, char **argv, char *seqName, uint32_t *position);
+void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t *position);
 void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start, 
                  uint32_t length, uint32_t sourceLength, char strand);
 void searchInput(FILE *ifp, char *fullname, unsigned long pos);
 
 void usage(void) {
-    fprintf(stderr, "Usage: mafBlockFinder --seq [sequence name (and possibly chr)"
-            "] --pos [position to search for] [options] < myFile.maf\n\n"
+    fprintf(stderr, "Usage: mafBlockFinder --maf [path to maf] "
+            "--seq [sequence name (and possibly chr)] "
+            "--pos [position to search for] [options]\n\n"
             "mafBlockFinder is a program that will look through a maf file for a\n"
             "particular sequence name and location. If a match is found the line\n"
             "number and first few fields are returned. If no match is found\n"
             "nothing is returned.\n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
+            "  -m, --maf      path to maf file.\n"
             "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
             "  -p, --pos      position along the chromosome you are searching for.\n"
             "                 Must be a positive number.\n"
@@ -58,29 +60,36 @@ void usage(void) {
     exit(EXIT_FAILURE);
 }
 
-void parseOptions(int argc, char **argv, char *seqName, uint32_t *position) {
+void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t *position) {
     extern int g_debug_flag;
     extern int g_verbose_flag;
     int c;
-    int setSName = 0, setPos = 0;
+    int setMName = 0, setSName = 0, setPos = 0;
     int32_t tempPos = 0;
     while (1) {
         static struct option long_options[] = {
             {"debug", no_argument, &g_debug_flag, 1},
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
+            {"maf",  required_argument, 0, 'm'},
             {"seq",  required_argument, 0, 's'},
+            {"sequence",  required_argument, 0, 's'},
             {"pos",  required_argument, 0, 'p'},
+            {"position",  required_argument, 0, 'p'},
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        c = getopt_long(argc, argv, "n:c:p:v",
+        c = getopt_long(argc, argv, "m:s:p:v:h",
                         long_options, &option_index);
         if (c == -1) {
             break;
         }
         switch (c) {
         case 0:
+            break;
+        case 'm':
+            setMName = 1;
+            sscanf(optarg, "%s", filename);
             break;
         case 's':
             setSName = 1;
@@ -106,8 +115,8 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *position) {
             abort();
         }
     }
-    if (!(setSName && setPos)) {
-        fprintf(stderr, "specify --seq --position\n");
+    if (!(setMName && setSName && setPos)) {
+        fprintf(stderr, "specify --maf --seq --position\n");
         usage();
     }
     // Check there's nothing left over on the command line 
@@ -187,11 +196,14 @@ void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
 
 int main(int argc, char **argv) {
     extern const int kMaxStringLength;
+    char filename[kMaxStringLength];
     char targetName[kMaxStringLength];
     uint32_t targetPos;
+    
+    parseOptions(argc, argv,  filename, targetName, &targetPos);
+    FILE *maf = de_open(filename, "r");
 
-    parseOptions(argc, argv,  targetName, &targetPos);
-    searchInput(stdin, targetName, targetPos);
+    searchInput(maf, targetName, targetPos);
    
     return EXIT_SUCCESS;
 }

@@ -11,12 +11,12 @@ all: $(foreach f,${PROGS}, ${bin}/$f)
 
 ${bin}/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies}
 	mkdir -p $(dir $@)
-	${cc} ${args} $< -I ../include -o $@.tmp 
+	${cc} ${args} $< -I ../include -I ../external -o $@.tmp 
 	mv $@.tmp $@
 
 test/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies}
 	mkdir -p $(dir $@)
-	${cc} ${args} -O0 $< -I ../include -o $@.tmp 
+	${cc} ${args} -O0 $< -I ../include -I ../external -o $@.tmp 
 	mv $@.tmp $@
 
 ${bin}/%: src/%.c 

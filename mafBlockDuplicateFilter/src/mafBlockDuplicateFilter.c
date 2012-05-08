@@ -36,7 +36,7 @@ int g_debug_flag = 0;
 const int kMaxSeqName = 1 << 8;
 
 typedef struct mafLine {
-    // a mafLine struct is a single line of 
+    // a mafLine struct is a single line of a mafBlock
     char *line; // the entire line
     char *species; // just the species name
     char *sequence; // just the sequence field
@@ -684,7 +684,7 @@ void processBody(char *lastLine) {
 int main(int argc, char **argv) {
     parseOptions(argc, argv);
 
-    char *lastLine = processHeader();
+    char *lastLine = processHeader(stdin);
     processBody(lastLine);
     
     free(lastLine);
