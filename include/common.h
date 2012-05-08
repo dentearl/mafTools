@@ -25,20 +25,23 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 #include <assert.h>
+#include <ctype.h>
 #include <stdarg.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "CuTest.h"
 
 void verbose(char const *fmt, ...);
 void debug(char const *fmt, ...);
 void message(char const *type, char const *fmt, ...);
-char* processHeader(void);
+char* processHeader(FILE *filename);
 void failBadFormat(void);
-
 void* de_malloc(size_t n);
 int32_t de_getline(char **s, int32_t *n, FILE *f);
+FILE* de_open(char *s, char const *mode);
 
 const int kMaxStringLength = 2048;
 const int kMaxMessageLength = 1024;
@@ -75,6 +78,24 @@ int32_t de_getline(char **s, int32_t *n, FILE *f) {
         }
         ++i;
     }
+}
+FILE* de_open(char *filename, char const *mode) {
+    FILE *f = fopen(filename, mode);
+    if (f == NULL) {
+        if (errno == ENOENT) {
+            fprintf(stderr, "ERROR, file %s does not exist.\n", filename);
+        } else {
+            fprintf(stderr, "ERROR, unable to open file %s for mode \"%s\"\n", filename, mode);
+        }
+        exit(EXIT_FAILURE);
+    }
+    return f;
+}
+char* de_strdup(const char *s) {
+    size_t n = strlen(s) + 1;
+    char *copy = de_malloc(n);
+    strcpy(copy, s);
+    return copy;
 }
 void verbose(char const *fmt, ...) {
     extern int g_verbose_flag;
@@ -115,13 +136,12 @@ void message(char const *type, char const *fmt, ...) {
     vfprintf(stderr, fmt, args);
     va_end(args);
 }
-char* processHeader(void) {
+char* processHeader(FILE *ifp) {
     // Read in the header and spit it back out
     // IF the header does not end in an empty line,
     // but instead transitions directly to an alignment line, 
     // the return value is a pointer to that alignment line. 
     // ELSE the return value is null.
-    FILE *ifp = stdin;
     int32_t n = kMaxStringLength;
     char *line = (char*) de_malloc(n);
     int status = de_getline(&line, &n, ifp);
@@ -150,5 +170,4 @@ void failBadFormat(void) {
     fprintf(stderr, "The maf sequence lines are incorrectly formatted, exiting\n");
     exit(EXIT_FAILURE);
 }
-
 #endif // COMMON_H_
