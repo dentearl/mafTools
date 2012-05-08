@@ -86,7 +86,7 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
             fprintf(stderr, "ERROR, file %s does not exist.\n", filepath);
         else
             fprintf(stderr, "ERROR, unable to open %s\n", filepath);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     int nBytes = 100;
     char *cA2 = st_malloc(nBytes + 1);
@@ -327,7 +327,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "ERROR, file %s does not exist.\n", mAFFile1);
         else
             fprintf(stderr, "ERROR, unable to open %s\n", mAFFile1);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     fclose(fileHandle);
     fileHandle = fopen(mAFFile2, "r");
@@ -336,7 +336,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "ERROR, file %s does not exist.\n", mAFFile2);
         else
             fprintf(stderr, "ERROR, unable to open %s\n", mAFFile2);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     fclose(fileHandle);
 
@@ -387,7 +387,7 @@ int main(int argc, char *argv[]) {
     fileHandle = fopen(outputFile, "w");
     if (fileHandle == NULL) {
         fprintf(stderr, "ERROR, unable to open %s for writing.\n", outputFile);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     //////////////////////////////////////////////
@@ -425,5 +425,5 @@ int main(int argc, char *argv[]) {
     stSortedSet_destruct(seqNames1);
     stSortedSet_destruct(seqNames2);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
