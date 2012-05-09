@@ -133,6 +133,7 @@ static void test_newMafLineFromString(CuTest *testCase) {
     maf_destroyMafLineList(ml);
 }
 static void test_readBlock(CuTest *testCase) {
+    // verify we read a header and a block correctly
     assert(testCase != NULL);
     createTmpFolder();
     // case 1
@@ -165,6 +166,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA\n\
     mafBlock_t *mb = maf_readBlock(mapi);
     CuAssertTrue(testCase, mb != NULL);
     mafLine_t *ml = mb->headLine;
+    CuAssertTrue(testCase, maf_numberOfSequencesMafLineList(ml) == 0);
     CuAssertStrEquals(testCase, ml->line, "track name=euArc visibility=pack ");
     CuAssertTrue(testCase, ml->next != NULL);
     ml = ml->next;
@@ -181,6 +183,74 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA\n\
     CuAssertStrEquals(testCase, ml->line, "a score=23262.0     ");
     CuAssertTrue(testCase, ml->next != NULL);
     ml = ml->next;
+    CuAssertTrue(testCase, maf_numberOfSequencesMafLineList(ml) == 5);
+    CuAssertStrEquals(testCase, ml->line, "s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG");
+    CuAssertStrEquals(testCase, ml->species, "hg18.chr7");
+    CuAssertUInt32Equals(testCase, ml->start, 27578828);
+    CuAssertUInt32Equals(testCase, ml->length, 38);
+    CuAssertIntEquals(testCase, ml->strand, '+');
+    CuAssertUInt32Equals(testCase, ml->sourceLength, 158545518);
+    CuAssertStrEquals(testCase, ml->sequence, "AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG");
+    CuAssertTrue(testCase, ml->next != NULL);
+    ml = ml->next;
+    // clean up
+    maf_destroyMafBlockList(mb);
+    unlink("test_tmp/test.maf");
+    rmdir("test_tmp");
+    maf_destroyMfa(mapi);
+    free(input);
+}
+static void test_readBlock2(CuTest *testCase) {
+    // This variation looks at a maf with no blank line after the header
+    assert(testCase != NULL);
+    createTmpFolder();
+    // case 1
+    char *input = de_strdup("track name=euArc visibility=pack \n\
+##maf version=1 scoring=tba.v8 \n\
+# tba.v8 (((human chimp) baboon) (mouse rat)) \n\
+a score=23262.0     \n\
+s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG\n\
+s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG\n\
+s baboon         116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG\n\
+s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG\n\
+s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG\n\
+                   \n\
+a score=5062.0                    \n\
+s hg18.chr7    27699739 6 + 158545518 TAAAGA\n\
+s panTro1.chr6 28862317 6 + 161576975 TAAAGA\n\
+s baboon         241163 6 +   4622798 TAAAGA \n\
+s mm4.chr6     53303881 6 + 151104725 TAAAGA\n\
+s rn3.chr4     81444246 6 + 187371129 taagga\n\
+\n\
+a score=6636.0\n\
+s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca\n\
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca\n\
+s baboon         249182 13 +   4622798 gcagctgaaaaca\n\
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA\n\
+\n\n ");
+    writeStringToTmpFile(input);
+    mafFileApi_t *mapi = maf_newMfa("test_tmp/test.maf", "r");
+    mafBlock_t *mb = maf_readBlock(mapi);
+    CuAssertTrue(testCase, mb != NULL);
+    mafLine_t *ml = mb->headLine;
+    CuAssertTrue(testCase, maf_numberOfSequencesMafLineList(ml) == 0);
+    CuAssertStrEquals(testCase, ml->line, "track name=euArc visibility=pack ");
+    CuAssertTrue(testCase, ml->next != NULL);
+    ml = ml->next;
+    CuAssertStrEquals(testCase, ml->line, "##maf version=1 scoring=tba.v8 ");
+    CuAssertTrue(testCase, ml->next != NULL);
+    ml = ml->next;
+    CuAssertStrEquals(testCase, ml->line, "# tba.v8 (((human chimp) baboon) (mouse rat)) ");
+    CuAssertTrue(testCase, ml->next == NULL);
+    CuAssertTrue(testCase, mb->next == NULL);
+    maf_destroyMafBlockList(mb);
+    mb = maf_readBlock(mapi);
+    CuAssertTrue(testCase, mb != NULL);
+    ml = mb->headLine;
+    CuAssertStrEquals(testCase, ml->line, "a score=23262.0     ");
+    CuAssertTrue(testCase, ml->next != NULL);
+    ml = ml->next;
+    CuAssertTrue(testCase, maf_numberOfSequencesMafLineList(ml) == 5);
     CuAssertStrEquals(testCase, ml->line, "s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG");
     CuAssertStrEquals(testCase, ml->species, "hg18.chr7");
     CuAssertUInt32Equals(testCase, ml->start, 27578828);
@@ -201,6 +271,7 @@ CuSuite* mafShared_TestSuite(void) {
     CuSuite* suite = CuSuiteNew();
     SUITE_ADD_TEST(suite, test_newMafLineFromString);
     SUITE_ADD_TEST(suite, test_readBlock);
+    SUITE_ADD_TEST(suite, test_readBlock2);
     return suite;
 }
 #endif // TEST_SHAREDMAF_H_

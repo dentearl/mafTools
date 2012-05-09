@@ -63,12 +63,14 @@ typedef struct mafBlock {
 } mafBlock_t;
 
 mafFileApi_t* maf_newMfa(char *filename, char const *mode);
-mafBlock_t* maf_readHeader(mafFileApi_t *mfa);
 mafBlock_t* maf_readAll(mafFileApi_t *mfa);
 mafBlock_t* maf_readBlock(mafFileApi_t *mfa);
+mafBlock_t* maf_readHeader(mafFileApi_t *mfa);
 mafBlock_t* maf_newMafBlock(void);
 mafLine_t* maf_newMafLine(void);
 mafLine_t* maf_newMafLineFromString(char *s, uint32_t lineNumber);
+unsigned maf_numberOfSequences(mafBlock_t *b);
+unsigned maf_numberOfSequencesMafLineList(mafLine_t *m);
 void maf_destroyMafLineList(mafLine_t *ml);
 void maf_destroyMafBlockList(mafBlock_t *mb);
 void maf_destroyMfa(mafFileApi_t *mfa);
@@ -216,6 +218,20 @@ bool maf_blankLine(char *s) {
     }
     return true;
 }
+unsigned maf_numberOfSequences(mafBlock_t *b) {
+    // count the number of actual sequence lines in the mafBlock.
+    return maf_numberOfSequencesMafLineList(b->headLine);
+}
+unsigned maf_numberOfSequencesMafLineList(mafLine_t *m) {
+    // count the number of actual sequence lines in a mafLine_t list
+    unsigned s = 0;
+    while (m != NULL) {
+        if (m->type == 's')
+            ++s;
+        m = m->next;
+    }
+    return s;
+}
 void maf_checkForPrematureMafEnd(int status, char *line) {
     if (status == -1) {
         free(line);
@@ -283,6 +299,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
     }
     if (line[0] == 'a') {
         char *copy = (char *) de_malloc(n + 1); // freed in destroy lines
+        strcpy(copy, line);
         mfa->lastLine = copy;
     }
     free(line);
