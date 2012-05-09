@@ -250,9 +250,9 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
     char *line = (char*) de_malloc(n);
     mafBlock_t *header = maf_newMafBlock();
     int status = de_getline(&line, &n, mfa->mfp);
+    ++(mfa->lineNumber);
     maf_checkForPrematureMafEnd(status, line);
     if (strncmp(line, "track", 5) == 0) {
-        ++(mfa->lineNumber);
         mafLine_t *ml = maf_newMafLine();
         char *copy = (char *) de_malloc(n + 1); // freed in destroy lines
         strcpy(copy, line);
@@ -262,10 +262,10 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         header->headLine = ml;
         header->tailLine = ml;
         status = de_getline(&line, &n, mfa->mfp);
+        ++(mfa->lineNumber);
         maf_checkForPrematureMafEnd(status, line);
     }
     if (strncmp(line, "##maf", 5) == 0) {
-        ++(mfa->lineNumber);
         mafLine_t *ml = maf_newMafLine();
         char *copy = (char *) de_malloc(n + 1); // freed in destroy lines
         strcpy(copy, line);
@@ -280,6 +280,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
             header->tailLine = ml;
         }
         status = de_getline(&line, &n, mfa->mfp);
+        ++(mfa->lineNumber);
         maf_checkForPrematureMafEnd(status, line);
     }
     mafLine_t *thisMl = header->tailLine;
@@ -294,8 +295,9 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         thisMl = ml;
         header->tailLine = thisMl;
         status = de_getline(&line, &n, mfa->mfp);
-        maf_checkForPrematureMafEnd(status, line);
         ++(mfa->lineNumber);
+        maf_checkForPrematureMafEnd(status, line);
+
     }
     if (line[0] == 'a') {
         char *copy = (char *) de_malloc(n + 1); // freed in destroy lines
@@ -309,7 +311,7 @@ mafBlock_t* maf_readBlockBody(mafFileApi_t *mfa) {
     extern const int kMaxStringLength;
     mafBlock_t *thisBlock = maf_newMafBlock();
     if (mfa->lastLine != NULL) {
-        // this only happens when the header is not followed by a blank line
+        // this is only invoked when the header is not followed by a blank line
         mafLine_t *ml = maf_newMafLineFromString(mfa->lastLine, mfa->lineNumber);
         thisBlock->headLine = ml;
         thisBlock->tailLine = ml;
@@ -320,8 +322,14 @@ mafBlock_t* maf_readBlockBody(mafFileApi_t *mfa) {
     char *line = (char*) de_malloc(n);
     while(de_getline(&line, &n, mfa->mfp) != -1) {
         ++(mfa->lineNumber);
-        if (maf_blankLine(line))
-            break;
+        if (maf_blankLine(line)) {
+            if (thisBlock->headLine == NULL) {
+                // this handles multiple blank lines in a row
+                continue;
+            } else {
+                break;
+            }
+        }
         mafLine_t *ml = maf_newMafLineFromString(line, mfa->lineNumber);
         if (thisBlock->headLine == NULL) {
             thisBlock->headLine = ml;
