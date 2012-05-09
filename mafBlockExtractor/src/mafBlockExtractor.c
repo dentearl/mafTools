@@ -29,36 +29,35 @@
 #include <stdlib.h>
 #include <string.h>
 #include "common.h"
-
-const int kMaxSeqName = 1 << 9;
+#include "sharedMaf.h"
 
 int g_verbose_flag = 0;
 int g_debug_flag = 0;
-
-typedef struct mafBlock {
-    struct mafBlock *next;
-    char *line;
-} mafBlock_t;
+const int kMaxSeqName = 1 << 9;
 
 void usage(void);
-void parseOptions(int argc, char **argv, char *seqName, uint32_t *start, uint32_t *stop) {
+void processBody(mafFileApi_t *mfa, char *seq, uint32_t start, uint32_t stop);
+bool searchMatched(mafLine_t *ml, char *seq, uint32_t start, uint32_t stop);
+
+void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t *start, uint32_t *stop) {
     extern int g_debug_flag;
     extern int g_verbose_flag;
     int c;
-    bool setSName = false, setStart = false, setStop = false;
+    bool setSName = false, setStart = false, setStop = false, setMName = false;
     int32_t value = 0;
     while (1) {
         static struct option long_options[] = {
             {"debug", no_argument, 0, 'd'},
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
+            {"maf",  required_argument, 0, 'm'},
             {"seq",  required_argument, 0, 's'},
             {"start",  required_argument, 0, 0},
             {"stop",  required_argument, 0, 0},
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        c = getopt_long(argc, argv, "n:c:p:v",
+        c = getopt_long(argc, argv, "m:s:h:v:d",
                         long_options, &option_index);
         if (c == -1)
             break;
@@ -82,6 +81,10 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *start, uint32_
                 setStop = true;
             }
             break;
+        case 'm':
+            setMName = true;
+            strncpy(filename, optarg, kMaxSeqName);
+            break;
         case 's':
             setSName = true;
             strncpy(seqName, optarg, kMaxSeqName);
@@ -100,8 +103,8 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *start, uint32_
             abort();
         }
     }
-    if (!(setSName && setStart && setStop)) {
-        fprintf(stderr, "Error, specify --seq --start --stop\n");
+    if (!(setMName && setSName && setStart && setStop)) {
+        fprintf(stderr, "Error, specify --maf --seq --start --stop\n");
         usage();
     }
     if (*start > *stop) {
@@ -122,14 +125,15 @@ void parseOptions(int argc, char **argv, char *seqName, uint32_t *start, uint32_
     }
 }
 void usage(void) {
-    fprintf(stderr, "Usage: mafBlockExtractor --seq [sequence name (and possibly chr)] "
+    fprintf(stderr, "Usage: mafBlockExtractor --maf [maf file] --seq [sequence name (and possibly chr)] "
             "--start [start of region, inclusive, 0 based] --stop [end of region, inclusive] "
-            "[options] < myFile.maf\n\n"
+            "[options]\n\n"
             "mafBlockExtractor is a program that will look through a maf file for a\n"
             "particular sequence name and region. If a match is found then the block\n"
             "containing the querry will be printed to standard out.\n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
+            "  -m, --maf      path to maf file to process\n"
             "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
             "  --start        start of region, inclusive, 0 based.\n"
             "  --stop         end of region, inclusive, 0 based.\n"
@@ -160,167 +164,61 @@ bool checkRegion(uint32_t start, uint32_t stop, uint32_t str,
     return false;
 }
 void reportBlock(mafBlock_t *b) {
-    while (b != NULL) {
-        printf("%s\n", b->line);
-        b = b->next;
+    mafLine_t *ml = b->headLine;
+    while (ml != NULL) {
+        printf("%s\n", ml->line);
+        ml = ml->next;
     }
     printf("\n");
 }
-void hardPrint(char *s, size_t n) {
-    printf("hardPrint %s(%zu): ", s, n);
-    for (unsigned i = 0; i < n; ++i){
-        if (s[i] == 0)
-            printf("_");
-        else
-            printf("%c", s[i]);
-    }
-    printf("\n");
+bool searchMatched(mafLine_t *ml, char *seq, uint32_t start, uint32_t stop) {
+    // report false if search did not match, true if it did
+    if (ml->type != 's')
+        return false;
+    if (!(strcmp(ml->species, seq) == 0))
+        return false;
+    if (checkRegion(start, stop, ml->start, ml->length, ml->sourceLength, ml->strand))
+        return true;
+    return false;
 }
-int searchMatched(char *origLine, char *seq, uint32_t start, uint32_t stop) {
-    // report 0 if search did not match, 1 if it did
-    char *tkn = NULL;
-    char strand;
-    uint32_t str, lng, src;
-    size_t n;
-    char *cline = (char*) de_malloc(strlen(origLine) + 1);
-    strcpy(cline, origLine);
-    n = strlen(cline);
-    debug("line: %s\n", cline);
-    tkn = strtok(cline, " \t");
-    if (tkn[0] != 's') {
-        free(cline);
-        return 0;
-    }
-    debug("tkn: %s\n", tkn);
-    tkn = strtok(NULL, " \t"); // name field
-    if (tkn == NULL)
-        failBadFormat();
-    debug("tkn 2: %s\n", tkn);
-    if (strcmp(seq, tkn) == 0) {
-        tkn = strtok(NULL, " \t"); // start position
-        if (tkn == NULL)
-            failBadFormat();
-        debug("tkn 3: %s\n", tkn);
-        str = strtoul(tkn, NULL, 10);
-        tkn = strtok(NULL, " \t"); // length position
-        if (tkn == NULL)
-            failBadFormat();
-        debug("tkn 4: %s\n", tkn);
-        lng = strtoul(tkn, NULL, 10);
-        if (lng == UINT32_MAX) {
-            fprintf(stderr, "Error, length (%u) greater than "
-                    "or equal to UINT32_MAX (%u).\n", lng, UINT32_MAX);
-            exit(EXIT_FAILURE);
-        }
-        tkn = strtok(NULL, " \t"); // strand
-        if (tkn == NULL)
-            failBadFormat();
-        debug("tkn 5: %s\n", tkn);
-        if ((strcmp(tkn, "+") == 0) || (strcmp(tkn, "-") == 0)) {
-            strcpy(&strand, tkn);
-        } else {
-            fprintf(stderr, "Error, bad strand character: %s\n", tkn);
-            exit(EXIT_FAILURE);
-        }
-        tkn = strtok(NULL, " \t"); // source length
-        if (tkn == NULL)
-            failBadFormat();
-        debug("tkn 6: %s\n", tkn);
-        src = strtoul(tkn, NULL, 10);
-        if (src == UINT32_MAX) {
-            fprintf(stderr, "Error, source length (%u) greater "
-                    "than or equal to UINT32_MAX (%u).\n", src, UINT32_MAX);
-            exit(EXIT_FAILURE);
-        }
-        tkn = strtok(NULL, " \t"); // sequence field
-        if (tkn == NULL)
-            failBadFormat();
-        debug("tkn 7: %s\n", tkn);
-        if (checkRegion(start, stop, str, lng, src, strand)) {
-            free(cline);
-            return 1;
-        }
-    }
-    free(cline);
-    return 0;
+void printHeader(void) {
+    printf("##maf version=1\n\n");
 }
-void checkBlock(mafBlock_t *b, char *seq, uint32_t start, uint32_t stop) {
+void checkBlock(mafBlock_t *b, char *seq, uint32_t start, uint32_t stop, bool *printedHeader) {
     // read through each line of a mafBlock and if the sequence matches the region
     // we're looking for, report the block.
-    mafBlock_t *head = b;
-    while (b != NULL) {
-        if (searchMatched(b->line, seq, start, stop)) {
-            reportBlock(head);
+    mafLine_t *ml = b->headLine;
+    while (ml != NULL) {
+        if (searchMatched(ml, seq, start, stop)) {
+            if (!*printedHeader) {
+                printHeader();
+                *printedHeader = true;
+            }
+            reportBlock(b);
             break;
         } 
-        b = b->next;
+        ml = ml->next;
     }
 }
-void destroyBlock(mafBlock_t *b) {
-    mafBlock_t *tmp = NULL;
-    while (b != NULL) {
-        tmp = b;
-        b = b->next;
-        free(tmp->line);
-        free(tmp);
+void processBody(mafFileApi_t *mfa, char *seq, uint32_t start, uint32_t stop) {
+    mafBlock_t *thisBlock = NULL;
+    bool printedHeader = false;
+    while ((thisBlock = maf_readBlock(mfa)) != NULL) {
+        checkBlock(thisBlock, seq, start, stop, &printedHeader);
+        maf_destroyMafBlockList(thisBlock);
     }
-}
-void processBody(char *seq, uint32_t start, uint32_t stop, char* lastLine) {
-    FILE *ifp = stdin;
-    int32_t n = kMaxSeqName;
-    char *line = NULL;
-    if (lastLine == NULL) {
-        line = (char*) de_malloc(n);
-        if (de_getline(&line, &n, ifp) == -1) {
-            fprintf(stderr, "Error reading first body line of alignment!\n");
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        if (n < (int32_t) strlen(lastLine) + 1)
-            n = (int32_t) strlen(lastLine) + 1;
-        line = (char*) de_malloc(n);
-        strcpy(line, lastLine);
-    }
-    char *cline = NULL;
-    mafBlock_t *head = NULL, *tail = NULL;
-    do {
-        if (*line == 0 && head != NULL) {
-            // empty line or end of file
-            checkBlock(head, seq, start, stop);
-            destroyBlock(head);
-            head = NULL;
-            tail = NULL;
-            continue;
-        }
-        if (head == NULL) {
-            // new block
-            head = (mafBlock_t *) de_malloc(sizeof(*head));
-            cline = (char *) de_malloc(n);
-            strcpy(cline, line);
-            head->line = cline;
-            head->next = NULL;
-            tail = head;
-        } else {
-            // extend block
-            tail->next = (mafBlock_t *) de_malloc(sizeof(*tail));
-            cline = (char *) de_malloc(n);
-            strcpy(cline, line);
-            tail = tail->next;
-            tail->line = cline;
-            tail->next = NULL;
-        }
-    } while (de_getline(&line, &n, ifp) != -1);
-    free(line);
 }
 
 int main(int argc, char **argv) {
+    extern const int kMaxStringLength;
     char seq[kMaxSeqName];
+    char filename[kMaxStringLength];
     uint32_t start, stop;
-    parseOptions(argc, argv, seq, &start, &stop);
+    parseOptions(argc, argv, filename, seq, &start, &stop);
+    mafFileApi_t *mfa = maf_newMfa(filename, "r");
 
-    char *lastLine = processHeader(stdin);
-    processBody(seq, start, stop, lastLine);
-    free(lastLine);
+    processBody(mfa, seq, start, stop);
+    maf_destroyMfa(mfa);
     
     return EXIT_SUCCESS;
 }

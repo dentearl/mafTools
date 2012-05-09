@@ -38,6 +38,9 @@ g_headers = ['''##maf version=1 scoring=tba.v8
 ''',
              '''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
+''',
+             '''##maf version=1
+
 ''',]
 
 g_overlappingBlocks = ['''a score=0
@@ -114,6 +117,10 @@ def mafIsExtracted(maf):
         b = mtt.extractBlockStr(f, lastLine)
         lastLine = None
         if b not in g_overlappingBlocks:
+            print 'dang'
+            print b
+            print '!='
+            print g_overlappingBlocks
             return False
     return True
     
@@ -140,11 +147,11 @@ class ExtractionTest(unittest.TestCase):
                                    ''.join(shuffledBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor'))]
-            cmd += ['--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
+            cmd += ['--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+                    '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1]]
-            inpipes = [testMaf]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
-            mtt.runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsExtracted(os.path.join(tmpDir, 'extracted.maf')))
             mtt.removeTempDir()
     def testNonExtraction(self):
@@ -157,12 +164,12 @@ class ExtractionTest(unittest.TestCase):
                                    ''.join(g_nonOverlappingBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor'))]
-            cmd += ['--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
+            cmd += ['--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+                    '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1]]
-            inpipes = [testMaf]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
-            mtt.runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
-            self.assertTrue(mtt.mafIsEmpty(os.path.join(tmpDir, 'extracted.maf'), g_headers))
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            self.assertTrue(mtt.fileIsEmpty(os.path.join(tmpDir, 'extracted.maf')))
             mtt.removeTempDir()
     def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
@@ -191,11 +198,11 @@ class ExtractionTest(unittest.TestCase):
             cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
                    '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor')))
-            cmd += ['--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
+            cmd += ['--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+                    '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1]]
-            inpipes = [testMaf]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
-            mtt.runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeTempDir()
     def testMemory2(self):
@@ -213,11 +220,11 @@ class ExtractionTest(unittest.TestCase):
             cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
                    '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor')))
-            cmd += ['--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
+            cmd += ['--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+                    '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1]]
-            inpipes = [testMaf]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
-            mtt.runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeTempDir()
 

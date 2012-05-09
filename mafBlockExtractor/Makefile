@@ -3,7 +3,7 @@ cc = gcc
 args = -g -Wall -Wextra -std=c99 -pedantic
 bin = ../bin
 PROGS = mafBlockExtractor
-dependencies = ../include/common.h
+dependencies = ../include/common.h ../include/sharedMaf.h
 
 .PHONY: all clean test
 
@@ -33,4 +33,4 @@ clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
 
 test: test/mafBlockExtractor
-	python2.6 src/test.mafBlockExtractor.py --verbose && rm -rf ./test/
+	python2.7 src/test.mafBlockExtractor.py --verbose && rm -rf ./test/
