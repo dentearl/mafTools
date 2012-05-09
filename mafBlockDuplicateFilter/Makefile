@@ -3,7 +3,7 @@ cc = gcc
 args = -g -Wall -Wextra -Werror -std=c99 -pedantic
 bin = ../bin
 PROGS = mafBlockDuplicateFilter
-dependencies = ../include/common.h 
+dependencies = ../include/common.h ../include/sharedMaf.h
 
 .PHONY: all clean test
 
@@ -17,16 +17,6 @@ ${bin}/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies}
 test/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies}
 	mkdir -p $(dir $@)
 	${cc} ${args} -O0 $< -I ../include -I ../external -o $@.tmp 
-	mv $@.tmp $@
-
-${bin}/%: src/%.c 
-	mkdir -p $(dir $@)
-	${cc} ${args} $^ -o $@.tmp 
-	mv $@.tmp $@
-
-../include/common.o: ../include/common.c ../include/common.h
-	mkdir -p $(dir $@)
-	${cc} ${args} $< -c -o $@.tmp 
 	mv $@.tmp $@
 
 clean:
