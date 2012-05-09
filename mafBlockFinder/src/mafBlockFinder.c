@@ -33,14 +33,16 @@
 #include <string.h>
 #include <unistd.h>
 #include "common.h"
+#include "sharedMaf.h"
 
 int g_verbose_flag = 0;
 int g_debug_flag = 0;
 
+void usage(void);
 void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t *position);
 void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start, 
                  uint32_t length, uint32_t sourceLength, char strand);
-void searchInput(FILE *ifp, char *fullname, unsigned long pos);
+void searchInput(mafFileApi_t *mfa, char *fullname, unsigned long pos);
 
 void usage(void) {
     fprintf(stderr, "Usage: mafBlockFinder --maf [path to maf] "
@@ -59,7 +61,6 @@ void usage(void) {
             "  -v, --verbose  turns on verbose output.\n");
     exit(EXIT_FAILURE);
 }
-
 void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t *position) {
     extern int g_debug_flag;
     extern int g_verbose_flag;
@@ -130,68 +131,43 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t
         usage();
     }
 }
-
-void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start, 
-                 uint32_t length, uint32_t sourceLength, char strand) {
-    // check to see if pos is in this block
-    static unsigned long absStart, absEnd;
-    if (strand == '-') {
-        absStart =  sourceLength - (start + length);
-        absEnd = sourceLength - start - 1;
+bool insideLine(mafLine_t *ml, uint32_t pos) {
+    // check to see if pos is inside of the maf line
+    uint32_t absStart, absEnd;
+    if (ml->strand == '-') {
+        absStart =  ml->sourceLength - (ml->start + ml->length);
+        absEnd = ml->sourceLength - ml->start - 1;
     } else {
-        absStart = start;
-        absEnd = start + length - 1;
+        absStart = ml->start;
+        absEnd = ml->start + ml->length - 1;
     }
     if ((absStart <= pos) && (absEnd >= pos))
-        printf("%u: s %s %u %u %c %u ...\n", lineno, fullname, start, 
-               length, strand, sourceLength);
+        return true;
+    return false;
 }
-
-void searchInput(FILE *ifp, char *fullname, unsigned long pos) {
-    extern const int kMaxStringLength;
-    int32_t n = kMaxStringLength;
-    char *buffer = (char *) de_malloc(n);
-    char *tkn = NULL;
-    char *endPtr = NULL;
-    char strand = '\0';
-    unsigned lineno = 0;
-    uint32_t start, length, sourceLength;
-    verbose("searching for %s %u\n", fullname, pos);
-    while (de_getline(&buffer, &n, ifp) != -1) {
-        lineno++;
-        tkn = strtok(buffer, " \t"); // ^a or ^s
-        if (tkn == NULL)
+void checkBlock(mafBlock_t *mb, char *fullname, uint32_t pos) {
+    mafLine_t *ml = mb->headLine;
+    while (ml != NULL) {
+        if (ml->type != 's') {
+            ml = ml->next;
             continue;
-        if (tkn[0] != 's')
-            continue;
-        tkn = strtok(NULL, " \t"); // name field
-        if (strncmp(fullname, tkn, strlen(fullname)) == 0) {
-            tkn = strtok(NULL, " \t"); // start position
-            start = strtoul(tkn, &endPtr, 10);
-            tkn = strtok(NULL, " \t"); // length position
-            length = strtoul(tkn, &endPtr, 10);
-            if (length == UINT32_MAX) {
-                fprintf(stderr, "Error on line %u, length (%u) greater than "
-                        "or equal to UINT32_MAX (%u).\n",
-                        lineno, length, UINT32_MAX);
-                exit(EXIT_FAILURE);
-            }
-            tkn = strtok(NULL, " \t"); // strand
-            if ((strcmp(tkn, "+") == 0) || (strcmp(tkn, "-") == 0))
-                strcpy(&strand, tkn);
-            tkn = strtok(NULL, " \t"); // source length
-            sourceLength = strtoul(tkn, &endPtr, 10);
-            if (sourceLength == UINT32_MAX) {
-                fprintf(stderr, "Error on line %u, source length (%u) greater "
-                        "than or equal to UINT32_MAX (%u).\n",
-                        lineno, length, UINT32_MAX);
-                exit(EXIT_FAILURE);
-            }
-            tkn = strtok(NULL, " \t"); // sequence field
-            checkRegion(lineno, fullname, pos, start, length, sourceLength, strand);
         }
+        if (!(strcmp(ml->species, fullname) == 0)) {
+            ml = ml->next;
+            continue;
+        }
+        if (insideLine(ml, pos))
+            printf("%u: s %s %u %u %c %u ...\n", ml->lineNumber, fullname, ml->start, 
+                   ml->length, ml->strand, ml->sourceLength);
+        ml = ml->next;
     }
-    free(buffer);
+}
+void searchInput(mafFileApi_t *mfa, char *fullname, unsigned long pos) {
+    mafBlock_t *thisBlock = NULL;
+    while ((thisBlock = maf_readBlock(mfa)) != NULL) {
+        checkBlock(thisBlock, fullname, pos);
+        maf_destroyMafBlockList(thisBlock);
+    }
 }
 
 int main(int argc, char **argv) {
@@ -199,11 +175,11 @@ int main(int argc, char **argv) {
     char filename[kMaxStringLength];
     char targetName[kMaxStringLength];
     uint32_t targetPos;
-    
     parseOptions(argc, argv,  filename, targetName, &targetPos);
-    FILE *maf = de_open(filename, "r");
+    mafFileApi_t *mfa = maf_newMfa(filename, "r");
 
-    searchInput(maf, targetName, targetPos);
+    searchInput(mfa, targetName, targetPos);
+    maf_destroyMfa(mfa);
    
     return EXIT_SUCCESS;
 }

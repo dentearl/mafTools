@@ -3,7 +3,7 @@ cc = gcc
 args = -Wall -Wextra -std=c99 -pedantic
 bin = ../bin
 PROGS = mafBlockFinder
-dependencies = ../include/common.h
+dependencies = ../include/common.h ../include/sharedMaf.h
 
 .PHONY: all clean test
 
