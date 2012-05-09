@@ -38,7 +38,7 @@ g_headers = ['''##maf version=1 scoring=tba.v8
 ''']
 
 g_duplicateBlocks = [('''a score=0
-#dup block 1
+#dup block 1, name4 is duplicate
 s target.chr0        38 13 + 158545518 gcagctgaaaaca
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon         249182 13 +   4622798 gcagctgaaaaca
@@ -51,7 +51,7 @@ s name4.chrA         50 13 +       100 gcagctgaaaacT
 
 ''',
                       '''a score=0
-#dup block 1
+#dup block 1, name4 is duplicate
 s target.chr0        38 13 + 158545518 gcagctgaaaaca
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon         249182 13 +   4622798 gcagctgaaaaca
@@ -63,7 +63,7 @@ s name4.chr&         50 13 +       100 gcagctgaaaaca
 
 ''',),
                      ('''a score=0
-#dup block 2
+#dup block 2, target is duplicate
 s name                0 13 +       100 gcagctgaaaaca
 s name2.chr1         50 13 +       100 gcagctgaaaaca
 s name3.chr9         50 13 +       100 gcagctgaaaaca
@@ -76,7 +76,7 @@ s target.chr1 158545457 13 - 158545518 gcagctgaaaaca
 
 ''',
                       '''a score=0
-#dup block 2
+#dup block 2, target is duplicate
 s name                0 13 +       100 gcagctgaaaaca
 s name2.chr1         50 13 +       100 gcagctgaaaaca
 s name3.chr9         50 13 +       100 gcagctgaaaaca
@@ -88,7 +88,7 @@ s target.chr1 158545457 13 - 158545518 gcagctgaaaaca
 
 ''',),
                      ('''a score=0
-#dup block 3
+#dup block 3, panTro1 and baboon are duplicates
 s name               10 13 +       100 gcagctgaaaaca
 s name2.chr1         50 13 +       100 gcagctgaaaaca
 s name3.chr9         50 13 +       100 gcagctgaaaaca
@@ -104,7 +104,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 ''',
                       '''a score=0
-#dup block 3
+#dup block 3, panTro1 and baboon are duplicates
 s name               10 13 +       100 gcagctgaaaaca
 s name2.chr1         50 13 +       100 gcagctgaaaaca
 s name3.chr9         50 13 +       100 gcagctgaaaaca
@@ -118,7 +118,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 ''',),
                      ('''a score=0
-#dup block 4
+#dup block 4, name, panTro1 and baboon are duplicates
 s name               10 13 +       100 gcagctgaaaaca
 s name.chr1          50 13 +       100 gcagctgaaaact
 s name.chr2          50 13 +       100 gcagctgaaaact
@@ -135,7 +135,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 ''',
                       '''a score=0
-#dup block 4
+#dup block 4, name, panTro1 and baboon are duplicates
 s name               10 13 +       100 gcagctgaaaaca
 s name3.chr9         50 13 +       100 gcagctgaaaaca
 s name4.chr&         50 13 +       100 gcagctgaaaaca
@@ -188,9 +188,15 @@ def mafIsFiltered(maf, blockList):
         b = mtt.extractBlockStr(f, lastLine)
         lastLine = None
         if b != blockList[i]:
+            print 'dang'
+            print 'observed:'
+            print b
+            print '!='
+            print 'expected:'
+            print blockList[i]
             return False
     return True
-class ExtractionTest(unittest.TestCase):
+class DuplicationFilterTest(unittest.TestCase):
     def testFilter(self):
         """ mafBlockDuplicateFilter should filter out duplicates in blocks according to sequence similarity to the consensus.
         """
@@ -215,14 +221,14 @@ class ExtractionTest(unittest.TestCase):
             testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
                                    ''.join(shuffledBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter'))]
-            inpipes = [testMaf]
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
+                   '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
-            mtt.runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), expectedOutput))
             mtt.removeTempDir()
-    def testNonExtraction(self):
-        """ mafBlockExtractor should not filter out any sequences from blocks when there are no duplicates.
+    def testNonFilter(self):
+        """ mafBlockDuplicateFilter should not filter out any sequences from blocks when there are no duplicates.
         """
         for i in xrange(0, 10):
             tmpDir = os.path.abspath(mtt.makeTempDir())
@@ -231,10 +237,10 @@ class ExtractionTest(unittest.TestCase):
                                    ''.join(g_nonDuplicateBlocks), g_headers)
             expectedOutput = g_nonDuplicateBlocks
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter'))]
-            inpipes = [testMaf]
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
+                   '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
-            mtt.runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), expectedOutput))
             mtt.removeTempDir()
     def testMemory1(self):
@@ -266,10 +272,10 @@ class ExtractionTest(unittest.TestCase):
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
                    '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
-            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')))
-            inpipes = [testMaf]
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
+                   '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
-            mtt.runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeTempDir()
     def testMemory2(self):
@@ -287,10 +293,10 @@ class ExtractionTest(unittest.TestCase):
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
                    '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
-            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')))
-            inpipes = [testMaf]
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
+                   '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
-            mtt.runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeTempDir()
 
