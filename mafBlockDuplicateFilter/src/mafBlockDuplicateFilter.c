@@ -36,14 +36,6 @@ int g_verbose_flag = 0;
 int g_debug_flag = 0;
 const int kMaxSeqName = 1 << 8;
 
-/* typedef struct mafLine { */
-/*     // a mafLine struct is a single line of a mafBlock */
-/*     char *line; // the entire line */
-/*     char *species; // just the species name */
-/*     char *sequence; // just the sequence field */
-/*     double score; */
-/*     struct mafLine *next; */
-/* } mafLine_t; */
 typedef struct scoredMafLine {
     // augmented data structure
     double score;
@@ -59,8 +51,6 @@ typedef struct duplicate {
 } duplicate_t;
 
 void usage(void);
-void speciesNameCopy(char *species, char *line, int n);
-void sequenceCopy(char *seq, char *line);
 void processBody(mafFileApi_t *mfa);
 void checkBlock(mafBlock_t *block);
 // void destroyBlock(mafLine_t *m);
@@ -580,79 +570,8 @@ void destroyStringArray(char **sArray, int n) {
     }
     free(sArray);
 }
-void speciesNameCopy(char *species, char *line, int n) {
-    // reads `line' and extracts the species name, copies it into
-    // `species'
-    // so the line:
-    //s hg19.chr22 885203...
-    // will copy out only the `hg19' part.
-    if (line[0] != 's') {
-        // if this is not a sequence line, species should be NULL
-        species[0] = '\0';
-        return;
-    }
-    line++; // skip the `^s'
-    while (*line == ' ' || *line == '\t')
-        line++;
-    int i = 0;
-    while (*line != ' ' && *line != '.' && *line != '\t' && i < n)
-        species[i++] = *(line++);
-    species[i] = '\0';
-}
-void sequenceCopy(char *seq, char *line) {
-    // walk a maf line `line' until the sequence field, then copy that entire field into `seq'
-    char *tline = (char *) de_malloc(strlen(line) + 1);
-    strcpy(tline, line);
-    char *tkn = NULL;
-    tkn = strtok(tline, " \t"); // 's' field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    if (tkn[0] != 's') {
-        free(tline);
-        seq[0] = '\0';
-        return;
-    }
-    tkn = strtok(NULL, " \t"); // name field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    tkn = strtok(NULL, " \t"); // start field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    tkn = strtok(NULL, " \t"); // length field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    tkn = strtok(NULL, " \t"); // strand field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    tkn = strtok(NULL, " \t"); // sourceLength field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    tkn = strtok(NULL, " \t"); // sequence field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    strcpy(seq, tkn);
-    free(tline);
-}
-void removeTrailingWhitespace(char *s) {
-    // given a string `s', walk it backwards and cut off all trailing whitespace
-    for (int i = strlen(s) - 1; 0 <= i; --i) {
-        if (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r')
-            s[i] = '\0';
-        else
-            return;
-    }
-}
 void processBody(mafFileApi_t *mfa) {
     // walk the body of the maf file and process it, block by block.
-    extern const int kMaxStringLength;
-
     mafBlock_t *thisBlock = NULL;
     thisBlock = maf_readBlock(mfa); // unused
     maf_destroyMafBlockList(thisBlock);
