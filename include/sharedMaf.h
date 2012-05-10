@@ -34,8 +34,9 @@ typedef struct mafFileApi {
     // a mafFileApi struct provides an interface into a maf file.
     // Allows for easy reading of files in entirety or block by block via
     // functions
-    uint32_t lineNumber; // last read line
+    uint32_t lineNumber; // last read line / wrote
     FILE *mfp; // maf file pointer
+    char *filename; // filename of the maf
     char *lastLine; /* a temporary cache in case the header fails to have a blank 
                      * line before the first alignment block. 
                      */
@@ -66,6 +67,8 @@ mafFileApi_t* maf_newMfa(char *filename, char const *mode);
 mafBlock_t* maf_readAll(mafFileApi_t *mfa);
 mafBlock_t* maf_readBlock(mafFileApi_t *mfa);
 mafBlock_t* maf_readHeader(mafFileApi_t *mfa);
+void maf_writeAll(mafFileApi_t *mfa, mafBlock_t *mb);
+void maf_writeBlock(mafFileApi_t *mfa, mafBlock_t *mb);
 mafBlock_t* maf_newMafBlock(void);
 mafLine_t* maf_newMafLine(void);
 mafLine_t* maf_newMafLineFromString(char *s, uint32_t lineNumber);
@@ -179,6 +182,7 @@ mafFileApi_t* maf_newMfa(char *filename, char const *mode) {
     mfa->lineNumber = 0;
     mfa->lastLine = NULL;
     mfa->mfp = de_open(filename, mode);
+    mfa->filename = de_strdup(filename);
     return mfa;
 }
 void maf_destroyMafLineList(mafLine_t *ml) {
@@ -204,8 +208,12 @@ void maf_destroyMafBlockList(mafBlock_t *mb) {
     }
 }
 void maf_destroyMfa(mafFileApi_t *mfa) {
-    fclose(mfa->mfp);
+    if (mfa->mfp != NULL) {
+        fclose(mfa->mfp);
+        mfa->mfp = NULL;
+    }
     free(mfa->lastLine);
+    free(mfa->filename);
     free(mfa);
 }
 bool maf_blankLine(char *s) {
@@ -375,5 +383,26 @@ mafBlock_t* maf_readAll(mafFileApi_t *mfa) {
         mb = tmp;
     }
     return head;
+}
+void maf_writeAll(mafFileApi_t *mfa, mafBlock_t *mb) {
+    // write an entire mfa, creating a linked list of mafBlock_t, returning the head.
+    while (mb != NULL) {
+        maf_writeBlock(mfa, mb);
+        mb = mb->next;
+    }
+    fprintf(mfa->mfp, "\n");
+    ++(mfa->lineNumber);
+    fclose(mfa->mfp);
+    mfa->mfp = NULL;
+}
+void maf_writeBlock(mafFileApi_t *mfa, mafBlock_t *mb) {
+    mafLine_t *ml = mb->headLine;
+    while (ml != NULL) {
+        fprintf(mfa->mfp, "%s\n", ml->line);
+        ++(mfa->lineNumber);
+        ml = ml->next;
+    }
+    fprintf(mfa->mfp, "\n");
+    ++(mfa->lineNumber);
 }
 #endif // SHAREDMAF_H_

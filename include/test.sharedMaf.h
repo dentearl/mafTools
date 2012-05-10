@@ -25,6 +25,7 @@
 #ifndef TEST_SHAREDMAF_H_
 #define TEST_SHAREDMAF_H_
 #include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -40,6 +41,52 @@ void writeStringToTmpFile(char *s) {
     FILE *f = de_open("test_tmp/test.maf", "w+");
     fprintf(f, "%s", s);
     fclose(f);
+}
+bool filesAreIdentical(char *fileA, char *fileB) {
+    extern const int kMaxStringLength;
+    int32_t n = kMaxStringLength;
+    FILE *ifpA = fopen(fileA, "r");
+    FILE *ifpB = fopen(fileB, "r");
+    char *lineA = (char*) de_malloc(n);
+    char *lineB = (char*) de_malloc(n);
+    while(de_getline(&lineA, &n, ifpA) != -1) {
+        if (de_getline(&lineB, &n, ifpB) == -1) {
+            free(lineA);
+            free(lineB);
+            fclose(ifpA);
+            fclose(ifpB);
+            return false;
+        }
+        if (strlen(lineA) != strlen(lineB)) {
+            free(lineA);
+            free(lineB);
+            fclose(ifpA);
+            fclose(ifpB);
+            return false;
+        }
+        for (unsigned i = 0; i < strlen(lineA); ++i) {
+            if (lineA[i] != lineB[i]) {
+                free(lineA);
+                free(lineB);
+                fclose(ifpA);
+                fclose(ifpB);
+                return false;
+            }
+        }
+            
+    }
+    if (de_getline(&lineB, &n, ifpB) != -1) {
+        free(lineA);
+        free(lineB);
+        fclose(ifpA);
+        fclose(ifpB);
+        return false;
+    }
+    free(lineA);
+    free(lineB);
+    fclose(ifpA);
+    fclose(ifpB);
+    return true;
 }
 static void test_newMafLineFromString(CuTest *testCase) {
     // verify that a maf line string is correctly parsed
@@ -136,11 +183,11 @@ static void test_readBlock(CuTest *testCase) {
     // verify we read a header and a block correctly
     assert(testCase != NULL);
     createTmpFolder();
-    // case 1
     char *input = de_strdup("track name=euArc visibility=pack \n\
 ##maf version=1 scoring=tba.v8 \n\
 # tba.v8 (((human chimp) baboon) (mouse rat)) \n\
                    \n\
+\n\
 a score=23262.0     \n\
 s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG\n\
 s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG\n\
@@ -155,12 +202,15 @@ s baboon         241163 6 +   4622798 TAAAGA \n\
 s mm4.chr6     53303881 6 + 151104725 TAAAGA\n\
 s rn3.chr4     81444246 6 + 187371129 taagga\n\
 \n\
+# non block comment line \n\
+\n\
+\n\
 a score=6636.0\n\
 s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca\n\
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca\n\
 s baboon         249182 13 +   4622798 gcagctgaaaaca\n\
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA\n\
-\n\n ");
+\n\n");
     writeStringToTmpFile(input);
     mafFileApi_t *mapi = maf_newMfa("test_tmp/test.maf", "r");
     mafBlock_t *mb = maf_readBlock(mapi);
@@ -227,7 +277,7 @@ s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca\n\
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca\n\
 s baboon         249182 13 +   4622798 gcagctgaaaaca\n\
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA\n\
-\n\n ");
+\n\n");
     writeStringToTmpFile(input);
     mafFileApi_t *mapi = maf_newMfa("test_tmp/test.maf", "r");
     mafBlock_t *mb = maf_readBlock(mapi);
@@ -284,7 +334,7 @@ s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGT
 s baboon         116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG\n\
 s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG\n\
 s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG\n\
-\n\n ");
+\n\n");
     writeStringToTmpFile(input);
     mafFileApi_t *mapi = maf_newMfa("test_tmp/test.maf", "r");
     mafBlock_t *mb = maf_readBlock(mapi);
@@ -335,12 +385,50 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
     maf_destroyMfa(mapi);
     free(input);
 }
+static void test_readWriteMaf(CuTest *testCase) {
+    // make sure that we can do a complete read and complete write and that
+    // the output is identical to the input.
+    assert(testCase != NULL);
+    createTmpFolder();
+    // case 1
+    char *input = de_strdup("track name=euArc visibility=pack \n\
+##maf version=1 scoring=tba.v8 \n\
+# tba.v8 (((human chimp) baboon) (mouse rat)) \n\
+\n\
+a score=23262.0     \n\
+s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG\n\
+# generic comment\n\
+s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG\n\
+s baboon         116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG\n\
+s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG\n\
+s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG\n\
+\n\n");
+    writeStringToTmpFile(input);
+    mafFileApi_t *mfaRead = maf_newMfa("test_tmp/test.maf", "r");
+    CuAssertTrue(testCase, mfaRead != NULL);
+    mafFileApi_t *mfaWrite = maf_newMfa("test_tmp/testWrite.maf", "w");
+    CuAssertTrue(testCase, mfaWrite != NULL);
+    mafBlock_t *mb = maf_readAll(mfaRead);
+    CuAssertTrue(testCase, mb != NULL);
+    maf_writeAll(mfaWrite, mb);
+    CuAssertTrue(testCase, mfaRead->lineNumber == mfaWrite->lineNumber);
+    CuAssertTrue(testCase, filesAreIdentical(mfaRead->filename, mfaWrite->filename) == true);
+    // clean up
+    maf_destroyMafBlockList(mb);
+    unlink("test_tmp/test.maf");
+    unlink("test_tmp/testWrite.maf");
+    rmdir("test_tmp");
+    maf_destroyMfa(mfaRead);
+    maf_destroyMfa(mfaWrite);
+    free(input);
+}
 CuSuite* mafShared_TestSuite(void) {
     CuSuite* suite = CuSuiteNew();
     SUITE_ADD_TEST(suite, test_newMafLineFromString);
     SUITE_ADD_TEST(suite, test_readBlock);
     SUITE_ADD_TEST(suite, test_readBlock2);
     SUITE_ADD_TEST(suite, test_lineNumbers);
+    SUITE_ADD_TEST(suite, test_readWriteMaf);
     return suite;
 }
 #endif // TEST_SHAREDMAF_H_
