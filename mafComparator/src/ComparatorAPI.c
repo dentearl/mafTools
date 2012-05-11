@@ -1053,7 +1053,6 @@ void populateNames(const char *mAFFile, stSortedSet *htp) {
         if (bytesRead > 0 && cA[0] == 's') {
             seqName = st_malloc(sizeof(char) * (1 + (bytesRead)));
             sequence = st_malloc(sizeof(char) * (1 + (bytesRead)));
-            //assert(sscanf(cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence) == 6);
             j = sscanf(cA, "s %s %i %i %c %i %s", seqName, &start, &i, /*ignore the length field*/
                        &strand, &seqLength, sequence);
             assert(j == 6 || (j == 5 && seqLength == 0));
