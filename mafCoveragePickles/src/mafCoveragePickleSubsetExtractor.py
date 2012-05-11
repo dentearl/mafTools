@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python2.7
 """
 mafCoveragePickleSubsetExtractor.py
 10 January 2012

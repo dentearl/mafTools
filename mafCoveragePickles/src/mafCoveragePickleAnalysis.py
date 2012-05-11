@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python2.7
 """ 
 mafCoveragePickleGapAnalysis.py
 14 November 2011

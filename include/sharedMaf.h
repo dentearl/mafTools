@@ -72,6 +72,7 @@ void maf_writeBlock(mafFileApi_t *mfa, mafBlock_t *mb);
 mafBlock_t* maf_newMafBlock(void);
 mafLine_t* maf_newMafLine(void);
 mafLine_t* maf_newMafLineFromString(char *s, uint32_t lineNumber);
+unsigned maf_numberOfBlocks(mafBlock_t *b);
 unsigned maf_numberOfSequences(mafBlock_t *b);
 unsigned maf_numberOfSequencesMafLineList(mafLine_t *m);
 void maf_destroyMafLineList(mafLine_t *ml);
@@ -225,6 +226,14 @@ bool maf_blankLine(char *s) {
         }
     }
     return true;
+}
+unsigned maf_numberOfBlocks(mafBlock_t *b) {
+    unsigned n = 0;
+    while (b != NULL) {
+        ++n;
+        b = b->next;
+    }
+    return n;
 }
 unsigned maf_numberOfSequences(mafBlock_t *b) {
     // count the number of actual sequence lines in the mafBlock.

@@ -33,4 +33,4 @@ clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
 
 test: test/mafBlockFinder
-	python2.6 src/test.mafBlockFinder.py --verbose && rm -rf test/
+	python2.7 src/test.mafBlockFinder.py --verbose && rm -rf test/

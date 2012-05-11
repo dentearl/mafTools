@@ -31,25 +31,17 @@
 #include <stdint.h>
 #include <string.h>
 #include "common.h"
+#include "sharedMaf.h"
 
 int g_verbose_flag = 0;
 int g_debug_flag = 0;
 const int kMaxSeqName = 1 << 8;
 
-typedef struct mafLine {
-    // a mafLine struct is a single line of a mafBlock
-    char *line;
-    struct mafLine *next;
-} mafLine_t;
-
-typedef struct mafBlock {
-    // a mafBlock struct contains a maf block as a linked list
-    // and itself can be part of a mafBlock linked list.
-    mafLine_t *head;
-    mafLine_t *tail;
-    uint32_t targetStart;
-    struct mafBlock *next;
-} mafBlock_t;
+typedef struct sortingMafBlock {
+    // augmented data structure
+    mafBlock_t *mafBlock; // pointer to actual mafBlock_t
+    int32_t targetStart; // value to sort on, position in target sequence
+} sortingMafBlock_t;
 
 void usage(void) {
     fprintf(stderr, "Usage: mafBlockSorter --maf [maf file] --seq [sequence name (and possibly chr)] "
@@ -62,6 +54,7 @@ void usage(void) {
             "position is used for that block.\n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
+            "  -m, --maf      maf file.'\n"
             "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
             "  -v, --verbose  turns on verbose output.\n");
     exit(EXIT_FAILURE);
@@ -125,197 +118,86 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName) {
         usage();
     }
 }
-bool blankLine(char *s) {
-    // return true if line is only whitespaces
-    size_t n = strlen(s);
-    for (size_t i = 0; i < n; ++i) {
-        if (!isspace(*(s + i))) {
-            return false;
-        }
-    }
-    return true;
-}
-uint32_t getTargetStart(char *line, char *targetSeq) {
-    // read a maf sequence line and if the line contains
-    // the target sequence, return the value of the start field
-    // otherwise return 0.
-    char *cline = (char *) de_malloc(strlen(line) + 1);
-    strcpy(cline, line);
-    char *tkn = NULL;
-    tkn = strtok(cline, " \t");
-    long unsigned start;
-    if (tkn == NULL) {
-        free (cline);
-        failBadFormat();
-    }
-    if (tkn[0] != 's') {
-        free (cline);
-        return 0;
-    }
-    tkn = strtok(NULL, " \t"); // name field
-    if (tkn == NULL) {
-        printf("cline: %s\n", cline);
-        failBadFormat();
-    }
-    if (strncmp(targetSeq, tkn, strlen(targetSeq)) == 0) {
-        tkn = strtok(NULL, " \t"); // start position
-        if (tkn == NULL)
-            failBadFormat();
-        start = strtoul(tkn, NULL, 10);
-        free(cline);
-        return start;
-    }
-    free(cline);
-    return 0;
-}
-uint32_t max(uint32_t a, uint32_t b) {
+int32_t max(int32_t a, int32_t b) {
     return (a > b ? a : b);
 }
-mafBlock_t* newMafBlock(void) {
-    mafBlock_t *mb = (mafBlock_t *) de_malloc(sizeof(*mb));
-    mb->next = NULL;
-    mb->head = NULL;
-    mb->tail = NULL;
-    mb->targetStart = 0;
-    return mb;
-}
-mafLine_t* newMafLine(void) {
-    mafLine_t* ml = (mafLine_t *) de_malloc(sizeof(*ml));
-    ml->line = NULL;
-    ml->next = NULL;
-    return ml;
-}
-unsigned processBody(FILE *ifp, mafBlock_t *head, char *targetSeq, char *lastLine) {
-    // process the body of the maf, block by block.
-    extern const int kMaxStringLength;
-    int32_t n = kMaxStringLength;
-    char *line = NULL;
-    if (lastLine == NULL) {
-        line = (char*) de_malloc(n);
-        if (de_getline(&line, &n, ifp) == -1) {
-            fprintf(stderr, "Error reading first body line of alignment!\n");
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        if (n < (int32_t) strlen(lastLine) + 1)
-            n = (int32_t) strlen(lastLine) + 1;
-        line = (char*) de_malloc(n);
-        strcpy(line, lastLine);
+int32_t getTargetStartLine(mafLine_t *ml, char *targetSeq) {
+    if (ml->type != 's')
+        return -1;
+    if (strncmp(targetSeq, ml->species, strlen(targetSeq)) == 0) {
+        return (int32_t) ml->start;
     }
-    mafBlock_t *thisBlock = head;
-    unsigned numBlocks = 1;
-    bool prevLineBlank = false;
-    do {
-        if (blankLine(line)) {
-            if (prevLineBlank) {
-                continue;
-            }
-            prevLineBlank = true;
-        } else {
-            if (prevLineBlank) {
-                // if this line is not blank and the previous line was blank
-                // then this is the start of a new maf block.
-                ++numBlocks;
-                mafBlock_t *nextBlock = newMafBlock();
-                thisBlock->next = nextBlock;
-                thisBlock = nextBlock;
-            }
-            prevLineBlank = false;
-            char *copy = (char *) de_malloc(n + 1); // freed in destroy lines
-            strcpy(copy, line);
-            thisBlock->targetStart = max(thisBlock->targetStart, getTargetStart(copy, targetSeq));
-            if (thisBlock->head == NULL) {
-                // if thisBlock->head is null then this is a brand new mafBlock and it needs
-                // a new mafLine to be created.
-                thisBlock->head = newMafLine();
-                thisBlock->head->line = copy;
-                thisBlock->tail = thisBlock->head;
-            } else {
-                thisBlock->tail->next = newMafLine();
-                thisBlock->tail->next->line = copy;
-                thisBlock->tail = thisBlock->tail->next;
-            }
-        }
-    } while (de_getline(&line, &n, ifp) != -1);
-    free(line);
-    return numBlocks;
+    return -1;
 }
-void populateArray(mafBlock_t *head, mafBlock_t **array) {
+int32_t getTargetStartBlock(mafBlock_t *mb, char *targetSeq) {
+    mafLine_t *ml = mb->headLine;
+    assert(ml != NULL);
+    int32_t tStart = -1;
+    while (ml != NULL) {
+        tStart = max(tStart, getTargetStartLine(ml, targetSeq));
+        ml = ml->next;
+    }
+    return tStart;
+}
+unsigned processBody(mafFileApi_t *mfa, mafBlock_t **head) {
+    // process the body of the maf, block by block.
+    *head = maf_readAll(mfa);
+    return maf_numberOfBlocks(*head);
+}
+void populateArray(mafBlock_t *mb, sortingMafBlock_t **array, char *targetSequence) {
     // walk the linked list pointed to by head and stuff pointers to
     // the structs into the array.
     unsigned i = 0;
-    mafBlock_t *thisBlock = head;
-    while (thisBlock != NULL) {
-        array[i++] = thisBlock;
-        thisBlock = thisBlock->next;
+    while (mb != NULL) {
+        array[i] = (sortingMafBlock_t *) de_malloc(sizeof(sortingMafBlock_t));
+        array[i]->mafBlock = mb;
+        array[i++]->targetStart = getTargetStartBlock(mb, targetSequence);
+        mb = mb->next;
     }
 }
 int cmp_by_targetStart(const void *a, const void *b) {
-    // mafBlock_t * const *ia = a;
-    // mafBlock_t * const *ib = b;
-    mafBlock_t **ia = (mafBlock_t **) a;
-    mafBlock_t **ib = (mafBlock_t **) b;
+    sortingMafBlock_t **ia = (sortingMafBlock_t **) a;
+    sortingMafBlock_t **ib = (sortingMafBlock_t **) b;
     return ((*ia)->targetStart - (*ib)->targetStart);
 }
-void reportBlock(mafBlock_t *mb) {
+void reportBlock(sortingMafBlock_t *smb) {
     // print out the single block pointed to by mb
-    mafLine_t *ml = mb->head;
+    mafLine_t *ml = smb->mafBlock->headLine;
     while(ml != NULL) {
         assert(ml->line != NULL);
         printf("%s\n", ml->line);
         ml = ml->next;
     }
 }
-void reportBlocks(mafBlock_t **array, unsigned numBlocks) {
+void reportBlocks(sortingMafBlock_t **array, unsigned numBlocks) {
     // look over the block array and print out all the blocks
     for (unsigned i = 0; i < numBlocks; ++i) {
         reportBlock(array[i]);
         printf("\n");
     }
 }
-void destroyLines(mafLine_t *ml) {
-    mafLine_t *tmp;
-    while(ml != NULL) {
-        tmp = ml;
-        ml = ml->next;
-        free(tmp->line);
-        free(tmp);
-    }
-}
-void destroyBlocks(mafBlock_t *mb) {
-    mafBlock_t *tmp;
-    while(mb != NULL) {
-        tmp = mb;
-        mb = mb->next;
-        destroyLines(tmp->head);
-        free(tmp);
-    }
-}
-void printblockarrayvalues(mafBlock_t **blockArray, unsigned numBlocks) {
-    // debug
+void destroyArray(sortingMafBlock_t **array, unsigned numBlocks) {
     for (unsigned i = 0; i < numBlocks; ++i) {
-        printf("%d%s", blockArray[i]->targetStart, i == numBlocks - 1 ? "\n" : ", ");
+        free(array[i]);
     }
 }
 int main(int argc, char **argv) {
-    char filename[kMaxSeqName];
+    extern const int kMaxStringLength;
     char targetSequence[kMaxSeqName];
-    mafBlock_t *mafObj = newMafBlock();
-    unsigned numBlocks = 0;
+    char filename[kMaxStringLength];
     parseOptions(argc, argv, filename, targetSequence);
-    // initialize
-    FILE *maf = de_open(filename, "r");
-    char *lastLine = processHeader(maf);
-    // read input
-    numBlocks = processBody(maf, mafObj, targetSequence, lastLine);
-    mafBlock_t *blockArray[numBlocks];
-    // sort
-    populateArray(mafObj, blockArray);
-    qsort(blockArray, numBlocks, sizeof(mafBlock_t *), cmp_by_targetStart);
-    // write output
+    
+    mafFileApi_t *mfa = maf_newMfa(filename, "r");
+    mafBlock_t *mb = NULL;
+    unsigned numBlocks = processBody(mfa, &mb);
+    sortingMafBlock_t *blockArray[numBlocks];
+    populateArray(mb, blockArray, targetSequence);
+
+    qsort(blockArray, numBlocks, sizeof(sortingMafBlock_t *), cmp_by_targetStart);
     reportBlocks(blockArray, numBlocks);
-    // cleanup
-    destroyBlocks(mafObj);
-    free(lastLine);
+    destroyArray(blockArray, numBlocks);
+    maf_destroyMfa(mfa);
+    maf_destroyMafBlockList(mb);
+    
     return EXIT_SUCCESS;
 }
