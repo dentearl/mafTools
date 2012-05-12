@@ -127,6 +127,7 @@ int main(int argc, char *argv[]) {
     char * outputFile = NULL;
     int32_t sampleNumber = 1000000; // by default do a million samples per pair.
     char * trioFile = NULL;
+    int j;
 
     ///////////////////////////////////////////////////////////////////////////
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
@@ -166,7 +167,9 @@ int main(int argc, char *argv[]) {
                 outputFile = stString_copy(optarg);
                 break;
             case 'e':
-                assert(sscanf(optarg, "%i", &sampleNumber) == 1);
+                j = sscanf(optarg, "%i", &sampleNumber);
+                (void)j;
+                assert(j == 1);
                 break;
             case 'f':
                 trioFile = stString_copy(optarg);

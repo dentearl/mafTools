@@ -1,11 +1,33 @@
+##################################################
+# Copyright (C) 2012 by 
+# Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
+# ... and other members of the Reconstruction Team of David Haussler's 
+# lab (BME Dept. UCSC).
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE. 
+##################################################
 import os
 import random
-import shutil
-import subprocess
 import sys
 import unittest
-import xml.etree.ElementTree as ET
-import xml.parsers.expat
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '../../include/')))
+import mafToolsTest as mtt
 
 g_headers = ['''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
@@ -16,7 +38,7 @@ g_headers = ['''##maf version=1 scoring=tba.v8
 ''']
 
 g_duplicateBlocks = [('''a score=0
-#dup block 1
+#dup block 1, name4 is duplicate
 s target.chr0        38 13 + 158545518 gcagctgaaaaca
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon         249182 13 +   4622798 gcagctgaaaaca
@@ -29,7 +51,7 @@ s name4.chrA         50 13 +       100 gcagctgaaaacT
 
 ''',
                       '''a score=0
-#dup block 1
+#dup block 1, name4 is duplicate
 s target.chr0        38 13 + 158545518 gcagctgaaaaca
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon         249182 13 +   4622798 gcagctgaaaaca
@@ -41,7 +63,7 @@ s name4.chr&         50 13 +       100 gcagctgaaaaca
 
 ''',),
                      ('''a score=0
-#dup block 2
+#dup block 2, target is duplicate
 s name                0 13 +       100 gcagctgaaaaca
 s name2.chr1         50 13 +       100 gcagctgaaaaca
 s name3.chr9         50 13 +       100 gcagctgaaaaca
@@ -54,7 +76,7 @@ s target.chr1 158545457 13 - 158545518 gcagctgaaaaca
 
 ''',
                       '''a score=0
-#dup block 2
+#dup block 2, target is duplicate
 s name                0 13 +       100 gcagctgaaaaca
 s name2.chr1         50 13 +       100 gcagctgaaaaca
 s name3.chr9         50 13 +       100 gcagctgaaaaca
@@ -66,7 +88,7 @@ s target.chr1 158545457 13 - 158545518 gcagctgaaaaca
 
 ''',),
                      ('''a score=0
-#dup block 3
+#dup block 3, panTro1 and baboon are duplicates
 s name               10 13 +       100 gcagctgaaaaca
 s name2.chr1         50 13 +       100 gcagctgaaaaca
 s name3.chr9         50 13 +       100 gcagctgaaaaca
@@ -82,7 +104,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 ''',
                       '''a score=0
-#dup block 3
+#dup block 3, panTro1 and baboon are duplicates
 s name               10 13 +       100 gcagctgaaaaca
 s name2.chr1         50 13 +       100 gcagctgaaaaca
 s name3.chr9         50 13 +       100 gcagctgaaaaca
@@ -96,7 +118,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 ''',),
                      ('''a score=0
-#dup block 4
+#dup block 4, name, panTro1 and baboon are duplicates
 s name               10 13 +       100 gcagctgaaaaca
 s name.chr1          50 13 +       100 gcagctgaaaact
 s name.chr2          50 13 +       100 gcagctgaaaact
@@ -113,7 +135,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 ''',
                       '''a score=0
-#dup block 4
+#dup block 4, name, panTro1 and baboon are duplicates
 s name               10 13 +       100 gcagctgaaaaca
 s name3.chr9         50 13 +       100 gcagctgaaaaca
 s name4.chr&         50 13 +       100 gcagctgaaaaca
@@ -158,146 +180,30 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 ''',
     ]
 
-def testFile(s):
-    makeTempDir()
-    mafFile = os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))
-    f = open(mafFile, 'w')
-    f.write(random.choice(g_headers))
-    f.write(s)
-    f.close()
-    return mafFile
-def makeTempDir():
-    if not os.path.exists(os.path.join(os.curdir, 'tempTestDir')):
-        os.mkdir(os.path.join(os.curdir, 'tempTestDir'))
-    return os.path.join(os.curdir, 'tempTestDir')
-def removeTempDir():
-    if os.path.exists(os.path.join(os.curdir, 'tempTestDir')):
-        shutil.rmtree(os.path.join(os.curdir, 'tempTestDir'))
-def runCommandsS(cmds, localTempDir, inPipes=[], outPipes=[]):
-    """ 
-    runCommandsS uses the subprocess module
-    to issue serial processes from the cmds list.
-    """
-    if not len(inPipes):
-        inPipes = [None] * len(cmds)
-    if not len(outPipes):
-        outPipes = [None] * len(cmds)
-    for i, c in enumerate(cmds, 0):
-        if inPipes[i] is None:
-            sin = None
-        else:
-            sin = subprocess.PIPE
-        if outPipes[i] is None:
-            sout = None
-        else:
-            sout = subprocess.PIPE
-        p = subprocess.Popen(c, cwd=localTempDir, stdin=sin, stdout=sout)
-            
-        if inPipes[i] is None:
-            sin = None
-        else:
-            if not os.path.exists(inPipes[i]):
-                raise IOError('Unable to locate inPipe file: %s for command %s' % (inPipes[i], ' '.join(c)))
-            sin = open(inPipes[i], 'r').read()
-        if outPipes[i] is None:
-            pout, perr = p.communicate(sin)
-            handleReturnCode(p.returncode, cmds[i])
-        else:
-            f = open(outPipes[i], 'w')
-            f.write(p.communicate(sin)[0])
-            f.close()
-            handleReturnCode(p.returncode, cmds[i])
-def handleReturnCode(retcode, cmd):
-    if not isinstance(retcode, int):
-        raise TypeError('handleReturnCode takes an integer for '
-                        'retcode, not a %s.' % retcode.__class__)
-    if not isinstance(cmd, list):
-        raise TypeError('handleReturnCode takes a list for '
-                        'cmd, not a %s.' % cmd.__class__)
-    if retcode:
-        if retcode < 0:
-            raise RuntimeError('Experienced an error while trying to execute: '
-                               '%s SIGNAL:%d' %(' '.join(cmd), -retcode))
-        else:
-            raise RuntimeError('Experienced an error while trying to execute: '
-                               '%s retcode:%d' %(' '.join(cmd), retcode))
-def which(program):
-    """which() acts like the unix utility which, but is portable between os.
-    If the program does not exist in the PATH then 'None' is returned. 
-    """
-    def is_exe(fpath):
-        return os.path.exists(fpath) and os.access(fpath, os.X_OK)
-
-    fpath, fname = os.path.split(program)
-    if fpath != '':
-        if is_exe(program):
-            return program
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
-    return None
-def noMemoryErrors(xml):
-    try:
-        tree = ET.parse(xml)
-    except xml.parsers.expat.ExpatError:
-        raise RuntimeError('Input xml, %s is not a well formed xml document.' % xml)
-    root = tree.getroot()
-    errors = root.findall('error')
-    if len(errors):
-        return False
-    errorcounts = root.find('errorcounts')
-    if len(errorcounts):
-        return False
-    return True
-def mafIsEmpty(maf):
-    f = open(maf)
-    s = f.read()
-    if s == g_header:
-        return True
-    return False
-def processHeader(f):
-    for line in f:
-        line = line.strip()
-        if line == '':
-            return None
-        if line.startswith('a'):
-            return line
 def mafIsFiltered(maf, blockList):
     f = open(maf)
-    lastLine = processHeader(f)
+    lastLine = mtt.processHeader(f)
     for i in xrange(0, len(blockList)):
-        # walk through the maf, assessing the equavalence to the blockList items
-        b = extractBlockStr(f, lastLine)
+        # walk through the maf, assessing the equivalence to the blockList items
+        b = mtt.extractBlockStr(f, lastLine)
         lastLine = None
         if b != blockList[i]:
-            print 'extracted block '
+            print 'dang'
+            print 'observed:'
             print b
-            print 'expected block '
+            print '!='
+            print 'expected:'
             print blockList[i]
             return False
     return True
-def extractBlockStr(f, lastLine=None):
-    if lastLine is None:
-        block = ''
-    else:
-        block = lastLine + '\n'
-    for line in f:
-        line = line.strip()
-        if line == '':
-            return block + '\n'
-        block += '%s\n' % line
-    return block + '\n'
-    
-class ExtractionTest(unittest.TestCase):
+class DuplicationFilterTest(unittest.TestCase):
     def testFilter(self):
         """ mafBlockDuplicateFilter should filter out duplicates in blocks according to sequence similarity to the consensus.
         """
         for i in xrange(0, 10):
             shuffledBlocks = []
             expectedOutput = []
-            tmpDir = os.path.abspath(makeTempDir())
+            tmpDir = os.path.abspath(mtt.makeTempDir())
             order = [1] * len(g_duplicateBlocks) + [0] * len(g_nonDuplicateBlocks)
             random.shuffle(order)
             random.shuffle(g_duplicateBlocks)
@@ -312,39 +218,41 @@ class ExtractionTest(unittest.TestCase):
                     shuffledBlocks.append(g_nonDuplicateBlocks[k])
                     expectedOutput.append(g_nonDuplicateBlocks[k])
                     k += 1
-            testMaf = testFile(''.join(shuffledBlocks))
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+                                   ''.join(shuffledBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter'))]
-            inpipes = [testMaf]
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
+                   '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
-            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), expectedOutput))
-            removeTempDir()
-    def dtestNonExtraction(self):
-        """ mafBlockExtractor should not filter out any sequences from blocks when there are no duplicates.
+            mtt.removeTempDir()
+    def testNonFilter(self):
+        """ mafBlockDuplicateFilter should not filter out any sequences from blocks when there are no duplicates.
         """
         for i in xrange(0, 10):
-            tmpDir = os.path.abspath(makeTempDir())
+            tmpDir = os.path.abspath(mtt.makeTempDir())
             random.shuffle(g_nonDuplicateBlocks)
-            testMaf = testFile(''.join(g_nonDuplicateBlocks))
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+                                   ''.join(g_nonDuplicateBlocks), g_headers)
             expectedOutput = g_nonDuplicateBlocks
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter'))]
-            inpipes = [testMaf]
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
+                   '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
-            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), expectedOutput))
-            removeTempDir()
-    def dtestMemory1(self):
+            mtt.removeTempDir()
+    def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
-        valgrind = which('valgrind')
+        valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
         for i in xrange(0, 10):
             shuffledBlocks = []
             expectedOutput = []
-            tmpDir = os.path.abspath(makeTempDir())
+            tmpDir = os.path.abspath(mtt.makeTempDir())
             order = [1] * len(g_duplicateBlocks) + [0] * len(g_nonDuplicateBlocks)
             random.shuffle(order)
             random.shuffle(g_duplicateBlocks)
@@ -359,36 +267,38 @@ class ExtractionTest(unittest.TestCase):
                     shuffledBlocks.append(g_nonDuplicateBlocks[k])
                     expectedOutput.append(g_nonDuplicateBlocks[k])
                     k += 1
-            testMaf = testFile(''.join(shuffledBlocks))
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+                                   ''.join(shuffledBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
+            cmd = [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', '--xml=yes', 
                    '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
-            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')))
-            inpipes = [testMaf]
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
+                   '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
-            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
-            self.assertTrue(noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-            removeTempDir()
-    def dtestMemory2(self):
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+            mtt.removeTempDir()
+    def testMemory2(self):
         """ If valgrind is installed on the system, check for memory related errors (2).
         """
-        valgrind = which('valgrind')
+        valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
         for i in xrange(0, 10):
-            tmpDir = os.path.abspath(makeTempDir())
+            tmpDir = os.path.abspath(mtt.makeTempDir())
             random.shuffle(g_nonDuplicateBlocks)
-            testMaf = testFile(''.join(g_nonDuplicateBlocks))
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+                                   ''.join(g_nonDuplicateBlocks), g_headers)
             expectedOutput = g_nonDuplicateBlocks
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
+            cmd = [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', '--xml=yes', 
                    '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
-            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')))
-            inpipes = [testMaf]
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
+                   '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
-            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
-            self.assertTrue(noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-            removeTempDir()
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+            mtt.removeTempDir()
 
 if __name__ == '__main__':
     unittest.main()

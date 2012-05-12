@@ -30,56 +30,64 @@
 #include <stdlib.h>
 #include <string.h>
 #include "common.h"
+#include "sharedMaf.h"
 
 int g_verbose_flag = 0;
 int g_debug_flag = 0;
 const int kMaxSeqName = 1 << 8;
 
-typedef struct mafLine {
-    // a mafLine struct is a single line of 
-    char *line; // the entire line
-    char *species; // just the species name
-    char *sequence; // just the sequence field
+typedef struct scoredMafLine {
+    // augmented data structure
     double score;
-    struct mafLine *next;
-} mafLine_t;
+    mafLine_t *mafLine;
+    struct scoredMafLine *next;
+} scoredMafLine_t;
 typedef struct duplicate {
     // a duplicate is a species that shows up twice in a block
     char *species;
-    mafLine_t *headMaf; // linked list of mafLine_t containing the duplicated lines
+    scoredMafLine_t *headScoredMaf; // linked list of scoredMafLine_t containing the duplicated lines
     bool reported;
     struct duplicate *next;
 } duplicate_t;
 
 void usage(void);
-void speciesNameCopy(char *species, char *line, int n);
-void sequenceCopy(char *seq, char *line);
-void processBody(char *lastLine);
-void destroyBlock(mafLine_t *m);
+void processBody(mafFileApi_t *mfa);
+void checkBlock(mafBlock_t *block);
+// void destroyBlock(mafLine_t *m);
+void destroyScoredMafLineList(scoredMafLine_t *sml);
 void destroyDuplicates(duplicate_t *d);
 void destroyStringArray(char **sArray, int n);
-mafLine_t* newMafLine(void);
+scoredMafLine_t* newScoredMafLine(void);
+unsigned longestLine(mafBlock_t *mb);
+unsigned numberOfSequencesScoredMafLineList(scoredMafLine_t *m);
+void reportBlockWithDuplicates(mafBlock_t *mb, duplicate_t *dupHead);
 int cmp_by_score(const void *a, const void *b);
 
-void parseOptions(int argc, char **argv) {
+void parseOptions(int argc, char **argv, char *filename) {
     extern int g_debug_flag;
     extern int g_verbose_flag;
     extern const int kMaxStringLength;
     int c;
+    int setMName = 0;
     while (1) {
         static struct option long_options[] = {
             {"debug", no_argument, 0, 'd'},
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
+            {"maf",  required_argument, 0, 'm'},            
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        c = getopt_long(argc, argv, "n:c:p:v",
+        c = getopt_long(argc, argv, "d:m:h:v",
                         long_options, &option_index);
         if (c == -1)
             break;
         switch (c) {
         case 0:
+            break;
+        case 'm':
+            setMName = 1;
+            sscanf(optarg, "%s", filename);
             break;
         case 'v':
             g_verbose_flag++;
@@ -95,6 +103,10 @@ void parseOptions(int argc, char **argv) {
             abort();
         }
     }
+    if (!setMName) {
+        fprintf(stderr, "specify --maf\n");
+        usage();
+    }
     // Check there's nothing left over on the command line 
     if (optind < argc) {
         char *errorString = de_malloc(kMaxStringLength);
@@ -109,7 +121,7 @@ void parseOptions(int argc, char **argv) {
     }
 }
 void usage(void) {
-    fprintf(stderr, "Usage: mafBlockDuplicateFilter < mafWithDuplicates.maf > pruned.maf \n\n"
+    fprintf(stderr, "Usage: mafBlockDuplicateFilter --maf mafWithDuplicates.maf > pruned.maf \n\n"
             "mafBlockDuplicateFilter is a program to filter out duplications from a Multiple \n"
             "Alignment Format (maf) file. This program assumes the sequence name field is \n"
             "formatted as in \"speciesName.chromosomeName\" using the first period charater, \".\",\n"
@@ -122,14 +134,13 @@ void usage(void) {
             "earliest in the file. \n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
+            "  -m, --maf      path to maf file.\n"
             "  -v, --verbose  turns on verbose output.\n");
     exit(EXIT_FAILURE);
 }
-mafLine_t* newMafLine(void) {
-    mafLine_t *m = (mafLine_t *) de_malloc(sizeof(*m));
-    m->species = NULL;
-    m->sequence = NULL;
-    m->line = NULL;
+scoredMafLine_t* newScoredMafLine(void) {
+    scoredMafLine_t *m = (scoredMafLine_t *) de_malloc(sizeof(*m));
+    m->mafLine = NULL;
     m->next = NULL;
     m->score = 0.0;
     return m;
@@ -137,24 +148,14 @@ mafLine_t* newMafLine(void) {
 duplicate_t* newDuplicate(void) {
     duplicate_t *d = (duplicate_t *) de_malloc(sizeof(*d));
     d->species = NULL;
-    d->headMaf = NULL;
+    d->headScoredMaf = NULL;
     d->reported = false;
     d->next = NULL;
     return d;
 }
-int numberOfSequences(mafLine_t *m) {
-    // count the number of actual sequence lines in the mafline linked list
-    int s = 0;
-    while (m != NULL) {
-        if (m->line[0] == 's')
-            ++s;
-        m = m->next;
-    }
-    return s;
-}
-unsigned longestLine(mafLine_t *head) {
+unsigned longestLine(mafBlock_t *mb) {
     // walk the mafline linked list and return the longest m->line value
-    mafLine_t *m = head;
+    mafLine_t *m = mb->headLine;
     unsigned max = 0;
     while (m != NULL) {
         if (max < strlen(m->line))
@@ -162,6 +163,16 @@ unsigned longestLine(mafLine_t *head) {
         m = m->next;
     }
     return max;
+}
+unsigned numberOfSequencesScoredMafLineList(scoredMafLine_t *m) {
+    // count the number of actual sequence lines in a mafLine_t list
+    unsigned s = 0;
+    while (m != NULL) {
+        if (m->mafLine->type == 's')
+            ++s;
+        m = m->next;
+    }
+    return s;
 }
 void printResidues(unsigned *r) {
     // debug function
@@ -279,19 +290,20 @@ bool checkForDupes(char **species, int index, mafLine_t *m) {
     }
     return false;
 }
-void reportBlock(mafLine_t *b) {
+void reportBlock(mafBlock_t *b) {
     // print out a maf block in the form of the mafline linked list
-    while (b != NULL) {
-        printf("%s\n", b->line);
-        b = b->next;
+    mafLine_t *ml = b->headLine;
+    while (ml != NULL) {
+        printf("%s\n", ml->line);
+        ml = ml->next;
     }
     printf("\n");
 }
-void reportBlockWithDuplicates(mafLine_t *mafHead, duplicate_t *dupHead) {
-    // report the block represented by the linked list mafHead. If a given line
+void reportBlockWithDuplicates(mafBlock_t *mb, duplicate_t *dupHead) {
+    // report the block represented by mb. If a given line
     // is a member of the duplicate linked list, report only the top scoring duplicate
-    // which will be the one stored at the head of the mafline linkeded list (dup->headMaf).
-    mafLine_t *m = mafHead;
+    // which will be the one stored at the head of the mafline linkeded list (dup->headScoredMaf).
+    mafLine_t *m = mb->headLine;
     duplicate_t *d = dupHead;
     while (m != NULL) {
         d = dupHead;
@@ -300,10 +312,10 @@ void reportBlockWithDuplicates(mafLine_t *mafHead, duplicate_t *dupHead) {
         while (d != NULL && m->species != NULL && d->species != NULL) {
             debug("    cross checking against dup \"%s\"\n", d->species);
             if (!strcmp(m->species, d->species)) {
-                if (numberOfSequences(d->headMaf) > 1) {
+                if (numberOfSequencesScoredMafLineList(d->headScoredMaf) > 1) {
                     isDup = true;
-                    if (!strcmp(m->line, d->headMaf->line) && !d->reported) {
-                        printf("%s\n", d->headMaf->line);
+                    if (!strcmp(m->line, d->headScoredMaf->mafLine->line) && !d->reported) {
+                        printf("%s\n", d->headScoredMaf->mafLine->line);
                         d->reported = true;
                         break;
                     }
@@ -321,14 +333,14 @@ void reportDuplicates(duplicate_t *dup) {
     // debugging function
     printf("Duplicates: ");
     while (dup->species != NULL) {
-        if (numberOfSequences(dup->headMaf) < 2) {
+        if (numberOfSequencesScoredMafLineList(dup->headScoredMaf) < 2) {
             dup = dup->next;
             continue;
         }
-        mafLine_t *m = dup->headMaf;
+        scoredMafLine_t *m = dup->headScoredMaf;
         printf("    %s\n", dup->species);
         while (m != NULL) {
-            printf("        %.2f %s\n", m->score, m->sequence);
+            printf("        %.2f %s\n", m->score, m->mafLine->sequence);
             m = m->next;
         }
         dup = dup->next;
@@ -390,11 +402,11 @@ double scoreSequence(char *consensus, char *seq) {
         s += bitScore(consensus[i], seq[i]);
     return s;
 }
-void populateMafLineArray(mafLine_t *head, mafLine_t **array) {
+void populateMafLineArray(scoredMafLine_t *head, scoredMafLine_t **array) {
     // given a mafLine linked list, create an array of the same. this array will be used
     // later to sort the mafline pointers based on their ->score value.
     unsigned i = 0;
-    mafLine_t *m = head;
+    scoredMafLine_t *m = head;
     while (m != NULL) {
         array[i++] = m;
         m = m->next;
@@ -404,27 +416,32 @@ void findBestDupes(duplicate_t *head, char *consensus) {
     // For each duplicate, go through its mafline list and find the best line and move it
     // to the head of the list. 
     duplicate_t *d = head;
-    mafLine_t *m = NULL;
+    scoredMafLine_t *m = NULL;
+    debug("findBestDupes()\n");
     while (d != NULL) {
-        m = d->headMaf;
-        int n = numberOfSequences(m);
+        debug("   d is not NULL\n");
+        debug("   species: %s", d->headScoredMaf->mafLine->species);
+        m = d->headScoredMaf;
+        unsigned n = numberOfSequencesScoredMafLineList(m);
         if (n < 2) {
             d = d->next;
+            debug(" ... not dup.\n");
             continue;
         }
+        debug(" ... DUP.\n");
         // score all the dupes
         while (m != NULL) {
-            m->score = scoreSequence(consensus, m->sequence);
+            m->score = scoreSequence(consensus, m->mafLine->sequence);
             m = m->next;
         }
         // sort on scores
-        mafLine_t *mafLineArray[n];
-        populateMafLineArray(d->headMaf, mafLineArray);
-        qsort(mafLineArray, n, sizeof(mafLine_t *), cmp_by_score);
+        scoredMafLine_t *mafLineArray[n];
+        populateMafLineArray(d->headScoredMaf, mafLineArray);
+        qsort(mafLineArray, n, sizeof(scoredMafLine_t *), cmp_by_score);
         // move the top score to the head of the list
-        d->headMaf = mafLineArray[0];
-        m = d->headMaf;
-        for (int i = 1; i < n; ++i) {
+        d->headScoredMaf = mafLineArray[0];
+        m = d->headScoredMaf;
+        for (unsigned i = 1; i < n; ++i) {
             m->next = mafLineArray[i];
             m = m->next;
         }
@@ -435,24 +452,41 @@ void findBestDupes(duplicate_t *head, char *consensus) {
 int cmp_by_score(const void *a, const void *b) {
     // mafBlock_t * const *ia = a;
     // mafBlock_t * const *ib = b;
-    mafLine_t **ia = (mafLine_t **) a;
-    mafLine_t **ib = (mafLine_t **) b;
+    scoredMafLine_t **ia = (scoredMafLine_t **) a;
+    scoredMafLine_t **ib = (scoredMafLine_t **) b;
     // reverse sort
     return ((*ib)->score - (*ia)->score);
 }
-void checkBlock(mafLine_t *head, unsigned lineno) {
+void correctSpeciesNames(mafBlock_t *block) {
+    // the sharedMaf.h block reading function takes the entire name field,
+    // but we only want the name field up until the first '.' is observed.
+    mafLine_t *m = block->headLine;
+    while(m != NULL) {
+        if (m->type != 's') {
+            m = m->next;
+            continue;
+        }
+        for (unsigned i = 0; i < strlen(m->species); ++i) {
+            if (m->species[i] == '.') {
+                m->species[i] = '\0';
+                break;
+            }
+        }
+        m = m->next;
+    }
+}
+void checkBlock(mafBlock_t *block) {
     // read through each line of a mafBlock and filter duplicates.
     // Report the top scoring duplication only.
-    int n = numberOfSequences(head);
+    unsigned n = maf_numberOfSequencesMafLineList(block->headLine);
     char **species = (char **) de_malloc(sizeof(char *) * n);
     char **sequences = (char **) de_malloc(sizeof(char *) * n);
     int index = 0;
     bool containsDuplicates = false;
-    mafLine_t *m = head;
-    duplicate_t *d, *dupSpeciesHead = newDuplicate();
-    d = dupSpeciesHead;
+    mafLine_t *m = block->headLine;
+    duplicate_t *d = NULL, *dupSpeciesHead = NULL;
     while (m != NULL) {
-        if (m->line[0] != 's') {
+        if (m->type != 's') {
             // skip non-sequence lines
             m = m->next;
             continue;
@@ -465,66 +499,49 @@ void checkBlock(mafLine_t *head, unsigned lineno) {
         if (thisDup == NULL) {
             // add new duplicate species
             debug("adding new species %s\n", m->species);
+            if (dupSpeciesHead == NULL) {
+                dupSpeciesHead = newDuplicate();
+                d = dupSpeciesHead;
+            } else {
+                d->next = newDuplicate();
+                d = d->next;
+            }
             d->species = (char *) de_malloc(kMaxSeqName);
             strcpy(d->species, m->species);
             // create the mafline linked list
-            d->headMaf = newMafLine();
-            d->headMaf->species = (char *) de_malloc(kMaxSeqName);
-            d->headMaf->sequence = (char *) de_malloc(strlen(m->sequence) + 1);
-            d->headMaf->line = (char *) de_malloc(strlen(m->line) + 1);
-            strcpy(d->headMaf->species, m->species);
-            strcpy(d->headMaf->sequence, m->sequence);
-            strcpy(d->headMaf->line, m->line);
-            // reset d to accept a new duplicate
-            d->next = newDuplicate();
-            d = d->next;
+            d->headScoredMaf = newScoredMafLine();
+            d->headScoredMaf->mafLine = m;
         } else {
+            // this sequence is a duplicate, extend the duplicate list.
             debug("extending duplicate on species %s\n", m->species);
             containsDuplicates = true;
-            mafLine_t *ml = thisDup->headMaf;
+            scoredMafLine_t *ml = thisDup->headScoredMaf;
             while (ml->next != NULL)
                 ml = ml->next;
-            ml->next = newMafLine();
+            ml->next = newScoredMafLine();
             ml = ml->next;
-            ml->species = (char *) de_malloc(kMaxSeqName);
-            ml->sequence = (char *) de_malloc(strlen(m->sequence) + 1);
-            ml->line = (char *) de_malloc(strlen(m->line) + 1);
-            strcpy(ml->species, m->species);
-            strcpy(ml->sequence, m->sequence);
-            strcpy(ml->line, m->line);
+            ml->mafLine  = m;
         }
         ++index;
         m = m->next;
     }
     if (!containsDuplicates) {
-        reportBlock(head);
+        reportBlock(block);
         destroyStringArray(species, n);
         destroyStringArray(sequences, n);
         destroyDuplicates(dupSpeciesHead);
         return;
     }
     // this block contains duplicates
-    char *consensus = (char *) de_malloc(longestLine(head) + 1);
+    char *consensus = (char *) de_malloc(longestLine(block) + 1);
     consensus[0] = '\0';
-    buildConsensus(consensus, sequences, n, lineno);
+    buildConsensus(consensus, sequences, n, block->headLine->lineNumber);
     findBestDupes(dupSpeciesHead, consensus);
-    reportBlockWithDuplicates(head, dupSpeciesHead);
+    reportBlockWithDuplicates(block, dupSpeciesHead);
     destroyStringArray(species, n);
     destroyStringArray(sequences, n);
     destroyDuplicates(dupSpeciesHead);
     free(consensus);
-}
-void destroyBlock(mafLine_t *m) {
-    // free all memory associated with a mafline linked list
-    mafLine_t *tmp = NULL;
-    while (m != NULL) {
-        tmp = m;
-        m = m->next;
-        free(tmp->line);
-        free(tmp->species);
-        free(tmp->sequence);
-        free(tmp);
-    }
 }
 void destroyDuplicates(duplicate_t *d) {
     // free all memory associated with a duplicate linked list
@@ -533,7 +550,16 @@ void destroyDuplicates(duplicate_t *d) {
         tmp = d;
         d = d->next;
         free(tmp->species);
-        destroyBlock(tmp->headMaf);
+        destroyScoredMafLineList(tmp->headScoredMaf);
+        free(tmp);
+    }
+}
+void destroyScoredMafLineList(scoredMafLine_t *sml) {
+    scoredMafLine_t *tmp = NULL;
+    while (sml != NULL) {
+        tmp = sml;
+        sml = sml->next;
+        // note that sml->mafLine is NOT freed here
         free(tmp);
     }
 }
@@ -544,149 +570,26 @@ void destroyStringArray(char **sArray, int n) {
     }
     free(sArray);
 }
-void speciesNameCopy(char *species, char *line, int n) {
-    // reads `line' and extracts the species name, copies it into
-    // `species'
-    // so the line:
-    //s hg19.chr22 885203...
-    // will copy out only the `hg19' part.
-    if (line[0] != 's') {
-        // if this is not a sequence line, species should be NULL
-        species[0] = '\0';
-        return;
-    }
-    line++; // skip the `^s'
-    while (*line == ' ' || *line == '\t')
-        line++;
-    int i = 0;
-    while (*line != ' ' && *line != '.' && *line != '\t' && i < n)
-        species[i++] = *(line++);
-    species[i] = '\0';
-}
-void sequenceCopy(char *seq, char *line) {
-    // walk a maf line `line' until the sequence field, then copy that entire field into `seq'
-    char *tline = (char *) de_malloc(strlen(line) + 1);
-    strcpy(tline, line);
-    char *tkn = NULL;
-    tkn = strtok(tline, " \t"); // 's' field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    if (tkn[0] != 's') {
-        free(tline);
-        seq[0] = '\0';
-        return;
-    }
-    tkn = strtok(NULL, " \t"); // name field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    tkn = strtok(NULL, " \t"); // start field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    tkn = strtok(NULL, " \t"); // length field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    tkn = strtok(NULL, " \t"); // strand field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    tkn = strtok(NULL, " \t"); // sourceLength field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    tkn = strtok(NULL, " \t"); // sequence field
-    if (tkn == NULL) {
-        failBadFormat();
-    }
-    strcpy(seq, tkn);
-    free(tline);
-}
-void removeTrailingWhitespace(char *s) {
-    // given a string `s', walk it backwards and cut off all trailing whitespace
-    for (int i = strlen(s) - 1; 0 <= i; --i) {
-        if (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r')
-            s[i] = '\0';
-        else
-            return;
-    }
-}
-void processBody(char *lastLine) {
+void processBody(mafFileApi_t *mfa) {
     // walk the body of the maf file and process it, block by block.
-    extern const int kMaxStringLength;
-    FILE *ifp = stdin;
-    unsigned lineno = 0;
-    int32_t n = kMaxStringLength;
-    char *buf = NULL;
-    if (lastLine == NULL) {
-        buf = (char*) de_malloc(n);
-        if (de_getline(&buf, &n, ifp) == -1) {
-            fprintf(stderr, "Error reading first body line of alignment!\n");
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        if (n < (int32_t) strlen(lastLine) + 1)
-            n = (int32_t) strlen(lastLine) + 1;
-        buf = (char*) de_malloc(n);
-        strcpy(buf, lastLine);
+    mafBlock_t *thisBlock = NULL;
+    thisBlock = maf_readBlock(mfa); // unused
+    maf_destroyMafBlockList(thisBlock);
+    while((thisBlock = maf_readBlock(mfa)) != NULL) {
+        correctSpeciesNames(thisBlock);
+        checkBlock(thisBlock);
+        maf_destroyMafBlockList(thisBlock);
     }
-    char *cline = NULL; // freed in destroyBlock
-    char *species = NULL; // freed in destroyBlock
-    char *sequence = NULL; // freed in destroyBlock
-    mafLine_t *head = NULL, *tail = NULL;
-    do {
-        lineno++;
-        if (*buf == 0 && head != NULL) {
-            // empty line or end of file
-            checkBlock(head, lineno);
-            destroyBlock(head);
-            head = NULL;
-            tail = NULL;
-            continue;
-        }
-        removeTrailingWhitespace(buf);
-        if (head == NULL) {
-            // new block
-            debug("new block: %s\n", buf);
-            head = newMafLine();
-            cline = (char *) de_malloc(n);
-            species = (char *) de_malloc(kMaxSeqName);
-            sequence = (char *) de_malloc(n);
-            strcpy(cline, buf);
-            speciesNameCopy(species, buf, kMaxSeqName);
-            sequenceCopy(sequence, buf);
-            head->species = species;
-            head->sequence = sequence;
-            head->line = cline;
-            tail = head;
-        } else {
-            // extend block
-            debug("extending block\n");
-            tail->next = newMafLine();
-            cline = (char *) de_malloc(n);
-            species = (char *) de_malloc(kMaxSeqName);
-            sequence = (char *) de_malloc(n);
-            strcpy(cline, buf);
-            speciesNameCopy(species, buf, kMaxSeqName);
-            sequenceCopy(sequence, buf);
-            tail = tail->next;
-            tail->species = species;
-            tail->sequence = sequence;
-            tail->line = cline;
-            tail->next = NULL;
-        }
-    } while (de_getline(&buf, &n, ifp) != -1);
-    destroyBlock(head);
-    free(buf);
 }
 int main(int argc, char **argv) {
-    parseOptions(argc, argv);
-
-    char *lastLine = processHeader();
-    processBody(lastLine);
+    extern const int kMaxStringLength;
+    char filename[kMaxStringLength];
+    parseOptions(argc, argv, filename);
     
-    free(lastLine);
+    mafFileApi_t *mfa = maf_newMfa(filename, "r");
+    processBody(mfa);
+
+    maf_destroyMfa(mfa);
+
     return EXIT_SUCCESS;
 }

@@ -3,8 +3,7 @@ cc = gcc
 args = -Wall -Wextra -std=c99 -pedantic
 bin = ../bin
 PROGS = mafBlockFinder
-includes = ../include/common.o
-dependencies = ${includes} ../include/common.h ../include/common.c
+dependencies = ../include/common.h ../include/sharedMaf.h
 
 .PHONY: all clean test
 
@@ -12,12 +11,12 @@ all: $(foreach f,${PROGS}, ${bin}/$f)
 
 ${bin}/mafBlockFinder: src/mafBlockFinder.c ${dependencies}
 	mkdir -p $(dir $@)
-	${cc} ${args} $< -I ../include -o $@.tmp ${includes}
+	${cc} ${args} $< -I ../include -I ../external -o $@.tmp ${includes}
 	mv $@.tmp $@
 
 test/mafBlockFinder: src/mafBlockFinder.c ${dependencies}
 	mkdir -p $(dir $@)
-	${cc} ${args} -O0 $< -I ../include -o $@.tmp ${includes}
+	${cc} ${args} -O0 $< -I ../include -I ../external -o $@.tmp ${includes}
 	mv $@.tmp $@
 
 ${bin}/%: src/%.c 
@@ -34,4 +33,4 @@ clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
 
 test: test/mafBlockFinder
-	python2.6 src/test.mafBlockFinder.py --verbose && rm -rf test/
+	python2.7 src/test.mafBlockFinder.py --verbose && rm -rf test/

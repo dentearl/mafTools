@@ -1,12 +1,34 @@
+##################################################
+# Copyright (C) 2012 by 
+# Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
+# ... and other members of the Reconstruction Team of David Haussler's 
+# lab (BME Dept. UCSC).
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE. 
+##################################################
 import os
 import random
 import re
-import shutil
-import subprocess
 import sys
 import unittest
-import xml.etree.ElementTree as ET
-import xml.parsers.expat
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '../../include/')))
+import mafToolsTest as mtt
 
 g_targetSeq = 'target.chr0'
 g_targetRange = (50, 70) # zero based, inclusive
@@ -88,103 +110,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 ''', 0, None),
     ]
 
-def testFile(s):
-    global g_header
-    makeTempDir()
-    mafFile = os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))
-    f = open(mafFile, 'w')
-    g_header = random.choice(g_headers)
-    f.write(g_header)
-    f.write(s)
-    f.close()
-    return mafFile
-def makeTempDir():
-    if not os.path.exists(os.path.join(os.curdir, 'tempTestDir')):
-        os.mkdir(os.path.join(os.curdir, 'tempTestDir'))
-    return os.path.join(os.curdir, 'tempTestDir')
-def removeTempDir():
-    if os.path.exists(os.path.join(os.curdir, 'tempTestDir')):
-        shutil.rmtree(os.path.join(os.curdir, 'tempTestDir'))
-def runCommandsS(cmds, localTempDir, inPipes=[], outPipes=[]):
-    """ 
-    runCommandsS uses the subprocess module
-    to issue serial processes from the cmds list.
-    """
-    if not len(inPipes):
-        inPipes = [None] * len(cmds)
-    if not len(outPipes):
-        outPipes = [None] * len(cmds)
-    for i, c in enumerate(cmds, 0):
-        if inPipes[i] is None:
-            sin = None
-        else:
-            sin = subprocess.PIPE
-        if outPipes[i] is None:
-            sout = None
-        else:
-            sout = subprocess.PIPE
-        p = subprocess.Popen(c, cwd=localTempDir, stdin=sin, stdout=sout)
-            
-        if inPipes[i] is None:
-            sin = None
-        else:
-            if not os.path.exists(inPipes[i]):
-                raise IOError('Unable to locate inPipe file: %s for command %s' % (inPipes[i], ' '.join(c)))
-            sin = open(inPipes[i], 'r').read()
-        if outPipes[i] is None:
-            pout, perr = p.communicate(sin)
-            handleReturnCode(p.returncode, cmds[i])
-        else:
-            f = open(outPipes[i], 'w')
-            f.write(p.communicate(sin)[0])
-            f.close()
-            handleReturnCode(p.returncode, cmds[i])
-def handleReturnCode(retcode, cmd):
-    if not isinstance(retcode, int):
-        raise TypeError('handleReturnCode takes an integer for '
-                        'retcode, not a %s.' % retcode.__class__)
-    if not isinstance(cmd, list):
-        raise TypeError('handleReturnCode takes a list for '
-                        'cmd, not a %s.' % cmd.__class__)
-    if retcode:
-        if retcode < 0:
-            raise RuntimeError('Experienced an error while trying to execute: '
-                               '%s SIGNAL:%d' %(' '.join(cmd), -retcode))
-        else:
-            raise RuntimeError('Experienced an error while trying to execute: '
-                               '%s retcode:%d' %(' '.join(cmd), retcode))
-def which(program):
-    """which() acts like the unix utility which, but is portable between os.
-    If the program does not exist in the PATH then 'None' is returned. 
-    """
-    def is_exe(fpath):
-        return os.path.exists(fpath) and os.access(fpath, os.X_OK)
-
-    fpath, fname = os.path.split(program)
-    if fpath != '':
-        if is_exe(program):
-            return program
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
-    return None
-def noMemoryErrors(xml):
-    try:
-        tree = ET.parse(xml)
-    except xml.parsers.expat.ExpatError:
-        raise RuntimeError('Input xml, %s is not a well formed xml document.' % xml)
-    root = tree.getroot()
-    errors = root.findall('error')
-    if len(errors):
-        return False
-    errorcounts = root.find('errorcounts')
-    if len(errorcounts):
-        return False
-    return True
-def foundLines(lineList, text):
-    global g_header
+def foundLines(lineList, text, g_header):
     f = open(text, 'r')
     n = len(re.findall(re.compile('\n'), g_header))
     for line in f:
@@ -193,80 +119,78 @@ def foundLines(lineList, text):
         if int(data[0]) - n not in lineList:
             return False
     return True
-def fileIsEmpty(filename):
-    f = open(filename)
-    s = f.read()
-    if s == '':
-        return True
-    return False
     
 class FindTest(unittest.TestCase):
     def testFind(self):
         """ mafBlockFinder should report information about matching sequences within blocks.
         """
+        global g_header
         for i in xrange(0, len(g_overlappingBlocks)):
-            tmpDir = os.path.abspath(makeTempDir())
-            testMaf = testFile(g_overlappingBlocks[i][0])
-            binParent = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            cmd = [os.path.abspath(os.path.join(binParent, 'bin', 'mafBlockFinder'))]
-            cmd += ['--seq', g_targetSeq, '--pos', '%d' % g_overlappingBlocks[i][1]]
-            inpipes = [testMaf]
+            tmpDir = os.path.abspath(mtt.makeTempDir())
+            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+                                                 g_overlappingBlocks[i][0], g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder'))]
+            cmd += ['--maf', testMafPath, '--seq', g_targetSeq, '--pos', '%d' % g_overlappingBlocks[i][1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
-            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
-            self.assertTrue(foundLines(g_overlappingBlocks[i][2], os.path.join(tmpDir, 'found.txt')))
-            removeTempDir()
-    def testNonFind(self):
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            self.assertTrue(foundLines(g_overlappingBlocks[i][2], os.path.join(tmpDir, 'found.txt'), g_header))
+            mtt.removeTempDir()
+    def dtestNonFind(self):
         """ mafBlockFinder should not report any lines when blocks do not match.
         """
+        global g_header
         for i in xrange(0, len(g_nonOverlappingBlocks)):
-            tmpDir = os.path.abspath(makeTempDir())
-            testMaf = testFile(''.join(g_nonOverlappingBlocks[i][0]))
-            binParent = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            cmd = [os.path.abspath(os.path.join(binParent, 'bin', 'mafBlockFinder'))]
-            cmd += ['--seq', g_targetSeq, '--pos', '%d' % g_nonOverlappingBlocks[i][1]]
-            inpipes = [testMaf]
+            tmpDir = os.path.abspath(mtt.makeTempDir())
+            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+                                                 ''.join(g_nonOverlappingBlocks[i][0]), g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder'))]
+            cmd += ['--maf', testMafPath, '--seq', g_targetSeq, '--pos', '%d' % g_nonOverlappingBlocks[i][1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
-            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
-            self.assertTrue(fileIsEmpty(os.path.join(tmpDir, 'found.txt')))
-            removeTempDir()
-    def testMemory1(self):
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            self.assertTrue(mtt.fileIsEmpty(os.path.join(tmpDir, 'found.txt')))
+            mtt.removeTempDir()
+    def dtestMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
-        valgrind = which('valgrind')
+        valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
+        global g_header
         for i in xrange(0, len(g_overlappingBlocks)):
-            tmpDir = os.path.abspath(makeTempDir())
-            testMaf = testFile(g_overlappingBlocks[i][0])
+            tmpDir = os.path.abspath(mtt.makeTempDir())
+            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+                                                 g_overlappingBlocks[i][0], g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
+            cmd = [valgrind, '--leak-check=full', 'show-reachable=yes', '--track-origins=yes', '--xml=yes', 
                    '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder')))
-            cmd += ['--seq', g_targetSeq, '--pos', '%d' % g_overlappingBlocks[i][1]]
-            inpipes = [testMaf]
+            cmd += ['--maf', testMafPath, '--seq', g_targetSeq, '--pos', '%d' % g_overlappingBlocks[i][1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
-            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
-            self.assertTrue(noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-            removeTempDir()
-    def testMemory2(self):
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+            mtt.removeTempDir()
+    def dtestMemory2(self):
         """ If valgrind is installed on the system, check for memory related errors (2).
         """
-        valgrind = which('valgrind')
+        valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
+        global g_header
         for i in xrange(0, len(g_nonOverlappingBlocks)):
-            tmpDir = os.path.abspath(makeTempDir())
-            testMaf = testFile(''.join(g_nonOverlappingBlocks[i][0]))
+            tmpDir = os.path.abspath(mtt.makeTempDir())
+            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+                                                 ''.join(g_nonOverlappingBlocks[i][0]), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [valgrind, '--leak-check=yes', '--track-origins=yes', '--xml=yes', 
+            cmd = [valgrind, '--leak-check=full', 'show-reachable=yes', '--track-origins=yes', '--xml=yes', 
                    '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder')))
-            cmd += ['--seq', g_targetSeq, '--pos', '%d' % g_nonOverlappingBlocks[i][1]]
-            inpipes = [testMaf]
+            cmd += ['--maf', testMafPath, '--seq', g_targetSeq, '--pos', '%d' % g_nonOverlappingBlocks[i][1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
-            runCommandsS([cmd], tmpDir, inPipes=inpipes, outPipes=outpipes)
-            self.assertTrue(noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-            removeTempDir()
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+            mtt.removeTempDir()
 
 if __name__ == '__main__':
     unittest.main()
