@@ -15,7 +15,8 @@ ifeq ($(wildcard ../pinchesAndCacti/Makefile),)
 	TransitiveClosure = 
 $(warning Because dependency ../pinchesAndCacti is missing mafTransitiveClosure will not be built / tested / cleaned. See README.md for information about dependencies.)
 else
-	TransitiveClosure = mafTransitiveClosure
+#	TransitiveClosure = mafTransitiveClosure # switched off during development
+	TransitiveClosure = 
 endif
 endif
 ##############################
