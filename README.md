@@ -6,7 +6,9 @@
 [Dent Earl](https://github.com/dentearl/), [Benedict Paten](https://github.com/benedictpaten/), [Mark Diekhans](https://github.com/diekhans)
 
 ## Dependencies
-* [sonLib](https://github.com/benedictpaten/sonLib/)
+When a component is missing a dependency it will not be built, tested or cleaned by the Makefile. Dependencies should be placed in the same parent directory as mafTools.
+* [sonLib](https://github.com/benedictpaten/sonLib/): mafComparator, mafTransitiveClosure.
+* [pinchesAndCacti](https://github.com/benedictpaten/sonLib/): mafTransitiveClosure.
 
 ## Installation
 1. Download the package. Consider making it a sibling directory to <code>sonLib/</code>.

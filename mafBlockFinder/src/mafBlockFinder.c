@@ -27,6 +27,7 @@
 #include <getopt.h>
 #include <limits.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -34,9 +35,6 @@
 #include <unistd.h>
 #include "common.h"
 #include "sharedMaf.h"
-
-int g_verbose_flag = 0;
-int g_debug_flag = 0;
 
 void usage(void);
 void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t *position);
@@ -134,32 +132,33 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t
 bool insideLine(mafLine_t *ml, uint32_t pos) {
     // check to see if pos is inside of the maf line
     uint32_t absStart, absEnd;
-    if (ml->strand == '-') {
-        absStart =  ml->sourceLength - (ml->start + ml->length);
-        absEnd = ml->sourceLength - ml->start - 1;
+    if (maf_mafLine_getStrand(ml) == '-') {
+        absStart =  maf_mafLine_getSourceLength(ml) - (maf_mafLine_getStart(ml) + maf_mafLine_getLength(ml));
+        absEnd = maf_mafLine_getSourceLength(ml) - maf_mafLine_getStart(ml) - 1;
     } else {
-        absStart = ml->start;
-        absEnd = ml->start + ml->length - 1;
+        absStart = maf_mafLine_getStart(ml);
+        absEnd = maf_mafLine_getStart(ml) + maf_mafLine_getLength(ml) - 1;
     }
     if ((absStart <= pos) && (absEnd >= pos))
         return true;
     return false;
 }
 void checkBlock(mafBlock_t *mb, char *fullname, uint32_t pos) {
-    mafLine_t *ml = mb->headLine;
+    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     while (ml != NULL) {
-        if (ml->type != 's') {
-            ml = ml->next;
+        if (maf_mafLine_getType(ml) != 's') {
+            ml = maf_mafLine_getNext(ml);
             continue;
         }
-        if (!(strcmp(ml->species, fullname) == 0)) {
-            ml = ml->next;
+        if (!(strcmp(maf_mafLine_getSpecies(ml), fullname) == 0)) {
+            ml = maf_mafLine_getNext(ml);
             continue;
         }
         if (insideLine(ml, pos))
-            printf("%u: s %s %u %u %c %u ...\n", ml->lineNumber, fullname, ml->start, 
-                   ml->length, ml->strand, ml->sourceLength);
-        ml = ml->next;
+            printf("%u: s %s %u %u %c %u ...\n", maf_mafLine_getLineNumber(ml), fullname, 
+                   maf_mafLine_getStart(ml), maf_mafLine_getLength(ml), maf_mafLine_getStrand(ml), 
+                   maf_mafLine_getSourceLength(ml));
+        ml = maf_mafLine_getNext(ml);
     }
 }
 void searchInput(mafFileApi_t *mfa, char *fullname, unsigned long pos) {
@@ -171,7 +170,6 @@ void searchInput(mafFileApi_t *mfa, char *fullname, unsigned long pos) {
 }
 
 int main(int argc, char **argv) {
-    extern const int kMaxStringLength;
     char filename[kMaxStringLength];
     char targetName[kMaxStringLength];
     uint32_t targetPos;

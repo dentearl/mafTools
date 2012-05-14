@@ -1,9 +1,10 @@
 SHELL:=/bin/bash
 cc = gcc
-args = -g -Wall -Wextra -Werror -std=c99 -pedantic
+args = -Wall -Wextra -Werror -std=c99 -pedantic -I ../external -I ../include
 bin = ../bin
 PROGS = mafBlockDuplicateFilter
-dependencies = ../include/common.h ../include/sharedMaf.h
+dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*)
+objects = ../include/common.o ../include/sharedMaf.o
 
 .PHONY: all clean test
 
@@ -11,12 +12,16 @@ all: $(foreach f,${PROGS}, ${bin}/$f)
 
 ${bin}/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies}
 	mkdir -p $(dir $@)
-	${cc} ${args} $< -I ../include -I ../external -o $@.tmp 
+	${cc} ${args} -O3 $< ${objects} -o $@.tmp 
 	mv $@.tmp $@
 
 test/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies}
 	mkdir -p $(dir $@)
-	${cc} ${args} -O0 $< -I ../include -I ../external -o $@.tmp 
+	${cc} ${args} -g -O0 $< ${objects} -o $@.tmp 
+	mv $@.tmp $@
+
+%.o: %.c %.h
+	${cc} -c ${args} $< -o $@.tmp
 	mv $@.tmp $@
 
 clean:
