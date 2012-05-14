@@ -923,6 +923,156 @@ s dae.chr0            0  30 +       100 AAA-GGGAATGTTAACCAAATGA-----------TTACGG
             self.assertRaises(mafval.ILineFormatError, mafval.validateMaf, mafFile, options)
             removeTempDir()
 
+class LinesStartingWithQChecks(unittest.TestCase):
+    badBlocks = ['''##maf version=1 scoring=tba.v8 
+# wrong number of fields on q line
+a score=0
+s hg18.chr1                  32741 26 + 247249719 TTTTTGAAAAACAAACAACAAGTTGG
+s panTro2.chrUn            9697231 26 +  58616431 TTTTTGAAAAACAAACAACAAGTTGG
+q panTro2.chrUn                                   99999999999999999999999999
+s dasNov1.scaffold_179265     1474  7 +      4584 TT----------AAGCA---------
+q dasNov1.scaffold_179265                         99----------32239--------- banana
+
+''',
+                 '''##maf version=1 scoring=tba.v8 
+# bad quality value
+
+a score=0
+s hg18.chr1                  32741 26 + 247249719 TTTTTGAAAAACAAACAACAAGTTGG
+s panTro2.chrUn            9697231 26 +  58616431 TTTTTGAAAAACAAACAACAAGTTGG
+q panTro2.chrUn                                   99999999999999999999999999
+s dasNov1.scaffold_179265     1474  7 +      4584 TT----------AAGCA---------
+q dasNov1.scaffold_179265                         99----------32239-----v---
+
+''',
+                 '''##maf version=1 scoring=tba.v8 
+# qline does not have same species as preceeding s line
+
+a score=0
+s hg18.chr1                  32741 26 + 247249719 TTTTTGAAAAACAAACAACAAGTTGG
+s panTro2.chrUn            9697231 26 +  58616431 TTTTTGAAAAACAAACAACAAGTTGG
+q panTro2.chrUn                                   99999999999999999999999999
+s dasNov1.scaffold_179265     1474  7 +      4584 TT----------AAGCA---------
+q notTheSame                                      99----------32239---------
+
+''',
+                 ]
+    def testFields(self):
+        """mafValidator should fail when "q" lines are malformed
+        """
+        for b in self.badBlocks:
+            mafFile = testFile(b)
+            self.assertRaises(mafval.QLineFormatError, mafval.validateMaf, mafFile, options)
+            removeTempDir()
+
+class LinesStartingWithEChecks(unittest.TestCase):
+    badBlocks = ['''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=0
+# wrong number of fields
+s hg16.chr7     7707221 13 + 158545518 gcagctgaaaaca
+e mm4.chr6      3310102 13 + 151104725 I I
+''',
+                 '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=0
+# bad length
+s hg16.chr7     7707221 13 + 158545518 gcagctgaaaaca
+e mm4.chr6      3310102 -13 + 151104725 I
+''',
+                 '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=0
+# bad start
+s hg16.chr7     7707221 13 + 158545518 gcagctgaaaaca
+e mm4.chr6      -3310102 13 + 151104725 I
+''',
+                 '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=0
+# bad start
+s hg16.chr7     7707221 13 + 158545518 gcagctgaaaaca
+e mm4.chr6      banana 13 + 151104725 I
+''',
+                 '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=0
+# bad source Length
+s hg16.chr7     7707221 13 + 158545518 gcagctgaaaaca
+e mm4.chr6      3310102 13 + -151104725 I
+''',
+                 '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=0
+# bad source Length
+s hg16.chr7     7707221 13 + 158545518 gcagctgaaaaca
+e mm4.chr6      3310102 13 + I I
+''',
+                 '''##maf version=1 scoring=tba.v8
+# tba.v8 (((human chimp) baboon) (mouse rat))
+
+a score=23262.0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=0
+# bad status
+s hg16.chr7     7707221 13 + 158545518 gcagctgaaaaca
+e mm4.chr6      3310102 13 + 151104725 m
+''',
+                 ]
+    def testFields(self):
+        """mafValidator should fail when "e" lines are malformed
+        """
+        for b in self.badBlocks:
+            mafFile = testFile(b)
+            self.assertRaises(mafval.ELineFormatError, mafval.validateMaf, mafFile, options)
+            removeTempDir()
+
 class DuplicateColumnChecks(unittest.TestCase):
     badMafs = ['''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
