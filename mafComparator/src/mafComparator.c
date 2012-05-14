@@ -212,14 +212,14 @@ int main(int argc, char *argv[]) {
     /*
      * Arguments/options
      */
-    char * logLevelString = NULL;
-    char * mAFFile1 = NULL;
-    char * mAFFile2 = NULL;
-    char * outputFile = NULL;
-    stHash* intervalsHash =
+    char *logLevelString = NULL;
+    char *mAFFile1 = NULL;
+    char *mAFFile2 = NULL;
+    char *outputFile = NULL;
+    stHash *intervalsHash =
             stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free,
                     (void(*)(void *)) stSortedSet_destruct);
-    char * bedFiles = NULL;
+    char *bedFiles = NULL;
     int32_t sampleNumber = 1000000; // by default do a million samples per pair.
     int32_t randomSeed = (time(NULL) << 16) | (getpid() & 65535); // Likely to be unique
     int32_t near = 0;
