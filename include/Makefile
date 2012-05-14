@@ -2,12 +2,12 @@ SHELL:=/bin/bash -e
 export SHELLOPTS=pipefail
 .PHONY: all clean test
 
-cflags = -std=c99 -Wextra -Wall -Werror -pedantic -I ../external/
+cflags = -std=c99 -O3 -Wextra -Wall -Werror -pedantic -I ../external/
 
-all:
+all: common.o sharedMaf.o
 
 clean:
-	rm allTests *.o *.pyc
+	rm -f allTests *.o *.pyc
 
 allTests: allTests.c test.sharedMaf.h ../external/CuTest.c common.o sharedMaf.o 
 	gcc -g -O0 ${cflags} $^ -o $@.tmp
@@ -18,4 +18,4 @@ allTests: allTests.c test.sharedMaf.h ../external/CuTest.c common.o sharedMaf.o
 	mv $@.tmp $@
 
 test: allTests
-	./allTests && python2.7 test.sharedMaf.py --verbose && rm ./allTests
+	./allTests && python2.7 test.sharedMaf.py --verbose && rm -f ./allTests
