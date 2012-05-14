@@ -205,7 +205,7 @@ void usage() {
 }
 
 void version() {
-    fprintf(stderr, "mafComparator, version %.1f\n", VERSION);
+    fprintf(stderr, "mafComparator, version %.1f\n", g_version);
 }
 
 int main(int argc, char *argv[]) {
