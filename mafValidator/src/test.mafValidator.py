@@ -272,6 +272,16 @@ s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGT
 s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
 
 ''',
+                  '''##maf version=1 scoring=tba.v8 banana= 2
+
+a score=23262.0     
+s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s baboon.chr0    116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+
+''',
                   ]
          
     def testBadHeaders(self):
@@ -579,7 +589,7 @@ s hg18         37578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGT
         """
         for b in self.badAlignmentBlockKeyValuePairs:
             mafFile = testFile(b)
-            self.assertRaises(mafval.AlignmentBlockLineKeyValuePairError, mafval.validateMaf, mafFile, options)
+            self.assertRaises(mafval.KeyValuePairError, mafval.validateMaf, mafFile, options)
             removeTempDir()
 
 class StartFieldChecks(unittest.TestCase):

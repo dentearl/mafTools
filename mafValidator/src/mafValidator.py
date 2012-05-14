@@ -43,7 +43,7 @@ class ValidatorError(Exception): pass
 class SourceLengthError(ValidatorError): pass
 class SpeciesFieldError(ValidatorError): pass
 class MissingAlignmentBlockLineError(ValidatorError): pass
-class AlignmentBlockLineKeyValuePairError(ValidatorError): pass
+class KeyValuePairError(ValidatorError): pass
 class AlignmentLengthError(ValidatorError): pass
 class FieldNumberError(ValidatorError): pass
 class FooterError(ValidatorError): pass
@@ -208,12 +208,15 @@ def validateAlignmentLine(lineno, line, filename):
    """ Checks all lines that start with 'a' and raises an exception if 
    the line is malformed.
    """
+   validateKeyValuePairLine(lineno, line, filename)
+
+def validateKeyValuePairLine(lineno, line, filename):
    d = line.split()
    for i in xrange(1, len(d)):
       if len(d[i].split('=')) != 2:
-         raise AlignmentBlockLineKeyValuePairError('maf %s has an alignment line that does not contain '
-                                                   'good key-value pairs on line number %d: %s' 
-                                                   % (filename, lineno, line))
+         raise KeyValuePairError('maf %s has a line that does not contain '
+                                 'good key-value pairs on line number %d: %s' 
+                                 % (filename, lineno, line))
 def validateSeqLine(namePat, options, lineno, line, filename, sequenceColumnDict):
    data = line.split()
    if len(data) != 7:
@@ -274,11 +277,21 @@ def validateHeader(f, filename):
    header = f.next()
    lineno = 2
    if header.startswith('track'):
+      try:
+         validateKeyValuePairLine(1, header, filename)
+      except KeyValuePairError:
+         raise HeaderError('maf %s has bad header, fails key value '
+                           'pair tests, %s on linenumber %d' % (filename, header, lineno))
       header = f.next()
       lineno += 1
    if not header.startswith('##maf'):
       raise HeaderError('maf %s has bad header, fails to start with `##\': %s' 
                            % (filename, header))
+   try: 
+      validateKeyValuePairLine(lineno, header, filename)
+   except KeyValuePairError:
+      raise HeaderError('maf %s has bad header, fails key value '
+                        'pair tests, %s on linenumber %d' % (filename, header, lineno))
    data = header.split()
    version = False
    for d in data[1:]:
