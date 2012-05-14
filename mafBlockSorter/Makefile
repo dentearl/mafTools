@@ -10,12 +10,12 @@ objects = ../include/common.o ../include/sharedMaf.o
 
 all: $(foreach f,${PROGS}, ${bin}/$f)
 
-${bin}/mafBlockSorter: src/mafBlockSorter.c ${dependencies}
+${bin}/mafBlockSorter: src/mafBlockSorter.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
 	${cc} ${args} -O3 $< ${objects} -o $@.tmp 
 	mv $@.tmp $@
 
-test/mafBlockSorter: src/mafBlockSorter.c ${dependencies}
+test/mafBlockSorter: src/mafBlockSorter.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
 	${cc} ${args} -g -O0 $< ${objects} -o $@.tmp 
 	mv $@.tmp $@

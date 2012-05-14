@@ -10,12 +10,12 @@ objects = ../include/common.o ../include/sharedMaf.o
 
 all: $(foreach f,${PROGS}, ${bin}/$f)
 
-${bin}/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies}
+${bin}/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
 	${cc} ${args} -O3 $< ${objects} -o $@.tmp 
 	mv $@.tmp $@
 
-test/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies}
+test/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
 	${cc} ${args} -g -O0 $< ${objects} -o $@.tmp 
 	mv $@.tmp $@

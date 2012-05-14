@@ -10,12 +10,12 @@ objects = ../include/common.o ../include/sharedMaf.o
 
 all: $(foreach f,${PROGS}, ${bin}/$f)
 
-${bin}/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies}
+${bin}/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
 	${cc} ${args} -O3 $< ${objects} -o $@.tmp 
 	mv $@.tmp $@
 
-test/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies}
+test/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
 	${cc} ${args} -g -O0 $< ${objects} -o $@.tmp 
 	mv $@.tmp $@
