@@ -43,7 +43,7 @@ class ValidatorError(Exception): pass
 class SourceLengthError(ValidatorError): pass
 class SpeciesFieldError(ValidatorError): pass
 class MissingAlignmentBlockLineError(ValidatorError): pass
-class AlignmentBlockLineKeyValuePairError(ValidatorError): pass
+class KeyValuePairError(ValidatorError): pass
 class AlignmentLengthError(ValidatorError): pass
 class FieldNumberError(ValidatorError): pass
 class FooterError(ValidatorError): pass
@@ -53,6 +53,8 @@ class SourceSizeFieldError(ValidatorError): pass
 class OutOfRangeError(ValidatorError): pass
 class HeaderError(ValidatorError): pass
 class ILineFormatError(ValidatorError): pass
+class ELineFormatError(ValidatorError): pass
+class QLineFormatError(ValidatorError): pass
 class DuplicateColumnError(ValidatorError): pass
 
 def initOptions(parser):
@@ -131,11 +133,13 @@ def validateMaf(filename, options):
             raise MissingAlignmentBlockLineError('maf %s has a "e" line that was not preceded '
                                                  'by an alignment line on line number %d: %s' 
                                                  % (filename, lineno, line))
+         validateELine(lineno, line, filename)
       elif line.startswith('q'):
          if not prevLineWasAlignmentBlock:
             raise MissingAlignmentBlockLineError('maf %s has a "q" line that was not preceded '
                                                  'by an alignment line on line number %d: %s' 
                                                  % (filename, lineno, line))
+         validateQLine(lineno, line, prevline, filename)
       elif line == '':
          prevLineWasAlignmentBlock = False
          alignmentFieldLength = None
@@ -204,16 +208,110 @@ def validateILine(lineno, line, prevline, filename):
       raise ILineFormatError('maf %s contains an "i" line with a different src value "%s" than on the previous '
                              '"s" line "%s" on line number %d: '
                              '%s' % (filename, d[1], p[1], lineno, line))
+def validateELine(lineno, line, filename):
+   """ Checks all lines that start with 'e' and raises an exepction if
+   the line is malformed.
+   e lines are made up of six fields after the 'e':
+   From http://genome.ucsc.edu/FAQ/FAQformat#format5 :
+   
+   src -- The name of one of the source sequences for the alignment.
+   start -- The start of the non-aligning region in the source sequence. 
+            This is a zero-based number. If the strand field is '-' then 
+            this is the start relative to the reverse-complemented source 
+            sequence (see Coordinate Transforms).
+   size -- The size in base pairs of the non-aligning region in the source sequence.
+   strand -- Either '+' or '-'. If '-', then the alignment is to the reverse-complemented source.
+   srcSize -- The size of the entire source sequence, not just the parts 
+              involved in the alignment. alignment and any insertions (dashes) as well.
+   status -- A character that specifies the relationship between the non-aligning 
+             sequence in this block and the sequence that appears in the previous and subsequent blocks.
+   The status character can be one of the following values:
+   C -- the sequence before and after is contiguous implying that this region 
+        was either deleted in the source or inserted in the reference sequence. 
+        The browser draws a single line or a '-' in base mode in these blocks.
+   I -- there are non-aligning bases in the source species between chained 
+        alignment blocks before and after this block. The browser shows a double line or '=' in base mode.
+   M -- there are non-aligning bases in the source and more than 90% of them 
+        are Ns in the source. The browser shows a pale yellow bar.
+   n -- there are non-aligning bases in the source and the next aligning block 
+        starts in a new chromosome or scaffold that is bridged by a chain between 
+        still other blocks. The browser shows either a single line or a double 
+        line based on how many bases are in the gap between the bridging alignments.
+   """
+   d = line.split()
+   if len(d) != 7:
+      raise ELineFormatError('maf %s contains an "e" line that has too many fields on line number %d: '
+                             '%s' % (filename, lineno, line))
+   for i in [2, 3, 5]:
+      try:
+         n = int(d[i])
+      except ValueError:
+         raise ELineFormatError('maf %s contains an "e" line that has non integer Count "%s" on line number %d: '
+                                '%s' % (filename, d[i], lineno, line))
+      if int(d[i]) < 0:
+         raise ELineFormatError('maf %s contains an "e" line that has negative Count "%s" on line number %d: '
+                                '%s' % (filename, d[i], lineno, line))
+   if d[4] not in ['+', '-']:
+      raise ELineFormatError('maf %s contains an "e" line with an invalid strand "%s" on line number %d: '
+                                '%s' % (filename, d[4], lineno, line))
+   if d[6] not in ['C', 'I', 'M', 'n']:
+      raise ELineFormatError('maf %s contains an "e" line with an invalid Status "%s" on line number %d: '
+                                '%s' % (filename, d[2], lineno, line))
+def validateQLine(lineno, line, prevline, filename):
+   """ Checks all lines that start with 'q' and raises an exepction if
+   the line is malformed.
+   q lines are made up of two fields after the 'q':
+   From http://genome.ucsc.edu/FAQ/FAQformat#format5 :
+   The 'q' lines contain a compressed version of the actual raw quality data, 
+   representing the quality of each aligned base for the species with a single 
+   character of 0-9 or F. The following fields are defined by position rather 
+   than name=value pairs:
+   src -- The name of the source sequence for the alignment. Should be the same 
+          as the 's' line immediately preceding this line.
+   value -- A MAF quality value corresponding to the aligning nucleotide acid 
+            in the preceding 's' line. Insertions (dashes) in the preceding 's' 
+            line are represented by dashes in the 'q' line as well. The quality 
+            value can be 'F' (finished sequence) or a number derived from the 
+            actual quality scores (which range from 0-97) or the manually 
+            assigned score of 98. These numeric values are calculated as:
+            MAF quality value = min( floor(actual quality value/5), 9 )
+   This results in the following mapping:
+   MAF quality value | Raw quality score range | Quality level
+   0-8 |  0-44 | Low
+     9 | 45-97 | High
+     0 |    98 | Manually assigned
+     F |    99 | Finished
+
+   """
+   d = line.split()
+   p = prevline.split()
+   if len(d) != 3:
+      raise QLineFormatError('maf %s contains an "q" line that has too many fields on line number %d: '
+                             '%s' % (filename, lineno, line))
+   if p[0] != 's':
+      raise QLineFormatError('maf %s contains an "q" line that does not follow an "s" line on line number %d: '
+                             '%s' % (filename, lineno, line))
+   for c in d[2]:
+      if c not in map(str, range(0, 10)) + ['F', '-']:
+         raise QLineFormatError('maf %s contains an "q" line with an invalid character "%s" on line number %d: '
+                                '%s' % (filename, c, lineno, line))
+   if p[1] != d[1]:
+      raise QLineFormatError('maf %s contains an "q" line with a different src value "%s" than on the previous '
+                             '"s" line "%s" on line number %d: '
+                             '%s' % (filename, d[1], p[1], lineno, line))
 def validateAlignmentLine(lineno, line, filename):
    """ Checks all lines that start with 'a' and raises an exception if 
    the line is malformed.
    """
+   validateKeyValuePairLine(lineno, line, filename)
+
+def validateKeyValuePairLine(lineno, line, filename):
    d = line.split()
    for i in xrange(1, len(d)):
       if len(d[i].split('=')) != 2:
-         raise AlignmentBlockLineKeyValuePairError('maf %s has an alignment line that does not contain '
-                                                   'good key-value pairs on line number %d: %s' 
-                                                   % (filename, lineno, line))
+         raise KeyValuePairError('maf %s has a line that does not contain '
+                                 'good key-value pairs on line number %d: %s' 
+                                 % (filename, lineno, line))
 def validateSeqLine(namePat, options, lineno, line, filename, sequenceColumnDict):
    data = line.split()
    if len(data) != 7:
@@ -274,11 +372,21 @@ def validateHeader(f, filename):
    header = f.next()
    lineno = 2
    if header.startswith('track'):
+      try:
+         validateKeyValuePairLine(1, header, filename)
+      except KeyValuePairError:
+         raise HeaderError('maf %s has bad header, fails key value '
+                           'pair tests, %s on linenumber %d' % (filename, header, lineno))
       header = f.next()
       lineno += 1
    if not header.startswith('##maf'):
       raise HeaderError('maf %s has bad header, fails to start with `##\': %s' 
                            % (filename, header))
+   try: 
+      validateKeyValuePairLine(lineno, header, filename)
+   except KeyValuePairError:
+      raise HeaderError('maf %s has bad header, fails key value '
+                        'pair tests, %s on linenumber %d' % (filename, header, lineno))
    data = header.split()
    version = False
    for d in data[1:]:

@@ -36,7 +36,7 @@ ${binPath}/%.py : src/%.py
 	chmod +x $@.tmp
 	mv $@.tmp $@
 
-test :
+test : all
 	python src/allTests.py -v
 
 clean :

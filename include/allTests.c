@@ -22,13 +22,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
+#include <stdlib.h>
+#include <stdio.h>
 #include "CuTest.h"
 #include "test.common.h"
 #include "test.sharedMaf.h"
 
 CuSuite* mafShared_TestSuite(void);
-int g_verbose_flag = 0;
-int g_debug_flag = 0;
 
 int include_RunAllTests(void) {
     CuString *output = CuStringNew();

@@ -31,10 +31,6 @@
 #include "common.h"
 #include "sharedMaf.h"
 
-int g_verbose_flag = 0;
-int g_debug_flag = 0;
-const int kMaxSeqName = 1 << 9;
-
 void usage(void);
 void processBody(mafFileApi_t *mfa, char *seq, uint32_t start, uint32_t stop);
 bool searchMatched(mafLine_t *ml, char *seq, uint32_t start, uint32_t stop);
@@ -164,20 +160,21 @@ bool checkRegion(uint32_t start, uint32_t stop, uint32_t str,
     return false;
 }
 void reportBlock(mafBlock_t *b) {
-    mafLine_t *ml = b->headLine;
+    mafLine_t *ml = maf_mafBlock_getHeadLine(b);
     while (ml != NULL) {
-        printf("%s\n", ml->line);
-        ml = ml->next;
+        printf("%s\n", maf_mafLine_getLine(ml));
+        ml = maf_mafLine_getNext(ml);
     }
     printf("\n");
 }
 bool searchMatched(mafLine_t *ml, char *seq, uint32_t start, uint32_t stop) {
     // report false if search did not match, true if it did
-    if (ml->type != 's')
+    if (maf_mafLine_getType(ml) != 's')
         return false;
-    if (!(strcmp(ml->species, seq) == 0))
+    if (!(strcmp(maf_mafLine_getSpecies(ml), seq) == 0))
         return false;
-    if (checkRegion(start, stop, ml->start, ml->length, ml->sourceLength, ml->strand))
+    if (checkRegion(start, stop, maf_mafLine_getStart(ml), maf_mafLine_getLength(ml), 
+                    maf_mafLine_getSourceLength(ml), maf_mafLine_getStrand(ml)))
         return true;
     return false;
 }
@@ -187,7 +184,7 @@ void printHeader(void) {
 void checkBlock(mafBlock_t *b, char *seq, uint32_t start, uint32_t stop, bool *printedHeader) {
     // read through each line of a mafBlock and if the sequence matches the region
     // we're looking for, report the block.
-    mafLine_t *ml = b->headLine;
+    mafLine_t *ml = maf_mafBlock_getHeadLine(b);
     while (ml != NULL) {
         if (searchMatched(ml, seq, start, stop)) {
             if (!*printedHeader) {
@@ -197,7 +194,7 @@ void checkBlock(mafBlock_t *b, char *seq, uint32_t start, uint32_t stop, bool *p
             reportBlock(b);
             break;
         } 
-        ml = ml->next;
+        ml = maf_mafLine_getNext(ml);
     }
 }
 void processBody(mafFileApi_t *mfa, char *seq, uint32_t start, uint32_t stop) {

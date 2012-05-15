@@ -136,7 +136,7 @@ class FindTest(unittest.TestCase):
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(foundLines(g_overlappingBlocks[i][2], os.path.join(tmpDir, 'found.txt'), g_header))
             mtt.removeTempDir()
-    def dtestNonFind(self):
+    def testNonFind(self):
         """ mafBlockFinder should not report any lines when blocks do not match.
         """
         global g_header
@@ -151,7 +151,7 @@ class FindTest(unittest.TestCase):
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.fileIsEmpty(os.path.join(tmpDir, 'found.txt')))
             mtt.removeTempDir()
-    def dtestMemory1(self):
+    def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
         valgrind = mtt.which('valgrind')
@@ -163,7 +163,7 @@ class FindTest(unittest.TestCase):
             testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
                                                  g_overlappingBlocks[i][0], g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [valgrind, '--leak-check=full', 'show-reachable=yes', '--track-origins=yes', '--xml=yes', 
+            cmd = [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', '--xml=yes', 
                    '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder')))
             cmd += ['--maf', testMafPath, '--seq', g_targetSeq, '--pos', '%d' % g_overlappingBlocks[i][1]]
@@ -171,7 +171,7 @@ class FindTest(unittest.TestCase):
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeTempDir()
-    def dtestMemory2(self):
+    def testMemory2(self):
         """ If valgrind is installed on the system, check for memory related errors (2).
         """
         valgrind = mtt.which('valgrind')
@@ -183,7 +183,7 @@ class FindTest(unittest.TestCase):
             testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
                                                  ''.join(g_nonOverlappingBlocks[i][0]), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [valgrind, '--leak-check=full', 'show-reachable=yes', '--track-origins=yes', '--xml=yes', 
+            cmd = [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', '--xml=yes', 
                    '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder')))
             cmd += ['--maf', testMafPath, '--seq', g_targetSeq, '--pos', '%d' % g_nonOverlappingBlocks[i][1]]

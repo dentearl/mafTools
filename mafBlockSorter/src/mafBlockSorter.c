@@ -33,10 +33,6 @@
 #include "common.h"
 #include "sharedMaf.h"
 
-int g_verbose_flag = 0;
-int g_debug_flag = 0;
-const int kMaxSeqName = 1 << 8;
-
 typedef struct sortingMafBlock {
     // augmented data structure
     mafBlock_t *mafBlock; // pointer to actual mafBlock_t
@@ -122,27 +118,27 @@ int32_t max(int32_t a, int32_t b) {
     return (a > b ? a : b);
 }
 int32_t getTargetStartLine(mafLine_t *ml, char *targetSeq) {
-    if (ml->type != 's')
+    if (maf_mafLine_getType(ml) != 's')
         return -1;
-    if (strncmp(targetSeq, ml->species, strlen(targetSeq)) == 0) {
-        return (int32_t) ml->start;
+    if (strncmp(targetSeq, maf_mafLine_getSpecies(ml), strlen(targetSeq)) == 0) {
+        return (int32_t) maf_mafLine_getStart(ml);
     }
     return -1;
 }
 int32_t getTargetStartBlock(mafBlock_t *mb, char *targetSeq) {
-    mafLine_t *ml = mb->headLine;
+    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     assert(ml != NULL);
     int32_t tStart = -1;
     while (ml != NULL) {
         tStart = max(tStart, getTargetStartLine(ml, targetSeq));
-        ml = ml->next;
+        ml = maf_mafLine_getNext(ml);
     }
     return tStart;
 }
 unsigned processBody(mafFileApi_t *mfa, mafBlock_t **head) {
     // process the body of the maf, block by block.
     *head = maf_readAll(mfa);
-    return maf_numberOfBlocks(*head);
+    return maf_mafBlock_countNumberOfBlocks(*head);
 }
 void populateArray(mafBlock_t *mb, sortingMafBlock_t **array, char *targetSequence) {
     // walk the linked list pointed to by head and stuff pointers to
@@ -152,7 +148,7 @@ void populateArray(mafBlock_t *mb, sortingMafBlock_t **array, char *targetSequen
         array[i] = (sortingMafBlock_t *) de_malloc(sizeof(sortingMafBlock_t));
         array[i]->mafBlock = mb;
         array[i++]->targetStart = getTargetStartBlock(mb, targetSequence);
-        mb = mb->next;
+        mb = maf_mafBlock_getNext(mb);
     }
 }
 int cmp_by_targetStart(const void *a, const void *b) {
@@ -162,11 +158,11 @@ int cmp_by_targetStart(const void *a, const void *b) {
 }
 void reportBlock(sortingMafBlock_t *smb) {
     // print out the single block pointed to by mb
-    mafLine_t *ml = smb->mafBlock->headLine;
+    mafLine_t *ml = maf_mafBlock_getHeadLine(smb->mafBlock);
     while(ml != NULL) {
-        assert(ml->line != NULL);
-        printf("%s\n", ml->line);
-        ml = ml->next;
+        assert(maf_mafLine_getLine(ml) != NULL);
+        printf("%s\n", maf_mafLine_getLine(ml));
+        ml = maf_mafLine_getNext(ml);
     }
 }
 void reportBlocks(sortingMafBlock_t **array, unsigned numBlocks) {

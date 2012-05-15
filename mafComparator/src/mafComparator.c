@@ -28,6 +28,7 @@
 #include <assert.h>
 #include <errno.h> // file existence via ENOENT
 #include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -43,11 +44,10 @@
 #include "hashTableC_itr.h"
 #include "bioioC.h"
 #include "sonLibRandom.h" // seeds and sampling
-
 #include "ComparatorAPI.h"
 
-float VERSION = 0.4;
-int32_t ISVERBOSEFAILURES = 0;
+const float g_version = 0.4;
+bool g_isVerboseFailures = false;
 
 /*
  * The script takes two MAF files and for each ordered pair of sequences 
@@ -171,7 +171,7 @@ void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
 }
 
 void usage() {
-    fprintf(stderr, "mafComparator, version %.1f\n", VERSION);
+    fprintf(stderr, "mafComparator, version %.1f\n", g_version);
     fprintf(stderr,
             "-a --logLevel : Set the log level. [off, critical, info, debug] "
             "in ascending order.\n");
@@ -205,21 +205,21 @@ void usage() {
 }
 
 void version() {
-    fprintf(stderr, "mafComparator, version %.1f\n", VERSION);
+    fprintf(stderr, "mafComparator, version %.1f\n", g_version);
 }
 
 int main(int argc, char *argv[]) {
     /*
      * Arguments/options
      */
-    char * logLevelString = NULL;
-    char * mAFFile1 = NULL;
-    char * mAFFile2 = NULL;
-    char * outputFile = NULL;
-    stHash* intervalsHash =
+    char *logLevelString = NULL;
+    char *mAFFile1 = NULL;
+    char *mAFFile2 = NULL;
+    char *outputFile = NULL;
+    stHash *intervalsHash =
             stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free,
                     (void(*)(void *)) stSortedSet_destruct);
-    char * bedFiles = NULL;
+    char *bedFiles = NULL;
     int32_t sampleNumber = 1000000; // by default do a million samples per pair.
     int32_t randomSeed = (time(NULL) << 16) | (getpid() & 65535); // Likely to be unique
     int32_t near = 0;
@@ -269,7 +269,7 @@ int main(int argc, char *argv[]) {
                 version();
                 return 0;
             case 'p':
-                ISVERBOSEFAILURES = 1;
+                g_isVerboseFailures = true;
                 break;
             case 'e':
                 i = sscanf(optarg, "%i", &sampleNumber);
@@ -372,18 +372,18 @@ int main(int argc, char *argv[]) {
     // Do comparisons.
     //////////////////////////////////////////////
 
-    if (ISVERBOSEFAILURES) {
+    if (g_isVerboseFailures) {
         fprintf(stderr, "# Comparing %s to %s\n", mAFFile1, mAFFile2);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
     struct avl_table *results_12 = compareMAFs_AB(mAFFile1, mAFFile2, sampleNumber, seqNames, 
-                                                  intervalsHash, ISVERBOSEFAILURES, near);
-    if (ISVERBOSEFAILURES) {
+                                                  intervalsHash, g_isVerboseFailures, near);
+    if (g_isVerboseFailures) {
         fprintf(stderr, "# Comparing %s to %s\n", mAFFile2, mAFFile1);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
     struct avl_table *results_21 = compareMAFs_AB(mAFFile2, mAFFile1, sampleNumber, seqNames, 
-                                                  intervalsHash, ISVERBOSEFAILURES, near);
+                                                  intervalsHash, g_isVerboseFailures, near);
     fileHandle = fopen(outputFile, "w");
     if (fileHandle == NULL) {
         fprintf(stderr, "ERROR, unable to open %s for writing.\n", outputFile);
