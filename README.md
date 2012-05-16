@@ -7,12 +7,16 @@
 
 ## Dependencies
 When a component is missing a dependency it will not be built, tested or cleaned by the Makefile. Dependencies should be placed in the same parent directory as mafTools.
+* [python 2.7](http://www.python.org/)
+   * [scipy](http://www.scipy.org/)
+   * [numpy](http://numpy.scipy.org/)
 * [sonLib](https://github.com/benedictpaten/sonLib/): mafComparator, mafTransitiveClosure.
 * [pinchesAndCacti](https://github.com/benedictpaten/sonLib/): mafTransitiveClosure.
 
 ## Installation
-1. Download the package. Consider making it a sibling directory to <code>sonLib/</code>.
-2. <code>cd</code> into the directory.
+0. Install dependencies.
+1. Download or clone the <code>mafTools</code> package. Consider making it a sibling directory to <code>sonLib/</code> and <code>pinchesAndCacti</code>.
+2. <code>cd</code> into <code>mafTools</code> directory.
 3. Type <code>make</code>.
 
 ## Components
