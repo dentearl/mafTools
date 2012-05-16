@@ -270,8 +270,7 @@ class DuplicationFilterTest(unittest.TestCase):
             testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
                                    ''.join(shuffledBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', '--xml=yes', 
-                   '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+            cmd = mtt.genericValgrind(tmpDir)
             cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
                    '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
@@ -291,8 +290,7 @@ class DuplicationFilterTest(unittest.TestCase):
                                    ''.join(g_nonDuplicateBlocks), g_headers)
             expectedOutput = g_nonDuplicateBlocks
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', '--xml=yes', 
-                   '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+            cmd = mtt.genericValgrind(tmpDir)
             cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
                    '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]

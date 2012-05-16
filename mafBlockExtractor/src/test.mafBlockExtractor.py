@@ -195,8 +195,7 @@ class ExtractionTest(unittest.TestCase):
             testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
                                    ''.join(shuffledBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', '--xml=yes', 
-                   '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+            cmd = mtt.genericValgrind(tmpDir)
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor')))
             cmd += ['--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
@@ -217,8 +216,7 @@ class ExtractionTest(unittest.TestCase):
             testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
                                    ''.join(g_nonOverlappingBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', '--xml=yes', 
-                   '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+            cmd = mtt.genericValgrind(tmpDir)
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor')))
             cmd += ['--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
