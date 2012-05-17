@@ -163,8 +163,7 @@ class FindTest(unittest.TestCase):
             testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
                                                  g_overlappingBlocks[i][0], g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', '--xml=yes', 
-                   '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+            cmd = mtt.genericValgrind(tmpDir)
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder')))
             cmd += ['--maf', testMafPath, '--seq', g_targetSeq, '--pos', '%d' % g_overlappingBlocks[i][1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
@@ -183,8 +182,7 @@ class FindTest(unittest.TestCase):
             testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
                                                  ''.join(g_nonOverlappingBlocks[i][0]), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', '--xml=yes', 
-                   '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+            cmd = mtt.genericValgrind(tmpDir)
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder')))
             cmd += ['--maf', testMafPath, '--seq', g_targetSeq, '--pos', '%d' % g_nonOverlappingBlocks[i][1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]

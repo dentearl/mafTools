@@ -6,13 +6,17 @@
 [Dent Earl](https://github.com/dentearl/), [Benedict Paten](https://github.com/benedictpaten/), [Mark Diekhans](https://github.com/diekhans)
 
 ## Dependencies
-When a component is missing a dependency it will not be built, tested or cleaned by the Makefile. Dependencies should be placed in the same parent directory as mafTools.
+With the exception of the python dependencies, when a component is missing a dependency it will not be built, tested or cleaned by the Makefile. If the python dependencies are missing then some of the modules will fail to function and all of the modules' tests will fail. The <code>sonLib</code> and <code>pinchesAndCacti</code> dependencies should be built and placed in the same parent directory as <code>mafTools</code>.
+* [python 2.7](http://www.python.org/): all modules.
+   * [scipy](http://www.scipy.org/)
+   * [numpy](http://numpy.scipy.org/)
 * [sonLib](https://github.com/benedictpaten/sonLib/): mafComparator, mafTransitiveClosure.
 * [pinchesAndCacti](https://github.com/benedictpaten/sonLib/): mafTransitiveClosure.
 
 ## Installation
-1. Download the package. Consider making it a sibling directory to <code>sonLib/</code>.
-2. <code>cd</code> into the directory.
+0. Install dependencies.
+1. Download or clone the <code>mafTools</code> package. Consider making it a sibling directory to <code>sonLib/</code> and <code>pinchesAndCacti</code>.
+2. <code>cd</code> into <code>mafTools</code> directory.
 3. Type <code>make</code>.
 
 ## Components

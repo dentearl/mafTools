@@ -23,6 +23,7 @@
 # THE SOFTWARE. 
 ##################################################
 import os
+import platform
 import random
 import shutil
 import subprocess
@@ -184,3 +185,16 @@ def testFile(mafFile, s, headers):
     f.write(s)
     f.close()
     return mafFile, header
+def genericValgrind(tmpDir):
+    """ 
+    returns a list (in the subprocess command style) containing
+    a generic call to valgrind.
+    """
+    valgrind = which('valgrind')
+    if platform.mac_ver() == ('', ('', '', ''), ''):
+        return [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', 
+                '--xml=yes', '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+    else:
+        # --dsymutil is for mac os x builds
+        return [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', 
+                '--dsymutil=yes', '--xml=yes', '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
