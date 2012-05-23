@@ -126,8 +126,8 @@ class FindTest(unittest.TestCase):
         """
         global g_header
         for i in xrange(0, len(g_overlappingBlocks)):
-            tmpDir = os.path.abspath(mtt.makeTempDir())
-            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+            tmpDir = os.path.abspath(mtt.makeTempDir('find'))
+            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                                  g_overlappingBlocks[i][0], g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder'))]
@@ -135,14 +135,14 @@ class FindTest(unittest.TestCase):
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(foundLines(g_overlappingBlocks[i][2], os.path.join(tmpDir, 'found.txt'), g_header))
-            mtt.removeTempDir()
+            mtt.removeDir(tmpDir)
     def testNonFind(self):
         """ mafBlockFinder should not report any lines when blocks do not match.
         """
         global g_header
         for i in xrange(0, len(g_nonOverlappingBlocks)):
-            tmpDir = os.path.abspath(mtt.makeTempDir())
-            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+            tmpDir = os.path.abspath(mtt.makeTempDir('nonFind'))
+            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                                  ''.join(g_nonOverlappingBlocks[i][0]), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder'))]
@@ -150,7 +150,7 @@ class FindTest(unittest.TestCase):
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.fileIsEmpty(os.path.join(tmpDir, 'found.txt')))
-            mtt.removeTempDir()
+            mtt.removeDir(tmpDir)
     def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
@@ -159,8 +159,8 @@ class FindTest(unittest.TestCase):
             return
         global g_header
         for i in xrange(0, len(g_overlappingBlocks)):
-            tmpDir = os.path.abspath(mtt.makeTempDir())
-            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+            tmpDir = os.path.abspath(mtt.makeTempDir('memory1'))
+            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                                  g_overlappingBlocks[i][0], g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = mtt.genericValgrind(tmpDir)
@@ -169,7 +169,7 @@ class FindTest(unittest.TestCase):
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-            mtt.removeTempDir()
+            mtt.removeDir(tmpDir)
     def testMemory2(self):
         """ If valgrind is installed on the system, check for memory related errors (2).
         """
@@ -178,8 +178,8 @@ class FindTest(unittest.TestCase):
             return
         global g_header
         for i in xrange(0, len(g_nonOverlappingBlocks)):
-            tmpDir = os.path.abspath(mtt.makeTempDir())
-            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+            tmpDir = os.path.abspath(mtt.makeTempDir('memory2'))
+            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                                  ''.join(g_nonOverlappingBlocks[i][0]), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = mtt.genericValgrind(tmpDir)
@@ -188,7 +188,7 @@ class FindTest(unittest.TestCase):
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-            mtt.removeTempDir()
+            mtt.removeDir(tmpDir)
 
 if __name__ == '__main__':
     unittest.main()
