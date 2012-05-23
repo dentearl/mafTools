@@ -26,23 +26,33 @@ import os
 import platform
 import random
 import shutil
+import string
 import subprocess
 import xml.etree.ElementTree as ET
 import xml.parsers.expat
 
-def makeTempDir():
+def makeTempDir(name=None):
     """
     make the typical directory where all temporary test files will be stored.
     """
     if not os.path.exists(os.path.join(os.curdir, 'tempTestDir')):
         os.mkdir(os.path.join(os.curdir, 'tempTestDir'))
-    return os.path.join(os.curdir, 'tempTestDir')
-def removeTempDir():
+    charSet = string.ascii_lowercase + '123456789'
+    if name is None:
+        while True:
+            name = '%s_%s' % (''.join(random.choice(charSet) for x in xrange(4)), 
+                              ''.join(random.choice(charSet) for x in xrange(4)))
+            if not os.path.exists(os.path.join(os.curdir, 'tempTestDir', name)):
+                break
+    if not os.path.exists(os.path.join(os.curdir, 'tempTestDir', name)):
+        os.mkdir(os.path.join(os.curdir, 'tempTestDir', name))
+    return os.path.join(os.curdir, 'tempTestDir', name)
+def removeDir(dirpath):
     """
-    destroy the typical temporary directory
+    destroy a directory
     """
-    if os.path.exists(os.path.join(os.curdir, 'tempTestDir')):
-        shutil.rmtree(os.path.join(os.curdir, 'tempTestDir'))
+    if os.path.exists(dirpath):
+        shutil.rmtree(dirpath)
 def runCommandsS(cmds, localTempDir, inPipes=[], outPipes=[]):
     """ 
     runCommandsS uses the subprocess module
@@ -116,6 +126,8 @@ def noMemoryErrors(xml):
     parse the valgrind output xml file looking for any signs of memory errors.
     returns False if memory errors exist, True if no memory errors.
     """
+    if not os.path.exists(xml):
+        raise RuntimeError('Input xml, %s does not exist.' % xml)
     try:
         tree = ET.parse(xml)
     except xml.parsers.expat.ExpatError:

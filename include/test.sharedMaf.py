@@ -35,9 +35,7 @@ class SharedMafLibraryTest(unittest.TestCase):
         if valgrind is None:
             return
         tmpDir = os.path.abspath(mtt.makeTempDir())
-        cmd = [valgrind, '--leak-check=full', '--track-origins=yes', 
-               '--show-reachable=yes', '--xml=yes', 
-               '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+        cmd = mtt.genericValgrind(tmpDir)
         cmd.append(os.path.abspath(os.path.join(os.curdir, 'allTests')))
         mtt.runCommandsS([cmd], tmpDir)
         self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))

@@ -4,7 +4,7 @@ args = -Wall -Wextra -std=c99 -pedantic -I ../external -I ../include
 bin = ../bin
 PROGS = mafBlockExtractor
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*)
-objects = ../include/common.o ../include/sharedMaf.o
+objects = ../include/common.o ../include/sharedMaf.o ../external/CuTest.a
 
 .PHONY: all clean test
 
@@ -29,3 +29,10 @@ clean:
 
 test: test/mafBlockExtractor
 	python2.7 src/test.mafBlockExtractor.py --verbose && rm -rf ./test/
+
+../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
+	${cc} -c ${args} $<
+	ar rc CuTest.a *.o
+	ranlib CuTest.a
+	rm -f *.o
+	mv CuTest.a $@

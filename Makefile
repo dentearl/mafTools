@@ -15,8 +15,7 @@ ifeq ($(wildcard ../sonLib/lib/stPinchesAndCacti.a),)
 	TransitiveClosure = 
 $(warning Because dependency ../pinchesAndCacti is missing mafTransitiveClosure will not be built / tested / cleaned. See README.md for information about dependencies.)
 else
-#	TransitiveClosure = mafTransitiveClosure # switched off during development
-	TransitiveClosure = 
+	TransitiveClosure = mafTransitiveClosure
 endif
 endif
 python_version_full := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))

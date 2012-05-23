@@ -33,9 +33,9 @@ const int kMaxStringLength;
 const int kMaxMessageLength;
 const int kMaxSeqName;
 
-void message(char const *type, char const *fmt, ...);
-void verbose(char const *fmt, ...);
-void debug(char const *fmt, ...);
+void de_message(char const *type, char const *fmt, ...);
+void de_verbose(char const *fmt, ...);
+void de_debug(char const *fmt, ...);
 void failBadFormat(void);
 void* de_malloc(size_t n);
 int32_t de_getline(char **s, int32_t *n, FILE *f);
