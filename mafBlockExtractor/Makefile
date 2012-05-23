@@ -28,7 +28,7 @@ clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
 
 test: test/mafBlockExtractor
-	python2.7 src/test.mafBlockExtractor.py --verbose && rm -rf ./test/
+	python2.7 src/test.mafBlockExtractor.py --verbose && rm -rf ./test/ && rmdir ./tempTestDir
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
 	${cc} -c ${args} $<
