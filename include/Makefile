@@ -20,7 +20,7 @@ allTests: allTests.c test.sharedMaf.h test.sharedMaf.c ${objects}
 	mv $@.tmp $@
 
 test: allTests
-	./allTests && python2.7 test.sharedMaf.py --verbose && rm -f ./allTests
+	./allTests && python2.7 test.sharedMaf.py --verbose && rm -f ./allTests && rmdir ./tempTestDir
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
 	${cc} -c ${args} $<

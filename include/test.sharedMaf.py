@@ -34,12 +34,12 @@ class SharedMafLibraryTest(unittest.TestCase):
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
-        tmpDir = os.path.abspath(mtt.makeTempDir())
+        tmpDir = os.path.abspath(mtt.makeTempDir('allTests'))
         cmd = mtt.genericValgrind(tmpDir)
         cmd.append(os.path.abspath(os.path.join(os.curdir, 'allTests')))
         mtt.runCommandsS([cmd], tmpDir)
         self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-        mtt.removeTempDir()
+        mtt.removeDir(tmpDir)
     
 if __name__ == '__main__':
     unittest.main()

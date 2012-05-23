@@ -217,7 +217,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA\n\
     mafBlock_t *mb = maf_readBlock(mapi);
     CuAssertTrue(testCase, mb != NULL);
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
-    CuAssertTrue(testCase, maf_mafLine_countNumberOfSequences(ml) == 0);
+    CuAssertTrue(testCase, maf_mafLine_getNumberOfSequences(ml) == 0);
     CuAssertStrEquals(testCase, maf_mafLine_getLine(ml), "track name=euArc visibility=pack ");
     CuAssertTrue(testCase, maf_mafLine_getNext(ml) != NULL);
     ml = maf_mafLine_getNext(ml);
@@ -237,7 +237,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA\n\
     CuAssertStrEquals(testCase, maf_mafLine_getLine(ml), "a score=23262.0     ");
     CuAssertTrue(testCase, maf_mafLine_getNext(ml) != NULL);
     ml = maf_mafLine_getNext(ml);
-    CuAssertTrue(testCase, maf_mafLine_countNumberOfSequences(ml) == 5);
+    CuAssertTrue(testCase, maf_mafLine_getNumberOfSequences(ml) == 5);
     CuAssertStrEquals(testCase, maf_mafLine_getLine(ml), "s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG");
     CuAssertStrEquals(testCase, maf_mafLine_getSpecies(ml), "hg18.chr7");
     CuAssertUInt32Equals(testCase, maf_mafLine_getStart(ml), 27578828);
@@ -287,7 +287,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA\n\
     mafBlock_t *mb = maf_readBlock(mapi);
     CuAssertTrue(testCase, mb != NULL);
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
-    CuAssertTrue(testCase, maf_mafLine_countNumberOfSequences(ml) == 0);
+    CuAssertTrue(testCase, maf_mafLine_getNumberOfSequences(ml) == 0);
     CuAssertStrEquals(testCase, maf_mafLine_getLine(ml), "track name=euArc visibility=pack ");
     CuAssertTrue(testCase, maf_mafLine_getNext(ml) != NULL);
     ml = maf_mafLine_getNext(ml);
@@ -307,7 +307,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA\n\
     CuAssertStrEquals(testCase, maf_mafLine_getLine(ml), "a score=23262.0     ");
     CuAssertTrue(testCase, maf_mafLine_getNext(ml) != NULL);
     ml = maf_mafLine_getNext(ml);
-    CuAssertTrue(testCase, maf_mafLine_countNumberOfSequences(ml) == 5);
+    CuAssertTrue(testCase, maf_mafLine_getNumberOfSequences(ml) == 5);
     CuAssertStrEquals(testCase, maf_mafLine_getLine(ml), "s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG");
     CuAssertStrEquals(testCase, maf_mafLine_getSpecies(ml), "hg18.chr7");
     CuAssertUInt32Equals(testCase, maf_mafLine_getStart(ml), 27578828);
@@ -347,7 +347,7 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
     mafBlock_t *mb = maf_readBlock(mapi);
     CuAssertTrue(testCase, mb != NULL);
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
-    CuAssertTrue(testCase, maf_mafLine_countNumberOfSequences(ml) == 0);
+    CuAssertTrue(testCase, maf_mafLine_getNumberOfSequences(ml) == 0);
     CuAssertStrEquals(testCase, maf_mafLine_getLine(ml), "track name=euArc visibility=pack ");
     CuAssertTrue(testCase, maf_mafLine_getLineNumber(ml) == 1);
     CuAssertTrue(testCase, maf_mafLine_getNext(ml) != NULL);
@@ -368,7 +368,7 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
     CuAssertTrue(testCase, maf_mafLine_getLineNumber(ml) == 6);
     CuAssertTrue(testCase, maf_mafLine_getNext(ml) != NULL);
     ml = maf_mafLine_getNext(ml);
-    CuAssertTrue(testCase, maf_mafLine_countNumberOfSequences(ml) == 5);
+    CuAssertTrue(testCase, maf_mafLine_getNumberOfSequences(ml) == 5);
     CuAssertStrEquals(testCase, maf_mafLine_getLine(ml), "s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG");
     CuAssertTrue(testCase, maf_mafLine_getLineNumber(ml) == 7);
     CuAssertStrEquals(testCase, maf_mafLine_getSpecies(ml), "hg18.chr7");
