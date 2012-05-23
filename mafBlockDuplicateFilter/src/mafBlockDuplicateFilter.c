@@ -466,7 +466,7 @@ void checkBlock(mafBlock_t *block) {
     // read through each line of a mafBlock and filter duplicates.
     // Report the top scoring duplication only.
     mafLine_t *m = maf_mafBlock_getHeadLine(block);
-    unsigned n = maf_mafLine_countNumberOfSequences(m);
+    unsigned n = maf_mafLine_getNumberOfSequences(m);
     char **species = (char **) de_malloc(sizeof(char *) * n);
     char **sequences = (char **) de_malloc(sizeof(char *) * n);
     int index = 0;

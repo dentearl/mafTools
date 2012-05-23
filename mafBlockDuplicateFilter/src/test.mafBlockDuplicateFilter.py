@@ -203,7 +203,7 @@ class DuplicationFilterTest(unittest.TestCase):
         for i in xrange(0, 10):
             shuffledBlocks = []
             expectedOutput = []
-            tmpDir = os.path.abspath(mtt.makeTempDir())
+            tmpDir = os.path.abspath(mtt.makeTempDir('filter'))
             order = [1] * len(g_duplicateBlocks) + [0] * len(g_nonDuplicateBlocks)
             random.shuffle(order)
             random.shuffle(g_duplicateBlocks)
@@ -218,31 +218,31 @@ class DuplicationFilterTest(unittest.TestCase):
                     shuffledBlocks.append(g_nonDuplicateBlocks[k])
                     expectedOutput.append(g_nonDuplicateBlocks[k])
                     k += 1
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    ''.join(shuffledBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
-                   '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
+                   '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), expectedOutput))
-            mtt.removeTempDir()
+            mtt.removeDir(tmpDir)
     def testNonFilter(self):
         """ mafBlockDuplicateFilter should not filter out any sequences from blocks when there are no duplicates.
         """
         for i in xrange(0, 10):
-            tmpDir = os.path.abspath(mtt.makeTempDir())
+            tmpDir = os.path.abspath(mtt.makeTempDir('nonFilter'))
             random.shuffle(g_nonDuplicateBlocks)
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    ''.join(g_nonDuplicateBlocks), g_headers)
             expectedOutput = g_nonDuplicateBlocks
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
-                   '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
+                   '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), expectedOutput))
-            mtt.removeTempDir()
+            mtt.removeDir(tmpDir)
     def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
@@ -252,7 +252,7 @@ class DuplicationFilterTest(unittest.TestCase):
         for i in xrange(0, 10):
             shuffledBlocks = []
             expectedOutput = []
-            tmpDir = os.path.abspath(mtt.makeTempDir())
+            tmpDir = os.path.abspath(mtt.makeTempDir('memory1'))
             order = [1] * len(g_duplicateBlocks) + [0] * len(g_nonDuplicateBlocks)
             random.shuffle(order)
             random.shuffle(g_duplicateBlocks)
@@ -267,16 +267,16 @@ class DuplicationFilterTest(unittest.TestCase):
                     shuffledBlocks.append(g_nonDuplicateBlocks[k])
                     expectedOutput.append(g_nonDuplicateBlocks[k])
                     k += 1
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    ''.join(shuffledBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = mtt.genericValgrind(tmpDir)
             cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
-                   '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
+                   '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-            mtt.removeTempDir()
+            mtt.removeDir(tmpDir)
     def testMemory2(self):
         """ If valgrind is installed on the system, check for memory related errors (2).
         """
@@ -284,19 +284,19 @@ class DuplicationFilterTest(unittest.TestCase):
         if valgrind is None:
             return
         for i in xrange(0, 10):
-            tmpDir = os.path.abspath(mtt.makeTempDir())
+            tmpDir = os.path.abspath(mtt.makeTempDir('memory2'))
             random.shuffle(g_nonDuplicateBlocks)
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    ''.join(g_nonDuplicateBlocks), g_headers)
             expectedOutput = g_nonDuplicateBlocks
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = mtt.genericValgrind(tmpDir)
             cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
-                   '--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf'))]
+                   '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-            mtt.removeTempDir()
+            mtt.removeDir(tmpDir)
 
 if __name__ == '__main__':
     unittest.main()
