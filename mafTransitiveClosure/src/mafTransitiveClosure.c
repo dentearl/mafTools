@@ -442,7 +442,7 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
     // GlobalStart is the positive strand position (zero based) coordinate of the start of this block
     de_debug("processPairForPinching() g_numPinches: %u\n", g_numPinches);
     uint32_t l = 0, pos = 0, regionLength = regionEnd - regionStart + 1;
-    uint32_t blockStart;
+    uint32_t blockStart = pos;
     de_debug("aGlobalStart: %u, bGlobalStart: %u, pos & regionStart: %u, regionLength: %u\n", 
              aGlobalStart, bGlobalStart, regionStart, regionLength);
     de_debug("aSeq: %s\n", aSeq);
