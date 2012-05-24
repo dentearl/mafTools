@@ -22,6 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
+#include <ctype.h> // mac os x toupper()
 #include <getopt.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -261,12 +262,14 @@ void addSequenceValuesToMtcSeq(mafLine_t *ml, mafTcSeq_t *mtcs) {
     }
 }
 void walkBlockAddingSequence(mafBlock_t *mb, stHash *hash, stHash *nameHash) {
+    de_debug("walkBlockAddingSequence()\n");
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     mafTcSeq_t *mtcs = NULL;
     while ((ml = maf_mafLine_getNext(ml)) != NULL) {
         if (maf_mafLine_getType(ml) == 's') {
             if (stHash_search(hash, maf_mafLine_getSpecies(ml)) == NULL) {
                 mtcs = newMafTcSeq(stString_copy(maf_mafLine_getSpecies(ml)), maf_mafLine_getSourceLength(ml));
+                de_debug("Adding new sequence to hash: %s\n", maf_mafLine_getSpecies(ml));
                 addSequenceValuesToMtcSeq(ml, mtcs);
                 stHash_insert(hash, stString_copy(maf_mafLine_getSpecies(ml)), mtcs);
                 if (stHash_search(nameHash, (void*)(int64_t)stHash_stringKey(maf_mafLine_getSpecies(ml))) == NULL) {
@@ -280,6 +283,7 @@ void walkBlockAddingSequence(mafBlock_t *mb, stHash *hash, stHash *nameHash) {
     }
 }
 void createSequenceHash(mafFileApi_t *mfa, stHash **hash, stHash **nameHash) {
+    de_debug("createSequenceHash()\n");
     *hash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, destroyMafTcSeq);
     *nameHash = stHash_construct2(NULL, free);
     mafBlock_t *mb = NULL;
