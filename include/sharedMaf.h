@@ -24,6 +24,7 @@
  */
 #ifndef SHAREDMAF_H_
 #define SHAREDMAF_H_
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef struct mafFileApi mafFileApi_t;
@@ -38,6 +39,7 @@ mafLine_t* maf_newMafLineFromString(char *s, uint32_t lineNumber);
 void maf_destroyMafLineList(mafLine_t *ml);
 void maf_destroyMafBlockList(mafBlock_t *mb);
 void maf_destroyMfa(mafFileApi_t *mfa);
+void maf_mafBlock_destroySequenceMatrix(char **mat, unsigned n);
 // read / write
 mafBlock_t* maf_readAll(mafFileApi_t *mfa);
 mafBlock_t* maf_readBlock(mafFileApi_t *mfa);
@@ -50,8 +52,15 @@ char* maf_mafFileApi_getFilename(mafFileApi_t *mfa);
 uint32_t maf_mafFileApi_getLineNumber(mafFileApi_t *mfa);
 mafLine_t* maf_mafBlock_getHeadLine(mafBlock_t *mb);
 mafLine_t* maf_mafBlock_getTailLine(mafBlock_t *mb);
-uint32_t maf_mafBlock_lineNumber(mafBlock_t *mb);
+uint32_t maf_mafBlock_getLineNumber(mafBlock_t *mb);
+unsigned maf_mafBlock_getNumberOfSequences(mafBlock_t *b);
+char* maf_mafBlock_getStrandArray(mafBlock_t *mb);
+uint32_t* maf_mafBlock_getPosCoordStartArray(mafBlock_t *mb);
+uint32_t* maf_mafBlock_getStartArray(mafBlock_t *mb);
+uint32_t* maf_mafBlock_getSourceLengthArray(mafBlock_t *mb);
+char** maf_mafBlock_getSpeciesMatrix(mafBlock_t *mb);
 mafBlock_t* maf_mafBlock_getNext(mafBlock_t *mb);
+char** maf_mafBlock_getSequenceMatrix(mafBlock_t *mb, unsigned n, unsigned m);
 char* maf_mafLine_getLine(mafLine_t *ml);
 uint32_t maf_mafLine_getLineNumber(mafLine_t *ml);
 char maf_mafLine_getType(mafLine_t *ml);
@@ -62,9 +71,17 @@ char maf_mafLine_getStrand(mafLine_t *ml);
 uint32_t maf_mafLine_getSourceLength(mafLine_t *ml);
 char* maf_mafLine_getSequence(mafLine_t *ml);
 mafLine_t* maf_mafLine_getNext(mafLine_t *ml);
+void maf_mafLine_setType(mafLine_t *m, char c);
+void maf_mafLine_setStrand(mafLine_t *m, char c);
+void maf_mafLine_setStart(mafLine_t *m, uint32_t n);
+void maf_mafLine_setLength(mafLine_t *m, uint32_t n);
+void maf_mafLine_setSourceLength(mafLine_t *m, uint32_t n);
+void maf_mafLine_setSequence(mafLine_t *m, char *s);
 // utilities
-unsigned maf_mafBlock_countNumberOfBlocks(mafBlock_t *b);
-unsigned maf_mafBlock_countNumberOfSequences(mafBlock_t *b);
-unsigned maf_mafLine_countNumberOfSequences(mafLine_t *m);
-
+unsigned maf_mafBlock_getNumberOfBlocks(mafBlock_t *b);
+unsigned maf_mafBlock_longestSequenceField(mafBlock_t *b);
+bool maf_mafBlock_containsSequence(mafBlock_t *m);
+unsigned maf_mafLine_getNumberOfSequences(mafLine_t *m);
+// print
+void maf_mafBlock_print(mafBlock_t *m);
 #endif // SHAREDMAF_H_

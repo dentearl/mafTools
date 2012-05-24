@@ -4,12 +4,14 @@ export SHELLOPTS=pipefail
 
 cflags = -std=c99 -O3 -Wextra -Wall -Werror -pedantic -I ../external/
 
-all: common.o sharedMaf.o
+objects = common.o sharedMaf.o ../external/CuTest.a
+
+all: ${objects}
 
 clean:
 	rm -f allTests *.o *.pyc
 
-allTests: allTests.c test.sharedMaf.h ../external/CuTest.c common.o sharedMaf.o 
+allTests: allTests.c test.sharedMaf.h test.sharedMaf.c ${objects}
 	gcc -g -O0 ${cflags} $^ -o $@.tmp
 	mv $@.tmp $@
 
@@ -18,4 +20,11 @@ allTests: allTests.c test.sharedMaf.h ../external/CuTest.c common.o sharedMaf.o
 	mv $@.tmp $@
 
 test: allTests
-	./allTests && python2.7 test.sharedMaf.py --verbose && rm -f ./allTests
+	./allTests && python2.7 test.sharedMaf.py --verbose && rm -f ./allTests && rmdir ./tempTestDir
+
+../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
+	${cc} -c ${args} $<
+	ar rc CuTest.a *.o
+	ranlib CuTest.a
+	rm -f *.o
+	mv CuTest.a $@

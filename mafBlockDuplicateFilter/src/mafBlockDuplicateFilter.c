@@ -60,9 +60,6 @@ void reportBlockWithDuplicates(mafBlock_t *mb, duplicate_t *dupHead);
 int cmp_by_score(const void *a, const void *b);
 
 void parseOptions(int argc, char **argv, char *filename) {
-    // extern int g_debug_flag;
-    // extern int g_verbose_flag;
-    // extern const int kMaxStringLength;
     int c;
     int setMName = 0;
     while (1) {
@@ -304,9 +301,7 @@ void reportBlockWithDuplicates(mafBlock_t *mb, duplicate_t *dupHead) {
     while (m != NULL) {
         d = dupHead;
         bool isDup = false;
-        debug("  examining line for species \"%s\"\n", maf_mafLine_getSpecies(m));
         while (d != NULL && maf_mafLine_getSpecies(m) != NULL && d->species != NULL) {
-            debug("    cross checking against dup \"%s\"\n", d->species);
             if (!strcmp(maf_mafLine_getSpecies(m), d->species)) {
                 if (numberOfSequencesScoredMafLineList(d->headScoredMaf) > 1) {
                     isDup = true;
@@ -414,18 +409,13 @@ void findBestDupes(duplicate_t *head, char *consensus) {
     // to the head of the list. 
     duplicate_t *d = head;
     scoredMafLine_t *m = NULL;
-    debug("findBestDupes()\n");
     while (d != NULL) {
-        debug("   d is not NULL\n");
-        debug("   species: %s", maf_mafLine_getSpecies(d->headScoredMaf->mafLine));
         m = d->headScoredMaf;
         unsigned n = numberOfSequencesScoredMafLineList(m);
         if (n < 2) {
             d = d->next;
-            debug(" ... not dup.\n");
             continue;
         }
-        debug(" ... DUP.\n");
         // score all the dupes
         while (m != NULL) {
             m->score = scoreSequence(consensus, maf_mafLine_getSequence(m->mafLine));
@@ -476,7 +466,7 @@ void checkBlock(mafBlock_t *block) {
     // read through each line of a mafBlock and filter duplicates.
     // Report the top scoring duplication only.
     mafLine_t *m = maf_mafBlock_getHeadLine(block);
-    unsigned n = maf_mafLine_countNumberOfSequences(m);
+    unsigned n = maf_mafLine_getNumberOfSequences(m);
     char **species = (char **) de_malloc(sizeof(char *) * n);
     char **sequences = (char **) de_malloc(sizeof(char *) * n);
     int index = 0;
@@ -495,7 +485,6 @@ void checkBlock(mafBlock_t *block) {
         duplicate_t *thisDup = findDuplicate(dupSpeciesHead, maf_mafLine_getSpecies(m));
         if (thisDup == NULL) {
             // add new duplicate species
-            debug("adding new species %s\n", maf_mafLine_getSpecies(m));
             if (dupSpeciesHead == NULL) {
                 dupSpeciesHead = newDuplicate();
                 d = dupSpeciesHead;
@@ -510,7 +499,6 @@ void checkBlock(mafBlock_t *block) {
             d->headScoredMaf->mafLine = m;
         } else {
             // this sequence is a duplicate, extend the duplicate list.
-            debug("extending duplicate on species %s\n", maf_mafLine_getSpecies(m));
             containsDuplicates = true;
             scoredMafLine_t *ml = thisDup->headScoredMaf;
             while (ml->next != NULL)
@@ -579,7 +567,6 @@ void processBody(mafFileApi_t *mfa) {
     }
 }
 int main(int argc, char **argv) {
-    extern const int kMaxStringLength;
     char filename[kMaxStringLength];
     parseOptions(argc, argv, filename);
     

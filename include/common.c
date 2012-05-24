@@ -90,14 +90,14 @@ char* de_strdup(const char *s) {
     strcpy(copy, s);
     return copy;
 }
-void message(char const *type, char const *fmt, ...) {
+void de_message(char const *type, char const *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     fprintf(stderr, "%s: ", type);
     vfprintf(stderr, fmt, args);
     va_end(args);
 }
-void verbose(char const *fmt, ...) {
+void de_verbose(char const *fmt, ...) {
     char str[kMaxMessageLength];
     va_list args;
     va_start(args, fmt);
@@ -108,11 +108,11 @@ void verbose(char const *fmt, ...) {
                     "(kMaxMessageLength %d)\n", n, kMaxMessageLength);
             exit(EXIT_FAILURE);
         }
-        message("Verbose", str, args);
+        de_message("Verbose", str, args);
     }
     va_end(args);
 }
-void debug(char const *fmt, ...) {
+void de_debug(char const *fmt, ...) {
     char str[kMaxMessageLength];
     va_list args;
     va_start(args, fmt);
@@ -123,7 +123,7 @@ void debug(char const *fmt, ...) {
                     "(kMaxMessageLength %d)\n", n, kMaxMessageLength);
             exit(EXIT_FAILURE);
         }
-        message("Debug", str, args);
+        de_message("Debug", str, args);
     }
     va_end(args);
 }

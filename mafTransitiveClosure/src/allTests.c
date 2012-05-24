@@ -22,22 +22,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
-#ifndef TEST_SHAREDMAF_H_
-#define TEST_SHAREDMAF_H_
-#include <assert.h>
-#include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <stdio.h>
 #include "CuTest.h"
-#include "common.h"
-#include "sharedMaf.h"
+#include "mafTransitiveClosure.h"
+#include "test.mafTransitiveClosure.h"
 
-int createTmpFolder(void);
-void writeStringToTmpFile(char *s);
-bool filesAreIdentical(char *fileA, char *fileB);
-
-CuSuite* mafShared_TestSuite(void);
-#endif // TEST_SHAREDMAF_H_
+int mafTransitiveClosure_RunAllTests(void) {
+    CuString *output = CuStringNew();
+    CuSuite *suite = CuSuiteNew();
+    CuSuite *maf_s = mafTransitiveClosure_TestSuite();
+    CuSuiteAddSuite(suite, maf_s);
+    printf("\n");
+    CuSuiteRun(suite);
+    CuSuiteSummary(suite, output);
+    CuSuiteDetails(suite, output);
+    printf("%s\n", output->buffer);
+    CuStringDelete(output);
+    int status = (suite->failCount > 0);
+    free(maf_s);
+    CuSuiteDelete(suite);
+    return status;
+}

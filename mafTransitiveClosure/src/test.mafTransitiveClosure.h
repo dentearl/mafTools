@@ -22,22 +22,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
-#ifndef TEST_SHAREDMAF_H_
-#define TEST_SHAREDMAF_H_
+#ifndef TEST_MAFTRANSITIVECLOSURE_H_
+#define TEST_MAFTRANSITIVECLOSURE_H_
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include "CuTest.h"
 #include "common.h"
-#include "sharedMaf.h"
+#include "sonLib.h"
+#include "stPinchGraphs.h"
+#include "mafTransitiveClosure.h"
 
-int createTmpFolder(void);
-void writeStringToTmpFile(char *s);
-bool filesAreIdentical(char *fileA, char *fileB);
+void test_rowAlignmentBlockComparisonOrdering_1(CuTest *testCase);
+void test_rowAlignmentBlockComparisonOrdering_2(CuTest *testCase);
+CuSuite* mafTransitiveClosure_TestSuite(void);
 
-CuSuite* mafShared_TestSuite(void);
-#endif // TEST_SHAREDMAF_H_
+#endif // TEST_MAFTRANSITIVECLOSURE_H_

@@ -138,7 +138,7 @@ int32_t getTargetStartBlock(mafBlock_t *mb, char *targetSeq) {
 unsigned processBody(mafFileApi_t *mfa, mafBlock_t **head) {
     // process the body of the maf, block by block.
     *head = maf_readAll(mfa);
-    return maf_mafBlock_countNumberOfBlocks(*head);
+    return maf_mafBlock_getNumberOfBlocks(*head);
 }
 void populateArray(mafBlock_t *mb, sortingMafBlock_t **array, char *targetSequence) {
     // walk the linked list pointed to by head and stuff pointers to

@@ -149,7 +149,7 @@ class SortTest(unittest.TestCase):
         """
         shuffledTargets = list(g_targetBlocks)
         for i in xrange(0, 100):
-            tmpDir = os.path.abspath(mtt.makeTempDir())
+            tmpDir = os.path.abspath(mtt.makeTempDir('sorting'))
             random.shuffle(g_nonTargetBlocks)
             random.shuffle(shuffledTargets)
             shuffledBlocks = list(shuffledTargets)
@@ -160,16 +160,16 @@ class SortTest(unittest.TestCase):
                 index = random.randint(lower, len(shuffledBlocks))
                 shuffledBlocks.insert(index, g_nonTargetBlocks[j])
                 lower = index + 1
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')), 
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
                                    ''.join(shuffledBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockSorter'))]
-            cmd += ['--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')), 
+            cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
                     '--seq', 'hg18.chr7']
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'sorted.maf'))]
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsSorted(os.path.join(tmpDir, 'sorted.maf')))
-            mtt.removeTempDir()
+            mtt.removeDir(tmpDir)
     def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
@@ -178,7 +178,7 @@ class SortTest(unittest.TestCase):
             return
         shuffledTargets = list(g_targetBlocks)
         for i in xrange(0, 20):
-            tmpDir = os.path.abspath(mtt.makeTempDir())
+            tmpDir = os.path.abspath(mtt.makeTempDir('memory1'))
             random.shuffle(g_nonTargetBlocks)
             random.shuffle(shuffledTargets)
             shuffledBlocks = list(shuffledTargets)
@@ -189,17 +189,17 @@ class SortTest(unittest.TestCase):
                 index = random.randint(lower, len(shuffledBlocks))
                 shuffledBlocks.insert(index, g_nonTargetBlocks[j])
                 lower = index + 1
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')),
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    ''.join(shuffledBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = mtt.genericValgrind(tmpDir)
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockSorter')))
-            cmd += ['--maf', os.path.abspath(os.path.join(os.curdir, 'tempTestDir', 'test.maf')), 
+            cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
                     '--seq', 'hg18.chr7']
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'sorted.maf'))]
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-            mtt.removeTempDir()
+            mtt.removeDir(tmpDir)
 
 if __name__ == '__main__':
     unittest.main()
