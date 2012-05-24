@@ -120,16 +120,17 @@ int64_t max(int64_t a, int64_t b) {
 }
 int64_t getTargetStartLine(mafLine_t *ml, char *targetSeq) {
     if (maf_mafLine_getType(ml) != 's')
-        return (int64_t) -1;
+        return INT64_MIN;
     if (strncmp(targetSeq, maf_mafLine_getSpecies(ml), strlen(targetSeq)) == 0) {
         return (int64_t) maf_mafLine_getStart(ml);
     }
-    return (int64_t) -1;
+    return INT64_MIN;
 }
+int64_t g_stableOrder = INT64_MIN;
 int64_t getTargetStartBlock(mafBlock_t *mb, char *targetSeq) {
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     assert(ml != NULL);
-    int64_t tStart = -1;
+    int64_t tStart = g_stableOrder++; // mac os x qsort is not a stable sort, impose a stable order
     while (ml != NULL) {
         tStart = max(tStart, getTargetStartLine(ml, targetSeq));
         ml = maf_mafLine_getNext(ml);
