@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <getopt.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +37,7 @@
 typedef struct sortingMafBlock {
     // augmented data structure
     mafBlock_t *mafBlock; // pointer to actual mafBlock_t
-    int32_t targetStart; // value to sort on, position in target sequence
+    int64_t targetStart; // value to sort on, position in target sequence
 } sortingMafBlock_t;
 
 void usage(void) {
@@ -50,7 +51,7 @@ void usage(void) {
             "position is used for that block.\n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
-            "  -m, --maf      maf file.'\n"
+            "  -m, --maf      maf file.\n"
             "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
             "  -v, --verbose  turns on verbose output.\n");
     exit(EXIT_FAILURE);
@@ -114,23 +115,23 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName) {
         usage();
     }
 }
-int32_t max(int32_t a, int32_t b) {
+int64_t max(int64_t a, int64_t b) {
     return (a > b ? a : b);
 }
-int32_t getTargetStartLine(mafLine_t *ml, char *targetSeq) {
+int64_t getTargetStartLine(mafLine_t *ml, char *targetSeq) {
     if (maf_mafLine_getType(ml) != 's')
-        return -1;
+        return (int64_t) -1;
     if (strncmp(targetSeq, maf_mafLine_getSpecies(ml), strlen(targetSeq)) == 0) {
-        return (int32_t) maf_mafLine_getStart(ml);
+        return (int64_t) maf_mafLine_getStart(ml);
     }
-    return -1;
+    return (int64_t) -1;
 }
-int32_t getTargetStartBlock(mafBlock_t *mb, char *targetSeq) {
+int64_t getTargetStartBlock(mafBlock_t *mb, char *targetSeq) {
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     assert(ml != NULL);
-    int32_t tStart = -1;
+    int64_t tStart = -1;
     while (ml != NULL) {
-        tStart = max(tStart, (int32_t) getTargetStartLine(ml, targetSeq));
+        tStart = max(tStart, getTargetStartLine(ml, targetSeq));
         ml = maf_mafLine_getNext(ml);
     }
     return tStart;
