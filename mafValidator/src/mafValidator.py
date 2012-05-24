@@ -370,7 +370,7 @@ def validateHeader(f, filename):
    valid starts are either "track ..." or "##maf..."
    """
    header = f.next()
-   lineno = 2
+   lineno = 1
    if header.startswith('track'):
       try:
          validateKeyValuePairLine(1, header, filename)
