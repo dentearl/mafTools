@@ -23,8 +23,8 @@ test: allTests
 	./allTests && python2.7 test.sharedMaf.py --verbose && rm -f ./allTests && rmdir ./tempTestDir
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
-	${cc} -c ${args} $<
-	ar rc CuTest.a *.o
+	gcc -c ${cflags} $<
+	ar rc CuTest.a CuTest.o
 	ranlib CuTest.a
-	rm -f *.o
+	rm -f CuTest.o
 	mv CuTest.a $@

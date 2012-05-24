@@ -128,6 +128,7 @@ class ExtractionTest(unittest.TestCase):
     def testExtraction(self):
         """ mafBlockExtractor should output blocks that meet the criteria for extraction. That is they contain the target sequence and have at least one base in the target range.
         """
+        mtt.makeTempDirParent()
         for i in xrange(0, 10):
             shuffledBlocks = []
             tmpDir = os.path.abspath(mtt.makeTempDir('extraction'))
@@ -157,6 +158,7 @@ class ExtractionTest(unittest.TestCase):
     def testNonExtraction(self):
         """ mafBlockExtractor should not extract blocks when they do not match.
         """
+        mtt.makeTempDirParent()
         for i in xrange(0, 10):
             tmpDir = os.path.abspath(mtt.makeTempDir())
             random.shuffle(g_nonOverlappingBlocks)
@@ -174,6 +176,7 @@ class ExtractionTest(unittest.TestCase):
     def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
+        mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
@@ -207,6 +210,7 @@ class ExtractionTest(unittest.TestCase):
     def testMemory2(self):
         """ If valgrind is installed on the system, check for memory related errors (2).
         """
+        mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return

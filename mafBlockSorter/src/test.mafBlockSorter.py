@@ -162,6 +162,7 @@ class SortTest(unittest.TestCase):
     def testSorting(self):
         """ Blocks should be sorted by the start field of the target sequence, blocks that do not contain the target sequence should appear in the output at the start of the file, in the same order they appear in the input.
         """
+        mtt.makeTempDirParent()
         shuffledTargets = list(g_targetBlocks)
         for i in xrange(0, 200):
             tmpDir = os.path.abspath(mtt.makeTempDir('sorting'))
@@ -188,6 +189,7 @@ class SortTest(unittest.TestCase):
     def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
+        mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
