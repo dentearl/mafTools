@@ -14,7 +14,7 @@ ${binPath}/%.py : src/%.py
 	mv $@.tmp $@
 
 test :
-	python src/test.mafValidator.py -v
+	python src/test.mafValidator.py -v && rmdir tempTestDir
 
 clean :
 	rm -f ${progs}
