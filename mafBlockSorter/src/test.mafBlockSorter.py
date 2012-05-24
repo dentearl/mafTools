@@ -45,6 +45,12 @@ s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 ''',
+                     '''a score=23261.0
+s banana.chr6   28869787 13 + 161576975 gcagctgaaaaca
+s apple.chr0      249182 13 +   4622798 gcagctgaaaaca
+s fork.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+''',
                    '''a score=0
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 i panTro1.chr6 N 0 C 0
@@ -63,6 +69,15 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
 
 # target is hg18.chr7, blocks MUST BE in correct order.
 g_targetBlocks = ['''a score=23263.0
+# sorted block 0
+s hg18.chr7     7578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
+s baboon.chr0    116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
+s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
+s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
+                   
+''',
+                  '''a score=23263.0
 # sorted block 1
 s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
@@ -148,7 +163,7 @@ class SortTest(unittest.TestCase):
         """ Blocks should be sorted by the start field of the target sequence, blocks that do not contain the target sequence should appear in the output at the start of the file, in the same order they appear in the input.
         """
         shuffledTargets = list(g_targetBlocks)
-        for i in xrange(0, 100):
+        for i in xrange(0, 200):
             tmpDir = os.path.abspath(mtt.makeTempDir('sorting'))
             random.shuffle(g_nonTargetBlocks)
             random.shuffle(shuffledTargets)

@@ -70,7 +70,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName) {
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        c = getopt_long(argc, argv, "n:c:p:v",
+        c = getopt_long(argc, argv, "d:v:h:m:s",
                         long_options, &option_index);
         if (c == -1)
             break;
@@ -130,7 +130,7 @@ int32_t getTargetStartBlock(mafBlock_t *mb, char *targetSeq) {
     assert(ml != NULL);
     int32_t tStart = -1;
     while (ml != NULL) {
-        tStart = max(tStart, getTargetStartLine(ml, targetSeq));
+        tStart = max(tStart, (int32_t) getTargetStartLine(ml, targetSeq));
         ml = maf_mafLine_getNext(ml);
     }
     return tStart;
