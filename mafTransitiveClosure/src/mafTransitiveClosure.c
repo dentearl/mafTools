@@ -97,7 +97,13 @@ void parseOptions(int argc, char **argv, char *filename) {
 }
 void usage(void) {
     fprintf(stderr, "Usage: mafTransitiveClosure --maf mafFile.maf > transitivelyClosed.maf \n\n"
-            "mafTransitiveClosure is a program to  \n"
+            "mafTransitiveClosure is a program to perform the transitive closure on\n"
+            "an alignment. That is it checks every column of the alignment and looks\n"
+            "for situations where a position A is aligned to B in one part of a file\n"
+            "and B is aligned to C in another part of the file. The transitive closure\n"
+            "of this relationship would be a single column with A, B and C all present.\n"
+            "Useful for when you have pairwise alignments and you wish to turn them into\n"
+            "something more resembling a multiple alignment."
             "\n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
