@@ -146,6 +146,8 @@ void populateArray(mafBlock_t *mb, sortingMafBlock_t **array, char *targetSequen
     // the structs into the array.
     unsigned i = 0;
     while (mb != NULL) {
+        de_debug("inserting block %2u: %" PRIi64 "\n", i,
+                 maf_mafLine_getLine(maf_mafBlock_getHeadLine(mb)), getTargetStartBlock(mb, targetSequence));
         array[i] = (sortingMafBlock_t *) de_malloc(sizeof(sortingMafBlock_t));
         array[i]->mafBlock = mb;
         array[i++]->targetStart = getTargetStartBlock(mb, targetSequence);
