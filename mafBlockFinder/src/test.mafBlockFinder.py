@@ -31,7 +31,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '../.
 import mafToolsTest as mtt
 
 g_targetSeq = 'target.chr0'
-g_targetRange = (50, 70) # zero based, inclusive
 g_header = None
 g_headers = ['''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
@@ -44,6 +43,7 @@ g_headers = ['''##maf version=1 scoring=tba.v8
 # these are triples of blocks, target positions for True, 
 # line numbers where the target occurs.
 g_overlappingBlocks = [('''a score=0
+# --pos 38
 s target.chr0        38 13 + 158545518 gcagctgaaaaca
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon         249182 13 +   4622798 gcagctgaaaaca
@@ -54,9 +54,10 @@ s name3.chr9         50 10 +       100 ATGTA---TGCCG
 s name4.chr&         50 10 +       100 ATG---TATGCCG
 s name5 50 10 + 100 ATGTATGCCG
 
-''', 38, [2]),
+''', 38, [3]),
             # the overlap is one base long, right on 50.
             ('''a score=0
+# --pos 60
 s name                0 10 +       100 ATGTATGC---CG
 s name2.chr1         50 10 +       100 ATGTATG---CCG
 s name3.chr9         50 10 +       100 ATGTATG---CCG
@@ -66,9 +67,10 @@ s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon         249182 13 +   4622798 gcagctgaaaaca
 s target.chr0 158545457 10 - 158545518 ATGTATG---CCG
 
-''', 60, [9]),
+''', 60, [10]),
             # the overlap is 10 bases long, 51-61
             ('''a score=0
+# --pos 70
 s name               10 10 +       100 ATGTAT---GCCG
 s name2.chr1         50 10 +       100 ATGTAT---GCCG
 s name3.chr9         50 10 +       100 ATGTAT---GCCG
@@ -82,7 +84,7 @@ s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon         249182 13 +   4622798 gcagctgaaaaca
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
-''', 70, [8]),
+''', 70, [9]),
             # the overlap is 9 bases long, 62-70
             ]
 g_nonOverlappingBlocks = [('''a score=23262.b0     
