@@ -33,7 +33,7 @@ test: test/mafTransitiveClosure
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
 	${cc} -c ${args} $<
-	ar rc CuTest.a *.o
+	ar rc CuTest.a CuTest.o
 	ranlib CuTest.a
-	rm -f *.o
+	rm -f CuTest.o
 	mv CuTest.a $@
