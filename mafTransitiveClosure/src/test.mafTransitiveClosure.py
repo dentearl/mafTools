@@ -78,6 +78,24 @@ s rn3.chr4       1 16 + 100 GTTGTCTCTCAATGTG
                       's baboon         0 16 + 100 GTTGTCTCTTATGGTG',
                       's mm4.chr6       0 16 + 100 ATTGTCTCTCAGTGTG',
                       's rn3.chr4       1 16 + 100 GTTGTCTCTCAATGTG']),
+                    ('''a score=23262.0       
+s hg18.chr7      0 10 - 10 AAAAAGGGGG
+s mm4.chr6       1 10 - 11 GATTGTCTCC
+
+a score=23262.0     
+s hg18.chr7      4 6 + 10 CTTTTT
+s rn3.chr4       4 6 - 12 GGGGGT
+
+''',
+                     ['a degree=2',
+                      's hg18.chr7   0 4 + 10 CCCC',
+                      's mm4.chr6    0 4 + 11 GGAG',
+                      ''
+                      'a degree=3',
+                      's hg18.chr7   4 6 + 10 CTTTTT',
+                      's mm4.chr6    4 6 + 11 ACAATC',
+                      's rn3.chr4    4 6 - 12 GGGGGT',
+                      ]),
                     ('''a score=23262.0     
 s hg18.chr7      0 10 + 20 AATTGTCTCT
 s panTro1.chr6   0 10 + 20 AATTGTCTCT
