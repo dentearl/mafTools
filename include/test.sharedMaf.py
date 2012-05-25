@@ -31,6 +31,7 @@ class SharedMafLibraryTest(unittest.TestCase):
     def testMemory(self):
         """ sharedMaf.h should be memory clean.
         """
+        mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return

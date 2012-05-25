@@ -121,6 +121,7 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
     def testKnownInOut(self):
         """ mafTransitiveClosure should compute the transitive closure of a maf built by pairwise alignment to a reference sequence.
         """
+        mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('knownInOut'))
         for inMaf, outList in self.knownResults:
             testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
@@ -136,6 +137,7 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
     def testMemory1(self):
         """ mafTransitiveClosure should be memory clean.
         """
+        mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return

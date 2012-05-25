@@ -31,12 +31,17 @@ import subprocess
 import xml.etree.ElementTree as ET
 import xml.parsers.expat
 
+def makeTempDirParent():
+    """
+    make the parent temp dir directory
+    """
+    if not os.path.exists(os.path.join(os.curdir, 'tempTestDir')):
+        os.mkdir(os.path.join(os.curdir, 'tempTestDir'))
 def makeTempDir(name=None):
     """
     make the typical directory where all temporary test files will be stored.
     """
-    if not os.path.exists(os.path.join(os.curdir, 'tempTestDir')):
-        os.mkdir(os.path.join(os.curdir, 'tempTestDir'))
+    makeTempDirParent()
     charSet = string.ascii_lowercase + '123456789'
     if name is None:
         while True:

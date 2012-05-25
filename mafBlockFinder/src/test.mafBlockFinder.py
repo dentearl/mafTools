@@ -125,6 +125,7 @@ class FindTest(unittest.TestCase):
         """ mafBlockFinder should report information about matching sequences within blocks.
         """
         global g_header
+        mtt.makeTempDirParent()
         for i in xrange(0, len(g_overlappingBlocks)):
             tmpDir = os.path.abspath(mtt.makeTempDir('find'))
             testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
@@ -140,6 +141,7 @@ class FindTest(unittest.TestCase):
         """ mafBlockFinder should not report any lines when blocks do not match.
         """
         global g_header
+        mtt.makeTempDirParent()
         for i in xrange(0, len(g_nonOverlappingBlocks)):
             tmpDir = os.path.abspath(mtt.makeTempDir('nonFind'))
             testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
@@ -154,6 +156,7 @@ class FindTest(unittest.TestCase):
     def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
+        mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
@@ -173,6 +176,7 @@ class FindTest(unittest.TestCase):
     def testMemory2(self):
         """ If valgrind is installed on the system, check for memory related errors (2).
         """
+        mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return

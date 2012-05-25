@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <getopt.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +37,7 @@
 typedef struct sortingMafBlock {
     // augmented data structure
     mafBlock_t *mafBlock; // pointer to actual mafBlock_t
-    int32_t targetStart; // value to sort on, position in target sequence
+    int64_t targetStart; // value to sort on, position in target sequence
 } sortingMafBlock_t;
 
 void usage(void) {
@@ -50,7 +51,7 @@ void usage(void) {
             "position is used for that block.\n\n");
     fprintf(stderr, "Options: \n"
             "  -h, --help     show this help message and exit.\n"
-            "  -m, --maf      maf file.'\n"
+            "  -m, --maf      maf file.\n"
             "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
             "  -v, --verbose  turns on verbose output.\n");
     exit(EXIT_FAILURE);
@@ -70,7 +71,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName) {
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        c = getopt_long(argc, argv, "n:c:p:v",
+        c = getopt_long(argc, argv, "d:v:h:m:s",
                         long_options, &option_index);
         if (c == -1)
             break;
@@ -114,21 +115,22 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName) {
         usage();
     }
 }
-int32_t max(int32_t a, int32_t b) {
+int64_t max(int64_t a, int64_t b) {
     return (a > b ? a : b);
 }
-int32_t getTargetStartLine(mafLine_t *ml, char *targetSeq) {
+int64_t getTargetStartLine(mafLine_t *ml, char *targetSeq) {
     if (maf_mafLine_getType(ml) != 's')
-        return -1;
+        return INT64_MIN;
     if (strncmp(targetSeq, maf_mafLine_getSpecies(ml), strlen(targetSeq)) == 0) {
-        return (int32_t) maf_mafLine_getStart(ml);
+        return (int64_t) maf_mafLine_getStart(ml);
     }
-    return -1;
+    return INT64_MIN;
 }
-int32_t getTargetStartBlock(mafBlock_t *mb, char *targetSeq) {
+int64_t g_stableOrder = INT64_MIN;
+int64_t getTargetStartBlock(mafBlock_t *mb, char *targetSeq) {
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     assert(ml != NULL);
-    int32_t tStart = -1;
+    int64_t tStart = g_stableOrder++; // mac os x qsort is not a stable sort, impose a stable order
     while (ml != NULL) {
         tStart = max(tStart, getTargetStartLine(ml, targetSeq));
         ml = maf_mafLine_getNext(ml);
@@ -145,6 +147,8 @@ void populateArray(mafBlock_t *mb, sortingMafBlock_t **array, char *targetSequen
     // the structs into the array.
     unsigned i = 0;
     while (mb != NULL) {
+        de_debug("inserting block %2u: %s %" PRIi64 "\n", i,
+                 maf_mafLine_getLine(maf_mafBlock_getHeadLine(mb)), getTargetStartBlock(mb, targetSequence));
         array[i] = (sortingMafBlock_t *) de_malloc(sizeof(sortingMafBlock_t));
         array[i]->mafBlock = mb;
         array[i++]->targetStart = getTargetStartBlock(mb, targetSequence);

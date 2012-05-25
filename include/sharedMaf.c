@@ -447,9 +447,11 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
     char *line = (char*) de_malloc(n);
     mafBlock_t *header = maf_newMafBlock();
     int status = de_getline(&line, &n, mfa->mfp);
+    bool validHeader = false;
     ++(mfa->lineNumber);
     maf_checkForPrematureMafEnd(status, line);
     if (strncmp(line, "track", 5) == 0) {
+        validHeader = true;
         mafLine_t *ml = maf_newMafLine();
         char *copy = (char *) de_malloc(n + 1); // freed in destroy lines
         strcpy(copy, line);
@@ -463,6 +465,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         maf_checkForPrematureMafEnd(status, line);
     }
     if (strncmp(line, "##maf", 5) == 0) {
+        validHeader = true;
         mafLine_t *ml = maf_newMafLine();
         char *copy = (char *) de_malloc(n + 1); // freed in destroy lines
         strcpy(copy, line);
@@ -479,6 +482,10 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         status = de_getline(&line, &n, mfa->mfp);
         ++(mfa->lineNumber);
         maf_checkForPrematureMafEnd(status, line);
+    }
+    if (!validHeader) {
+        fprintf(stderr, "Error, maf file %s does not contain a valid header!\n", mfa->filename);
+        exit(EXIT_FAILURE);
     }
     mafLine_t *thisMl = header->tailLine;
     while(line[0] != 'a' && !maf_isBlankLine(line)) {

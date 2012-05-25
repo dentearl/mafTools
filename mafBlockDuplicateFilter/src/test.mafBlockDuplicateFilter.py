@@ -200,6 +200,7 @@ class DuplicationFilterTest(unittest.TestCase):
     def testFilter(self):
         """ mafBlockDuplicateFilter should filter out duplicates in blocks according to sequence similarity to the consensus.
         """
+        mtt.makeTempDirParent()
         for i in xrange(0, 10):
             shuffledBlocks = []
             expectedOutput = []
@@ -230,6 +231,7 @@ class DuplicationFilterTest(unittest.TestCase):
     def testNonFilter(self):
         """ mafBlockDuplicateFilter should not filter out any sequences from blocks when there are no duplicates.
         """
+        mtt.makeTempDirParent()
         for i in xrange(0, 10):
             tmpDir = os.path.abspath(mtt.makeTempDir('nonFilter'))
             random.shuffle(g_nonDuplicateBlocks)
@@ -246,6 +248,7 @@ class DuplicationFilterTest(unittest.TestCase):
     def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
+        mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
@@ -280,6 +283,7 @@ class DuplicationFilterTest(unittest.TestCase):
     def testMemory2(self):
         """ If valgrind is installed on the system, check for memory related errors (2).
         """
+        mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
