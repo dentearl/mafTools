@@ -110,6 +110,19 @@ s baboon         249182 13 +   4622798 gcagctgaaaaca
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 ''', 0, None),
+                          ('''a score=0
+# --pos 38
+s target.chr0        38 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon         249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+s name.chr1           0 10 +       100 ATGT---ATGCCG
+s name2.chr1         50 10 +       100 ATGT---ATGCCG
+s name3.chr9         50 10 +       100 ATGTA---TGCCG
+s name4.chr&         50 10 +       100 ATG---TATGCCG
+s name5 50 10 + 100 ATGTATGCCG
+
+''', 37, None),
     ]
 
 def foundLines(lineList, text, g_header):

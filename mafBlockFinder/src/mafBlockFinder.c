@@ -46,7 +46,7 @@ void searchInput(mafFileApi_t *mfa, char *fullname, unsigned long pos);
 void usage(void) {
     fprintf(stderr, "Usage: mafBlockFinder --maf [path to maf] "
             "--seq [sequence name (and possibly chr)] "
-            "--pos [position to search for] [options]\n\n"
+            "--pos [position to search for, zero based coords] [options]\n\n"
             "mafBlockFinder is a program that will look through a maf file for a\n"
             "particular sequence name and location. If a match is found the line\n"
             "number and first few fields are returned. If no match is found\n"
@@ -186,6 +186,7 @@ char* extractVignette(mafLine_t *ml, uint32_t targetPos) {
                     right[rightIndex++] = seq[i];
                 }
             } else {
+                // negative strand, 
                 if (pos <= targetPos + 5 && pos > targetPos) {
                     left[leftIndex++] = seq[i];
                 }
