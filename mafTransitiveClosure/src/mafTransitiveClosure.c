@@ -247,7 +247,10 @@ void addSequenceValuesToMtcSeq(mafLine_t *ml, mafTcSeq_t *mtcs) {
             if (mtcs->sequence[s + p] != 'N') {
                 // sanity check
                 if (toupper(mtcs->sequence[s + p]) != toupper(seq[i])) {
-                    fprintf(stderr, "Error, maf file is inconsistent with regard to sequence. Line number %" PRIu32  "\n", maf_mafLine_getLineNumber(ml));
+                    fprintf(stderr, "Error, maf file is inconsistent with regard to sequence. "
+                            "On line number %" PRIu32 " sequence %s position %" PRIu32" is %c, but previously "
+                            "observed value is %c.\n", maf_mafLine_getLineNumber(ml), maf_mafLine_getSpecies(ml), 
+                            s + p, seq[i], mtcs->sequence[s + p]);
                     exit(EXIT_FAILURE);
                 }
                 // assert(toupper(mtcs->sequence[s + p]) == toupper(seq[i]));
