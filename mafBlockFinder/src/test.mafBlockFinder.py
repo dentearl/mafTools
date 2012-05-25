@@ -43,6 +43,19 @@ g_headers = ['''##maf version=1 scoring=tba.v8
 # these are triples of blocks, target positions for True, 
 # line numbers where the target occurs.
 g_overlappingBlocks = [('''a score=0
+# --pos 0
+s target.chr0         0 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon         249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+s name.chr1           0 10 +       100 ATGT---ATGCCG
+s name2.chr1         50 10 +       100 ATGT---ATGCCG
+s name3.chr9         50 10 +       100 ATGTA---TGCCG
+s name4.chr&         50 10 +       100 ATG---TATGCCG
+s name5 50 10 + 100 ATGTATGCCG
+
+''', 0, [3]),
+    ('''a score=0
 # --pos 38
 s target.chr0        38 13 + 158545518 gcagctgaaaaca
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca

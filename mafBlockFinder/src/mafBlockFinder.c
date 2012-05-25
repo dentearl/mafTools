@@ -99,7 +99,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t
             setPos = 1;
             tempPos = strtoll(optarg, NULL, 10);
             if (tempPos < 0) {
-                fprintf(stderr, "Error, --pos %d must be nonnegative.\n", tempPos);
+                fprintf(stderr, "Error, --pos %d must be non-negative.\n", tempPos);
                 usage();
             }
             *position = tempPos;
