@@ -117,7 +117,7 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
                       's panTro1.chr6   0 20 + 20 AATTGTCTCTGGCCTTAATT',
                       's baboon         0 20 + 20 CCCGGAGAGACAACCTAATT',
                       's mm4.chr6       0 20 + 20 ATTTAAATTTAGAGACAATC',
-                      's rn3.chr4       0 20 - 20 AGAGACAACCCAACCGCCGG',]),]
+                      's rn3.chr4       0 20 - 20 CCGGCGGTTGGGTTGTCTCT',]),]
     def testKnownInOut(self):
         """ mafTransitiveClosure should compute the transitive closure of a maf built by pairwise alignment to a reference sequence.
         """
