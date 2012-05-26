@@ -247,15 +247,12 @@ void addSequenceValuesToMtcSeq(mafLine_t *ml, mafTcSeq_t *mtcs) {
             if (mtcs->sequence[s + p] != 'N') {
                 // sanity check
                 if (toupper(mtcs->sequence[s + p]) != toupper(seq[i])) {
-                    fprintf(stderr, "Error, maf file is inconsistent with regard to sequence. Line number %" PRIu32  "\n", maf_mafLine_getLineNumber(ml));
+                    fprintf(stderr, "Error, maf file is inconsistent with regard to sequence. "
+                            "On line number %" PRIu32 " sequence %s position %" PRIu32" is %c, but previously "
+                            "observed value is %c.\n", maf_mafLine_getLineNumber(ml), maf_mafLine_getSpecies(ml), 
+                            s + p, seq[i], mtcs->sequence[s + p]);
                     exit(EXIT_FAILURE);
                 }
-                // assert(toupper(mtcs->sequence[s + p]) == toupper(seq[i]));
-                /*
-                  if (!(toupper(mtcs->sequence[s + i]) == toupper(seq[i]))) {
-                      fprintf(stderr, "%d: mtcs: %c seq: %c\n", i, mtcs->sequence[s+i], seq[i]);
-                  }
-                */
             }
             mtcs->sequence[s + p] = toupper(seq[i]);
             ++p;
@@ -466,9 +463,12 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
                 de_debug("bSeq[pos] == - && inBlock\n");
                 inBlock = false;
                 de_debug("maybe little pinch (1)? p:%" PRIu32 ", l:%" PRIu32 "\n", blockStart, l);
-                de_debug("a coord: %" PRIi64 ", b coord: %" PRIi64 "\n", 
-                         localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, aSeq), 
-                                                                   aGlobalStart, aGlobalLength, aStrand, l),
+                de_debug("a coords local: %" PRIi64 " global: %" PRIi64 
+                         ", b coords local: %" PRIi64 ", global: %" PRIi64 "\n", 
+                         localSeqCoords(blockStart, aSeq),
+                         localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, aSeq),
+                                                              aGlobalStart, aGlobalLength, aStrand, l),
+                         localSeqCoords(blockStart, bSeq),
                          localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, bSeq),
                                                                    bGlobalStart, bGlobalLength, bStrand, l));
                 stPinchThread_pinch(a, b,
@@ -479,7 +479,7 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
                                     localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, bSeq),
                                                                               bGlobalStart,
                                                                               bGlobalLength,
-                                                                              bStrand, l),
+                                                                              bStrand,l),
                                     l, (aStrand == bStrand));
                 ++g_numPinches;
                 if (g_numPinches > kPinchThreshold) {
@@ -501,14 +501,14 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
     if (inBlock) {
         inBlock = false;
         de_debug("maybe little pinch (2)? p:%" PRIu32 ", l:%" PRIu32 "\n", blockStart, l);
-        de_debug("localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart=%" PRIu32 ", aSeq=%s)=%" PRIi64 ", aGlobalStart=%" PRIu32 ", aGlobalLength=%" PRIu32", aStrand=%c, l=%" PRIi64 ")=%" PRIi64 "\n",
-                 blockStart, aSeq, localSeqCoords(blockStart, aSeq), aGlobalStart, aGlobalLength, aStrand, l,
-                 localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, aSeq), 
-                                                           aGlobalStart, aGlobalLength, aStrand, l));
-        de_debug("localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart=%" PRIu32 ", bSeq=%s)=%" PRIi64 ", bGlobalStart=%" PRIu32 ", bGlobalLength=%" PRIu32 ", bStrand=%c, l=%" PRIu32 ")=%" PRIi64 "\n",
-                 blockStart, bSeq, localSeqCoords(blockStart, bSeq), bGlobalStart, bGlobalLength, bStrand, l,
-                 localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, bSeq),
-                                                           bGlobalStart, bGlobalLength, bStrand, l));
+        de_debug("a coords local: %" PRIi64 " global: %" PRIi64 
+                         ", b coords local: %" PRIi64 ", global: %" PRIi64 "\n", 
+                         localSeqCoords(blockStart, aSeq),
+                         localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, aSeq),
+                                                                   aGlobalStart, aGlobalLength, aStrand, l),
+                         localSeqCoords(blockStart, bSeq),
+                         localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, bSeq),
+                                                                   bGlobalStart, bGlobalLength, bStrand, l));
         stPinchThread_pinch(a, b,
                             localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, aSeq), 
                                                                       aGlobalStart,
@@ -557,12 +557,6 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     char **names = maf_mafBlock_getSpeciesMatrix(mb);
     uint32_t *starts = maf_mafBlock_getStartArray(mb);
     uint32_t *lengths = maf_mafBlock_getSourceLengthArray(mb);
-    // fprintf(stderr, "strands: %s\n", strands);
-    // fprintf(stderr, "starts: ");
-    // printu32Array(starts, numSeqs);
-    // fprintf(stderr, "lengths: ");
-    // printu32Array(lengths, numSeqs);
-    // printMatrix(mat, numSeqs);
     uint32_t longestSeq = maf_mafBlock_longestSequenceField(mb);
     // comparison order coordinates are relative to the block
     mafTcComparisonOrder_t *co = getComparisonOrderFromMatrix(mat, numSeqs, longestSeq);
@@ -627,12 +621,21 @@ void getMaxFieldLengths(stHash *hash, stHash *nameHash, stPinchBlock *block, uin
     *maxSource = 0;
     char *temp = NULL;
     char *key = NULL;
+    char strand = '\0';
     while ((thisSeg = stPinchBlockIt_getNext(&thisSegIt)) != NULL) {
+        strand = stPinchSegment_getBlockOrientation(thisSeg) == 1 ? '+' : '-';
         key = (char*)stHash_search(nameHash, (void *)stPinchSegment_getName(thisSeg));
         temp = (char*) de_malloc(kMaxStringLength);
-        sprintf(temp, "%" PRIi64, stPinchSegment_getStart(thisSeg));
+        if (strand == '+') {
+            sprintf(temp, "%" PRIi64, stPinchSegment_getStart(thisSeg));
+        } else {
+            sprintf(temp, "%" PRIi64,
+                    (((int64_t)((mafTcSeq_t*)stHash_search(hash, key))->length) - 
+                     stPinchSegment_getStart(thisSeg) - stPinchSegment_getLength(thisSeg)));
+        }
         if (*maxStart < strlen(temp))
             *maxStart = strlen(temp);
+
         free(temp);
         temp = (char*) de_malloc(kMaxStringLength);
         sprintf(temp, "%" PRIi64, stPinchSegment_getLength(thisSeg));
@@ -646,13 +649,15 @@ void getMaxFieldLengths(stHash *hash, stHash *nameHash, stPinchBlock *block, uin
         free(temp);
     }
 }
-char* getSequenceSubset(char *seq, int64_t start, int64_t length) {
+char* getSequenceSubset(char *seq, int64_t start, char strand, int64_t length) {
     char *out = (char*) de_malloc(sizeof(*out) * length + 1);
     int64_t i, j;
     for (i = start, j = 0; i < start + length; ++i, ++j) {
         out[j] = seq[i];
     }
     out[j] = '\0';
+    if (strand == '-')
+        reverseComplementSequence(out);
     return out;
 }
 void reportTransitiveClosure(stPinchThreadSet *threadSet, stHash *hash, stHash *nameHash) {
@@ -662,11 +667,13 @@ void reportTransitiveClosure(stPinchThreadSet *threadSet, stHash *hash, stHash *
     stPinchSegment *thisSeg = NULL;
     char *key = NULL;
     char *seq = NULL;
+    char strand = '\0';
     (void) hash;
     (void) nameHash;
     printf("##maf version=1\n");
     printf("# mafTransitiveClosure %s\n\n", kVersion);
     uint32_t maxNameLength, maxStartLength, maxLengthLength, maxSourceLengthLength;
+    int64_t xformedStart;
     maxNameLength = getMaxNameLength(hash);
     while ((thisBlock = stPinchThreadSetBlockIt_getNext(&thisBlockIt)) != NULL) {
         getMaxFieldLengths(hash, nameHash, thisBlock, &maxStartLength, 
@@ -674,14 +681,23 @@ void reportTransitiveClosure(stPinchThreadSet *threadSet, stHash *hash, stHash *
         printf("a degree=%" PRIu32 "\n", stPinchBlock_getDegree(thisBlock));
         thisSegIt = stPinchBlock_getSegmentIterator(thisBlock);
         while ((thisSeg = stPinchBlockIt_getNext(&thisSegIt)) != NULL) {
+            strand = stPinchSegment_getBlockOrientation(thisSeg) == 1 ? '+' : '-';
             key = (char*)stHash_search(nameHash, (void *)stPinchSegment_getName(thisSeg));
-            seq = getSequenceSubset(((mafTcSeq_t*)stHash_search(hash, key))->sequence, 
-                                    stPinchSegment_getStart(thisSeg), stPinchSegment_getLength(thisSeg));
-            printf("s %-*s %*" PRIi64 " %*" PRIi64 " %s %*" PRIu32 " %s\n",
+            seq = getSequenceSubset(((mafTcSeq_t*)stHash_search(hash, key))->sequence,
+                                    stPinchSegment_getStart(thisSeg),
+                                    strand,
+                                    stPinchSegment_getLength(thisSeg));
+            if (strand == '+') {
+                xformedStart = stPinchSegment_getStart(thisSeg);
+            } else {
+                xformedStart = (((int64_t)((mafTcSeq_t*)stHash_search(hash, key))->length) - 
+                                stPinchSegment_getStart(thisSeg) - stPinchSegment_getLength(thisSeg));
+            }
+            printf("s %-*s %*" PRIi64 " %*" PRIi64 " %c %*" PRIu32 " %s\n",
                    maxNameLength, key,
-                   maxStartLength, stPinchSegment_getStart(thisSeg),
+                   maxStartLength, xformedStart,
                    maxLengthLength, stPinchSegment_getLength(thisSeg),
-                   stPinchSegment_getBlockOrientation(thisSeg) == 1 ? "+" : "-",
+                   strand,
                    maxSourceLengthLength, ((mafTcSeq_t*)stHash_search(hash, key))->length,
                    seq
                    );

@@ -322,8 +322,7 @@ static void test_localSeqCoords_0(CuTest *testCase) {
     free(s);
 }
 static void test_localSeqCoordsToGlobalPositiveCoords_0(CuTest *testCase) {
-    // int64_t localSeqCoordsToGlobalPositiveCoords(int64_t c, uint32_t start, uint32_t sourceLength, 
-    //                                              char strand);
+    // int64_t localSeqCoordsToGlobalPositiveCoords(localPosition, startField, sourceLength, strand);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveCoords(3, 0, 20, '+') == 3);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveCoords(3, 5, 20, '+') == 8);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveCoords(0, 0, 20, '-') == 19);
@@ -331,10 +330,11 @@ static void test_localSeqCoordsToGlobalPositiveCoords_0(CuTest *testCase) {
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveCoords(3, 5, 20, '-') == 11);
 }
 static void test_localSeqCoordsToGlobalPositiveStartCoords_0(CuTest *testCase) {
-    // int64_t localSeqCoordsToGlobalPositiveStartCoords(int64_t c, uint32_t start, uint32_t sourceLength, 
-    //                                                   char strand, uint32_t length);
+    // int64_t localSeqCoordsToGlobalPositiveStartCoords(localPosition, startField, sourceLength, 
+    //                                                   strand, lengthField);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(3, 0, 20, '+', 5) == 3);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(3, 5, 20, '+', 5) == 8);
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(3, 5, 20, '+', 10) == 8);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(0, 0, 20, '-', 1) == 19);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(0, 0, 20, '-', 5) == 15);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(3, 0, 20, '-', 1) == 16);

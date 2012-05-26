@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <errno.h> // file existence via ENOENT
 #include <getopt.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -45,7 +46,7 @@ void searchInput(mafFileApi_t *mfa, char *fullname, unsigned long pos);
 void usage(void) {
     fprintf(stderr, "Usage: mafBlockFinder --maf [path to maf] "
             "--seq [sequence name (and possibly chr)] "
-            "--pos [position to search for] [options]\n\n"
+            "--pos [position to search for, zero based coords] [options]\n\n"
             "mafBlockFinder is a program that will look through a maf file for a\n"
             "particular sequence name and location. If a match is found the line\n"
             "number and first few fields are returned. If no match is found\n"
@@ -98,7 +99,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t
             setPos = 1;
             tempPos = strtoll(optarg, NULL, 10);
             if (tempPos < 0) {
-                fprintf(stderr, "Error, --pos %d must be nonnegative.\n", tempPos);
+                fprintf(stderr, "Error, --pos %d must be non-negative.\n", tempPos);
                 usage();
             }
             *position = tempPos;
@@ -129,22 +130,94 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t
         usage();
     }
 }
+void getAbsStartEnd(mafLine_t *ml, uint32_t *absStart, uint32_t *absEnd) {
+    if (maf_mafLine_getStrand(ml) == '-') {
+        *absStart =  maf_mafLine_getSourceLength(ml) - (maf_mafLine_getStart(ml) + maf_mafLine_getLength(ml));
+        *absEnd = maf_mafLine_getSourceLength(ml) - maf_mafLine_getStart(ml) - 1;
+    } else {
+        *absStart = maf_mafLine_getStart(ml);
+        *absEnd = maf_mafLine_getStart(ml) + maf_mafLine_getLength(ml) - 1;
+    }
+}
 bool insideLine(mafLine_t *ml, uint32_t pos) {
     // check to see if pos is inside of the maf line
     uint32_t absStart, absEnd;
-    if (maf_mafLine_getStrand(ml) == '-') {
-        absStart =  maf_mafLine_getSourceLength(ml) - (maf_mafLine_getStart(ml) + maf_mafLine_getLength(ml));
-        absEnd = maf_mafLine_getSourceLength(ml) - maf_mafLine_getStart(ml) - 1;
-    } else {
-        absStart = maf_mafLine_getStart(ml);
-        absEnd = maf_mafLine_getStart(ml) + maf_mafLine_getLength(ml) - 1;
-    }
+    getAbsStartEnd(ml, &absStart, &absEnd);
     if ((absStart <= pos) && (absEnd >= pos))
         return true;
     return false;
 }
+char* extractVignette(mafLine_t *ml, uint32_t targetPos) {
+    // produce a pretty picture of the targetPos in question and surrounding sequence region, a la
+    // ...ACGTT --> A <-- GGCCA...
+    char *vig = NULL;
+    char *seq = maf_mafLine_getSequence(ml);
+    char *left = de_malloc(6);
+    char *right = de_malloc(6);
+    char *base = de_malloc(2);
+    memset(left, '\0', 6);
+    memset(right, '\0', 6);
+    memset(base, '\0', 2);
+    unsigned leftIndex = 0, rightIndex = 0;
+    uint32_t absStart, absEnd;
+    uint32_t start, end, pos;
+    getAbsStartEnd(ml, &absStart, &absEnd);
+    int strand = 0;
+    if (maf_mafLine_getStrand(ml) == '+') {
+        strand = 1;
+        start = absStart;
+        end = absEnd;
+    } else {
+        strand = -1;
+        start = absEnd;
+        end = absStart;
+    }
+    pos = start - strand;
+    for (unsigned i = 0; i < strlen(seq); ++i) {
+        if (seq[i] != '-') {
+            pos += strand;
+            if (pos == targetPos)
+                base[0] = seq[i];
+            if (strand == 1) {
+                if (pos >= targetPos - 5 && pos < targetPos) {
+                    left[leftIndex++] = seq[i];
+                }
+                if (pos <= targetPos + 5 && pos > targetPos) {
+                    right[rightIndex++] = seq[i];
+                }
+            } else {
+                // negative strand, 
+                if (pos <= targetPos + 5 && pos > targetPos) {
+                    left[leftIndex++] = seq[i];
+                }
+                if (pos >= targetPos - 5 && pos < targetPos) {
+                    right[rightIndex++] = seq[i];
+                }
+            }
+        }
+        
+    }
+    vig = (char*) de_malloc(kMaxStringLength);
+    vig[0] = '\0';
+    if ((strand == 1 && start + 6 < targetPos) || (strand == -1 && start - 6 > targetPos)) {
+        strcat(vig, "...");
+    }
+    strcat(vig, left);
+    strcat(vig, " ->");
+    strcat(vig, base);
+    strcat(vig, "<- ");
+    strcat(vig, right);
+    if ((strand == 1 && end - 6 > targetPos) || (strand == -1 && end + 6 < targetPos)) {
+        strcat(vig, "...");
+    }
+    free(left);
+    free(right);
+    free(base);
+    return vig;
+}
 void checkBlock(mafBlock_t *mb, char *fullname, uint32_t pos) {
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
+    char *vignette = NULL;
     while (ml != NULL) {
         if (maf_mafLine_getType(ml) != 's') {
             ml = maf_mafLine_getNext(ml);
@@ -154,10 +227,13 @@ void checkBlock(mafBlock_t *mb, char *fullname, uint32_t pos) {
             ml = maf_mafLine_getNext(ml);
             continue;
         }
-        if (insideLine(ml, pos))
-            printf("%u: s %s %u %u %c %u ...\n", maf_mafLine_getLineNumber(ml), fullname, 
+        if (insideLine(ml, pos)) {
+            vignette = extractVignette(ml, pos);
+            printf("%u: s %s %" PRIu32 " %" PRIu32 " %c %" PRIu32 " %s\n", maf_mafLine_getLineNumber(ml), fullname, 
                    maf_mafLine_getStart(ml), maf_mafLine_getLength(ml), maf_mafLine_getStrand(ml), 
-                   maf_mafLine_getSourceLength(ml));
+                   maf_mafLine_getSourceLength(ml), vignette);
+            free(vignette);
+        }
         ml = maf_mafLine_getNext(ml);
     }
 }
