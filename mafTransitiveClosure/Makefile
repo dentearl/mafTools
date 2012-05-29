@@ -22,7 +22,7 @@ test/mafTransitiveClosure: src/mafTransitiveClosure.c ${dependencies} ${testObje
 	${cc} ${args} -g -O0 $< src/allTests.c ${objects} -o $@.tmp 
 	mv $@.tmp $@
 %.o: %.c %.h
-	${cc} -c ${args} -O3 $< -o $@.tmp
+	${cc} -O3 -c ${args} -O3 $< -o $@.tmp
 	mv $@.tmp $@
 test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
