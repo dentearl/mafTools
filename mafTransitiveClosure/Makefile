@@ -6,6 +6,7 @@ bin = ../bin
 PROGS = mafTransitiveClosure
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*) $(wildcard ${sonLib}/*) ${sonLib}/sonLib.a ${sonLib}/stPinchesAndCacti.a src/allTests.c
 objects := ../include/common.o ../include/sharedMaf.o ${sonLib}/sonLib.a ../external/CuTest.a ${sonLib}/stPinchesAndCacti.a src/test.mafTransitiveClosure.o
+testObjects := test/sharedMaf.o test/common.o ${sonLib}/sonLib.a ../external/CuTest.a ${sonLib}/stPinchesAndCacti.a src/test.mafTransitiveClosure.o
 
 .PHONY: all clean test
 
@@ -16,13 +17,16 @@ ${bin}/mafTransitiveClosure: src/mafTransitiveClosure.c ${dependencies} ${object
 	${cc} ${args} -O3 $< src/allTests.c ${objects} -o $@.tmp 
 	mv $@.tmp $@
 
-test/mafTransitiveClosure: src/mafTransitiveClosure.c ${dependencies} ${objects}
+test/mafTransitiveClosure: src/mafTransitiveClosure.c ${dependencies} ${testObjects}
 	mkdir -p $(dir $@)
 	${cc} ${args} -g -O0 $< src/allTests.c ${objects} -o $@.tmp 
 	mv $@.tmp $@
-
 %.o: %.c %.h
-	${cc} -c ${args} $< -o $@.tmp
+	${cc} -c ${args} -O3 $< -o $@.tmp
+	mv $@.tmp $@
+test/%.o: ../include/%.c ../include/%.h
+	mkdir -p $(dir $@)
+	${cc} -g -O0 -c ${args} $< -o $@.tmp
 	mv $@.tmp $@
 
 clean:
