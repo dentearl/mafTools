@@ -557,9 +557,8 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     char **names = maf_mafBlock_getSpeciesMatrix(mb);
     uint32_t *starts = maf_mafBlock_getStartArray(mb);
     uint32_t *lengths = maf_mafBlock_getSourceLengthArray(mb);
-    uint32_t longestSeq = maf_mafBlock_longestSequenceField(mb);
     // comparison order coordinates are relative to the block
-    mafTcComparisonOrder_t *co = getComparisonOrderFromMatrix(mat, numSeqs, longestSeq);
+    mafTcComparisonOrder_t *co = getComparisonOrderFromMatrix(mat, numSeqs, seqFieldLength);
     printComparisonOrder(co);
     mafTcComparisonOrder_t *c = co;
     stPinchThread *a = NULL, *b = NULL;
