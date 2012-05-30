@@ -189,7 +189,10 @@ def extractBlockStr(f, lastLine=None):
         if line == '':
             return block + '\n'
         block += '%s\n' % line
-    return block + '\n'
+    if block == '':
+        return None
+    else:
+        return block + '\n'
 def testFile(mafFile, s, headers):
     """
     given a path to a maffile, a string containing the desired contents of 
