@@ -36,7 +36,7 @@
 #include "mafTransitiveClosure.h"
 #include "test.mafTransitiveClosure.h"
 
-const uint32_t kPinchThreshold = 1000000;
+const uint32_t kPinchThreshold = 50000000;
 const char *kVersion = "v0.1 June 2012";
 
 void parseOptions(int argc, char **argv, char *filename) {
