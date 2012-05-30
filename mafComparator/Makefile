@@ -12,7 +12,7 @@ all: ${progs}
 
 ${binPath}/mafComparator : src/mafComparator.c ${extraAPI} src/ComparatorAPI.c $(wildcard src/*.h) ${sonLibPath}/sonLib.a 
 	@mkdir -p $(dir $@)
-	${cxx} ${cflags} -I ${sonLibPath} -o $@.tmp $^
+	${cxx} ${cflags} -I ${sonLibPath} -o $@.tmp $^ -lm
 	mv $@.tmp $@
 
 ${binPath}/PhyloComparator : src/PhyloComparator.c ${extraAPI} src/ComparatorAPI.c $(wildcard src/*.h) ${sonLibPath}/sonLib.a 
@@ -22,7 +22,7 @@ ${binPath}/PhyloComparator : src/PhyloComparator.c ${extraAPI} src/ComparatorAPI
 
 ${binPath}/mfaToMaf : src/mfaToMaf.c src/eTreeExtras.c ${sonLibPath}/sonLib.a 
 	@mkdir -p $(dir $@)
-	${cxx} ${cflags} -I ${sonLibPath} ${tokyoCabinetIncl} -I ./ -o $@.tmp $^
+	${cxx} ${cflags} -I ${sonLibPath} ${tokyoCabinetIncl} -I ./ -o $@.tmp $^ -lm
 	mv $@.tmp $@
 
 ${binPath}/getRepeatBed: src/getRepeatBed.py
