@@ -35,7 +35,7 @@ endif
 ##############################
 dependentModules= ${Comparator} ${TransitiveClosure} ${CoveragePickles}
 
-modules = ${dependentModules} mafValidator mafBlockFinder mafBlockExtractor mafBlockSorter mafBlockDuplicateFilter include 
+modules = include ${dependentModules} mafValidator mafBlockFinder mafBlockExtractor mafBlockSorter mafBlockDuplicateFilter mafBlockFilter
 
 .PHONY: all %.all clean %.clean test %.test
 
