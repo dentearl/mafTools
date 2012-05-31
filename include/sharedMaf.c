@@ -238,7 +238,7 @@ mafLine_t* maf_mafBlock_getHeadLine(mafBlock_t *mb) {
 mafLine_t* maf_mafBlock_getTailLine(mafBlock_t *mb) {
     return mb->tailLine;
 }
-uint32_t maf_mafBlock_lineNumber(mafBlock_t *mb) {
+uint32_t maf_mafBlock_getLineNumber(mafBlock_t *mb) {
     return mb->lineNumber;
 }
 unsigned maf_mafBlock_getNumberOfSequences(mafBlock_t *mb) {
@@ -465,6 +465,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         header->tailLine = ml;
         status = de_getline(&line, &n, mfa->mfp);
         ++(mfa->lineNumber);
+        ++(header->lineNumber);
         maf_checkForPrematureMafEnd(status, line);
     }
     if (strncmp(line, "##maf", 5) == 0) {
@@ -484,6 +485,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         }
         status = de_getline(&line, &n, mfa->mfp);
         ++(mfa->lineNumber);
+        ++(header->lineNumber);
         maf_checkForPrematureMafEnd(status, line);
     }
     if (!validHeader) {
@@ -503,6 +505,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         header->tailLine = thisMl;
         status = de_getline(&line, &n, mfa->mfp);
         ++(mfa->lineNumber);
+        ++(header->lineNumber);
         maf_checkForPrematureMafEnd(status, line);
 
     }
@@ -531,6 +534,7 @@ mafBlock_t* maf_readBlockBody(mafFileApi_t *mfa) {
     char *line = (char*) de_malloc(n);
     while(de_getline(&line, &n, mfa->mfp) != -1) {
         ++(mfa->lineNumber);
+        ++(thisBlock->lineNumber);
         if (maf_isBlankLine(line)) {
             if (thisBlock->headLine == NULL) {
                 // this handles multiple blank lines in a row
