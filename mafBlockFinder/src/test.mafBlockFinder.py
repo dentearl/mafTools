@@ -145,7 +145,9 @@ def foundLines(lineList, text, g_header):
         line = line.strip()
         data = line.split(':')
         if int(data[0]) - n not in lineList:
+            f.close()
             return False
+    f.close()
     return True
     
 class FindTest(unittest.TestCase):

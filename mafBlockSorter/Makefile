@@ -5,6 +5,7 @@ bin = ../bin
 PROGS = mafBlockSorter
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*)
 objects = ../include/common.o ../include/sharedMaf.o ../external/CuTest.a
+testObjects = ./test/common.o ./test/sharedMaf.o ../external/CuTest.a
 
 .PHONY: all clean test
 
@@ -15,13 +16,17 @@ ${bin}/mafBlockSorter: src/mafBlockSorter.c ${dependencies} ${objects}
 	${cc} ${args} -O3 $< ${objects} -o $@.tmp 
 	mv $@.tmp $@
 
-test/mafBlockSorter: src/mafBlockSorter.c ${dependencies} ${objects}
+test/mafBlockSorter: src/mafBlockSorter.c ${dependencies} ${testObjects}
 	mkdir -p $(dir $@)
 	${cc} ${args} -g -O0 $< ${objects} -o $@.tmp 
 	mv $@.tmp $@
 
 %.o: %.c %.h
-	${cc} -c ${args} $< -o $@.tmp
+	${cc} -O3 -c ${args} $< -o $@.tmp
+	mv $@.tmp $@
+test/%.o: ../include/%.c ../include/%.h
+	mkdir -p $(dir $@)
+	${cc} -g -O0 -c ${args} $< -o $@.tmp
 	mv $@.tmp $@
 
 clean:

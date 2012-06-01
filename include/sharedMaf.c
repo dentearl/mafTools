@@ -238,11 +238,11 @@ mafLine_t* maf_mafBlock_getHeadLine(mafBlock_t *mb) {
 mafLine_t* maf_mafBlock_getTailLine(mafBlock_t *mb) {
     return mb->tailLine;
 }
-uint32_t maf_mafBlock_lineNumber(mafBlock_t *mb) {
+uint32_t maf_mafBlock_getLineNumber(mafBlock_t *mb) {
     return mb->lineNumber;
 }
-unsigned maf_mafBlock_getNumberOfSequences(mafBlock_t *b) {
-    return b->numberOfSequences;
+unsigned maf_mafBlock_getNumberOfSequences(mafBlock_t *mb) {
+    return mb->numberOfSequences;
 }
 mafBlock_t* maf_mafBlock_getNext(mafBlock_t *mb) {
     return mb->next;
@@ -251,16 +251,18 @@ char** maf_mafBlock_getSequenceMatrix(mafBlock_t *mb, unsigned n, unsigned m) {
     // currently this is not stored and must be built
     // should return a matrix containing the alignment, one row per sequence
     char** matrix = NULL;
-    matrix = (char**) de_malloc(n * sizeof(char*));
-    for (unsigned i = 0; i < n; ++i)
-        matrix[i] = (char*) de_malloc(m + 1);
+    matrix = (char**) de_malloc(sizeof(char*) * n);
+    unsigned i;
+    for (i = 0; i < n; ++i)
+        matrix[i] = (char*) de_malloc(sizeof(char) * (m + 1));
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
-    unsigned i = 0;
+    i = 0;
     while (ml != NULL) {
-        if (maf_mafLine_getType(ml) != 's') {
+        while (maf_mafLine_getType(ml) != 's') {
             ml = maf_mafLine_getNext(ml);
         }
-        strncpy(matrix[i++], maf_mafLine_getSequence(ml), m + 1);
+        strncpy(matrix[i], maf_mafLine_getSequence(ml), m);
+        matrix[i++][m] = '\0';
         ml = maf_mafLine_getNext(ml);
     }
     return matrix;
@@ -396,8 +398,9 @@ unsigned maf_mafBlock_longestSequenceField(mafBlock_t *b) {
     // walk through the mafLines and find the longest sequence field.
     unsigned m = 0;
     mafLine_t *ml = maf_mafBlock_getHeadLine(b);
-    if (maf_mafLine_getType(ml) == 's')
+    if (maf_mafLine_getType(ml) == 's') {
         m = umax(m, strlen(maf_mafLine_getSequence(ml)));
+    }
     while ((ml = maf_mafLine_getNext(ml)) != NULL) {
         if (maf_mafLine_getType(ml) == 's')
             m = umax(m, strlen(maf_mafLine_getSequence(ml)));
@@ -462,6 +465,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         header->tailLine = ml;
         status = de_getline(&line, &n, mfa->mfp);
         ++(mfa->lineNumber);
+        ++(header->lineNumber);
         maf_checkForPrematureMafEnd(status, line);
     }
     if (strncmp(line, "##maf", 5) == 0) {
@@ -481,6 +485,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         }
         status = de_getline(&line, &n, mfa->mfp);
         ++(mfa->lineNumber);
+        ++(header->lineNumber);
         maf_checkForPrematureMafEnd(status, line);
     }
     if (!validHeader) {
@@ -500,6 +505,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         header->tailLine = thisMl;
         status = de_getline(&line, &n, mfa->mfp);
         ++(mfa->lineNumber);
+        ++(header->lineNumber);
         maf_checkForPrematureMafEnd(status, line);
 
     }
@@ -528,6 +534,7 @@ mafBlock_t* maf_readBlockBody(mafFileApi_t *mfa) {
     char *line = (char*) de_malloc(n);
     while(de_getline(&line, &n, mfa->mfp) != -1) {
         ++(mfa->lineNumber);
+        ++(thisBlock->lineNumber);
         if (maf_isBlankLine(line)) {
             if (thisBlock->headLine == NULL) {
                 // this handles multiple blank lines in a row

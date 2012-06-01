@@ -40,9 +40,10 @@ g_headers = ['''##maf version=1 scoring=tba.v8
 def mafIsClosed(maf, outList):
     f = open(maf)
     lastLine = mtt.processHeader(f)
-    for i in xrange(0, len(outList)):
-        block = mtt.extractBlockStr(f, lastLine)
+    block = mtt.extractBlockStr(f, lastLine)
+    while block is not None:
         lastLine = None
+        block = block.strip()
         block = block.split('\n')
         block = block[1:] # throw away alignment line
         for line in block:
@@ -51,6 +52,7 @@ def mafIsClosed(maf, outList):
                 continue
             if line not in outList:
                 return False
+        block = mtt.extractBlockStr(f, lastLine)
     f.close()
     return True
     

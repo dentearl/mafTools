@@ -36,7 +36,7 @@
 #include "mafTransitiveClosure.h"
 #include "test.mafTransitiveClosure.h"
 
-const uint32_t kPinchThreshold = 1000000;
+const uint32_t kPinchThreshold = 50000000;
 const char *kVersion = "v0.1 June 2012";
 
 void parseOptions(int argc, char **argv, char *filename) {
@@ -147,6 +147,20 @@ mafTcComparisonOrder_t* newMafTcComparisonOrder(void) {
     co->region = NULL;
     co->next = NULL;
     return co;
+}
+static void printRegion(mafTcRegion_t *reg) {
+    while (reg != NULL) {
+        de_debug("  s: %3" PRIu32 " e: %3" PRIu32 "\n", reg->start, reg->end);
+        reg = reg->next;
+    }
+}
+static void printComparisonOrder(mafTcComparisonOrder_t *co) {
+    de_debug("printComparisonOrder()\n");
+    while (co != NULL) {
+        de_debug(" ref: %2" PRIu32 " \n", co->ref);
+        printRegion(co->region);
+        co = co->next;
+    }
 }
 void destroyMafTcRegionList(mafTcRegion_t *r) {
     mafTcRegion_t *tmp = NULL;
@@ -327,74 +341,94 @@ mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint32_t rowLen
     destroyMafTcRegionList(todo);
     return co;
 }
-mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row, mafTcComparisonOrder_t **done, mafTcRegion_t *todo) {
-    // 
-    mafTcRegion_t *reg = NULL;
-    mafTcRegion_t *newTodo = NULL;
+mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row, 
+                                         mafTcComparisonOrder_t **done, mafTcRegion_t *todo) {
+    // proudce a comparison order given a sequence matrix (mat), a row index (row), a list of already
+    // completed regions (done) and a list of regions that still need to be done (todo)
+    mafTcRegion_t *todoReg = NULL, *newTodo = NULL, *newTodoTail = NULL;
     mafTcRegion_t *headTodo = todo;
     mafTcComparisonOrder_t *co = NULL;
-    bool inGap = false;
+    bool inGap;
+    de_debug("getComparisonOrderFromRow(mat, %u, done, todo)\n", row);
     while (todo != NULL) {
+        // walk the todo linked list and see if we can fill in any regions with the current row.
+        de_debug("starting to walk todo [%" PRIu32 ", %" PRIu32 "]\n", todo->start, todo->end);
+        inGap = false;
         for (uint32_t i = todo->start; i <= todo->end; ++i) {
+            // walk the current region.
             de_debug("position %" PRIu32 "\n", i);
             if (mat[row][i] == '-') {
                 // inside a gap region
-                de_debug("inside a gap region\n");
+                de_debug("now inside a gap region\n");
                 if (!inGap) {
-                    de_debug("!inGap\n");
+                    de_debug("previously was not inGap\n");
                     // transition from sequence into gap
+                    // no matter what we create a new todoRegion:
                     inGap = true;
-                    if (reg != NULL) {
-                        de_debug("reg != NULL\n");
-                        reg->next = newMafTcRegion(i, i);
-                        reg = reg->next;
+                    if (todoReg != NULL) {
+                        de_debug("todoReg != NULL, advancing pointer and creating "
+                                 "new todoReg at %" PRIu32 "\n", i);
+                        todoReg->next = newMafTcRegion(i, i);
+                        todoReg = todoReg->next;
                     } else {
-                        de_debug("reg == NULL\n");
-                        reg = newMafTcRegion(i, i);
+                        if (newTodoTail != NULL) {
+                            newTodoTail->next = newMafTcRegion(i, i);
+                            todoReg = newTodoTail;
+                            newTodoTail = NULL;
+                        } else { 
+                            todoReg = newMafTcRegion(i, i);
+                        }
+                        de_debug("todoReg == NULL, creating new todoReg at %" PRIu32 "\n", i);
                     }
-                    if (newTodo == NULL) {
-                        de_debug("newTodo == NULL\n");
-                        newTodo = reg;
-                    }
+                    de_debug("current newTodo:\n");
+                    printRegion(newTodo);
                 } else {
-                    de_debug("inGap\n");
+                    de_debug("remaining inGap, extending gap end to %" PRIu32 "\n", i);
                     // remain in gap
-                    reg->end = i;
+                    todoReg->end = i;
+                }
+                if (newTodo == NULL) {
+                    de_debug("newTodo == NULL, copying todoReg at %" PRIu32 "\n", i);
+                    newTodo = todoReg;
+                    de_debug("current newTodo:\n");
+                    printRegion(newTodo);
                 }
             } else {
-                de_debug("inside a sequence region\n");
+                de_debug("now inside a sequence region\n");
                 // inside a sequence region
                 if (inGap) {
-                    de_debug("inGap\n");
+                    de_debug("previously was inGap\n");
                     // transition from gap to sequence
                     inGap = false;
                     co = newMafTcComparisonOrder();
                     co->ref = row;
                     co->region = newMafTcRegion(i, i);
-                    de_debug("creating new region row:%" PRIu32 " at %" PRIu32 "\n", row, i);
+                    de_debug("creating new region for row:%" PRIu32 ", position %" PRIu32 "\n", row, i);
                     // insert into the start of the list
                     if (done != NULL) {
-                        de_debug("done != NULL\n");
+                        de_debug("done != NULL, inserting this comparison into the start of the list.\n");
                         co->next = *done;
                     }
                     *done = co;
                 } else {
-                    de_debug("remain in sequence\n");
+                    de_debug("remaining in sequence\n");
                     // remain in sequence
                     if (co != NULL) {
-                        de_debug("co != NULL, moving ref:%" PRIu32 " end to %" PRIu32 "\n", co->ref, i);
+                        de_debug("co != NULL, moving ref:%" PRIu32 " with "
+                                 "start %" PRIu32 ", end to %" PRIu32 "\n", co->ref, co->region->start, i);
                         co->region->end = i;
                     } else {
-                        de_debug("co == NULL, ref: %" PRIu32 "\n", row);
+                        de_debug("co == NULL, ref: %" PRIu32 ", must create new region at %" PRIu32 "\n", 
+                                 row, i);
                         co = newMafTcComparisonOrder();
                         co->ref = row;
                         co->region = newMafTcRegion(i, i);
                         // insert into the start of the `done' list
                         if (done != NULL) {
-                            de_debug("done != NULL\n");
+                            de_debug("done != NULL, inserting this comparison into head of list\n");
                             co->next = *done;
                         } else {
-                            de_debug("done == NULL\n");
+                            de_debug("done == NULL, inserting a new comparison into head of list\n");
                             done = (mafTcComparisonOrder_t **) de_malloc(sizeof(*done));
                         }
                         *done = co;
@@ -402,13 +436,17 @@ mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row, mafTcComparis
                 }
             }
         }
-        // de_debug("advance todo:%p to %p\n", (void*)todo, (void*)todo->next);
+        if (todoReg != NULL) {
+            // set up for the next todo region
+            newTodoTail = todoReg;
+            todoReg = NULL;
+            de_debug("resetting todoReg. Current newTodo:\n");
+            printRegion(newTodo);
+        }
+        co = NULL;
         todo = todo->next;
     }
     destroyMafTcRegionList(headTodo);
-    // de_debug("done: %p, ->ref: %d ->region: [%d, %d]\n", 
-    //          (void*)(*done), (*done)->ref, (*done)->region->start, (*done)->region->end);
-    // de_debug("newTodo: %p\n", (void*)newTodo);
     return newTodo;
 }
 int64_t localSeqCoordsToGlobalPositiveStartCoords(int64_t c, uint32_t start, uint32_t sourceLength, 
@@ -537,14 +575,6 @@ static void printu32Array(uint32_t *a, uint32_t n) {
     for (uint32_t i = 0; i < n; ++i)
         fprintf(stderr, "%" PRIu32 "%s", a[i], (i == n - 1) ? "\n" : ", ");
 }
-static void printComparisonOrder(mafTcComparisonOrder_t *co) {
-    de_debug("printComparisonOrder()\n");
-    while (co != NULL) {
-        de_debug("{%" PRIu32 ": [%" PRIu32 ", %" PRIu32 "]}%s", co->ref, co->region->start, co->region->end,
-                 (co->next == NULL) ? "\n" : ", ");
-        co = co->next;
-    }
-}
 void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     // for a given block, add the alignment information to the threadset.
     de_debug("walkBlockAddingAlignments()\n");
@@ -557,10 +587,8 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     char **names = maf_mafBlock_getSpeciesMatrix(mb);
     uint32_t *starts = maf_mafBlock_getStartArray(mb);
     uint32_t *lengths = maf_mafBlock_getSourceLengthArray(mb);
-    uint32_t longestSeq = maf_mafBlock_longestSequenceField(mb);
     // comparison order coordinates are relative to the block
-    mafTcComparisonOrder_t *co = getComparisonOrderFromMatrix(mat, numSeqs, longestSeq);
-    printComparisonOrder(co);
+    mafTcComparisonOrder_t *co = getComparisonOrderFromMatrix(mat, numSeqs, seqFieldLength);
     mafTcComparisonOrder_t *c = co;
     stPinchThread *a = NULL, *b = NULL;
     while (c != NULL) {
@@ -711,6 +739,8 @@ int main(int argc, char **argv) {
     (void) (printMatrix);
     (void) (printu32Array);
     (void) (reportSequenceHash);
+    (void) (printComparisonOrder);
+    (void) (printRegion);
     char filename[kMaxStringLength];
     stHash *sequenceHash, *nameHash;
     parseOptions(argc, argv, filename);

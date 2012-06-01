@@ -121,7 +121,9 @@ def mafIsExtracted(maf):
             print b
             print '!='
             print g_overlappingBlocks
+            f.close()
             return False
+    f.close()
     return True
     
 class ExtractionTest(unittest.TestCase):
