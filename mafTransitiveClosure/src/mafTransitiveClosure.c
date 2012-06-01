@@ -150,14 +150,14 @@ mafTcComparisonOrder_t* newMafTcComparisonOrder(void) {
 }
 static void printRegion(mafTcRegion_t *reg) {
     while (reg != NULL) {
-        de_debug("  s: %3d e: %3d\n", reg->start, reg->end);
+        de_debug("  s: %3" PRIu32 " e: %3" PRIu32 "\n", reg->start, reg->end);
         reg = reg->next;
     }
 }
 static void printComparisonOrder(mafTcComparisonOrder_t *co) {
     de_debug("printComparisonOrder()\n");
     while (co != NULL) {
-        de_debug(" ref: %2d \n", co->ref);
+        de_debug(" ref: %2" PRIu32 " \n", co->ref);
         printRegion(co->region);
         co = co->next;
     }
@@ -350,10 +350,6 @@ mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row,
     mafTcComparisonOrder_t *co = NULL;
     bool inGap;
     de_debug("getComparisonOrderFromRow(mat, %u, done, todo)\n", row);
-    de_debug("done:\n");
-    printComparisonOrder(*done);
-    de_debug("todo:\n");
-    printRegion(todo);
     while (todo != NULL) {
         // walk the todo linked list and see if we can fill in any regions with the current row.
         de_debug("starting to walk todo [%" PRIu32 ", %" PRIu32 "]\n", todo->start, todo->end);
@@ -579,14 +575,6 @@ static void printu32Array(uint32_t *a, uint32_t n) {
     for (uint32_t i = 0; i < n; ++i)
         fprintf(stderr, "%" PRIu32 "%s", a[i], (i == n - 1) ? "\n" : ", ");
 }
-/* static void printComparisonOrder(mafTcComparisonOrder_t *co) { */
-/*     de_debug("printComparisonOrder()\n"); */
-/*     while (co != NULL) { */
-/*         de_debug("{%" PRIu32 ": [%" PRIu32 ", %" PRIu32 "]}%s", co->ref, co->region->start, co->region->end, */
-/*                  (co->next == NULL) ? "\n" : ", "); */
-/*         co = co->next; */
-/*     } */
-/* } */
 void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     // for a given block, add the alignment information to the threadset.
     de_debug("walkBlockAddingAlignments()\n");
@@ -601,7 +589,6 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     uint32_t *lengths = maf_mafBlock_getSourceLengthArray(mb);
     // comparison order coordinates are relative to the block
     mafTcComparisonOrder_t *co = getComparisonOrderFromMatrix(mat, numSeqs, seqFieldLength);
-    //printComparisonOrder(co);
     mafTcComparisonOrder_t *c = co;
     stPinchThread *a = NULL, *b = NULL;
     while (c != NULL) {
@@ -752,6 +739,8 @@ int main(int argc, char **argv) {
     (void) (printMatrix);
     (void) (printu32Array);
     (void) (reportSequenceHash);
+    (void) (printComparisonOrder);
+    (void) (printRegion);
     char filename[kMaxStringLength];
     stHash *sequenceHash, *nameHash;
     parseOptions(argc, argv, filename);
