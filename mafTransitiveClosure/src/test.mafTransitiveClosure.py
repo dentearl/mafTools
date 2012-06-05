@@ -162,14 +162,17 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
         if valgrind is None:
             return
         tmpDir = os.path.abspath(mtt.makeTempDir('memory1'))
-        parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        cmd = mtt.genericValgrind(tmpDir)
-        cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), 
-               '--maf', os.path.abspath(os.path.join(os.curdir, 'test.maf'))]
-        outpipes = [os.path.abspath(os.path.join(tmpDir, 'transitiveClosure.maf'))]
-        mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
-        passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
-        self.assertTrue(passed)
+        for inMaf, outList in self.knownResults:
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
+                                   inMaf, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = mtt.genericValgrind(tmpDir)
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), 
+                    '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')) ]
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'transitiveClosure.maf'))]
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
+            self.assertTrue(passed)
         mtt.removeDir(tmpDir)
     def testMemory2(self):
         """ the CuTest tests should be memory clean.
