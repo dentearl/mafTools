@@ -14,29 +14,29 @@ all: $(foreach f,${PROGS}, ${bin}/$f)
 
 ${bin}/mafTransitiveClosure: src/mafTransitiveClosure.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
-	${cc} ${args} -O3 $< src/allTests.c ${objects} -o $@.tmp 
+	${cc}  -O3 $< src/allTests.c ${objects} -o $@.tmp ${args}
 	mv $@.tmp $@
 
 test/mafTransitiveClosure: src/mafTransitiveClosure.c ${dependencies} ${testObjects}
 	mkdir -p $(dir $@)
-	${cc} ${args} -g -O0 $< src/allTests.c ${objects} -o $@.tmp 
+	${cc} -g -O0 $< src/allTests.c ${testObjects} -o $@.tmp ${args}
 	mv $@.tmp $@
 %.o: %.c %.h
-	${cc} -O3 -c ${args} -O3 $< -o $@.tmp
+	${cc} -O3 -c -O3 $< -o $@.tmp ${args}
 	mv $@.tmp $@
 test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
-	${cc} -g -O0 -c ${args} $< -o $@.tmp
+	${cc} -g -O0 -c $< -o $@.tmp ${args}
 	mv $@.tmp $@
 
 clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/ 
 
 test: test/mafTransitiveClosure
-	$< --test && python2.7 src/test.mafTransitiveClosure.py --verbose && rm -rf ./test/ && rmdir ./tempTestDir
+	$< --test && python2.7 src/test.mafTransitiveClosure.py --verbose # && rm -rf ./test/ && rmdir ./tempTestDir
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
-	${cc} -c ${args} $<
+	${cc} -c $< ${args}
 	ar rc CuTest.a CuTest.o
 	ranlib CuTest.a
 	rm -f CuTest.o
