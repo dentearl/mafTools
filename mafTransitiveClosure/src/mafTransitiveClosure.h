@@ -62,20 +62,28 @@ typedef struct mafTcComparisonOrder {
     mafTcRegion_t *region;
     struct mafTcComparisonOrder *next;
 } mafTcComparisonOrder_t;
+typedef struct mafCoordinatePair {
+    /* this struct is used to store pairs of coordinates
+    */
+    uint32_t a;
+    uint32_t b;
+} mafCoordinatePair_t;
 
 void usage(void);
 mafTcSeq_t* newMafTcSeq(char *name, unsigned length);
 mafTcComparisonOrder_t* newMafTcComparisonOrder(void);
 mafTcRegion_t* newMafTcRegion(uint32_t start, uint32_t end);
+mafCoordinatePair_t* newCoordinatePairArray(uint32_t numSeqs, char **seqs);
 void destroyMafTcSeq(void *p);
 void destroyMafTcRegionList(mafTcRegion_t *r);
 void destroyMafTcRegion(mafTcRegion_t *r);
 void destroyMafTcComparisonOrder(mafTcComparisonOrder_t *c);
+void destroyCoordinatePairArray(mafCoordinatePair_t *cp);
 uint32_t hashMafTcSeq(const mafTcSeq_t *mtcs);
 int hashCompareMafTcSeq(const mafTcSeq_t *m1, const mafTcSeq_t *m2);
 char* createNSequence(unsigned length);
-void reverseComplementSequence(char *s);
-void complementSequence(char *s);
+void reverseComplementSequence(char *s, size_t  n);
+void complementSequence(char *s, size_t n);
 char complementChar(char c);
 void addSequenceValuesToMtcSeq(mafLine_t *ml, mafTcSeq_t *mtcs);
 void parseOptions(int argc, char **argv, char *filename);
@@ -88,8 +96,9 @@ mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint32_t rowLen
 void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint32_t aGlobalStart, 
                             uint32_t aGlobalLength, int aStrand, 
                             char *aSeq, stPinchThread *b, uint32_t bGlobalStart, uint32_t bGlobalLength,
-                            int bStrand, char *bSeq, uint32_t regionStart, uint32_t regionEnd);
-int64_t localSeqCoords(uint32_t p, char *s);
+                            int bStrand, char *bSeq, uint32_t regionStart, uint32_t regionEnd,
+                            mafCoordinatePair_t aBookmark, mafCoordinatePair_t bBookmark);
+int64_t localSeqCoords(uint32_t p, char *s, mafCoordinatePair_t *bookmark);
 int64_t localSeqCoordsToGlobalPositiveCoords(int64_t c, uint32_t start, uint32_t sourceLength, char strand);
 int64_t localSeqCoordsToGlobalPositiveStartCoords(int64_t c, uint32_t start, uint32_t sourceLength, 
                                                   char strand, uint32_t length);

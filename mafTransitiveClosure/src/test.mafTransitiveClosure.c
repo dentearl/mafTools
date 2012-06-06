@@ -81,7 +81,7 @@ static void test_reverseComplement(CuTest *testCase) {
     // test that the reverseComplement function works properly
     char *input = de_strdup("GGGGaaaaaaaatttatatat");
     char *output = de_strdup("ATATATAAATTTTTTTTCCCC");
-    reverseComplementSequence(input);
+    reverseComplementSequence(input, strlen(input));
     CuAssertTrue(testCase, strlen(input) == strlen(output));
     CuAssertTrue(testCase, strncmp(input, output, strlen(output)) == 0);
     free(input);
@@ -433,20 +433,74 @@ static void test_addSequenceValuesToMtcSeq_0(CuTest *testCase) {
     destroyMafTcSeq(mtcs);
 }
 static void test_localSeqCoords_0(CuTest *testCase) {
+    mafCoordinatePair_t mcp;
+    mcp.a = 0;
+    mcp.b = 0;
     char *s = de_strdup("ACGT");
-    CuAssertTrue(testCase, localSeqCoords(3, s) == 3);
+    CuAssertTrue(testCase, localSeqCoords(3, s, &mcp) == 3);
+    CuAssertTrue(testCase, mcp.a == 3);
+    CuAssertTrue(testCase, mcp.b == 3);
     free(s);
+    mcp.a = 0;
+    mcp.b = 0;
     s = de_strdup("-------ACGT");
-    CuAssertTrue(testCase, localSeqCoords(10, s) == 3);
+    CuAssertTrue(testCase, localSeqCoords(10, s, &mcp) == 3);
+    CuAssertTrue(testCase, mcp.a == 10);
+    CuAssertTrue(testCase, mcp.b == 3);
     free(s);
+    mcp.a = 8;
+    mcp.b = 1;
+    s = de_strdup("-------ACGT");
+    CuAssertTrue(testCase, localSeqCoords(10, s, &mcp) == 3);
+    CuAssertTrue(testCase, mcp.a == 10);
+    CuAssertTrue(testCase, mcp.b == 3);
+    free(s);
+    mcp.a = 10;
+    mcp.b = 3;
+    s = de_strdup("-------ACGT");
+    CuAssertTrue(testCase, localSeqCoords(10, s, &mcp) == 3);
+    CuAssertTrue(testCase, mcp.a == 10);
+    CuAssertTrue(testCase, mcp.b == 3);
+    free(s);
+    mcp.a = 0;
+    mcp.b = 0;
     s = de_strdup("-A-C-G-T");
-    CuAssertTrue(testCase, localSeqCoords(7, s) == 3);
+    CuAssertTrue(testCase, localSeqCoords(7, s, &mcp) == 3);
+    CuAssertTrue(testCase, mcp.a == 7);
+    CuAssertTrue(testCase, mcp.b == 3);
     free(s);
+    mcp.a = 0;
+    mcp.b = 0;
     s = de_strdup("AA-A-C-G-T");
-    CuAssertTrue(testCase, localSeqCoords(9, s) == 5);
+    CuAssertTrue(testCase, localSeqCoords(9, s, &mcp) == 5);
+    CuAssertTrue(testCase, mcp.a == 9);
+    CuAssertTrue(testCase, mcp.b == 5);
     free(s);
+    mcp.a = 0;
+    mcp.b = 0;
     s = de_strdup("AA-A-C-G-T");
-    CuAssertTrue(testCase, localSeqCoords(3, s) == 2);
+    CuAssertTrue(testCase, localSeqCoords(3, s, &mcp) == 2);
+    CuAssertTrue(testCase, mcp.a == 3);
+    CuAssertTrue(testCase, mcp.b == 2);
+    free(s);
+    mcp.a = 1;
+    mcp.b = 1;
+    s = de_strdup("AA-A-C-G-T");
+    CuAssertTrue(testCase, localSeqCoords(3, s, &mcp) == 2);
+    CuAssertTrue(testCase, mcp.a == 3);
+    CuAssertTrue(testCase, mcp.b == 2);
+    free(s);
+    mcp.a = 0;
+    mcp.b = 0;
+    s = de_strdup("GTTGTCTCTCAATGTG");
+    CuAssertTrue(testCase, localSeqCoords(6, s, &mcp) == 6);
+    CuAssertTrue(testCase, mcp.a == 6);
+    CuAssertTrue(testCase, mcp.b == 6);
+    free(s);
+    s = de_strdup("GTTGTCTCTCAATGTG");
+    CuAssertTrue(testCase, localSeqCoords(15, s, &mcp) == 15);
+    CuAssertTrue(testCase, mcp.a == 15);
+    CuAssertTrue(testCase, mcp.b == 15);
     free(s);
 }
 static void test_localSeqCoordsToGlobalPositiveCoords_0(CuTest *testCase) {
@@ -463,6 +517,7 @@ static void test_localSeqCoordsToGlobalPositiveStartCoords_0(CuTest *testCase) {
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(3, 0, 20, '+', 5) == 3);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(3, 5, 20, '+', 5) == 8);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(3, 5, 20, '+', 10) == 8);
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(0, 1, 100, '+', 16) == 1);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(0, 0, 20, '-', 1) == 19);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(0, 0, 20, '-', 5) == 15);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(3, 0, 20, '-', 1) == 16);
@@ -473,8 +528,52 @@ static void test_localSeqCoordsToGlobalPositiveStartCoords_0(CuTest *testCase) {
 }
 static void test_coordinateTransforms_0(CuTest *testCase) {
     char *input = de_strdup("-AA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG");
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(1, input), 
-                                                                     0, 100, '+', 2) == 0);
+    mafCoordinatePair_t mcp;
+    uint32_t start = 0, sourceLength = 100, seqLength = 37;
+    mcp.a = 0;
+    mcp.b = 0;
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(1, input, &mcp), 
+                                                                     start, sourceLength, '+', seqLength) == 0);
+    CuAssertTrue(testCase, mcp.a == 1);
+    CuAssertTrue(testCase, mcp.b == 0);
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(4, input, &mcp), 
+                                                                     start, sourceLength, '+', seqLength) == 2);
+    CuAssertTrue(testCase, mcp.a == 4);
+    CuAssertTrue(testCase, mcp.b == 2);
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(26, input, &mcp), 
+                                                                     start, sourceLength, '+', seqLength) == 21);
+    CuAssertTrue(testCase, mcp.a == 26);
+    CuAssertTrue(testCase, mcp.b == 21);
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(41, input, &mcp), 
+                                                                     start, sourceLength, '+', seqLength) == 36);
+    CuAssertTrue(testCase, mcp.a == 41);
+    CuAssertTrue(testCase, mcp.b == 36);
+    // reverse strand.
+    mcp.a = 0;
+    mcp.b = 0;
+    seqLength = 2;
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(1, input, &mcp), 
+                                                                     start, sourceLength, '-', seqLength) == 98);
+    CuAssertTrue(testCase, mcp.a == 1);
+    CuAssertTrue(testCase, mcp.b == 0);    
+    seqLength = 19;
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(4, input, &mcp), 
+                                                                     start, sourceLength, '-', seqLength) == 79);
+    CuAssertTrue(testCase, mcp.a == 4);
+    CuAssertTrue(testCase, mcp.b == 2);
+    seqLength = 16;
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(26, input, &mcp), 
+                                                                     start, sourceLength, '-', seqLength) == 63);
+    CuAssertTrue(testCase, mcp.a == 26);
+    CuAssertTrue(testCase, mcp.b == 21);
+    free(input);
+    input = de_strdup("GTTGTCTCTCAATGTG");
+    mcp.a = 0;
+    mcp.b = 0;
+    start = 1;
+    seqLength = 16;
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(0, input, &mcp), 
+                                                                     start, sourceLength, '+', seqLength) == 1);
     free(input);
 }
 CuSuite* mafTransitiveClosure_TestSuite(void) {

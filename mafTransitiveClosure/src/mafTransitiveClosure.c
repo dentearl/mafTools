@@ -150,14 +150,14 @@ mafTcComparisonOrder_t* newMafTcComparisonOrder(void) {
 }
 static void printRegion(mafTcRegion_t *reg) {
     while (reg != NULL) {
-        de_debug("  s: %3" PRIu32 " e: %3" PRIu32 "\n", reg->start, reg->end);
+        // de_debug("  s: %3" PRIu32 " e: %3" PRIu32 "\n", reg->start, reg->end);
         reg = reg->next;
     }
 }
 static void printComparisonOrder(mafTcComparisonOrder_t *co) {
-    de_debug("printComparisonOrder()\n");
+    // de_debug("printComparisonOrder()\n");
     while (co != NULL) {
-        de_debug(" ref: %2" PRIu32 " \n", co->ref);
+        // de_debug(" ref: %2" PRIu32 " \n", co->ref);
         printRegion(co->region);
         co = co->next;
     }
@@ -188,19 +188,19 @@ void destroyMafTcComparisonOrder(mafTcComparisonOrder_t *co) {
         free(tmp);
     }
 }
-void reverseComplementSequence(char *s) {
+void reverseComplementSequence(char *s, size_t n) {
     // accepts upper and lower case, returns upper case 
    int c, i, j;
-    for (i = 0, j = strlen(s) - 1; i < j; ++i, j--) {
+    for (i = 0, j = n - 1; i < j; ++i, j--) {
         c = s[i];
         s[i] = s[j];
         s[j] = c;
     }
-    complementSequence(s);
+    complementSequence(s, n);
 }
-void complementSequence(char *s) {
+void complementSequence(char *s, size_t n) {
     // accepts upper and lower case, returns upper case
-    for (unsigned i = 0; i < strlen(s); ++i)
+    for (unsigned i = 0; i < n; ++i)
         s[i] = complementChar(s[i]);
 }
 char complementChar(char c) {
@@ -250,12 +250,13 @@ void addSequenceValuesToMtcSeq(mafLine_t *ml, mafTcSeq_t *mtcs) {
         s = maf_mafLine_getStart(ml);
     } else {
         // THIS IS A DESTRUCTIVE OPERATION ON THE MAF LINE ml:
-        reverseComplementSequence(maf_mafLine_getSequence(ml));
+        reverseComplementSequence(maf_mafLine_getSequence(ml), strlen(maf_mafLine_getSequence(ml)));
         s = maf_mafLine_getSourceLength(ml) - (maf_mafLine_getStart(ml) + maf_mafLine_getLength(ml));
     }
     e = s + maf_mafLine_getLength(ml);
     char *seq = maf_mafLine_getSequence(ml);
-    for (unsigned i = 0, p = 0; i < strlen(maf_mafLine_getSequence(ml)); ++i) {
+    uint32_t n = strlen(maf_mafLine_getSequence(ml));
+    for (uint32_t i = 0, p = 0; i < n; ++i) {
         // p is the current position coordinate within the sequence (zero based)
         if (seq[i] != '-') {
             if (mtcs->sequence[s + p] != 'N') {
@@ -274,14 +275,14 @@ void addSequenceValuesToMtcSeq(mafLine_t *ml, mafTcSeq_t *mtcs) {
     }
 }
 void walkBlockAddingSequence(mafBlock_t *mb, stHash *hash, stHash *nameHash) {
-    de_debug("walkBlockAddingSequence()\n");
+    // de_debug("walkBlockAddingSequence()\n");
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     mafTcSeq_t *mtcs = NULL;
     while ((ml = maf_mafLine_getNext(ml)) != NULL) {
         if (maf_mafLine_getType(ml) == 's') {
             if (stHash_search(hash, maf_mafLine_getSpecies(ml)) == NULL) {
                 mtcs = newMafTcSeq(stString_copy(maf_mafLine_getSpecies(ml)), maf_mafLine_getSourceLength(ml));
-                de_debug("Adding new sequence to hash: %s\n", maf_mafLine_getSpecies(ml));
+                // de_debug("Adding new sequence to hash: %s\n", maf_mafLine_getSpecies(ml));
                 addSequenceValuesToMtcSeq(ml, mtcs);
                 stHash_insert(hash, stString_copy(maf_mafLine_getSpecies(ml)), mtcs);
                 if (stHash_search(nameHash, (void*)(int64_t)stHash_stringKey(maf_mafLine_getSpecies(ml))) == NULL) {
@@ -295,7 +296,7 @@ void walkBlockAddingSequence(mafBlock_t *mb, stHash *hash, stHash *nameHash) {
     }
 }
 void createSequenceHash(mafFileApi_t *mfa, stHash **hash, stHash **nameHash) {
-    de_debug("createSequenceHash()\n");
+    // de_debug("createSequenceHash()\n");
     *hash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, destroyMafTcSeq);
     *nameHash = stHash_construct2(NULL, free);
     mafBlock_t *mb = NULL;
@@ -326,7 +327,8 @@ stPinchThreadSet* buildThreadSet(stHash *hash) {
     stHashIterator *hit = stHash_getIterator(hash);
     char *key = NULL;
     while ((key = stHash_getNext(hit)) != NULL) {
-        stPinchThreadSet_addThread(ts, stHash_stringKey(key), 0, ((mafTcSeq_t *)stHash_search(hash, key))->length);
+        stPinchThreadSet_addThread(ts, stHash_stringKey(key), 0, 
+                                   ((mafTcSeq_t *)stHash_search(hash, key))->length);
     }
     stHash_destructIterator(hit);
     return ts;
@@ -349,25 +351,25 @@ mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row,
     mafTcRegion_t *headTodo = todo;
     mafTcComparisonOrder_t *co = NULL;
     bool inGap;
-    de_debug("getComparisonOrderFromRow(mat, %u, done, todo)\n", row);
+    // de_debug("getComparisonOrderFromRow(mat, %u, done, todo)\n", row);
     while (todo != NULL) {
         // walk the todo linked list and see if we can fill in any regions with the current row.
-        de_debug("starting to walk todo [%" PRIu32 ", %" PRIu32 "]\n", todo->start, todo->end);
+        // de_debug("starting to walk todo [%" PRIu32 ", %" PRIu32 "]\n", todo->start, todo->end);
         inGap = false;
         for (uint32_t i = todo->start; i <= todo->end; ++i) {
             // walk the current region.
-            de_debug("position %" PRIu32 "\n", i);
+            // de_debug("position %" PRIu32 "\n", i);
             if (mat[row][i] == '-') {
                 // inside a gap region
-                de_debug("now inside a gap region\n");
+                // de_debug("now inside a gap region\n");
                 if (!inGap) {
-                    de_debug("previously was not inGap\n");
+                    // de_debug("previously was not inGap\n");
                     // transition from sequence into gap
                     // no matter what we create a new todoRegion:
                     inGap = true;
                     if (todoReg != NULL) {
-                        de_debug("todoReg != NULL, advancing pointer and creating "
-                                 "new todoReg at %" PRIu32 "\n", i);
+                        // de_debug("todoReg != NULL, advancing pointer and creating "
+                        //          "new todoReg at %" PRIu32 "\n", i);
                         todoReg->next = newMafTcRegion(i, i);
                         todoReg = todoReg->next;
                     } else {
@@ -378,57 +380,57 @@ mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row,
                         } else { 
                             todoReg = newMafTcRegion(i, i);
                         }
-                        de_debug("todoReg == NULL, creating new todoReg at %" PRIu32 "\n", i);
+                        // de_debug("todoReg == NULL, creating new todoReg at %" PRIu32 "\n", i);
                     }
-                    de_debug("current newTodo:\n");
-                    printRegion(newTodo);
+                    // de_debug("current newTodo:\n");
+                    // printRegion(newTodo);
                 } else {
-                    de_debug("remaining inGap, extending gap end to %" PRIu32 "\n", i);
+                    // de_debug("remaining inGap, extending gap end to %" PRIu32 "\n", i);
                     // remain in gap
                     todoReg->end = i;
                 }
                 if (newTodo == NULL) {
-                    de_debug("newTodo == NULL, copying todoReg at %" PRIu32 "\n", i);
+                    // de_debug("newTodo == NULL, copying todoReg at %" PRIu32 "\n", i);
                     newTodo = todoReg;
-                    de_debug("current newTodo:\n");
-                    printRegion(newTodo);
+                    // de_debug("current newTodo:\n");
+                    // printRegion(newTodo);
                 }
             } else {
-                de_debug("now inside a sequence region\n");
+                // de_debug("now inside a sequence region\n");
                 // inside a sequence region
                 if (inGap) {
-                    de_debug("previously was inGap\n");
+                    // de_debug("previously was inGap\n");
                     // transition from gap to sequence
                     inGap = false;
                     co = newMafTcComparisonOrder();
                     co->ref = row;
                     co->region = newMafTcRegion(i, i);
-                    de_debug("creating new region for row:%" PRIu32 ", position %" PRIu32 "\n", row, i);
+                    // de_debug("creating new region for row:%" PRIu32 ", position %" PRIu32 "\n", row, i);
                     // insert into the start of the list
                     if (done != NULL) {
-                        de_debug("done != NULL, inserting this comparison into the start of the list.\n");
+                        // de_debug("done != NULL, inserting this comparison into the start of the list.\n");
                         co->next = *done;
                     }
                     *done = co;
                 } else {
-                    de_debug("remaining in sequence\n");
+                    // de_debug("remaining in sequence\n");
                     // remain in sequence
                     if (co != NULL) {
-                        de_debug("co != NULL, moving ref:%" PRIu32 " with "
-                                 "start %" PRIu32 ", end to %" PRIu32 "\n", co->ref, co->region->start, i);
+                        // de_debug("co != NULL, moving ref:%" PRIu32 " with "
+                        //          "start %" PRIu32 ", end to %" PRIu32 "\n", co->ref, co->region->start, i);
                         co->region->end = i;
                     } else {
-                        de_debug("co == NULL, ref: %" PRIu32 ", must create new region at %" PRIu32 "\n", 
-                                 row, i);
+                        // de_debug("co == NULL, ref: %" PRIu32 ", must create new region at %" PRIu32 "\n", 
+                        //          row, i);
                         co = newMafTcComparisonOrder();
                         co->ref = row;
                         co->region = newMafTcRegion(i, i);
                         // insert into the start of the `done' list
                         if (done != NULL) {
-                            de_debug("done != NULL, inserting this comparison into head of list\n");
+                            // de_debug("done != NULL, inserting this comparison into head of list\n");
                             co->next = *done;
                         } else {
-                            de_debug("done == NULL, inserting a new comparison into head of list\n");
+                            // de_debug("done == NULL, inserting a new comparison into head of list\n");
                             done = (mafTcComparisonOrder_t **) de_malloc(sizeof(*done));
                         }
                         *done = co;
@@ -440,8 +442,8 @@ mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row,
             // set up for the next todo region
             newTodoTail = todoReg;
             todoReg = NULL;
-            de_debug("resetting todoReg. Current newTodo:\n");
-            printRegion(newTodo);
+            // de_debug("resetting todoReg. Current newTodo:\n");
+            // printRegion(newTodo);
         }
         co = NULL;
         todo = todo->next;
@@ -468,102 +470,113 @@ int64_t localSeqCoordsToGlobalPositiveCoords(int64_t c, uint32_t start, uint32_t
         return (int64_t) (sourceLength - 1 - start - c);
     }
 }
-int64_t localSeqCoords(uint32_t p, char *s) {
+int64_t localSeqCoords(uint32_t p, char *s, mafCoordinatePair_t *b) {
     // given a coordinate inside of a sequence with respect to the start (which is 0), 
     // walk backwards and anytime you see a gap drop one from the coordinate to return
-    int64_t value = (int64_t) p; // coordinate to return
+    int64_t bases = 0;
+    // printf("p:%" PRIu32 " b->a:%" PRIu32 " b->b:%" PRIu32 " s:%s\n", p, b->a, b->b, s);
     for (int64_t i = p; i >= 0; --i) {
-        if (s[i] == '-') {
-            --value;
+        if (s[i] != '-') {
+            ++bases;
+            // printf("i:%" PRIu64 " ++bases = %" PRIu64 "\n", i, bases);
+        }
+        if (b->a == i) {
+            // printf("i:%" PRIu64 ", b->a:%" PRIu32 " b->b:%" PRIu64 " coming home, \n", i, p, b->b + bases - 1);
+            b->a = p;
+            b->b += bases - 1;
+            return b->b;
         }
     }
-    return value;
+    b->a = p;
+    b->b = bases - 1;
+    return b->b;
 }
 uint32_t g_numPinches = 0;
 void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint32_t aGlobalStart, 
                             uint32_t aGlobalLength, int aStrand, 
                             char *aSeq, stPinchThread *b, uint32_t bGlobalStart, uint32_t bGlobalLength,
-                            int bStrand, char *bSeq, uint32_t regionStart, uint32_t regionEnd) {
+                            int bStrand, char *bSeq, uint32_t regionStart, uint32_t regionEnd,
+                            mafCoordinatePair_t aBookmark, mafCoordinatePair_t bBookmark) {
     // perform a pinch operation for regions of bSeq that are not gaps, i.e. `-'
     // GlobalStart is the positive strand position (zero based) coordinate of the start of this block
-    de_debug("processPairForPinching() g_numPinches: %u\n", g_numPinches);
-    uint32_t l = 0, pos = 0, regionLength = regionEnd - regionStart + 1;
-    uint32_t blockStart = pos;
-    de_debug("aGlobalStart: %" PRIu32 ", bGlobalStart: %" PRIu32 ", pos & regionStart: %" PRIu32 ", regionLength: %" PRIu32 "\n", 
-             aGlobalStart, bGlobalStart, regionStart, regionLength);
+    // de_debug("processPairForPinching() g_numPinches: %u\n", g_numPinches);
+    uint32_t length = 0, localPos = 0;
+    uint32_t localBlockStart = localPos;
+    de_debug("aGlobalStart: %" PRIu32 ", bGlobalStart: %" PRIu32 ", pos & regionStart: %" PRIu32 ", regionEnd: %" PRIu32 "\n", 
+             aGlobalStart, bGlobalStart, regionStart, regionEnd);
     de_debug("aSeq: %s\n", aSeq);
     de_debug("bSeq: %s\n", bSeq);
     bool inBlock = false;
-    for (pos = regionStart; pos < regionStart + regionLength; ++pos) {
-        de_debug("pos: %" PRIu32 " \n", pos);
-        if (bSeq[pos] == '-') {
+    for (localPos = regionStart; localPos < (regionEnd + 1); ++localPos) {
+        de_debug("pos: %" PRIu32 " \n", localPos);
+        if (bSeq[localPos] == '-') {
             if (inBlock) {
-                de_debug("bSeq[pos] == - && inBlock\n");
                 inBlock = false;
-                de_debug("maybe little pinch (1)? p:%" PRIu32 ", l:%" PRIu32 "\n", blockStart, l);
-                de_debug("a coords local: %" PRIi64 " global: %" PRIi64 
-                         ", b coords local: %" PRIi64 ", global: %" PRIi64 "\n", 
-                         localSeqCoords(blockStart, aSeq),
-                         localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, aSeq),
-                                                              aGlobalStart, aGlobalLength, aStrand, l),
-                         localSeqCoords(blockStart, bSeq),
-                         localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, bSeq),
-                                                                   bGlobalStart, bGlobalLength, bStrand, l));
+                de_debug("bSeq[pos] == - && inBlock\n");
+                de_debug("maybe little pinch (#1)? p:%" PRIu32 ", l:%" PRIu32 "\n", localBlockStart, length);
+                de_debug("a coords local: %" PRIi64 " global: %" PRIi64
+                         ", b coords local: %" PRIi64 ", global: %" PRIi64 "\n",
+                         localSeqCoords(localBlockStart, aSeq, &aBookmark),
+                         localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, aSeq, &aBookmark),
+                                                              aGlobalStart, aGlobalLength, aStrand, length),
+                         localSeqCoords(localBlockStart, bSeq, &bBookmark),
+                         localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, bSeq, &bBookmark),
+                                                                   bGlobalStart, bGlobalLength, bStrand, length));
                 stPinchThread_pinch(a, b,
-                                    localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, aSeq), 
+                                    localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, aSeq, &aBookmark), 
                                                                               aGlobalStart,
                                                                               aGlobalLength,
-                                                                              aStrand, l),
-                                    localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, bSeq),
+                                                                              aStrand, length),
+                                    localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, bSeq, &bBookmark),
                                                                               bGlobalStart,
                                                                               bGlobalLength,
-                                                                              bStrand,l),
-                                    l, (aStrand == bStrand));
+                                                                              bStrand,length),
+                                    length, (aStrand == bStrand));
                 ++g_numPinches;
                 if (g_numPinches > kPinchThreshold) {
                     stPinchThreadSet_joinTrivialBoundaries(threadSet);
                     g_numPinches = 0;
                 }
-                l = 0;
+                length = 0;
             }
         } else {
             if (!inBlock) {
                 de_debug("bSeq[pos] != - && !inBlock\n");
                 inBlock = true;
-                blockStart = pos;
+                localBlockStart = localPos;
             }
-            ++l; // length of this alignment
+            ++length; // length of this alignment
         }
     }
     de_debug("done walking comparison region\n");
     if (inBlock) {
         inBlock = false;
-        de_debug("maybe little pinch (2)? p:%" PRIu32 ", l:%" PRIu32 "\n", blockStart, l);
-        de_debug("a coords local: %" PRIi64 " global: %" PRIi64 
-                         ", b coords local: %" PRIi64 ", global: %" PRIi64 "\n", 
-                         localSeqCoords(blockStart, aSeq),
-                         localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, aSeq),
-                                                                   aGlobalStart, aGlobalLength, aStrand, l),
-                         localSeqCoords(blockStart, bSeq),
-                         localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, bSeq),
-                                                                   bGlobalStart, bGlobalLength, bStrand, l));
+        de_debug("maybe little pinch (#2)? p:%" PRIu32 ", l:%" PRIu32 "\n", localBlockStart, length);
+        de_debug("a coords local: %" PRIi64 " global: %" PRIi64 "\n", 
+                 localSeqCoords(localBlockStart, aSeq, &aBookmark),
+                 localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, aSeq, &aBookmark),
+                                                           aGlobalStart, aGlobalLength, aStrand, length));
+        de_debug("b coords local: %" PRIi64 ", global: %" PRIi64 "\n",
+                 localSeqCoords(localBlockStart, bSeq, &bBookmark),
+                 localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, bSeq, &bBookmark),
+                                                           bGlobalStart, bGlobalLength, bStrand, length));
         stPinchThread_pinch(a, b,
-                            localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, aSeq), 
+                            localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, aSeq, &aBookmark), 
                                                                       aGlobalStart,
                                                                       aGlobalLength,
-                                                                      aStrand, l),
-                            localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(blockStart, bSeq),
+                                                                      aStrand, length),
+                            localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, bSeq, &bBookmark),
                                                                       bGlobalStart,
                                                                       bGlobalLength,
-                                                                      bStrand, l),
-                            l, (aStrand == bStrand));
+                                                                      bStrand, length),
+                            length, (aStrand == bStrand));
         ++g_numPinches;
     }
     if (g_numPinches > kPinchThreshold) {
         stPinchThreadSet_joinTrivialBoundaries(threadSet);
         g_numPinches = 0;
     }
-    de_debug("exiting processPairForPinching()...\n");
+    // de_debug("exiting processPairForPinching()...\n");
 }
 static void printMatrix(char **mat, uint32_t n) {
     fprintf(stderr, "printMatrix()\n");
@@ -575,9 +588,27 @@ static void printu32Array(uint32_t *a, uint32_t n) {
     for (uint32_t i = 0; i < n; ++i)
         fprintf(stderr, "%" PRIu32 "%s", a[i], (i == n - 1) ? "\n" : ", ");
 }
+mafCoordinatePair_t* newCoordinatePairArray(uint32_t numSeqs, char **seqs) {
+    // create a new array of mafCoordinatePair_t* and then initialize it using the 
+    // decomposed information from the mafBlock_t (strands, starts, sourceLengths, seqs, etc)
+    mafCoordinatePair_t *a = (mafCoordinatePair_t*) de_malloc(sizeof(*a) * numSeqs);
+    uint32_t pos;
+    for (uint32_t i = 0; i < numSeqs; ++i) {
+        pos = 0;
+        while ((seqs[i][pos] == '-') && (pos < strlen(seqs[i]))) {
+            ++pos;
+        }
+        a[i].a = pos;
+        a[i].b = 0;
+    }
+    return a;
+}
+void destroyCoordinatePairArray(mafCoordinatePair_t *cp) {
+    free(cp);
+}
 void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     // for a given block, add the alignment information to the threadset.
-    de_debug("walkBlockAddingAlignments()\n");
+    // de_debug("walkBlockAddingAlignments()\n");
     if (!maf_mafBlock_containsSequence(mb))
         return;
     uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
@@ -586,7 +617,10 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     char *strands = maf_mafBlock_getStrandArray(mb);
     char **names = maf_mafBlock_getSpeciesMatrix(mb);
     uint32_t *starts = maf_mafBlock_getStartArray(mb);
-    uint32_t *lengths = maf_mafBlock_getSourceLengthArray(mb);
+    uint32_t *sourceLengths = maf_mafBlock_getSourceLengthArray(mb);
+    // coordinate bookmarks are used to store the mapping between local block position
+    // and sequence coordinate positions. 
+    mafCoordinatePair_t *bookmarks = newCoordinatePairArray(numSeqs, mat);
     // comparison order coordinates are relative to the block
     mafTcComparisonOrder_t *co = getComparisonOrderFromMatrix(mat, numSeqs, seqFieldLength);
     mafTcComparisonOrder_t *c = co;
@@ -602,9 +636,9 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
             de_debug("going to pinch ref %" PRIu32 ":%s to %" PRIu32 ":%s\n", c->ref, names[c->ref], r, names[r]);
             de_debug("a %" PRIu32 ": %s\n", c->ref, mat[c->ref]);
             de_debug("b %" PRIu32 ": %s\n", r, mat[r]);
-            processPairForPinching(threadSet, a, starts[c->ref], lengths[c->ref], strands[c->ref],
-                                   mat[c->ref], b, starts[r], lengths[r], strands[r], mat[r], c->region->start,
-                                   c->region->end);
+            processPairForPinching(threadSet, a, starts[c->ref], sourceLengths[c->ref], strands[c->ref],
+                                   mat[c->ref], b, starts[r], sourceLengths[r], strands[r], mat[r], 
+                                   c->region->start, c->region->end, bookmarks[c->ref], bookmarks[r]);
         }
         c = c->next;
     }
@@ -614,7 +648,8 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     maf_mafBlock_destroySequenceMatrix(mat, maf_mafBlock_getNumberOfSequences(mb));
     free(strands);
     free(starts);
-    free(lengths);
+    free(sourceLengths);
+    destroyCoordinatePairArray(bookmarks);
     for (uint32_t i = 0; i < numSeqs; ++i) {
         free(names[i]);
     }
@@ -623,13 +658,14 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
 void addAlignmentsToThreadSet(mafFileApi_t *mfa, stPinchThreadSet *threadSet) {
     mafBlock_t *mb = NULL;
     while ((mb = maf_readBlock(mfa)) != NULL) {
-        de_debug("addAlignmentsToThreadSet(), read a block\n");
+        // de_debug("addAlignmentsToThreadSet(), read a block\n");
         walkBlockAddingAlignments(mb, threadSet);
         maf_destroyMafBlockList(mb);
     }
     stPinchThreadSet_joinTrivialBoundaries(threadSet);
 }
 uint32_t getMaxNameLength(stHash *hash) {
+    // utility function to find out the length of the longest sequence name in the hash.
     stHashIterator *hit = stHash_getIterator(hash);
     char *key = NULL;
     uint32_t max = 0;
@@ -642,6 +678,7 @@ uint32_t getMaxNameLength(stHash *hash) {
 }
 void getMaxFieldLengths(stHash *hash, stHash *nameHash, stPinchBlock *block, uint32_t *maxStart, 
                         uint32_t *maxLength, uint32_t *maxSource) {
+    // utility function to find out the length of the longest field members.
     stPinchBlockIt thisSegIt = stPinchBlock_getSegmentIterator(block);
     stPinchSegment *thisSeg = NULL;
     *maxStart = 0;
@@ -678,6 +715,8 @@ void getMaxFieldLengths(stHash *hash, stHash *nameHash, stPinchBlock *block, uin
     }
 }
 char* getSequenceSubset(char *seq, int64_t start, char strand, int64_t length) {
+    // used to extract a copy of a small subset of a sequnce, for use when printing
+    // out an alignment.
     char *out = (char*) de_malloc(sizeof(*out) * length + 1);
     int64_t i, j;
     for (i = start, j = 0; i < start + length; ++i, ++j) {
@@ -685,10 +724,12 @@ char* getSequenceSubset(char *seq, int64_t start, char strand, int64_t length) {
     }
     out[j] = '\0';
     if (strand == '-')
-        reverseComplementSequence(out);
+        reverseComplementSequence(out, strlen(out));
     return out;
 }
 void reportTransitiveClosure(stPinchThreadSet *threadSet, stHash *hash, stHash *nameHash) {
+    // walk the completed threadSet and report back the blocks that form the transitive closure
+    // of the alignment.
     stPinchThreadSetBlockIt thisBlockIt = stPinchThreadSet_getBlockIt(threadSet);
     stPinchBlock *thisBlock = NULL;
     stPinchBlockIt thisSegIt;
@@ -696,8 +737,6 @@ void reportTransitiveClosure(stPinchThreadSet *threadSet, stHash *hash, stHash *
     char *key = NULL;
     char *seq = NULL;
     char strand = '\0';
-    (void) hash;
-    (void) nameHash;
     printf("##maf version=1\n");
     printf("# mafTransitiveClosure %s\n\n", kVersion);
     uint32_t maxNameLength, maxStartLength, maxLengthLength, maxSourceLengthLength;
