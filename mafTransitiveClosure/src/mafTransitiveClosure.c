@@ -155,14 +155,14 @@ mafTcComparisonOrder_t* newMafTcComparisonOrder(void) {
 }
 static void printRegion(mafTcRegion_t *reg) {
     while (reg != NULL) {
-        // de_debug("  s: %3" PRIu32 " e: %3" PRIu32 "\n", reg->start, reg->end);
+        de_debug("  s: %3" PRIu32 " e: %3" PRIu32 "\n", reg->start, reg->end);
         reg = reg->next;
     }
 }
 static void printComparisonOrder(mafTcComparisonOrder_t *co) {
-    // de_debug("printComparisonOrder()\n");
+    de_debug("printComparisonOrder()\n");
     while (co != NULL) {
-        // de_debug(" ref: %2" PRIu32 " \n", co->ref);
+        de_debug(" ref: %2" PRIu32 " \n", co->ref);
         printRegion(co->region);
         co = co->next;
     }
@@ -362,65 +362,57 @@ mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row,
                                          mafTcComparisonOrder_t **done, mafTcRegion_t *todo) {
     // proudce a comparison order given a sequence matrix (mat), a row index (row), a list of already
     // completed regions (done) and a list of regions that still need to be done (todo)
-    mafTcRegion_t *todoReg = NULL, *newTodo = NULL, *newTodoTail = NULL;
+    mafTcRegion_t *newTodo = NULL, *newTodoTail = NULL;
     mafTcRegion_t *headTodo = todo;
     mafTcComparisonOrder_t *co = NULL;
     bool inGap;
-    // de_debug("getComparisonOrderFromRow(mat, %u, done, todo)\n", row);
+    de_debug("getComparisonOrderFromRow(mat, %u, done, todo)\n", row);
     while (todo != NULL) {
         // walk the todo linked list and see if we can fill in any regions with the current row.
-        // de_debug("starting to walk todo [%" PRIu32 ", %" PRIu32 "]\n", todo->start, todo->end);
+        de_debug("starting to walk todo [%" PRIu32 ", %" PRIu32 "]\n", todo->start, todo->end);
         inGap = false;
         for (uint32_t i = todo->start; i <= todo->end; ++i) {
             // walk the current region.
-            // de_debug("position %" PRIu32 "\n", i);
+            de_debug("position %" PRIu32 "\n", i);
             if (mat[row][i] == '-') {
                 // inside a gap region
-                // de_debug("now inside a gap region\n");
+                de_debug("now inside a gap region\n");
                 if (!inGap) {
-                    // de_debug("previously was not inGap\n");
+                    de_debug("previously was not inGap\n");
                     // transition from sequence into gap
                     // no matter what we create a new todoRegion:
                     inGap = true;
-                    if (todoReg != NULL) {
-                        // de_debug("todoReg != NULL, advancing pointer and creating "
-                        //          "new todoReg at %" PRIu32 "\n", i);
-                        todoReg->next = newMafTcRegion(i, i);
-                        todoReg = todoReg->next;
+                    if (newTodo == NULL) {
+                        de_debug("newTodo == NULL, creating newTodo & tail at %" PRIu32 "\n", i);
+                        newTodo = newMafTcRegion(i, i);
+                        newTodoTail = newTodo;
                     } else {
-                        if (newTodoTail != NULL) {
-                            newTodoTail->next = newMafTcRegion(i, i);
-                            todoReg = newTodoTail;
-                            newTodoTail = NULL;
-                        } else { 
-                            todoReg = newMafTcRegion(i, i);
-                        }
-                        // de_debug("todoReg == NULL, creating new todoReg at %" PRIu32 "\n", i);
+                        de_debug("newTodo != NULL, creating new newTodoTail at %" PRIu32 "\n", i);
+                        newTodoTail->next = newMafTcRegion(i, i);
+                        newTodoTail = newTodoTail->next;
                     }
-                    // de_debug("current newTodo:\n");
-                    // printRegion(newTodo);
                 } else {
-                    // de_debug("remaining inGap, extending gap end to %" PRIu32 "\n", i);
+                    de_debug("remaining inGap, extending gap end to %" PRIu32 "\n", i);
                     // remain in gap
-                    todoReg->end = i;
+                    de_debug("newTodoTail->start: %" PRIu32 ", ->end: %" PRIu32 "\n", 
+                             newTodoTail->start, newTodoTail->end);
+                    newTodoTail->end = i;
+                    de_debug("newTodoTail->start: %" PRIu32 ", ->end: %" PRIu32 "\n", 
+                             newTodoTail->start, newTodoTail->end);
                 }
-                if (newTodo == NULL) {
-                    // de_debug("newTodo == NULL, copying todoReg at %" PRIu32 "\n", i);
-                    newTodo = todoReg;
-                    // de_debug("current newTodo:\n");
-                    // printRegion(newTodo);
-                }
+                de_debug("current newTodo:\n");
+                printRegion(newTodo);
             } else {
-                // de_debug("now inside a sequence region\n");
+                de_debug("now inside a sequence region\n");
                 // inside a sequence region
                 if (inGap) {
-                    // de_debug("previously was inGap\n");
+                    de_debug("previously was inGap\n");
                     // transition from gap to sequence
                     inGap = false;
                     co = newMafTcComparisonOrder();
                     co->ref = row;
                     co->region = newMafTcRegion(i, i);
-                    // de_debug("creating new region for row:%" PRIu32 ", position %" PRIu32 "\n", row, i);
+                    de_debug("creating new region for row:%" PRIu32 ", position %" PRIu32 "\n", row, i);
                     // insert into the start of the list
                     if (done != NULL) {
                         // de_debug("done != NULL, inserting this comparison into the start of the list.\n");
@@ -428,37 +420,30 @@ mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row,
                     }
                     *done = co;
                 } else {
-                    // de_debug("remaining in sequence\n");
+                    de_debug("remaining in sequence\n");
                     // remain in sequence
                     if (co != NULL) {
-                        // de_debug("co != NULL, moving ref:%" PRIu32 " with "
-                        //          "start %" PRIu32 ", end to %" PRIu32 "\n", co->ref, co->region->start, i);
+                        de_debug("co != NULL, moving ref:%" PRIu32 " with "
+                                 "start %" PRIu32 ", end to %" PRIu32 "\n", co->ref, co->region->start, i);
                         co->region->end = i;
                     } else {
-                        // de_debug("co == NULL, ref: %" PRIu32 ", must create new region at %" PRIu32 "\n", 
-                        //          row, i);
+                        de_debug("co == NULL, ref: %" PRIu32 ", must create new region at %" PRIu32 "\n", 
+                                 row, i);
                         co = newMafTcComparisonOrder();
                         co->ref = row;
                         co->region = newMafTcRegion(i, i);
                         // insert into the start of the `done' list
                         if (done != NULL) {
-                            // de_debug("done != NULL, inserting this comparison into head of list\n");
+                            de_debug("done != NULL, inserting this comparison into head of list\n");
                             co->next = *done;
                         } else {
-                            // de_debug("done == NULL, inserting a new comparison into head of list\n");
+                            de_debug("done == NULL, inserting a new comparison into head of list\n");
                             done = (mafTcComparisonOrder_t **) de_malloc(sizeof(*done));
                         }
                         *done = co;
                     }
                 }
             }
-        }
-        if (todoReg != NULL) {
-            // set up for the next todo region
-            newTodoTail = todoReg;
-            todoReg = NULL;
-            // de_debug("resetting todoReg. Current newTodo:\n");
-            // printRegion(newTodo);
         }
         co = NULL;
         todo = todo->next;
