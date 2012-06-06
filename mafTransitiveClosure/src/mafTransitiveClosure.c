@@ -39,6 +39,10 @@
 const uint32_t kPinchThreshold = 50000000;
 const char *kVersion = "v0.1 June 2012";
 
+void updateVizMatrix(int **mat, mafTcComparisonOrder_t *co);
+void printVizMatrix(int **mat, uint32_t n, uint32_t m);
+int** getVizMatrix(mafBlock_t *mb, unsigned n, unsigned m);
+
 void parseOptions(int argc, char **argv, char *filename) {
     int c;
     int setMName = 0;
@@ -333,12 +337,15 @@ stPinchThreadSet* buildThreadSet(stHash *hash) {
     stHash_destructIterator(hit);
     return ts;
 }
-mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint32_t rowLength, uint32_t colLength) {
+mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint32_t rowLength, uint32_t colLength, 
+                                                     int **vizMat) {
     mafTcRegion_t *todo = newMafTcRegion(0, colLength - 1); // the entire region needs to be done
     mafTcComparisonOrder_t *co = NULL;
     uint32_t r = 0;
     while (todo != NULL && r < rowLength) {
         todo = getComparisonOrderFromRow(mat, r++, &co, todo);
+        updateVizMatrix(vizMat, co);
+        printVizMatrix(vizMat, rowLength, colLength);
     }
     destroyMafTcRegionList(todo);
     return co;
@@ -607,6 +614,62 @@ mafCoordinatePair_t* newCoordinatePairArray(uint32_t numSeqs, char **seqs) {
 void destroyCoordinatePairArray(mafCoordinatePair_t *cp) {
     free(cp);
 }
+int** getVizMatrix(mafBlock_t *mb, unsigned n, unsigned m) {
+    // currently this is not stored and must be built
+    // should return a matrix containing the alignment, one row per sequence
+    int** matrix = NULL;
+    matrix = (int**) de_malloc(sizeof(int*) * n);
+    unsigned i;
+    char *s = NULL;
+    for (i = 0; i < n; ++i)
+        matrix[i] = (int*) de_malloc(sizeof(int) * m);
+    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
+    i = 0;
+    while (ml != NULL) {
+        while (maf_mafLine_getType(ml) != 's') {
+            ml = maf_mafLine_getNext(ml);
+        }
+        s = maf_mafLine_getSequence(ml);
+        for (unsigned j = 0; j < strlen(s); ++j) {
+            if (s[j] == '-') {
+                matrix[i][j] = 0;
+            } else {
+                matrix[i][j] = 1;
+            }
+        }
+        ++i;
+        ml = maf_mafLine_getNext(ml);
+    }
+    return matrix;
+}
+void updateVizMatrix(int **mat, mafTcComparisonOrder_t *co) {
+    while (co != NULL) {
+        for (uint32_t i = co->region->start; i <= co->region->end; ++i) {
+            mat[co->ref][i] = 2;
+        }
+        co = co->next;
+    }
+}
+void printVizMatrix(int **mat, uint32_t n, uint32_t m) {
+    for (uint32_t i = 0; i < n; ++i) {
+        for (uint32_t j = 0; j < m; ++j) {
+            if (mat[i][j] == 0) {
+                printf("-");
+            } else if (mat[i][j] == 1) {
+                printf(".");
+            } else if (mat[i][j] == 2) {
+                printf("*");
+            }
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+void destroyVizMatrix(int **mat, unsigned n) {
+    for (unsigned i = 0; i < n; ++i)
+        free(mat[i]);
+    free(mat);
+}
 void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     // for a given block, add the alignment information to the threadset.
     // de_debug("walkBlockAddingAlignments()\n");
@@ -615,6 +678,7 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
     uint32_t seqFieldLength = maf_mafBlock_longestSequenceField(mb);
     char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
+    int **viz = getVizMatrix(mb, numSeqs, seqFieldLength);
     char *strands = maf_mafBlock_getStrandArray(mb);
     char **names = maf_mafBlock_getSpeciesMatrix(mb);
     uint32_t *starts = maf_mafBlock_getStartArray(mb);
@@ -623,7 +687,7 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     // and sequence coordinate positions. 
     mafCoordinatePair_t *bookmarks = newCoordinatePairArray(numSeqs, mat);
     // comparison order coordinates are relative to the block
-    mafTcComparisonOrder_t *co = getComparisonOrderFromMatrix(mat, numSeqs, seqFieldLength);
+    mafTcComparisonOrder_t *co = getComparisonOrderFromMatrix(mat, numSeqs, seqFieldLength, viz);
     mafTcComparisonOrder_t *c = co;
     stPinchThread *a = NULL, *b = NULL;
     while (c != NULL) {
@@ -646,7 +710,8 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     
     // cleanup
     destroyMafTcComparisonOrder(co);
-    maf_mafBlock_destroySequenceMatrix(mat, maf_mafBlock_getNumberOfSequences(mb));
+    maf_mafBlock_destroySequenceMatrix(mat, numSeqs);
+    destroyVizMatrix(viz, numSeqs);
     free(strands);
     free(starts);
     free(sourceLengths);

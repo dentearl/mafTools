@@ -189,6 +189,43 @@ static void test_rowAlignmentBlockComparisonOrdering_2(CuTest *testCase) {
     destroyMafTcRegionList(expectedTodo);
     destroyMafTcRegionList(todo);
 }
+static void test_matrixAlignmentBlockComparisonOrdering_0(CuTest *testCase) {
+    // test that with known input that known output is generated.
+    char **input = (char**) de_malloc(2 * sizeof(char*));
+    input[0] = de_strdup("AC---ACG-G");
+    input[1] = de_strdup("ACTG--CGGG");
+    mafTcComparisonOrder_t *obsOrder = NULL;
+    obsOrder = getComparisonOrderFromMatrix(input, 2, 10);
+    CuAssertTrue(testCase, obsOrder != NULL);
+    mafTcComparisonOrder_t *expectedOrder = newMafTcComparisonOrder();
+    mafTcComparisonOrder_t *eo = expectedOrder;
+    eo->ref = 1;
+    eo->region = newMafTcRegion(8, 8);
+    eo->next = newMafTcComparisonOrder();
+    eo = eo->next;
+    eo->ref = 1;
+    eo->region = newMafTcRegion(2, 3);
+    eo->next = newMafTcComparisonOrder();
+    eo = eo->next;
+    eo->ref = 0;
+    eo->region = newMafTcRegion(9, 9);
+    eo->next = newMafTcComparisonOrder();
+    eo = eo->next;
+    eo->ref = 0;
+    eo->region = newMafTcRegion(5, 7);
+    eo->next = newMafTcComparisonOrder();
+    eo = eo->next;
+    eo->ref = 0;
+    eo->region = newMafTcRegion(0, 1);
+    eo = eo->next;
+    CuAssertTrue(testCase, comparisonOrdersAreEqual(expectedOrder, obsOrder));
+    // cleanup
+    free(input[0]);
+    free(input[1]);
+    free(input);
+    destroyMafTcComparisonOrder(expectedOrder);
+    destroyMafTcComparisonOrder(obsOrder);
+}
 static void test_matrixAlignmentBlockComparisonOrdering_1(CuTest *testCase) {
     // test that with known input that known output is generated.
     char **input = (char**) de_malloc(4 * sizeof(char*));
@@ -340,39 +377,56 @@ static void test_matrixAlignmentBlockComparisonOrdering_2(CuTest *testCase) {
     destroyMafTcComparisonOrder(expectedOrder);
     destroyMafTcComparisonOrder(obsOrder);
 }
-static void test_matrixAlignmentBlockComparisonOrdering_0(CuTest *testCase) {
+static void test_matrixAlignmentBlockComparisonOrdering_3(CuTest *testCase) {
     // test that with known input that known output is generated.
-    char **input = (char**) de_malloc(2 * sizeof(char*));
-    input[0] = de_strdup("AC---ACG-G");
-    input[1] = de_strdup("ACTG--CGGG");
+    char **input = (char**) de_malloc(5 * sizeof(char*));
+    input[0] = de_strdup("AATTG-----TCTCTCCCC--CTTTTT");
+    input[1] = de_strdup("AATTGTC-----TCTGGCC--TTAATT");
+    input[2] = de_strdup("CCCGGAGAG-----ACAAC--CTAATT");
+    input[3] = de_strdup("ATTTAAATTTA-----GAG--ACAATC");
+    input[4] = de_strdup("CCGGC-------GGTTGGGTTGTCTCT");
     mafTcComparisonOrder_t *obsOrder = NULL;
-    obsOrder = getComparisonOrderFromMatrix(input, 2, 10);
+    obsOrder = getComparisonOrderFromMatrix(input, 5, 27);
     CuAssertTrue(testCase, obsOrder != NULL);
     mafTcComparisonOrder_t *expectedOrder = newMafTcComparisonOrder();
     mafTcComparisonOrder_t *eo = expectedOrder;
-    eo->ref = 1;
-    eo->region = newMafTcRegion(8, 8);
+    eo->ref = 4;
+    eo->region = newMafTcRegion(19, 20);
+    
     eo->next = newMafTcComparisonOrder();
     eo = eo->next;
-    eo->ref = 1;
-    eo->region = newMafTcRegion(2, 3);
-    eo->next = newMafTcComparisonOrder();
-    eo = eo->next;
-    eo->ref = 0;
+    eo->ref = 3;
     eo->region = newMafTcRegion(9, 9);
+    
+    eo->next = newMafTcComparisonOrder();
+    eo = eo->next;
+    eo->ref = 2;
+    eo->region = newMafTcRegion(7, 8);
+    
+    eo->next = newMafTcComparisonOrder();
+    eo = eo->next;
+    eo->ref = 1;
+    eo->region = newMafTcRegion(5, 6);
+    
     eo->next = newMafTcComparisonOrder();
     eo = eo->next;
     eo->ref = 0;
-    eo->region = newMafTcRegion(5, 7);
+    eo->region = newMafTcRegion(21, 26);
+    
     eo->next = newMafTcComparisonOrder();
     eo = eo->next;
     eo->ref = 0;
-    eo->region = newMafTcRegion(0, 1);
+    eo->region = newMafTcRegion(10, 18);
+    
+    eo->next = newMafTcComparisonOrder();
     eo = eo->next;
+    eo->ref = 0;
+    eo->region = newMafTcRegion(0, 4);
+    
     CuAssertTrue(testCase, comparisonOrdersAreEqual(expectedOrder, obsOrder));
     // cleanup
-    free(input[0]);
-    free(input[1]);
+    for (int i = 0; i < 5; ++i)
+        free(input[i]);
     free(input);
     destroyMafTcComparisonOrder(expectedOrder);
     destroyMafTcComparisonOrder(obsOrder);
@@ -585,6 +639,7 @@ CuSuite* mafTransitiveClosure_TestSuite(void) {
     SUITE_ADD_TEST(suite, test_matrixAlignmentBlockComparisonOrdering_0);
     SUITE_ADD_TEST(suite, test_matrixAlignmentBlockComparisonOrdering_1);
     SUITE_ADD_TEST(suite, test_matrixAlignmentBlockComparisonOrdering_2);
+    SUITE_ADD_TEST(suite, test_matrixAlignmentBlockComparisonOrdering_3);
     SUITE_ADD_TEST(suite, test_addSequenceValuesToMtcSeq_0);
     SUITE_ADD_TEST(suite, test_localSeqCoords_0);
     SUITE_ADD_TEST(suite, test_localSeqCoordsToGlobalPositiveCoords_0);
