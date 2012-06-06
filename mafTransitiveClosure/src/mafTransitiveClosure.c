@@ -500,6 +500,7 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
     // perform a pinch operation for regions of bSeq that are not gaps, i.e. `-'
     // GlobalStart is the positive strand position (zero based) coordinate of the start of this block
     // de_debug("processPairForPinching() g_numPinches: %u\n", g_numPinches);
+    (void) (threadSet);
     uint32_t length = 0, localPos = 0;
     uint32_t localBlockStart = localPos;
     de_debug("aGlobalStart: %" PRIu32 ", bGlobalStart: %" PRIu32 ", pos & regionStart: %" PRIu32 ", regionEnd: %" PRIu32 "\n", 
@@ -533,10 +534,10 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
                                                                               bStrand,length),
                                     length, (aStrand == bStrand));
                 ++g_numPinches;
-                if (g_numPinches > kPinchThreshold) {
-                    stPinchThreadSet_joinTrivialBoundaries(threadSet);
-                    g_numPinches = 0;
-                }
+                /* if (g_numPinches > kPinchThreshold) { */
+                /*     stPinchThreadSet_joinTrivialBoundaries(threadSet); */
+                /*     g_numPinches = 0; */
+                /* } */
                 length = 0;
             }
         } else {
@@ -572,10 +573,10 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
                             length, (aStrand == bStrand));
         ++g_numPinches;
     }
-    if (g_numPinches > kPinchThreshold) {
-        stPinchThreadSet_joinTrivialBoundaries(threadSet);
-        g_numPinches = 0;
-    }
+    /* if (g_numPinches > kPinchThreshold) { */
+    /*     stPinchThreadSet_joinTrivialBoundaries(threadSet); */
+    /*     g_numPinches = 0; */
+    /* } */
     // de_debug("exiting processPairForPinching()...\n");
 }
 static void printMatrix(char **mat, uint32_t n) {
