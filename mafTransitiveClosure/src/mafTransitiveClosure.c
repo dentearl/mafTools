@@ -645,6 +645,9 @@ int** getVizMatrix(mafBlock_t *mb, unsigned n, unsigned m) {
     return matrix;
 }
 void updateVizMatrix(int **mat, mafTcComparisonOrder_t *co) {
+    // given an int matrix that contains debug information about a block and 
+    // a comparison order list that contains information about which sequence
+    // segments to use as reference for pinches, update the matrix.
     while (co != NULL) {
         for (uint32_t i = co->region->start; i <= co->region->end; ++i) {
             mat[co->ref][i] = 2;
@@ -698,9 +701,9 @@ void destroyVizMatrix(int **mat, unsigned n) {
 void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     // for a given block, add the alignment information to the threadset.
     // de_debug("walkBlockAddingAlignments()\n");
-    if (!maf_mafBlock_containsSequence(mb))
-        return;
     uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
+    if (numSeqs < 1) 
+        return;
     uint32_t seqFieldLength = maf_mafBlock_longestSequenceField(mb);
     char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
     int **vizMat = NULL;
@@ -752,7 +755,6 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
 void addAlignmentsToThreadSet(mafFileApi_t *mfa, stPinchThreadSet *threadSet) {
     mafBlock_t *mb = NULL;
     while ((mb = maf_readBlock(mfa)) != NULL) {
-        // de_debug("addAlignmentsToThreadSet(), read a block\n");
         walkBlockAddingAlignments(mb, threadSet);
         maf_destroyMafBlockList(mb);
     }
