@@ -511,6 +511,7 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
     (void) (threadSet);
     uint32_t length = 0, localPos = 0;
     uint32_t localBlockStart = localPos;
+    int64_t aLocalPosCoords, bLocalPosCoords, aGlobalPosCoords, bGlobalPosCoords;
     de_debug("aGlobalStart: %" PRIu32 ", bGlobalStart: %" PRIu32 ", pos & regionStart: %" PRIu32 ", regionEnd: %" PRIu32 "\n", 
              aGlobalStart, bGlobalStart, regionStart, regionEnd);
     de_debug("aSeq: %s\n", aSeq);
@@ -521,26 +522,19 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
         if (bSeq[localPos] == '-') {
             if (inBlock) {
                 inBlock = false;
+                aLocalPosCoords = localSeqCoords(localBlockStart, aSeq, &aBookmark);
+                aGlobalPosCoords = localSeqCoordsToGlobalPositiveStartCoords(aLocalPosCoords, aGlobalStart, 
+                                                                             aGlobalLength, aStrand, length);
+                bLocalPosCoords = localSeqCoords(localBlockStart, bSeq, &bBookmark);
+                bGlobalPosCoords = localSeqCoordsToGlobalPositiveStartCoords(bLocalPosCoords, bGlobalStart, 
+                                                                             bGlobalLength, bStrand, length);
                 de_debug("bSeq[pos] == - && inBlock\n");
                 de_debug("maybe little pinch (#1)? p:%" PRIu32 ", l:%" PRIu32 "\n", localBlockStart, length);
                 de_debug("a coords local: %" PRIi64 " global: %" PRIi64
                          ", b coords local: %" PRIi64 ", global: %" PRIi64 "\n",
-                         localSeqCoords(localBlockStart, aSeq, &aBookmark),
-                         localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, aSeq, &aBookmark),
-                                                              aGlobalStart, aGlobalLength, aStrand, length),
-                         localSeqCoords(localBlockStart, bSeq, &bBookmark),
-                         localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, bSeq, &bBookmark),
-                                                                   bGlobalStart, bGlobalLength, bStrand, length));
-                stPinchThread_pinch(a, b,
-                                    localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, aSeq, &aBookmark), 
-                                                                              aGlobalStart,
-                                                                              aGlobalLength,
-                                                                              aStrand, length),
-                                    localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, bSeq, &bBookmark),
-                                                                              bGlobalStart,
-                                                                              bGlobalLength,
-                                                                              bStrand,length),
-                                    length, (aStrand == bStrand));
+                         aLocalPosCoords, aGlobalPosCoords, bLocalPosCoords, bGlobalPosCoords);
+                         
+                stPinchThread_pinch(a, b, aGlobalPosCoords, bGlobalPosCoords, length, (aStrand == bStrand));
                 ++g_numPinches;
                 /* if (g_numPinches > kPinchThreshold) { */
                 /*     stPinchThreadSet_joinTrivialBoundaries(threadSet); */
@@ -560,25 +554,18 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
     de_debug("done walking comparison region\n");
     if (inBlock) {
         inBlock = false;
+        aLocalPosCoords = localSeqCoords(localBlockStart, aSeq, &aBookmark);
+        aGlobalPosCoords = localSeqCoordsToGlobalPositiveStartCoords(aLocalPosCoords, aGlobalStart, 
+                                                                     aGlobalLength, aStrand, length);
+        bLocalPosCoords = localSeqCoords(localBlockStart, bSeq, &bBookmark);
+        bGlobalPosCoords = localSeqCoordsToGlobalPositiveStartCoords(bLocalPosCoords, bGlobalStart, 
+                                                                     bGlobalLength, bStrand, length);
         de_debug("maybe little pinch (#2)? p:%" PRIu32 ", l:%" PRIu32 "\n", localBlockStart, length);
-        de_debug("a coords local: %" PRIi64 " global: %" PRIi64 "\n", 
-                 localSeqCoords(localBlockStart, aSeq, &aBookmark),
-                 localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, aSeq, &aBookmark),
-                                                           aGlobalStart, aGlobalLength, aStrand, length));
-        de_debug("b coords local: %" PRIi64 ", global: %" PRIi64 "\n",
-                 localSeqCoords(localBlockStart, bSeq, &bBookmark),
-                 localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, bSeq, &bBookmark),
-                                                           bGlobalStart, bGlobalLength, bStrand, length));
-        stPinchThread_pinch(a, b,
-                            localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, aSeq, &aBookmark), 
-                                                                      aGlobalStart,
-                                                                      aGlobalLength,
-                                                                      aStrand, length),
-                            localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localBlockStart, bSeq, &bBookmark),
-                                                                      bGlobalStart,
-                                                                      bGlobalLength,
-                                                                      bStrand, length),
-                            length, (aStrand == bStrand));
+        de_debug("a coords local: %" PRIi64 " global: %" PRIi64
+                         ", b coords local: %" PRIi64 ", global: %" PRIi64 "\n",
+                         aLocalPosCoords, aGlobalPosCoords, bLocalPosCoords, bGlobalPosCoords);
+        stPinchThread_pinch(a, b, aGlobalPosCoords, bGlobalPosCoords, length, (aStrand == bStrand));
+        length = 0;
         ++g_numPinches;
     }
     /* if (g_numPinches > kPinchThreshold) { */
@@ -701,7 +688,7 @@ void destroyVizMatrix(int **mat, unsigned n) {
 }
 void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     // for a given block, add the alignment information to the threadset.
-    // de_debug("walkBlockAddingAlignments()\n");
+    de_debug("walkBlockAddingAlignments():\n");
     uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
     if (numSeqs < 1) 
         return;
@@ -720,6 +707,7 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     mafCoordinatePair_t *bookmarks = newCoordinatePairArray(numSeqs, mat);
     // comparison order coordinates are relative to the block
     mafTcComparisonOrder_t *c = getComparisonOrderFromMatrix(mat, numSeqs, seqFieldLength, vizMat);
+    de_debug("comparisonOrder_t obtained\n");
     mafTcComparisonOrder_t *tmp = NULL;
     stPinchThread *a = NULL, *b = NULL;
     while (c != NULL) {
