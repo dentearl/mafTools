@@ -253,8 +253,9 @@ char** maf_mafBlock_getSequenceMatrix(mafBlock_t *mb, unsigned n, unsigned m) {
     char** matrix = NULL;
     matrix = (char**) de_malloc(sizeof(char*) * n);
     unsigned i;
-    for (i = 0; i < n; ++i)
+    for (i = 0; i < n; ++i) {
         matrix[i] = (char*) de_malloc(sizeof(char) * (m + 1));
+    }
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     i = 0;
     while (ml != NULL) {

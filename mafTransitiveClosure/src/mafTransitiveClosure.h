@@ -92,7 +92,7 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet);
 void addAlignmentsToThreadSet(mafFileApi_t *mfa, stPinchThreadSet *threadSet);
 void createSequenceHash(mafFileApi_t *mfa, stHash **hash, stHash **nameHash);
 mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row, mafTcComparisonOrder_t **done, mafTcRegion_t *todo);
-mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint32_t rowLength, uint32_t colLength);
+mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint32_t rowLength, uint32_t colLength, int **vizMat);
 void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint32_t aGlobalStart, 
                             uint32_t aGlobalLength, int aStrand, 
                             char *aSeq, stPinchThread *b, uint32_t bGlobalStart, uint32_t bGlobalLength,

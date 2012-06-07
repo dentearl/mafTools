@@ -39,6 +39,11 @@
 const uint32_t kPinchThreshold = 50000000;
 const char *kVersion = "v0.1 June 2012";
 
+void updateVizMatrix(int **mat, mafTcComparisonOrder_t *co);
+void printVizMatrix(int **mat, uint32_t n, uint32_t m);
+void printTodoArray(mafTcRegion_t *reg, unsigned max);
+int** getVizMatrix(mafBlock_t *mb, unsigned n, unsigned m);
+
 void parseOptions(int argc, char **argv, char *filename) {
     int c;
     int setMName = 0;
@@ -150,14 +155,14 @@ mafTcComparisonOrder_t* newMafTcComparisonOrder(void) {
 }
 static void printRegion(mafTcRegion_t *reg) {
     while (reg != NULL) {
-        // de_debug("  s: %3" PRIu32 " e: %3" PRIu32 "\n", reg->start, reg->end);
+        de_debug("  s: %3" PRIu32 " e: %3" PRIu32 "\n", reg->start, reg->end);
         reg = reg->next;
     }
 }
 static void printComparisonOrder(mafTcComparisonOrder_t *co) {
-    // de_debug("printComparisonOrder()\n");
+    de_debug("printComparisonOrder()\n");
     while (co != NULL) {
-        // de_debug(" ref: %2" PRIu32 " \n", co->ref);
+        de_debug(" ref: %2" PRIu32 " \n", co->ref);
         printRegion(co->region);
         co = co->next;
     }
@@ -333,12 +338,22 @@ stPinchThreadSet* buildThreadSet(stHash *hash) {
     stHash_destructIterator(hit);
     return ts;
 }
-mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint32_t rowLength, uint32_t colLength) {
+mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint32_t rowLength, uint32_t colLength, 
+                                                     int **vizMat) {
     mafTcRegion_t *todo = newMafTcRegion(0, colLength - 1); // the entire region needs to be done
     mafTcComparisonOrder_t *co = NULL;
     uint32_t r = 0;
+    if (g_debug_flag) {
+        printTodoArray(todo, colLength);
+        printVizMatrix(vizMat, rowLength, colLength);
+    }
     while (todo != NULL && r < rowLength) {
         todo = getComparisonOrderFromRow(mat, r++, &co, todo);
+        if (g_debug_flag) {            
+            updateVizMatrix(vizMat, co);
+            printTodoArray(todo, colLength);
+            printVizMatrix(vizMat, rowLength, colLength);
+        }
     }
     destroyMafTcRegionList(todo);
     return co;
@@ -347,65 +362,57 @@ mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row,
                                          mafTcComparisonOrder_t **done, mafTcRegion_t *todo) {
     // proudce a comparison order given a sequence matrix (mat), a row index (row), a list of already
     // completed regions (done) and a list of regions that still need to be done (todo)
-    mafTcRegion_t *todoReg = NULL, *newTodo = NULL, *newTodoTail = NULL;
+    mafTcRegion_t *newTodo = NULL, *newTodoTail = NULL;
     mafTcRegion_t *headTodo = todo;
     mafTcComparisonOrder_t *co = NULL;
     bool inGap;
-    // de_debug("getComparisonOrderFromRow(mat, %u, done, todo)\n", row);
+    de_debug("getComparisonOrderFromRow(mat, %u, done, todo)\n", row);
     while (todo != NULL) {
         // walk the todo linked list and see if we can fill in any regions with the current row.
-        // de_debug("starting to walk todo [%" PRIu32 ", %" PRIu32 "]\n", todo->start, todo->end);
+        de_debug("starting to walk todo [%" PRIu32 ", %" PRIu32 "]\n", todo->start, todo->end);
         inGap = false;
         for (uint32_t i = todo->start; i <= todo->end; ++i) {
             // walk the current region.
-            // de_debug("position %" PRIu32 "\n", i);
+            de_debug("position %" PRIu32 "\n", i);
             if (mat[row][i] == '-') {
                 // inside a gap region
-                // de_debug("now inside a gap region\n");
+                de_debug("now inside a gap region\n");
                 if (!inGap) {
-                    // de_debug("previously was not inGap\n");
+                    de_debug("previously was not inGap\n");
                     // transition from sequence into gap
                     // no matter what we create a new todoRegion:
                     inGap = true;
-                    if (todoReg != NULL) {
-                        // de_debug("todoReg != NULL, advancing pointer and creating "
-                        //          "new todoReg at %" PRIu32 "\n", i);
-                        todoReg->next = newMafTcRegion(i, i);
-                        todoReg = todoReg->next;
+                    if (newTodo == NULL) {
+                        de_debug("newTodo == NULL, creating newTodo & tail at %" PRIu32 "\n", i);
+                        newTodo = newMafTcRegion(i, i);
+                        newTodoTail = newTodo;
                     } else {
-                        if (newTodoTail != NULL) {
-                            newTodoTail->next = newMafTcRegion(i, i);
-                            todoReg = newTodoTail;
-                            newTodoTail = NULL;
-                        } else { 
-                            todoReg = newMafTcRegion(i, i);
-                        }
-                        // de_debug("todoReg == NULL, creating new todoReg at %" PRIu32 "\n", i);
+                        de_debug("newTodo != NULL, creating new newTodoTail at %" PRIu32 "\n", i);
+                        newTodoTail->next = newMafTcRegion(i, i);
+                        newTodoTail = newTodoTail->next;
                     }
-                    // de_debug("current newTodo:\n");
-                    // printRegion(newTodo);
                 } else {
-                    // de_debug("remaining inGap, extending gap end to %" PRIu32 "\n", i);
+                    de_debug("remaining inGap, extending gap end to %" PRIu32 "\n", i);
                     // remain in gap
-                    todoReg->end = i;
+                    de_debug("newTodoTail->start: %" PRIu32 ", ->end: %" PRIu32 "\n", 
+                             newTodoTail->start, newTodoTail->end);
+                    newTodoTail->end = i;
+                    de_debug("newTodoTail->start: %" PRIu32 ", ->end: %" PRIu32 "\n", 
+                             newTodoTail->start, newTodoTail->end);
                 }
-                if (newTodo == NULL) {
-                    // de_debug("newTodo == NULL, copying todoReg at %" PRIu32 "\n", i);
-                    newTodo = todoReg;
-                    // de_debug("current newTodo:\n");
-                    // printRegion(newTodo);
-                }
+                de_debug("current newTodo:\n");
+                printRegion(newTodo);
             } else {
-                // de_debug("now inside a sequence region\n");
+                de_debug("now inside a sequence region\n");
                 // inside a sequence region
                 if (inGap) {
-                    // de_debug("previously was inGap\n");
+                    de_debug("previously was inGap\n");
                     // transition from gap to sequence
                     inGap = false;
                     co = newMafTcComparisonOrder();
                     co->ref = row;
                     co->region = newMafTcRegion(i, i);
-                    // de_debug("creating new region for row:%" PRIu32 ", position %" PRIu32 "\n", row, i);
+                    de_debug("creating new region for row:%" PRIu32 ", position %" PRIu32 "\n", row, i);
                     // insert into the start of the list
                     if (done != NULL) {
                         // de_debug("done != NULL, inserting this comparison into the start of the list.\n");
@@ -413,37 +420,30 @@ mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row,
                     }
                     *done = co;
                 } else {
-                    // de_debug("remaining in sequence\n");
+                    de_debug("remaining in sequence\n");
                     // remain in sequence
                     if (co != NULL) {
-                        // de_debug("co != NULL, moving ref:%" PRIu32 " with "
-                        //          "start %" PRIu32 ", end to %" PRIu32 "\n", co->ref, co->region->start, i);
+                        de_debug("co != NULL, moving ref:%" PRIu32 " with "
+                                 "start %" PRIu32 ", end to %" PRIu32 "\n", co->ref, co->region->start, i);
                         co->region->end = i;
                     } else {
-                        // de_debug("co == NULL, ref: %" PRIu32 ", must create new region at %" PRIu32 "\n", 
-                        //          row, i);
+                        de_debug("co == NULL, ref: %" PRIu32 ", must create new region at %" PRIu32 "\n", 
+                                 row, i);
                         co = newMafTcComparisonOrder();
                         co->ref = row;
                         co->region = newMafTcRegion(i, i);
                         // insert into the start of the `done' list
                         if (done != NULL) {
-                            // de_debug("done != NULL, inserting this comparison into head of list\n");
+                            de_debug("done != NULL, inserting this comparison into head of list\n");
                             co->next = *done;
                         } else {
-                            // de_debug("done == NULL, inserting a new comparison into head of list\n");
+                            de_debug("done == NULL, inserting a new comparison into head of list\n");
                             done = (mafTcComparisonOrder_t **) de_malloc(sizeof(*done));
                         }
                         *done = co;
                     }
                 }
             }
-        }
-        if (todoReg != NULL) {
-            // set up for the next todo region
-            newTodoTail = todoReg;
-            todoReg = NULL;
-            // de_debug("resetting todoReg. Current newTodo:\n");
-            // printRegion(newTodo);
         }
         co = NULL;
         todo = todo->next;
@@ -500,6 +500,7 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
     // perform a pinch operation for regions of bSeq that are not gaps, i.e. `-'
     // GlobalStart is the positive strand position (zero based) coordinate of the start of this block
     // de_debug("processPairForPinching() g_numPinches: %u\n", g_numPinches);
+    (void) (threadSet);
     uint32_t length = 0, localPos = 0;
     uint32_t localBlockStart = localPos;
     de_debug("aGlobalStart: %" PRIu32 ", bGlobalStart: %" PRIu32 ", pos & regionStart: %" PRIu32 ", regionEnd: %" PRIu32 "\n", 
@@ -533,10 +534,10 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
                                                                               bStrand,length),
                                     length, (aStrand == bStrand));
                 ++g_numPinches;
-                if (g_numPinches > kPinchThreshold) {
-                    stPinchThreadSet_joinTrivialBoundaries(threadSet);
-                    g_numPinches = 0;
-                }
+                /* if (g_numPinches > kPinchThreshold) { */
+                /*     stPinchThreadSet_joinTrivialBoundaries(threadSet); */
+                /*     g_numPinches = 0; */
+                /* } */
                 length = 0;
             }
         } else {
@@ -572,10 +573,10 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
                             length, (aStrand == bStrand));
         ++g_numPinches;
     }
-    if (g_numPinches > kPinchThreshold) {
-        stPinchThreadSet_joinTrivialBoundaries(threadSet);
-        g_numPinches = 0;
-    }
+    /* if (g_numPinches > kPinchThreshold) { */
+    /*     stPinchThreadSet_joinTrivialBoundaries(threadSet); */
+    /*     g_numPinches = 0; */
+    /* } */
     // de_debug("exiting processPairForPinching()...\n");
 }
 static void printMatrix(char **mat, uint32_t n) {
@@ -606,6 +607,81 @@ mafCoordinatePair_t* newCoordinatePairArray(uint32_t numSeqs, char **seqs) {
 void destroyCoordinatePairArray(mafCoordinatePair_t *cp) {
     free(cp);
 }
+int** getVizMatrix(mafBlock_t *mb, unsigned n, unsigned m) {
+    // currently this is not stored and must be built
+    // should return a matrix containing the alignment, one row per sequence
+    int** matrix = NULL;
+    matrix = (int**) de_malloc(sizeof(int*) * n);
+    unsigned i;
+    char *s = NULL;
+    for (i = 0; i < n; ++i)
+        matrix[i] = (int*) de_malloc(sizeof(int) * m);
+    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
+    i = 0;
+    while (ml != NULL) {
+        while (maf_mafLine_getType(ml) != 's') {
+            ml = maf_mafLine_getNext(ml);
+        }
+        s = maf_mafLine_getSequence(ml);
+        for (unsigned j = 0; j < strlen(s); ++j) {
+            if (s[j] == '-') {
+                matrix[i][j] = 0;
+            } else {
+                matrix[i][j] = 1;
+            }
+        }
+        ++i;
+        ml = maf_mafLine_getNext(ml);
+    }
+    return matrix;
+}
+void updateVizMatrix(int **mat, mafTcComparisonOrder_t *co) {
+    while (co != NULL) {
+        for (uint32_t i = co->region->start; i <= co->region->end; ++i) {
+            mat[co->ref][i] = 2;
+        }
+        co = co->next;
+    }
+}
+void printVizMatrix(int **mat, uint32_t n, uint32_t m) {
+    for (uint32_t i = 0; i < n; ++i) {
+        for (uint32_t j = 0; j < m; ++j) {
+            if (mat[i][j] == 0) {
+                printf("-");
+            } else if (mat[i][j] == 1) {
+                printf(".");
+            } else if (mat[i][j] == 2) {
+                printf("*");
+            }
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+void printTodoArray(mafTcRegion_t *reg, unsigned max) {
+    unsigned i = 0;
+    while (reg != NULL) {
+        while (i < reg->start) {
+            printf("_");
+            ++i;
+        }
+        while (i <= reg->end) {
+            printf("@");
+            ++i;
+        }
+        reg = reg->next;
+    }
+    while (i < max) {
+        printf("_");
+        ++i;
+    }
+    printf("\n");
+}
+void destroyVizMatrix(int **mat, unsigned n) {
+    for (unsigned i = 0; i < n; ++i)
+        free(mat[i]);
+    free(mat);
+}
 void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     // for a given block, add the alignment information to the threadset.
     // de_debug("walkBlockAddingAlignments()\n");
@@ -614,6 +690,7 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
     uint32_t seqFieldLength = maf_mafBlock_longestSequenceField(mb);
     char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
+    int **vizMat = getVizMatrix(mb, numSeqs, seqFieldLength);
     char *strands = maf_mafBlock_getStrandArray(mb);
     char **names = maf_mafBlock_getSpeciesMatrix(mb);
     uint32_t *starts = maf_mafBlock_getStartArray(mb);
@@ -622,7 +699,7 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     // and sequence coordinate positions. 
     mafCoordinatePair_t *bookmarks = newCoordinatePairArray(numSeqs, mat);
     // comparison order coordinates are relative to the block
-    mafTcComparisonOrder_t *co = getComparisonOrderFromMatrix(mat, numSeqs, seqFieldLength);
+    mafTcComparisonOrder_t *co = getComparisonOrderFromMatrix(mat, numSeqs, seqFieldLength, vizMat);
     mafTcComparisonOrder_t *c = co;
     stPinchThread *a = NULL, *b = NULL;
     while (c != NULL) {
@@ -645,7 +722,8 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     
     // cleanup
     destroyMafTcComparisonOrder(co);
-    maf_mafBlock_destroySequenceMatrix(mat, maf_mafBlock_getNumberOfSequences(mb));
+    maf_mafBlock_destroySequenceMatrix(mat, numSeqs);
+    destroyVizMatrix(vizMat, numSeqs);
     free(strands);
     free(starts);
     free(sourceLengths);
