@@ -175,6 +175,7 @@ void destroyMafTcRegion(mafTcRegion_t *r) {
     free(r);
 }
 void destroyMafTcSeq(void *p) {
+    // the extra casting here is due to the fact that this is called by the stHash destructor
     free(((mafTcSeq_t *)p)->name);
     free(((mafTcSeq_t *)p)->sequence);
     free(p);
@@ -715,11 +716,11 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     uint32_t *starts = maf_mafBlock_getStartArray(mb);
     uint32_t *sourceLengths = maf_mafBlock_getSourceLengthArray(mb);
     // coordinate bookmarks are used to store the mapping between local block position
-    // and sequence coordinate positions. 
+    // and local sequence coordinate positions, ie local block position minus gap positions.
     mafCoordinatePair_t *bookmarks = newCoordinatePairArray(numSeqs, mat);
     // comparison order coordinates are relative to the block
-    mafTcComparisonOrder_t *co = getComparisonOrderFromMatrix(mat, numSeqs, seqFieldLength, vizMat);
-    mafTcComparisonOrder_t *c = co;
+    mafTcComparisonOrder_t *c = getComparisonOrderFromMatrix(mat, numSeqs, seqFieldLength, vizMat);
+    mafTcComparisonOrder_t *tmp = NULL;
     stPinchThread *a = NULL, *b = NULL;
     while (c != NULL) {
         // de_debug("c != NULL, c->ref=%" PRIu32 ", c->region->start=%" PRIu32 " c->region->end=%" PRIu32 "\n", 
@@ -736,11 +737,12 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
                                    mat[c->ref], b, starts[r], sourceLengths[r], strands[r], mat[r], 
                                    c->region->start, c->region->end, bookmarks[c->ref], bookmarks[r]);
         }
+        tmp = c;
         c = c->next;
+        destroyMafTcRegion(tmp->region);
+        free(tmp);
     }
-    
     // cleanup
-    destroyMafTcComparisonOrder(co);
     maf_mafBlock_destroySequenceMatrix(mat, numSeqs);
     destroyVizMatrix(vizMat, numSeqs);
     free(strands);
