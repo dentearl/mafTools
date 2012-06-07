@@ -339,6 +339,21 @@ uint32_t* maf_mafBlock_getSourceLengthArray(mafBlock_t *mb) {
     }
     return a;
 }
+uint32_t* maf_mafBlock_getSequenceLengthArray(mafBlock_t *mb) {
+    // currently this is not stored and must be built
+    // should return a uint32_t array containing an in-order list of 
+    // sequence length field values
+    uint32_t *a = (uint32_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
+    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
+    unsigned i = 0;
+    while (ml != NULL) {
+        if (ml->type == 's') {
+            a[i++] = ml->length;
+        }
+        ml = ml->next;
+    }
+    return a;
+}
 char** maf_mafBlock_getSpeciesMatrix(mafBlock_t *mb) {
     // currently this is not stored and must be built
     // should return an array of char pointers containing an in-order list of 

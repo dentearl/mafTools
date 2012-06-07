@@ -58,6 +58,7 @@ char* maf_mafBlock_getStrandArray(mafBlock_t *mb);
 uint32_t* maf_mafBlock_getPosCoordStartArray(mafBlock_t *mb);
 uint32_t* maf_mafBlock_getStartArray(mafBlock_t *mb);
 uint32_t* maf_mafBlock_getSourceLengthArray(mafBlock_t *mb);
+uint32_t* maf_mafBlock_getSequenceLengthArray(mafBlock_t *mb);
 char** maf_mafBlock_getSpeciesMatrix(mafBlock_t *mb);
 mafBlock_t* maf_mafBlock_getNext(mafBlock_t *mb);
 char** maf_mafBlock_getSequenceMatrix(mafBlock_t *mb, unsigned n, unsigned m);
