@@ -102,6 +102,11 @@ int64_t localSeqCoords(uint32_t p, char *s, mafCoordinatePair_t *bookmark);
 int64_t localSeqCoordsToGlobalPositiveCoords(int64_t c, uint32_t start, uint32_t sourceLength, char strand);
 int64_t localSeqCoordsToGlobalPositiveStartCoords(int64_t c, uint32_t start, uint32_t sourceLength, 
                                                   char strand, uint32_t length);
+// debugging tools
+int** getVizMatrix(mafBlock_t *mb, unsigned n, unsigned m);
+void updateVizMatrix(int **mat, mafTcComparisonOrder_t *co);
+void printVizMatrix(int **mat, uint32_t n, uint32_t m);
+void printTodoArray(mafTcRegion_t *reg, unsigned max);
 // test suite
 CuSuite* mafTransitiveClosure_TestSuite(void);
 int mafTransitiveClosure_RunAllTests(void);

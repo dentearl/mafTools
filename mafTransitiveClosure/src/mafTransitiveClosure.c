@@ -39,11 +39,6 @@
 const uint32_t kPinchThreshold = 50000000;
 const char *kVersion = "v0.1 June 2012";
 
-void updateVizMatrix(int **mat, mafTcComparisonOrder_t *co);
-void printVizMatrix(int **mat, uint32_t n, uint32_t m);
-void printTodoArray(mafTcRegion_t *reg, unsigned max);
-int** getVizMatrix(mafBlock_t *mb, unsigned n, unsigned m);
-
 void parseOptions(int argc, char **argv, char *filename) {
     int c;
     int setMName = 0;
@@ -613,6 +608,7 @@ int** getVizMatrix(mafBlock_t *mb, unsigned n, unsigned m) {
     int** matrix = NULL;
     matrix = (int**) de_malloc(sizeof(int*) * n);
     unsigned i;
+    unsigned len;
     char *s = NULL;
     for (i = 0; i < n; ++i)
         matrix[i] = (int*) de_malloc(sizeof(int) * m);
@@ -623,7 +619,8 @@ int** getVizMatrix(mafBlock_t *mb, unsigned n, unsigned m) {
             ml = maf_mafLine_getNext(ml);
         }
         s = maf_mafLine_getSequence(ml);
-        for (unsigned j = 0; j < strlen(s); ++j) {
+        len = strlen(s);
+        for (unsigned j = 0; j < len; ++j) {
             if (s[j] == '-') {
                 matrix[i][j] = 0;
             } else {
@@ -690,7 +687,10 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
     uint32_t seqFieldLength = maf_mafBlock_longestSequenceField(mb);
     char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
-    int **vizMat = getVizMatrix(mb, numSeqs, seqFieldLength);
+    int **vizMat = NULL;
+    if (g_debug_flag) {
+        vizMat = getVizMatrix(mb, numSeqs, seqFieldLength);
+    }
     char *strands = maf_mafBlock_getStrandArray(mb);
     char **names = maf_mafBlock_getSpeciesMatrix(mb);
     uint32_t *starts = maf_mafBlock_getStartArray(mb);
@@ -703,16 +703,16 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     mafTcComparisonOrder_t *c = co;
     stPinchThread *a = NULL, *b = NULL;
     while (c != NULL) {
-        de_debug("c != NULL, c->ref=%" PRIu32 ", c->region->start=%" PRIu32 " c->region->end=%" PRIu32 "\n", 
-                 c->ref, c->region->start, c->region->end);
+        // de_debug("c != NULL, c->ref=%" PRIu32 ", c->region->start=%" PRIu32 " c->region->end=%" PRIu32 "\n", 
+        //          c->ref, c->region->start, c->region->end);
         a = stPinchThreadSet_getThread(threadSet, stHash_stringKey(names[c->ref]));
         assert(a != NULL);
         for (uint32_t r = c->ref + 1; r < numSeqs; ++r) {
             b = stPinchThreadSet_getThread(threadSet, stHash_stringKey(names[r]));
             assert(b != NULL);
-            de_debug("going to pinch ref %" PRIu32 ":%s to %" PRIu32 ":%s\n", c->ref, names[c->ref], r, names[r]);
-            de_debug("a %" PRIu32 ": %s\n", c->ref, mat[c->ref]);
-            de_debug("b %" PRIu32 ": %s\n", r, mat[r]);
+            // de_debug("going to pinch ref %" PRIu32 ":%s to %" PRIu32 ":%s\n", c->ref, names[c->ref], r, names[r]);
+            // de_debug("a %" PRIu32 ": %s\n", c->ref, mat[c->ref]);
+            // de_debug("b %" PRIu32 ": %s\n", r, mat[r]);
             processPairForPinching(threadSet, a, starts[c->ref], sourceLengths[c->ref], strands[c->ref],
                                    mat[c->ref], b, starts[r], sourceLengths[r], strands[r], mat[r], 
                                    c->region->start, c->region->end, bookmarks[c->ref], bookmarks[r]);
