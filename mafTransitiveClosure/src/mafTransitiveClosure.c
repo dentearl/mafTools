@@ -335,6 +335,18 @@ stPinchThreadSet* buildThreadSet(stHash *hash) {
 }
 mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint32_t rowLength, uint32_t colLength, 
                                                      int **vizMat) {
+    /* given a char matrix and its dimensions (and a debugging int visualization matrix) generate
+       a linked list of mafTcComparisonOrder_t that contains gapless sequences that produce coverage
+       of the entire matrix. Example:
+       ATGT---AGT--A
+       AG-GTG-AGT-TA
+       ATGTGGTAGTTTA
+       becomes, essentially:
+       ****---***--*
+       ..-.**-...-*.
+       ......*...*..
+       where * represent the comparison "reference" and . represent some non-gap character.
+    */
     mafTcRegion_t *todo = newMafTcRegion(0, colLength - 1); // the entire region needs to be done
     mafTcComparisonOrder_t *co = NULL;
     uint32_t r = 0;
@@ -675,8 +687,12 @@ void printTodoArray(mafTcRegion_t *reg, unsigned max) {
     printf("\n");
 }
 void destroyVizMatrix(int **mat, unsigned n) {
-    for (unsigned i = 0; i < n; ++i)
+    if (mat == NULL) {
+        return;
+    }
+    for (unsigned i = 0; i < n; ++i) {
         free(mat[i]);
+    }
     free(mat);
 }
 void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {

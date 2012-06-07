@@ -68,6 +68,12 @@ typedef struct mafCoordinatePair {
     uint32_t a;
     uint32_t b;
 } mafCoordinatePair_t;
+typedef struct mafRowSort {
+    /* this struct is used to sort a sequence matrix by the number of gaps in each row
+     */
+    uint32_t numGaps; // number of gaps
+    char *s; // pointer to sequence
+} mafRowSort_t;
 
 void usage(void);
 mafTcSeq_t* newMafTcSeq(char *name, unsigned length);
@@ -91,8 +97,10 @@ stPinchThreadSet* buildThreadSet(stHash *hash);
 void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet);
 void addAlignmentsToThreadSet(mafFileApi_t *mfa, stPinchThreadSet *threadSet);
 void createSequenceHash(mafFileApi_t *mfa, stHash **hash, stHash **nameHash);
-mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row, mafTcComparisonOrder_t **done, mafTcRegion_t *todo);
-mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint32_t rowLength, uint32_t colLength, int **vizMat);
+mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row, mafTcComparisonOrder_t **done, 
+                                         mafTcRegion_t *todo);
+mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint32_t rowLength, uint32_t colLength, 
+                                                     int **vizMat);
 void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint32_t aGlobalStart, 
                             uint32_t aGlobalLength, int aStrand, 
                             char *aSeq, stPinchThread *b, uint32_t bGlobalStart, uint32_t bGlobalLength,
