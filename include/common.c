@@ -90,7 +90,7 @@ char* de_strdup(const char *s) {
     strcpy(copy, s);
     return copy;
 }
-void de_message(char const *type, char const *fmt, ...) {
+static void de_message(char const *type, char const *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     fprintf(stderr, "%s: ", type);
@@ -98,33 +98,37 @@ void de_message(char const *type, char const *fmt, ...) {
     va_end(args);
 }
 void de_verbose(char const *fmt, ...) {
+    if (!g_verbose_flag) {
+        va_end(args);
+        return;
+    }
     char str[kMaxMessageLength];
     va_list args;
     va_start(args, fmt);
-    if (g_verbose_flag) {
-        int n = vsprintf(str, fmt, args);
-        if (n >= kMaxMessageLength) {
-            fprintf(stderr, "Error, failure in verbose(), (n = %d) > "
-                    "(kMaxMessageLength %d)\n", n, kMaxMessageLength);
-            exit(EXIT_FAILURE);
-        }
-        de_message("Verbose", str, args);
+    int n = vsprintf(str, fmt, args);
+    if (n >= kMaxMessageLength) {
+        fprintf(stderr, "Error, failure in verbose(), (n = %d) > "
+                "(kMaxMessageLength %d)\n", n, kMaxMessageLength);
+        exit(EXIT_FAILURE);
     }
+    de_message("Verbose", str, args);
     va_end(args);
 }
 void de_debug(char const *fmt, ...) {
+    if (!g_debug_flag) {
+        va_end(args);
+        return;
+    }
     char str[kMaxMessageLength];
     va_list args;
     va_start(args, fmt);
-    if (g_debug_flag) {
-        int n = vsprintf(str, fmt, args);
-        if (n >= kMaxMessageLength) {
-            fprintf(stderr, "Error, failure in debug(), (n = %d) > "
-                    "(kMaxMessageLength %d)\n", n, kMaxMessageLength);
-            exit(EXIT_FAILURE);
-        }
-        de_message("Debug", str, args);
+    int n = vsprintf(str, fmt, args);
+    if (n >= kMaxMessageLength) {
+        fprintf(stderr, "Error, failure in debug(), (n = %d) > "
+                "(kMaxMessageLength %d)\n", n, kMaxMessageLength);
+        exit(EXIT_FAILURE);
     }
+    de_message("Debug", str, args);
     va_end(args);
 }
 void failBadFormat(void) {
