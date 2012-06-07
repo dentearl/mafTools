@@ -424,13 +424,11 @@ unsigned maf_mafBlock_longestSequenceField(mafBlock_t *b) {
     return m;
 }
 bool maf_mafBlock_containsSequence(mafBlock_t *b) {
-    mafLine_t *m = maf_mafBlock_getHeadLine(b);
-    while (m != NULL) {
-        if (m->type == 's')
-            return true;
-        m = m->next;
+    if (b->numberOfSequences > 0) {
+        return true;
+    } else {
+        return false;
     }
-    return false;
 }
 unsigned maf_mafLine_getNumberOfSequences(mafLine_t *m) {
     // count the number of actual sequence lines in a mafLine_t list
