@@ -33,7 +33,6 @@ const int kMaxStringLength;
 const int kMaxMessageLength;
 const int kMaxSeqName;
 
-void de_message(char const *type, char const *fmt, ...);
 void de_verbose(char const *fmt, ...);
 void de_debug(char const *fmt, ...);
 void failBadFormat(void);

@@ -99,7 +99,6 @@ static void de_message(char const *type, char const *fmt, ...) {
 }
 void de_verbose(char const *fmt, ...) {
     if (!g_verbose_flag) {
-        va_end(args);
         return;
     }
     char str[kMaxMessageLength];
@@ -116,7 +115,6 @@ void de_verbose(char const *fmt, ...) {
 }
 void de_debug(char const *fmt, ...) {
     if (!g_debug_flag) {
-        va_end(args);
         return;
     }
     char str[kMaxMessageLength];
