@@ -153,7 +153,7 @@ static void test_rowAlignmentBlockComparisonOrdering_0(CuTest *testCase) {
     input[0] = de_strdup("AT");
     mafTcComparisonOrder_t *obsOrder = NULL;
     mafTcRegion_t *todo = newMafTcRegion(0, 1);
-    todo = getComparisonOrderFromRow(input, 0, &obsOrder, todo);
+    todo = getComparisonOrderFromRow(input, 0, &obsOrder, todo, 0);
     CuAssertTrue(testCase, todo == NULL);
     CuAssertTrue(testCase, obsOrder != NULL);
     mafTcComparisonOrder_t *expectedOrder = newMafTcComparisonOrder();
@@ -174,7 +174,7 @@ static void test_rowAlignmentBlockComparisonOrdering_1(CuTest *testCase) {
     input[0] = de_strdup("AC---ACG-G");
     mafTcComparisonOrder_t *obsOrder = NULL;
     mafTcRegion_t *todo = newMafTcRegion(0, 9);
-    todo = getComparisonOrderFromRow(input, 0, &obsOrder, todo);
+    todo = getComparisonOrderFromRow(input, 0, &obsOrder, todo, 1);
     CuAssertTrue(testCase, todo != NULL);
     CuAssertTrue(testCase, obsOrder != NULL);
     mafTcRegion_t *expectedTodo = newMafTcRegion(2, 4);
@@ -206,15 +206,15 @@ static void test_rowAlignmentBlockComparisonOrdering_1(CuTest *testCase) {
 }
 static void test_rowAlignmentBlockComparisonOrdering_2(CuTest *testCase) {
     // test that with known input that known output is generated.
-    char **input = (char**) de_malloc(2 * sizeof(char*));
+    char **input = (char**) de_malloc(sizeof(char*) * 2);
     input[0] = de_strdup("AC---ACG-G");
     input[1] = de_strdup("ACTG--CGGG");
     mafTcComparisonOrder_t *obsOrder = NULL;
     mafTcRegion_t *todo = newMafTcRegion(0, 9);
-    todo = getComparisonOrderFromRow(input, 0, &obsOrder, todo);
+    todo = getComparisonOrderFromRow(input, 0, &obsOrder, todo, 1);
     CuAssertTrue(testCase, todo != NULL);
     CuAssertTrue(testCase, obsOrder != NULL);
-    todo = getComparisonOrderFromRow(input, 1, &obsOrder, todo);
+    todo = getComparisonOrderFromRow(input, 1, &obsOrder, todo, 1);
     mafTcRegion_t *expectedTodo = newMafTcRegion(4, 4);
     CuAssertTrue(testCase, expectedTodo != NULL);
     CuAssertTrue(testCase, regionListsAreEqual(expectedTodo, todo, false));
@@ -256,7 +256,7 @@ static void test_rowAlignmentBlockComparisonOrdering_3(CuTest *testCase) {
     mafTcComparisonOrder_t *obsOrder = NULL;
     mafTcRegion_t *todo = newMafTcRegion(5, 9);
     todo->next = newMafTcRegion(19, 20);
-    todo = getComparisonOrderFromRow(input, 0, &obsOrder, todo);
+    todo = getComparisonOrderFromRow(input, 0, &obsOrder, todo, 1);
     CuAssertTrue(testCase, todo != NULL);
     CuAssertTrue(testCase, obsOrder != NULL);
     mafTcRegion_t *expectedTodo = newMafTcRegion(7, 9);
@@ -279,12 +279,15 @@ static void test_rowAlignmentBlockComparisonOrdering_3(CuTest *testCase) {
 }
 static void test_matrixAlignmentBlockComparisonOrdering_0(CuTest *testCase) {
     // test that with known input that known output is generated.
-    char **input = (char**) de_malloc(2 * sizeof(char*));
+    char **input = (char**) de_malloc(sizeof(char*) * 2);
+    uint32_t *lengths = de_malloc(sizeof(uint32_t) * 2);
     input[0] = de_strdup("AC---ACG-G");
     input[1] = de_strdup("ACTG--CGGG");
+    lengths[0] = 6;
+    lengths[1] = 8;
     mafTcComparisonOrder_t *obsOrder = NULL;
-    int **dummy = NULL;
-    obsOrder = getComparisonOrderFromMatrix(input, 2, 10, dummy);
+    int **dummyVizMatrix = NULL;
+    obsOrder = getComparisonOrderFromMatrix(input, 2, 10, lengths, dummyVizMatrix);
     CuAssertTrue(testCase, obsOrder != NULL);
     mafTcComparisonOrder_t *expectedOrder = newMafTcComparisonOrder();
     mafTcComparisonOrder_t *eo = expectedOrder;
@@ -312,19 +315,25 @@ static void test_matrixAlignmentBlockComparisonOrdering_0(CuTest *testCase) {
     free(input[0]);
     free(input[1]);
     free(input);
+    free(lengths);
     destroyMafTcComparisonOrder(expectedOrder);
     destroyMafTcComparisonOrder(obsOrder);
 }
 static void test_matrixAlignmentBlockComparisonOrdering_1(CuTest *testCase) {
     // test that with known input that known output is generated.
-    char **input = (char**) de_malloc(4 * sizeof(char*));
+    char **input = (char**) de_malloc(sizeof(char*) * 4);
+    uint32_t *lengths = de_malloc(sizeof(uint32_t) * 4);
     input[0] = de_strdup("acgcccag--------------ctcgcgaaatcgttc-------------------------ccggcattccgtccaggccgaagcgccaactgcagctccatctgtggcgtctctgttgcagcatcggagtgtgcaaatcatcccgacggccatcgtggtactcgtggtacacaggaaccaacaaataggagacgggtgccctgatcgacccgtgctccccggtgggcaccatcgatagattgctcgctgcggcgttccgtctcccc-----------------------ggtctgttcggcgactataaggtcacggacaggtaccttcaaaatcgacatggtgcttaaggtcag---------------------ccctaacttctccatgccttagctgacgatgttcgcgctaggtttaacgatatccgtcttgctgatgaacagtttcatcacccggcgacgatatccctggtgttgggctctgacgtttatcgtgatgtcatccaacccgggttcttaaatttggatga-gggctgcctgtcgcacaaagcac--tgtttggctggattatctcgggatcatgTAGACAATCTTAAGGCGCTAGACGTGTGGAAAATGTTGTTGCTTCGTTTGTCGTTGCA");
     input[1] = de_strdup("ccgctcggctttcaaggtcagtctcccggtttccttcaccatcggcaaggcaagcgcgtacaccggtatgacgtcc-------agcttcagtggcaaccccatc-------tcccgacggc-------------------------------catcgtgatgctggagt----ctggggccaccaccttcgagacggccgcgttgatcgacccgtgcactcccgtcagcaccatcgacagctccctggcaactgcattcaagttacccacgacgacagtgagaggtgaagaagtctgctcgtcgacgatccggtcaagaacgggtgatttccAGATCGACGTGCTCCTAAAGATAAA----------------------------------GCGCGCTTAGTGAAACTATGCGAGCCCAATTCAACGACATCCGTCTTGCCGATGAGCAGTTCCATCGCCCATATACAGTCTCGCTGGTGTTGGGCTCGGACGTATACCCCGACGTAATCCGGCCCGGGTTCCTAAATATACGTGATGGGCTGTCCGTCGCACAGGGCATG-TATTTGGTTGGGTAGTGTCTGGAGCATGCAGACACGCCTAAGG-GTTAATC-------------CGTTGTTACGCTCGCATTCGCA");
     input[2] = de_strdup("CCGCCCACATACCAGCAGTAGTCTCCCGGTCTCCTTCGCCAA------GGCAAGCGCTTACGCTGGTACGAcgtcc-------agcttcagcagcaaccccataagtagcttcgctactgc-------------------------------catcgtgttgctagagt----ctaggaccaccaactttgagacggcggcgttgatcgacccgtgcacttccgtcagcaccatagacagctccctggcagctgcgttcaagttacccacgacgacagtgagatgcgaagaagtctgttcgacgaccatccagtcaagaagaggcgatttccaaatcgacgtgctcctgaatattagccgaagtctacgcatccggaccc------------------------------------------------------------------------------------------------------------------------------gatccggcCCGGGCTCCTAAATATACGTGATACAT--------ATACAGGGCACGGTATTTGGATGAATCGTGTGTGGAGCACGCAGACACGCCTAAGG-ATTAGTC-------------CTTTGCTACGCTCGCCCTCGCA");
     input[3] = de_strdup("ccactcggctgtcaagggcagtctcgcggtctccatcgccagcggcacgggaagcacggacaccggtccgacgtcc-------agcgtcagcagcaactccatcagtggcggctctcctgcagcatcagagcctccacattcttccgacggctatcgtgttgctggagt----ctggggccaccaccttcgagacggctgcgttaatcgacccttgcacgcccgtcagcaccatcgacagctccctggcaactgcgttcaagttgcccacgacgacagtgagaggcgaagaagtctgctcgacgacaatccggtcgaggacgggcgatttccagatcgacgtgctgctgaagatcagtcagagtctacgaatccgcaccccta-----tccgcgcgctaagcgattctatgcgagcccaatttgatgatatccgtctggccgatgagcagttccatcgcccagcgacagtctcgctggtgttgggctcggacgtataccccgacgtaatcaggcccgggttcctaaatatacgagatgggctgcccgtcgcacagggcacggtctttggatgggtcgtgtctggagcatgcAGACACGCCTAAGG-ATTAATC-------------CTTTGCTACGTTCGCCCTCGCA");
+    lengths[0] = 562;
+    lengths[1] = 550;
+    lengths[2] = 452;
+    lengths[3] = 618;
     mafTcComparisonOrder_t *obsOrder = NULL;
-    int **dummy = NULL;
-    obsOrder = getComparisonOrderFromMatrix(input, 4, 648, dummy);
+    int **dummyVizMatrix = NULL;
+    obsOrder = getComparisonOrderFromMatrix(input, 4, 648, lengths, dummyVizMatrix);
     CuAssertTrue(testCase, obsOrder != NULL);
     mafTcComparisonOrder_t *expectedOrder = newMafTcComparisonOrder();
     mafTcComparisonOrder_t *eo = expectedOrder;
@@ -401,19 +410,25 @@ static void test_matrixAlignmentBlockComparisonOrdering_1(CuTest *testCase) {
     for (int i = 0; i < 4; ++i)
         free(input[i]);
     free(input);
+    free(lengths);
     destroyMafTcComparisonOrder(expectedOrder);
     destroyMafTcComparisonOrder(obsOrder);
 }
 static void test_matrixAlignmentBlockComparisonOrdering_2(CuTest *testCase) {
     // test that with known input that known output is generated.
-    char **input = (char**) de_malloc(4 * sizeof(char*));
+    char **input = (char**) de_malloc(sizeof(char*) * 4);
+    uint32_t *lengths = de_malloc(sizeof(uint32_t) * 4);
     input[0] = de_strdup("acgcccag--------------ctcgc---aatcgtt");
     input[1] = de_strdup("ccgctc--------------ctttcaag-tcagtctc");
     input[2] = de_strdup("CCGC--------CAGCAGTAGTCTCCC---CTCCTTC");
     input[3] = de_strdup("ccactcggctgtca---------tcgcggtctccatc");
+    lengths[0] = 20;
+    lengths[1] = 22;
+    lengths[2] = 26;
+    lengths[3] = 28;
     mafTcComparisonOrder_t *obsOrder = NULL;
-    int **dummy = NULL;
-    obsOrder = getComparisonOrderFromMatrix(input, 4, 37, dummy);
+    int **dummyVizMatrix = NULL;
+    obsOrder = getComparisonOrderFromMatrix(input, 4, 37, lengths, dummyVizMatrix);
     CuAssertTrue(testCase, obsOrder != NULL);
     mafTcComparisonOrder_t *expectedOrder = newMafTcComparisonOrder();
     mafTcComparisonOrder_t *eo = expectedOrder;
@@ -465,20 +480,27 @@ static void test_matrixAlignmentBlockComparisonOrdering_2(CuTest *testCase) {
     for (int i = 0; i < 4; ++i)
         free(input[i]);
     free(input);
+    free(lengths);
     destroyMafTcComparisonOrder(expectedOrder);
     destroyMafTcComparisonOrder(obsOrder);
 }
 static void test_matrixAlignmentBlockComparisonOrdering_3(CuTest *testCase) {
     // test that with known input that known output is generated.
-    char **input = (char**) de_malloc(5 * sizeof(char*));
+    char **input = (char**) de_malloc(sizeof(char*) * 5);
+    uint32_t *lengths = de_malloc(sizeof(uint32_t) * 5);
     input[0] = de_strdup("AATTG-----TCTCTCCCC--CTTTTT");
     input[1] = de_strdup("AATTGTC-----TCTGGCC--TTAATT");
     input[2] = de_strdup("CCCGGAGAG-----ACAAC--CTAATT");
     input[3] = de_strdup("ATTTAAATTTA-----GAG--ACAATC");
     input[4] = de_strdup("CCGGC-------GGTTGGGTTGTCTCT");
+    lengths[0] = 20;
+    lengths[1] = 20;
+    lengths[2] = 20;
+    lengths[3] = 20;
+    lengths[4] = 20;
     mafTcComparisonOrder_t *obsOrder = NULL;
-    int **dummy = NULL;
-    obsOrder = getComparisonOrderFromMatrix(input, 5, 27, dummy);
+    int **dummyVizMatrix = NULL;
+    obsOrder = getComparisonOrderFromMatrix(input, 5, 27, lengths, dummyVizMatrix);
     CuAssertTrue(testCase, obsOrder != NULL);
     mafTcComparisonOrder_t *expectedOrder = newMafTcComparisonOrder();
     mafTcComparisonOrder_t *eo = expectedOrder;
@@ -520,20 +542,27 @@ static void test_matrixAlignmentBlockComparisonOrdering_3(CuTest *testCase) {
     for (int i = 0; i < 5; ++i)
         free(input[i]);
     free(input);
+    free(lengths);
     destroyMafTcComparisonOrder(expectedOrder);
     destroyMafTcComparisonOrder(obsOrder);
 }
 static void test_matrixAlignmentBlockComparisonOrdering_4(CuTest *testCase) {
     // test that with known input that known output is generated.
-    char **input = (char**) de_malloc(5 * sizeof(char*));
+    char **input = (char**) de_malloc(sizeof(char*) * 5);
+    uint32_t *lengths = de_malloc(sizeof(uint32_t) * 5);
     input[0] = de_strdup("AATTG-----TCTCTCC-CC--CT---T-TTT");
     input[1] = de_strdup("AATTGTC-----TCTG-GCC--TTA-AT---T");
     input[2] = de_strdup("CCCGGAGAG-----ACA-AC--CTA--A--TT");
     input[3] = de_strdup("ATTTAAATTTA-----G-AG--ACAA--T--C");
     input[4] = de_strdup("CCGGC-------GGTTG-GGTTGTC-T-C--T");
+    lengths[0] = 20;
+    lengths[1] = 20;
+    lengths[2] = 20;
+    lengths[3] = 20;
+    lengths[4] = 20;
     mafTcComparisonOrder_t *obsOrder = NULL;
-    int **dummy = NULL;
-    obsOrder = getComparisonOrderFromMatrix(input, 5, 32, dummy);
+    int **dummyVizMatrix = NULL;
+    obsOrder = getComparisonOrderFromMatrix(input, 5, 32, lengths, dummyVizMatrix);
     CuAssertTrue(testCase, obsOrder != NULL);
     mafTcComparisonOrder_t *expectedOrder = newMafTcComparisonOrder();
     mafTcComparisonOrder_t *eo = expectedOrder;
@@ -615,6 +644,7 @@ static void test_matrixAlignmentBlockComparisonOrdering_4(CuTest *testCase) {
     for (int i = 0; i < 5; ++i)
         free(input[i]);
     free(input);
+    free(lengths);
     destroyMafTcComparisonOrder(expectedOrder);
     destroyMafTcComparisonOrder(obsOrder);
 }
@@ -678,68 +708,68 @@ static void test_localSeqCoords_0(CuTest *testCase) {
     mcp.a = 0;
     mcp.b = 0;
     char *s = de_strdup("ACGT");
-    CuAssertTrue(testCase, localSeqCoords(3, s, &mcp) == 3);
+    CuAssertTrue(testCase, localSeqCoords(3, s, &mcp, 0) == 3);
     CuAssertTrue(testCase, mcp.a == 3);
     CuAssertTrue(testCase, mcp.b == 3);
     free(s);
     mcp.a = 0;
     mcp.b = 0;
     s = de_strdup("-------ACGT");
-    CuAssertTrue(testCase, localSeqCoords(10, s, &mcp) == 3);
+    CuAssertTrue(testCase, localSeqCoords(10, s, &mcp, 1) == 3);
     CuAssertTrue(testCase, mcp.a == 10);
     CuAssertTrue(testCase, mcp.b == 3);
     free(s);
     mcp.a = 8;
     mcp.b = 1;
     s = de_strdup("-------ACGT");
-    CuAssertTrue(testCase, localSeqCoords(10, s, &mcp) == 3);
+    CuAssertTrue(testCase, localSeqCoords(10, s, &mcp, 1) == 3);
     CuAssertTrue(testCase, mcp.a == 10);
     CuAssertTrue(testCase, mcp.b == 3);
     free(s);
     mcp.a = 10;
     mcp.b = 3;
     s = de_strdup("-------ACGT");
-    CuAssertTrue(testCase, localSeqCoords(10, s, &mcp) == 3);
+    CuAssertTrue(testCase, localSeqCoords(10, s, &mcp, 1) == 3);
     CuAssertTrue(testCase, mcp.a == 10);
     CuAssertTrue(testCase, mcp.b == 3);
     free(s);
     mcp.a = 0;
     mcp.b = 0;
     s = de_strdup("-A-C-G-T");
-    CuAssertTrue(testCase, localSeqCoords(7, s, &mcp) == 3);
+    CuAssertTrue(testCase, localSeqCoords(7, s, &mcp, 1) == 3);
     CuAssertTrue(testCase, mcp.a == 7);
     CuAssertTrue(testCase, mcp.b == 3);
     free(s);
     mcp.a = 0;
     mcp.b = 0;
     s = de_strdup("AA-A-C-G-T");
-    CuAssertTrue(testCase, localSeqCoords(9, s, &mcp) == 5);
+    CuAssertTrue(testCase, localSeqCoords(9, s, &mcp, 1) == 5);
     CuAssertTrue(testCase, mcp.a == 9);
     CuAssertTrue(testCase, mcp.b == 5);
     free(s);
     mcp.a = 0;
     mcp.b = 0;
     s = de_strdup("AA-A-C-G-T");
-    CuAssertTrue(testCase, localSeqCoords(3, s, &mcp) == 2);
+    CuAssertTrue(testCase, localSeqCoords(3, s, &mcp, 1) == 2);
     CuAssertTrue(testCase, mcp.a == 3);
     CuAssertTrue(testCase, mcp.b == 2);
     free(s);
     mcp.a = 1;
     mcp.b = 1;
     s = de_strdup("AA-A-C-G-T");
-    CuAssertTrue(testCase, localSeqCoords(3, s, &mcp) == 2);
+    CuAssertTrue(testCase, localSeqCoords(3, s, &mcp, 1) == 2);
     CuAssertTrue(testCase, mcp.a == 3);
     CuAssertTrue(testCase, mcp.b == 2);
     free(s);
     mcp.a = 0;
     mcp.b = 0;
     s = de_strdup("GTTGTCTCTCAATGTG");
-    CuAssertTrue(testCase, localSeqCoords(6, s, &mcp) == 6);
+    CuAssertTrue(testCase, localSeqCoords(6, s, &mcp, 0) == 6);
     CuAssertTrue(testCase, mcp.a == 6);
     CuAssertTrue(testCase, mcp.b == 6);
     free(s);
     s = de_strdup("GTTGTCTCTCAATGTG");
-    CuAssertTrue(testCase, localSeqCoords(15, s, &mcp) == 15);
+    CuAssertTrue(testCase, localSeqCoords(15, s, &mcp, 0) == 15);
     CuAssertTrue(testCase, mcp.a == 15);
     CuAssertTrue(testCase, mcp.b == 15);
     free(s);
@@ -773,19 +803,19 @@ static void test_coordinateTransforms_0(CuTest *testCase) {
     uint32_t start = 0, sourceLength = 100, seqLength = 37;
     mcp.a = 0;
     mcp.b = 0;
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(1, input, &mcp), 
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(1, input, &mcp, 1), 
                                                                      start, sourceLength, '+', seqLength) == 0);
     CuAssertTrue(testCase, mcp.a == 1);
     CuAssertTrue(testCase, mcp.b == 0);
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(4, input, &mcp), 
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(4, input, &mcp, 1), 
                                                                      start, sourceLength, '+', seqLength) == 2);
     CuAssertTrue(testCase, mcp.a == 4);
     CuAssertTrue(testCase, mcp.b == 2);
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(26, input, &mcp), 
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(26, input, &mcp, 1), 
                                                                      start, sourceLength, '+', seqLength) == 21);
     CuAssertTrue(testCase, mcp.a == 26);
     CuAssertTrue(testCase, mcp.b == 21);
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(41, input, &mcp), 
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(41, input, &mcp, 1), 
                                                                      start, sourceLength, '+', seqLength) == 36);
     CuAssertTrue(testCase, mcp.a == 41);
     CuAssertTrue(testCase, mcp.b == 36);
@@ -793,17 +823,17 @@ static void test_coordinateTransforms_0(CuTest *testCase) {
     mcp.a = 0;
     mcp.b = 0;
     seqLength = 2;
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(1, input, &mcp), 
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(1, input, &mcp, 1), 
                                                                      start, sourceLength, '-', seqLength) == 98);
     CuAssertTrue(testCase, mcp.a == 1);
     CuAssertTrue(testCase, mcp.b == 0);    
     seqLength = 19;
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(4, input, &mcp), 
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(4, input, &mcp, 1), 
                                                                      start, sourceLength, '-', seqLength) == 79);
     CuAssertTrue(testCase, mcp.a == 4);
     CuAssertTrue(testCase, mcp.b == 2);
     seqLength = 16;
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(26, input, &mcp), 
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(26, input, &mcp, 1), 
                                                                      start, sourceLength, '-', seqLength) == 63);
     CuAssertTrue(testCase, mcp.a == 26);
     CuAssertTrue(testCase, mcp.b == 21);
@@ -813,7 +843,7 @@ static void test_coordinateTransforms_0(CuTest *testCase) {
     mcp.b = 0;
     start = 1;
     seqLength = 16;
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(0, input, &mcp), 
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(0, input, &mcp, 0), 
                                                                      start, sourceLength, '+', seqLength) == 1);
     free(input);
 }

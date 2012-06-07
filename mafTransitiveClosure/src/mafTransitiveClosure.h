@@ -98,15 +98,15 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet);
 void addAlignmentsToThreadSet(mafFileApi_t *mfa, stPinchThreadSet *threadSet);
 void createSequenceHash(mafFileApi_t *mfa, stHash **hash, stHash **nameHash);
 mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row, mafTcComparisonOrder_t **done, 
-                                         mafTcRegion_t *todo);
+                                         mafTcRegion_t *todo, int containsGaps);
 mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint32_t rowLength, uint32_t colLength, 
-                                                     int **vizMat);
+                                                     uint32_t *lengths, int **vizMat);
 void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint32_t aGlobalStart, 
                             uint32_t aGlobalLength, int aStrand, 
                             char *aSeq, stPinchThread *b, uint32_t bGlobalStart, uint32_t bGlobalLength,
                             int bStrand, char *bSeq, uint32_t regionStart, uint32_t regionEnd,
-                            mafCoordinatePair_t aBookmark, mafCoordinatePair_t bBookmark);
-int64_t localSeqCoords(uint32_t p, char *s, mafCoordinatePair_t *bookmark);
+                            mafCoordinatePair_t aBookmark, mafCoordinatePair_t bBookmark, int bContainsGaps);
+int64_t localSeqCoords(uint32_t p, char *s, mafCoordinatePair_t *bookmark, int containsGaps);
 int64_t localSeqCoordsToGlobalPositiveCoords(int64_t c, uint32_t start, uint32_t sourceLength, char strand);
 int64_t localSeqCoordsToGlobalPositiveStartCoords(int64_t c, uint32_t start, uint32_t sourceLength, 
                                                   char strand, uint32_t length);
