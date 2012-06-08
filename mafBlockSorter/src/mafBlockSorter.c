@@ -158,7 +158,7 @@ void populateArray(mafBlock_t *mb, sortingMafBlock_t **array, char *targetSequen
 int cmp_by_targetStart(const void *a, const void *b) {
     sortingMafBlock_t **ia = (sortingMafBlock_t **) a;
     sortingMafBlock_t **ib = (sortingMafBlock_t **) b;
-    return ((*ia)->targetStart - (*ib)->targetStart);
+    return ((*ia)->targetStart >= (*ib)->targetStart);
 }
 void reportBlock(sortingMafBlock_t *smb) {
     // print out the single block pointed to by mb
