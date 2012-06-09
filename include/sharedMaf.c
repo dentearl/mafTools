@@ -569,7 +569,7 @@ mafBlock_t* maf_readBlockBody(mafFileApi_t *mfa) {
     }
     int32_t n = kMaxStringLength;
     char *line = (char*) de_malloc(n);
-    thiBlock->lineNumber = mfa->lineNumber;
+    thisBlock->lineNumber = mfa->lineNumber;
     while(de_getline(&line, &n, mfa->mfp) != -1) {
         ++(mfa->lineNumber);
         if (maf_isBlankLine(line)) {
