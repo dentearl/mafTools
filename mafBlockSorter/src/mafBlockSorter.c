@@ -122,7 +122,7 @@ int64_t getTargetStartLine(mafLine_t *ml, char *targetSeq) {
     if (maf_mafLine_getType(ml) != 's')
         return INT64_MIN;
     if (strncmp(targetSeq, maf_mafLine_getSpecies(ml), strlen(targetSeq)) == 0) {
-        return (int64_t) maf_mafLine_getStart(ml);
+        return (int64_t) maf_mafLine_getPositiveLeftCoord(ml);
     }
     return INT64_MIN;
 }

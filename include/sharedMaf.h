@@ -89,6 +89,8 @@ unsigned maf_mafBlock_getNumberOfBlocks(mafBlock_t *b);
 unsigned maf_mafBlock_longestSequenceField(mafBlock_t *b);
 bool maf_mafBlock_containsSequence(mafBlock_t *m);
 uint32_t maf_mafLine_getNumberOfSequences(mafLine_t *m);
+uint32_t maf_mafLine_getPositiveCoord(mafLine_t *ml);
+uint32_t maf_mafLine_getPositiveLeftCoord(mafLine_t *ml);
 // print
 void maf_mafBlock_print(mafBlock_t *m);
 #endif // SHAREDMAF_H_

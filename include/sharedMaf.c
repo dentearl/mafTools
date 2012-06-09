@@ -1,5 +1,4 @@
 /* 
-
  * Copyright (C) 2012 by 
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * ... and other members of the Reconstruction Team of David Haussler's 
@@ -446,6 +445,26 @@ uint32_t maf_mafLine_getNumberOfSequences(mafLine_t *ml) {
         ml = ml->next;
     }
     return s;
+}
+uint32_t maf_mafLine_getPositiveCoord(mafLine_t *ml) {
+    // return the start field coordinate in postive zero based coordinates.
+    // NOTE THAT FOR - STRANDS, THIS COORDINATE WILL BE THE RIGHT-MOST (END POINT)
+    // OF THE SEQUENCE. TO GET THE LEFT-MOST (START POINT) YOU WOULD NEED TO SUBTRACT
+    // 
+    if (ml->strand == '+') {
+        return ml->start;
+    } else {
+        return ml->sourceLength - (ml->start + 1);
+    }
+}
+uint32_t maf_mafLine_getPositiveLeftCoord(mafLine_t *ml) {
+    // return the left most coordinate in postive zero based coordinates.
+    // for - strands this includes the length of the sequence.
+    if (ml->strand == '+') {
+        return ml->start;
+    } else {
+        return ml->sourceLength - (ml->start + ml->length);
+    }
 }
 void maf_mafBlock_setHeadLine(mafBlock_t *mb, mafLine_t *ml) {
     mb->headLine = ml;

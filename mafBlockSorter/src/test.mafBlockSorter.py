@@ -77,8 +77,17 @@ s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGT
 s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
                    
 ''',
-                  '''a score=23263.0
+                  '''a score=0
 # sorted block 1
+s hg18.chr7              237249719 26 - 247249719 TTTTTGAAAAACAAACAACAAGTTGG
+s panTro2.chrUn            9697231 26 +  58616431 TTTTTGAAAAACAAACAACAAGTTGG
+q panTro2.chrUn                                   99999999999999999999999999
+s dasNov1.scaffold_179265     1474  7 +      4584 TT----------AAGCA---------
+q dasNov1.scaffold_179265                         99----------32239--------- 
+
+''',
+                  '''a score=23263.0
+# sorted block 2
 s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s baboon.chr0    116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
@@ -87,7 +96,7 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
                    
 ''',
                 '''a score=5062.0                    
-# sorted block 2
+# sorted block 3
 s hg18.chr7    27699739 6 + 158545518 TAAAGA
 s panTro1.chr6 28862317 6 + 161576975 TAAAGA
 s baboon.chr0    241163 6 +   4622798 TAAAGA 
@@ -96,7 +105,7 @@ s rn3.chr4     81444246 6 + 187371129 taagga
 
 ''',
                 '''a score=23264.0
-# sorted block 3
+# sorted block 4
 s hg18.chr7    27707000 13 + 158545518 gcagctgaaaaca
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
@@ -104,20 +113,11 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 ''',
                 '''a score=6636.0
-# sorted block 4
+# sorted block 5
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 s hg18.chr7    27707221 13 + 158545518 gcagctgaaaaca
-
-''',
-                '''a score=0
-# sorted block 5
-s hg18.chr7              237249719 26 - 247249719 TTTTTGAAAAACAAACAACAAGTTGG
-s panTro2.chrUn            9697231 26 +  58616431 TTTTTGAAAAACAAACAACAAGTTGG
-q panTro2.chrUn                                   99999999999999999999999999
-s dasNov1.scaffold_179265     1474  7 +      4584 TT----------AAGCA---------
-q dasNov1.scaffold_179265                         99----------32239--------- 
 
 ''',
                 ]
