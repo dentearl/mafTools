@@ -65,15 +65,15 @@ typedef struct mafTcComparisonOrder {
 typedef struct mafCoordinatePair {
     /* this struct is used to store pairs of coordinates
     */
-    uint32_t a;
-    uint32_t b;
+    int64_t a;
+    int64_t b;
 } mafCoordinatePair_t;
-typedef struct mafRowSort {
+typedef struct mafBlockSort {
     /* this struct is used to sort a sequence matrix by the number of gaps in each row
      */
-    uint32_t numGaps; // number of gaps
-    char *s; // pointer to sequence
-} mafRowSort_t;
+    int64_t value; // value to sort upon
+    mafLine_t *ml;
+} mafBlockSort_t;
 
 void usage(void);
 mafTcSeq_t* newMafTcSeq(char *name, unsigned length);
@@ -105,11 +105,14 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
                             uint32_t aGlobalLength, int aStrand, 
                             char *aSeq, stPinchThread *b, uint32_t bGlobalStart, uint32_t bGlobalLength,
                             int bStrand, char *bSeq, uint32_t regionStart, uint32_t regionEnd,
-                            mafCoordinatePair_t aBookmark, mafCoordinatePair_t bBookmark, int bContainsGaps);
+                            mafCoordinatePair_t aBookmark, mafCoordinatePair_t bBookmark, 
+                            int aContainsGaps, int bContainsGaps,
+                            void (*pinchFunction)(stPinchThread *, stPinchThread *, int64_t, int64_t, int64_t, bool));
 int64_t localSeqCoords(uint32_t p, char *s, mafCoordinatePair_t *bookmark, int containsGaps);
 int64_t localSeqCoordsToGlobalPositiveCoords(int64_t c, uint32_t start, uint32_t sourceLength, char strand);
 int64_t localSeqCoordsToGlobalPositiveStartCoords(int64_t c, uint32_t start, uint32_t sourceLength, 
                                                   char strand, uint32_t length);
+void mafBlock_sortBlockByIncreasingGap(mafBlock_t *mb);
 // debugging tools
 int** getVizMatrix(mafBlock_t *mb, unsigned n, unsigned m);
 void updateVizMatrix(int **mat, mafTcComparisonOrder_t *co);

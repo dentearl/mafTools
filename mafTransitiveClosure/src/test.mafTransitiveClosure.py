@@ -138,11 +138,11 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
                       's baboon         0 20 + 20 CCCGGAGAGACAACCTAATT',
                       's mm4.chr6       0 20 + 20 ATTTAAATTTAGAGACAATC',
                       's rn3.chr4       0 20 - 20 CCGGCGGTTGGGTTGTCTCT',]),]
-    def testKnownInOut(self):
+    def testKnownInOut_1(self):
         """ mafTransitiveClosure should compute the transitive closure of a maf built by pairwise alignment to a reference sequence.
         """
         mtt.makeTempDirParent()
-        tmpDir = os.path.abspath(mtt.makeTempDir('knownInOut'))
+        tmpDir = os.path.abspath(mtt.makeTempDir('knownInOut_1'))
         for inMaf, outList in self.knownResults:
             testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
                                    inMaf, g_headers)
@@ -154,14 +154,30 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
             passed = mafIsClosed(os.path.join(tmpDir, 'transitiveClosure.maf'), outList)
             self.assertTrue(passed)
         mtt.removeDir(tmpDir)
-    def testMemory1(self):
+    def testKnownInOut_2(self):
+        """ mafTransitiveClosure should compute the transitive closure of a maf built by pairwise alignment to a reference sequence, testing the --sort option.
+        """
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('knownInOut_2'))
+        for inMaf, outList in self.knownResults:
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
+                                   inMaf, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), 
+                   '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')), '--sort']
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'transitiveClosure.maf'))]
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            passed = mafIsClosed(os.path.join(tmpDir, 'transitiveClosure.maf'), outList)
+            self.assertTrue(passed)
+        mtt.removeDir(tmpDir)
+    def testMemory_1(self):
         """ mafTransitiveClosure should be memory clean.
         """
         mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
-        tmpDir = os.path.abspath(mtt.makeTempDir('memory1'))
+        tmpDir = os.path.abspath(mtt.makeTempDir('memory_1'))
         for inMaf, outList in self.knownResults:
             testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
                                    inMaf, g_headers)
@@ -174,13 +190,13 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
             passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
             self.assertTrue(passed)
         mtt.removeDir(tmpDir)
-    def testMemory2(self):
+    def testMemory_2(self):
         """ the CuTest tests should be memory clean.
         """
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
-        tmpDir = os.path.abspath(mtt.makeTempDir('memory2'))
+        tmpDir = os.path.abspath(mtt.makeTempDir('memory_2'))
         parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         cmd = mtt.genericValgrind(tmpDir)
         cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), '--test']
@@ -188,6 +204,26 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
         mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
         passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
         self.assertTrue(passed)
+        mtt.removeDir(tmpDir)
+    def testMemory_3(self):
+        """ mafTransitiveClosure should be memory clean.
+        """
+        mtt.makeTempDirParent()
+        valgrind = mtt.which('valgrind')
+        if valgrind is None:
+            return
+        tmpDir = os.path.abspath(mtt.makeTempDir('memory_3'))
+        for inMaf, outList in self.knownResults:
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
+                                   inMaf, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = mtt.genericValgrind(tmpDir)
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), 
+                    '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')), '--sort']
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'transitiveClosure.maf'))]
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
+            self.assertTrue(passed)
         mtt.removeDir(tmpDir)
 
 if __name__ == '__main__':

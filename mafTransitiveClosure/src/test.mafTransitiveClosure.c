@@ -137,6 +137,91 @@ bool comparisonOrdersAreEqual(mafTcComparisonOrder_t *eo, mafTcComparisonOrder_t
     }
     return true;
 }
+static bool mafBlocksAreEqual(mafBlock_t *input, mafBlock_t *expected, bool verbose) {
+    mafLine_t *m1 = NULL, *m2 = NULL;
+    m1 = maf_mafBlock_getHeadLine(input);
+    m2 = maf_mafBlock_getHeadLine(expected);
+    if (verbose) {
+        printf("mafBlocksAreEqual():\n");
+    }
+    while (m1 != NULL) {
+        if (m2 == NULL) { 
+            return false;
+        }
+        if (verbose) {
+            printf("Comparing lines:\n");
+            printf("input   : %s\n", maf_mafLine_getLine(m1));
+            printf("expected: %s\n", maf_mafLine_getLine(m2));
+        }
+        if (maf_mafLine_getType(m1) != maf_mafLine_getType(m2)) {
+            if (verbose) {
+                printf("Types differ, input:%c expected:%c\n", 
+                       maf_mafLine_getType(m1), maf_mafLine_getType(m2));
+            }
+            return false;
+        }
+        if (maf_mafBlock_getNumberOfLines(input) != maf_mafBlock_getNumberOfLines(expected)) {
+            if (verbose) {
+                printf("Number of lines differ:\n  input:%" PRIu32 "\n  expected:%" PRIu32 "\n", 
+                       maf_mafBlock_getNumberOfLines(input), maf_mafBlock_getNumberOfLines(expected));
+            }
+            return false;
+        }
+        if (strcmp(maf_mafLine_getLine(m1), maf_mafLine_getLine(m2)) != 0) {
+            if (verbose) {
+                printf("Lines differ:\n  input:%s\n  expected:%s\n", 
+                       maf_mafLine_getLine(m1), maf_mafLine_getLine(m2));
+            }
+            return false;
+        }
+        if (maf_mafLine_getType(m1) != 's') {
+            m1 = maf_mafLine_getNext(m1);
+            m2 = maf_mafLine_getNext(m2);
+            continue;
+        }
+        if (strcmp(maf_mafLine_getSpecies(m1), maf_mafLine_getSpecies(m2)) != 0) {
+            if (verbose) {
+                printf("Species differ:\n  input:%s\n  expected:%s\n", 
+                       maf_mafLine_getSpecies(m1), maf_mafLine_getSpecies(m2));
+            }
+            return false;
+        }
+        if (maf_mafLine_getStart(m1) != maf_mafLine_getStart(m2)) {
+            if (verbose) {
+                printf("Starts differ:\n  input:%" PRIu32 "\n  expected:%" PRIu32"\n", 
+                       maf_mafLine_getStart(m1), maf_mafLine_getStart(m2));
+            }
+            return false;
+        }
+        if (maf_mafLine_getLength(m1) != maf_mafLine_getLength(m2)) {
+            if (verbose) {
+                printf("Lengths differ:\n  input:%" PRIu32 "\n  expected:%" PRIu32"\n", 
+                       maf_mafLine_getLength(m1), maf_mafLine_getLength(m2));
+            }
+            return false;
+        }
+        if (maf_mafLine_getStrand(m1) != maf_mafLine_getStrand(m2)) {
+            if (verbose) {
+                printf("Strands differ:\n  input:%c\n  expected:%c\n", 
+                       maf_mafLine_getStrand(m1), maf_mafLine_getStrand(m2));
+            }
+            return false;
+        }
+        if (maf_mafLine_getSourceLength(m1) != maf_mafLine_getSourceLength(m2)) {
+            if (verbose) {
+                printf("Source lengths differ:\n  input:%" PRIu32 "\n  expected:%" PRIu32"\n", 
+                       maf_mafLine_getSourceLength(m1), maf_mafLine_getSourceLength(m2));
+            }
+            return false;
+        }
+        m1 = maf_mafLine_getNext(m1);
+        m2 = maf_mafLine_getNext(m2);
+    }
+    if (m2 != NULL) {
+        return false;
+    }
+    return true;
+}
 static void test_reverseComplement(CuTest *testCase) {
     // test that the reverseComplement function works properly
     char *input = de_strdup("GGGGaaaaaaaatttatatat");
@@ -706,18 +791,31 @@ static void test_addSequenceValuesToMtcSeq_0(CuTest *testCase) {
 static void test_localSeqCoords_0(CuTest *testCase) {
     mafCoordinatePair_t mcp;
     mcp.a = 0;
-    mcp.b = 0;
+    mcp.b = -1;
     char *s = de_strdup("ACGT");
     CuAssertTrue(testCase, localSeqCoords(3, s, &mcp, 0) == 3);
     CuAssertTrue(testCase, mcp.a == 3);
     CuAssertTrue(testCase, mcp.b == 3);
     free(s);
     mcp.a = 0;
-    mcp.b = 0;
+    mcp.b = -1;
     s = de_strdup("-------ACGT");
+    // printf("expecting 3 observing %" PRIi64 "\n", localSeqCoords(10, s, &mcp, 1));
+    mcp.a = 0;
+    mcp.b = -1;
     CuAssertTrue(testCase, localSeqCoords(10, s, &mcp, 1) == 3);
     CuAssertTrue(testCase, mcp.a == 10);
     CuAssertTrue(testCase, mcp.b == 3);
+    free(s);
+    mcp.a = 0;
+    mcp.b = 0;
+    s = de_strdup("A-------ACGT");    
+    // printf("expecting 4 observing %" PRIi64 "\n", localSeqCoords(11, s, &mcp, 1));
+    mcp.a = 0;
+    mcp.b = 0;
+    CuAssertTrue(testCase, localSeqCoords(11, s, &mcp, 1) == 4);
+    CuAssertTrue(testCase, mcp.a == 11);
+    CuAssertTrue(testCase, mcp.b == 4);
     free(s);
     mcp.a = 8;
     mcp.b = 1;
@@ -734,21 +832,22 @@ static void test_localSeqCoords_0(CuTest *testCase) {
     CuAssertTrue(testCase, mcp.b == 3);
     free(s);
     mcp.a = 0;
-    mcp.b = 0;
+    mcp.b = -1;
     s = de_strdup("-A-C-G-T");
     CuAssertTrue(testCase, localSeqCoords(7, s, &mcp, 1) == 3);
     CuAssertTrue(testCase, mcp.a == 7);
     CuAssertTrue(testCase, mcp.b == 3);
     free(s);
     mcp.a = 0;
-    mcp.b = 0;
+    mcp.b = -1;
     s = de_strdup("AA-A-C-G-T");
+    // printf("expecting 5 observing %" PRIi64 "\n", localSeqCoords(9, s, &mcp, 1));
     CuAssertTrue(testCase, localSeqCoords(9, s, &mcp, 1) == 5);
     CuAssertTrue(testCase, mcp.a == 9);
     CuAssertTrue(testCase, mcp.b == 5);
     free(s);
     mcp.a = 0;
-    mcp.b = 0;
+    mcp.b = -1;
     s = de_strdup("AA-A-C-G-T");
     CuAssertTrue(testCase, localSeqCoords(3, s, &mcp, 1) == 2);
     CuAssertTrue(testCase, mcp.a == 3);
@@ -762,7 +861,7 @@ static void test_localSeqCoords_0(CuTest *testCase) {
     CuAssertTrue(testCase, mcp.b == 2);
     free(s);
     mcp.a = 0;
-    mcp.b = 0;
+    mcp.b = -1;
     s = de_strdup("GTTGTCTCTCAATGTG");
     CuAssertTrue(testCase, localSeqCoords(6, s, &mcp, 0) == 6);
     CuAssertTrue(testCase, mcp.a == 6);
@@ -789,6 +888,7 @@ static void test_localSeqCoordsToGlobalPositiveStartCoords_0(CuTest *testCase) {
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(3, 5, 20, '+', 5) == 8);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(3, 5, 20, '+', 10) == 8);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(0, 1, 100, '+', 16) == 1);
+    // printf("19 ?= %" PRIi64 "\n", localSeqCoordsToGlobalPositiveStartCoords(0, 0, 20, '-', 1));
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(0, 0, 20, '-', 1) == 19);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(0, 0, 20, '-', 5) == 15);
     CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(3, 0, 20, '-', 1) == 16);
@@ -800,41 +900,53 @@ static void test_localSeqCoordsToGlobalPositiveStartCoords_0(CuTest *testCase) {
 static void test_coordinateTransforms_0(CuTest *testCase) {
     char *input = de_strdup("-AA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG");
     mafCoordinatePair_t mcp;
-    uint32_t start = 0, sourceLength = 100, seqLength = 37;
+    uint32_t start = 0, sourceLength = 100, seqLength = 37, localStart = 1;
+    int64_t expectation = 0;
+    char strand = '+';
+    bool containsGaps = true;
     mcp.a = 0;
-    mcp.b = 0;
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(1, input, &mcp, 1), 
-                                                                     start, sourceLength, '+', seqLength) == 0);
+    mcp.b = -1;
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localStart, input, &mcp, containsGaps), start, sourceLength, strand, seqLength) == expectation);
     CuAssertTrue(testCase, mcp.a == 1);
     CuAssertTrue(testCase, mcp.b == 0);
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(4, input, &mcp, 1), 
-                                                                     start, sourceLength, '+', seqLength) == 2);
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localStart, input, &mcp, containsGaps), start, sourceLength, strand, seqLength) == expectation);
+    CuAssertTrue(testCase, mcp.a == 1);
+    CuAssertTrue(testCase, mcp.b == 0);
+    localStart = 4;
+    expectation = 2;
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localStart, input, &mcp, containsGaps), start, sourceLength, strand, seqLength) == expectation);
     CuAssertTrue(testCase, mcp.a == 4);
     CuAssertTrue(testCase, mcp.b == 2);
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(26, input, &mcp, 1), 
-                                                                     start, sourceLength, '+', seqLength) == 21);
+    localStart = 26;
+    expectation = 21;
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localStart, input, &mcp, containsGaps), start, sourceLength, strand, seqLength) == expectation);
     CuAssertTrue(testCase, mcp.a == 26);
     CuAssertTrue(testCase, mcp.b == 21);
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(41, input, &mcp, 1), 
-                                                                     start, sourceLength, '+', seqLength) == 36);
+    localStart = 41;
+    expectation = 36;
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localStart, input, &mcp, containsGaps), start, sourceLength, strand, seqLength) == expectation);
     CuAssertTrue(testCase, mcp.a == 41);
     CuAssertTrue(testCase, mcp.b == 36);
     // reverse strand.
     mcp.a = 0;
-    mcp.b = 0;
+    mcp.b = -1;
     seqLength = 2;
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(1, input, &mcp, 1), 
-                                                                     start, sourceLength, '-', seqLength) == 98);
+    localStart = 1;
+    expectation = 98;
+    strand = '-';
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localStart, input, &mcp, containsGaps), start, sourceLength, strand, seqLength) == expectation);
     CuAssertTrue(testCase, mcp.a == 1);
     CuAssertTrue(testCase, mcp.b == 0);    
     seqLength = 19;
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(4, input, &mcp, 1), 
-                                                                     start, sourceLength, '-', seqLength) == 79);
+    localStart = 4;
+    expectation = 79;
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localStart, input, &mcp, containsGaps), start, sourceLength, strand, seqLength) == expectation);
     CuAssertTrue(testCase, mcp.a == 4);
     CuAssertTrue(testCase, mcp.b == 2);
     seqLength = 16;
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(26, input, &mcp, 1), 
-                                                                     start, sourceLength, '-', seqLength) == 63);
+    localStart = 26;
+    expectation = 63;
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localStart, input, &mcp, containsGaps), start, sourceLength, strand, seqLength) == expectation);
     CuAssertTrue(testCase, mcp.a == 26);
     CuAssertTrue(testCase, mcp.b == 21);
     free(input);
@@ -843,9 +955,106 @@ static void test_coordinateTransforms_0(CuTest *testCase) {
     mcp.b = 0;
     start = 1;
     seqLength = 16;
-    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(0, input, &mcp, 0), 
-                                                                     start, sourceLength, '+', seqLength) == 1);
+    localStart = 0;
+    expectation = 1;
+    strand = '+';
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localStart, input, &mcp, 0), start, sourceLength, strand, seqLength) == expectation);
     free(input);
+}
+static void test_coordinateTransforms_1(CuTest *testCase) {
+    char *input = de_strdup("CGTCCGCAGATCGTTAACTTAATTGTTCCGCTTGAAATCCGAAAACT---------GCCAA-CGCTATTGTTGCGACTGATAGTCGTGAATGGCCGTGACCACGCCCCCAATCCC----CTAAGCCCCCCTTT--------------TGGCAAA---------------------------------------CGGC---GCCTATGG--CTGG-----g-aa---------acag-------------------------------------------------------------------------------ga------------------------------------------acaga-----------------------------------------------------------------------------------------aacaggaacagGAATGCAATAAAA---TTGGCGTGACTAACTCAGCACTGGGATGCGAT---------GCGAGCATTG--CAG---------------------ATGAGCTGAG------GATTGGAG--CTTGAAAGTGGAGGAGGA---------T------TGGGGGGG-----GATGAAGGGGT----------------------------------------TC-----TGGGATTGGATGCC------CCAA---TGTGGCAGC---------CACAGAAGGGC--------------GCAAGTCGTGCGTGC---------CTCGGCGAAAC------------GTTGACGC------T-----------------GTCATGCAATCAGCAAATAGGCGACCGCAGCAAAAGTCGCGTAATTAACGC");
+    mafCoordinatePair_t mcp;
+    uint32_t start = 47275, localStart = 566, sourceLength = 47773, seqLength = 1, localCoord = 234;
+    int64_t expectation = 263;
+    char strand = '-';
+    bool containsGaps = true;
+    mcp.a = 0;
+    mcp.b = 0;
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localStart, input, &mcp, containsGaps), start, sourceLength, strand, seqLength) == expectation);
+    CuAssertTrue(testCase, mcp.a == localStart);
+    CuAssertTrue(testCase, mcp.b == localCoord);
+
+    localStart = 629;    
+    seqLength = 11;
+    expectation = 218;
+    localCoord = 269;
+    // printf("localSeqCoords: %" PRIi64 "\n", localSeqCoords(localStart, input, &mcp, containsGaps));
+    // printf("expecting %" PRIi64 " observing %" PRIi64 "\n", expectation, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localStart, input, &mcp, containsGaps), start, sourceLength, strand, seqLength));
+    CuAssertTrue(testCase, localSeqCoordsToGlobalPositiveStartCoords(localSeqCoords(localStart, input, &mcp, containsGaps), start, sourceLength, strand, seqLength) == expectation);
+    CuAssertTrue(testCase, mcp.a == localStart);
+    CuAssertTrue(testCase, mcp.b == localCoord);
+    
+    free(input);
+}
+static void test_mafBlockGapSorting_0(CuTest *testCase) {
+    // test that the mafBlock_sortBlockByIncreasingGap() function works as expected
+    // HEY YOU! qsort is NOT stable on all systems, do NOT write a test case that assumes stability.
+    // 
+    // build input
+    mafBlock_t *input = maf_newMafBlock();
+    mafBlock_t *expected = maf_newMafBlock();
+    maf_mafBlock_setHeadLine(input, maf_newMafLineFromString("a score=0.0", 1));
+    mafLine_t *ml = maf_mafBlock_getHeadLine(input);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca", 1));
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca", 1));
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s baboon         249182 13 +   4622798 gcagctgaaaaca", 1));
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA", 1));
+    maf_mafBlock_setTailLine(input, ml);
+    maf_mafBlock_setNumberOfLines(input, 5);
+    // build expected
+    maf_mafBlock_setHeadLine(expected, maf_newMafLineFromString("a score=0.0", 1));
+    ml = maf_mafBlock_getHeadLine(expected);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca", 1));
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca", 1));
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s baboon         249182 13 +   4622798 gcagctgaaaaca", 1));
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA", 1));
+    maf_mafBlock_setTailLine(expected, ml);
+    maf_mafBlock_setNumberOfLines(expected, 5);
+    // test
+    mafBlock_sortBlockByIncreasingGap(input);
+    CuAssertTrue(testCase, mafBlocksAreEqual(input, expected, false));
+    // cleanup
+    maf_destroyMafBlockList(input);
+    maf_destroyMafBlockList(expected);
+    
+    // build input
+    input = maf_newMafBlock();
+    expected = maf_newMafBlock();
+    maf_mafBlock_setHeadLine(input, maf_newMafLineFromString("a score=0.0", 1));
+    ml = maf_mafBlock_getHeadLine(input);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s hg16.chr7    27707221 14 + 158545518 gcagctgaaa--Taca", 1));
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s panTro1.chr6 28869787 16 + 161576975 gcagctgaaaTTTaca", 1));
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s baboon         249182 15 +   4622798 gcagctgaaa-TTaca", 1));
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAA---ATA", 1));
+    maf_mafBlock_setTailLine(input, ml);
+    maf_mafBlock_setNumberOfLines(input, 5);
+    // build expected
+    maf_mafBlock_setHeadLine(expected, maf_newMafLineFromString("a score=0.0", 1));
+    ml = maf_mafBlock_getHeadLine(expected);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s panTro1.chr6 28869787 16 + 161576975 gcagctgaaaTTTaca", 1));
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s baboon         249182 15 +   4622798 gcagctgaaa-TTaca", 1));
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s hg16.chr7    27707221 14 + 158545518 gcagctgaaa--Taca", 1)); 
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAA---ATA", 1));
+    maf_mafBlock_setTailLine(expected, ml);
+    maf_mafBlock_setNumberOfLines(expected, 5);
+    // test
+    mafBlock_sortBlockByIncreasingGap(input);
+    CuAssertTrue(testCase, mafBlocksAreEqual(input, expected, false));
+    // cleanup
+    maf_destroyMafBlockList(input);
+    maf_destroyMafBlockList(expected);
 }
 CuSuite* mafTransitiveClosure_TestSuite(void) {
     CuSuite* suite = CuSuiteNew();
@@ -864,5 +1073,7 @@ CuSuite* mafTransitiveClosure_TestSuite(void) {
     SUITE_ADD_TEST(suite, test_localSeqCoordsToGlobalPositiveCoords_0);
     SUITE_ADD_TEST(suite, test_localSeqCoordsToGlobalPositiveStartCoords_0);
     SUITE_ADD_TEST(suite, test_coordinateTransforms_0);
+    SUITE_ADD_TEST(suite, test_coordinateTransforms_1);
+    SUITE_ADD_TEST(suite, test_mafBlockGapSorting_0);
     return suite;
 }

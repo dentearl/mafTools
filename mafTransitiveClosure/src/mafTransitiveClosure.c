@@ -38,6 +38,7 @@
 
 const uint32_t kPinchThreshold = 50000000;
 const char *kVersion = "v0.1 June 2012";
+bool g_isSort = false;
 
 void parseOptions(int argc, char **argv, char *filename) {
     int c;
@@ -48,11 +49,12 @@ void parseOptions(int argc, char **argv, char *filename) {
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
             {"test", no_argument, 0, 't'},
-            {"maf",  required_argument, 0, 'm'},            
+            {"maf",  required_argument, 0, 'm'},
+            {"sort", no_argument, 0, 's'},
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        c = getopt_long(argc, argv, "d:m:h:v:t",
+        c = getopt_long(argc, argv, "d:m:s:h:v:t",
                         long_options, &option_index);
         if (c == -1)
             break;
@@ -62,6 +64,9 @@ void parseOptions(int argc, char **argv, char *filename) {
         case 'm':
             setMName = 1;
             sscanf(optarg, "%s", filename);
+            break;
+        case 's':
+            g_isSort = true;
             break;
         case 'v':
             g_verbose_flag++;
@@ -483,7 +488,7 @@ int64_t localSeqCoordsToGlobalPositiveStartCoords(int64_t c, uint32_t start, uin
     if (strand == '+') {
         return localSeqCoordsToGlobalPositiveCoords(c, start, sourceLength, strand);
     } else {
-        return localSeqCoordsToGlobalPositiveCoords(c, start + (length - 1), sourceLength, strand);
+        return localSeqCoordsToGlobalPositiveCoords(c, start + length - 1, sourceLength, strand);
     }
 }
 int64_t localSeqCoordsToGlobalPositiveCoords(int64_t c, uint32_t start, uint32_t sourceLength, char strand) {
@@ -492,33 +497,37 @@ int64_t localSeqCoordsToGlobalPositiveCoords(int64_t c, uint32_t start, uint32_t
     if (strand == '+') {
         return (int64_t) (start + c);
     } else {
-        return (int64_t) (sourceLength - 1 - start - c);
+        return (int64_t) (sourceLength - 1 - (start + c));
     }
 }
 int64_t localSeqCoords(uint32_t p, char *s, mafCoordinatePair_t *b, int containsGaps) {
     // given a coordinate inside of a sequence with respect to the start (which is 0), 
     // walk backwards and anytime you see a gap drop one from the coordinate to return
     if (containsGaps == 0) {
+        // store bookmark
         b->a = p;
         b->b = p;
-        return (int64_t) p;
+        return b->b;
     }
     int64_t bases = 0;
-    // printf("p:%" PRIu32 " b->a:%" PRIu32 " b->b:%" PRIu32 " s:%s\n", p, b->a, b->b, s);
+    // printf("p:%" PRIu32 " b->a:%" PRIi64 " b->b:%" PRIi64 " s:%s\n", p, b->a, b->b, s);
     for (int64_t i = p; i >= 0; --i) {
+        if (b->a == i) {
+            if (s[i] != '-' && b->b == -1) {
+                bases += 1;
+            }
+            // printf("i:%" PRIu64 ", bases:%" PRIi64 ", b->a:%" PRIu32 " b->b:%" PRIu64 " coming home, \n", i, bases, p, b->b + bases);
+            b->a = p;
+            b->b += bases;
+            return b->b;
+        }
         if (s[i] != '-') {
             ++bases;
             // printf("i:%" PRIu64 " ++bases = %" PRIu64 "\n", i, bases);
         }
-        if (b->a == i) {
-            // printf("i:%" PRIu64 ", b->a:%" PRIu32 " b->b:%" PRIu64 " coming home, \n", i, p, b->b + bases - 1);
-            b->a = p;
-            b->b += bases - 1;
-            return b->b;
-        }
     }
     b->a = p;
-    b->b = bases - 1;
+    b->b = bases;
     return b->b;
 }
 uint32_t g_numPinches = 0;
@@ -527,10 +536,13 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
                             char *aSeq, stPinchThread *b, uint32_t bGlobalStart, uint32_t bGlobalLength,
                             int bStrand, char *bSeq, uint32_t regionStart, uint32_t regionEnd,
                             mafCoordinatePair_t aBookmark, mafCoordinatePair_t bBookmark, 
-                            int bContainsGaps) {
+                            int aContainsGaps, int bContainsGaps, 
+                            void (*pinchFunction)(stPinchThread *, stPinchThread *, int64_t, int64_t, int64_t, bool)) {
     // perform a pinch operation for regions of bSeq that are not gaps, i.e. `-'
     // GlobalStart is the positive strand position (zero based) coordinate of the start of this block
     // de_debug("processPairForPinching() g_numPinches: %u\n", g_numPinches);
+    // the nasty construction of passing in the pinch function is so that we can more easily unit test 
+    // this code. Sorry about that.
     (void) (threadSet);
     uint32_t length = 0, localPos = 0;
     uint32_t localBlockStart = localPos;
@@ -545,7 +557,7 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
         if (bSeq[localPos] == '-') {
             if (inBlock) {
                 inBlock = false;
-                aLocalPosCoords = localSeqCoords(localBlockStart, aSeq, &aBookmark, 0);
+                aLocalPosCoords = localSeqCoords(localBlockStart, aSeq, &aBookmark, aContainsGaps);
                 aGlobalPosCoords = localSeqCoordsToGlobalPositiveStartCoords(aLocalPosCoords, aGlobalStart, 
                                                                              aGlobalLength, aStrand, length);
                 bLocalPosCoords = localSeqCoords(localBlockStart, bSeq, &bBookmark, bContainsGaps);
@@ -556,8 +568,7 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
                 de_debug("a coords local: %" PRIi64 " global: %" PRIi64
                          ", b coords local: %" PRIi64 ", global: %" PRIi64 "\n",
                          aLocalPosCoords, aGlobalPosCoords, bLocalPosCoords, bGlobalPosCoords);
-                         
-                stPinchThread_pinch(a, b, aGlobalPosCoords, bGlobalPosCoords, length, (aStrand == bStrand));
+                pinchFunction(a, b, aGlobalPosCoords, bGlobalPosCoords, length, (aStrand == bStrand));
                 ++g_numPinches;
                 /* if (g_numPinches > kPinchThreshold) { */
                 /*     stPinchThreadSet_joinTrivialBoundaries(threadSet); */
@@ -572,13 +583,13 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
                 inBlock = true;
                 localBlockStart = localPos;
             }
-            ++length; // length of this alignment
+            ++length; // length of this segment
         }
     }
     de_debug("done walking comparison region\n");
     if (inBlock) {
         inBlock = false;
-        aLocalPosCoords = localSeqCoords(localBlockStart, aSeq, &aBookmark, 0);
+        aLocalPosCoords = localSeqCoords(localBlockStart, aSeq, &aBookmark, aContainsGaps);
         aGlobalPosCoords = localSeqCoordsToGlobalPositiveStartCoords(aLocalPosCoords, aGlobalStart, 
                                                                      aGlobalLength, aStrand, length);
         bLocalPosCoords = localSeqCoords(localBlockStart, bSeq, &bBookmark, bContainsGaps);
@@ -588,7 +599,7 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
         de_debug("a coords local: %" PRIi64 " global: %" PRIi64
                          ", b coords local: %" PRIi64 ", global: %" PRIi64 "\n",
                          aLocalPosCoords, aGlobalPosCoords, bLocalPosCoords, bGlobalPosCoords);
-        stPinchThread_pinch(a, b, aGlobalPosCoords, bGlobalPosCoords, length, (aStrand == bStrand));
+        pinchFunction(a, b, aGlobalPosCoords, bGlobalPosCoords, length, (aStrand == bStrand));
         length = 0;
         ++g_numPinches;
     }
@@ -616,10 +627,11 @@ mafCoordinatePair_t* newCoordinatePairArray(uint32_t numSeqs, char **seqs) {
     for (uint32_t i = 0; i < numSeqs; ++i) {
         pos = 0;
         while ((seqs[i][pos] == '-') && (pos < strlen(seqs[i]))) {
+            // find the first non gap position in the sequence and start the bookmark there.
             ++pos;
         }
-        a[i].a = pos;
-        a[i].b = 0;
+        a[i].a = (int64_t) pos;
+        a[i].b = -1;
     }
     return a;
 }
@@ -710,9 +722,65 @@ void destroyVizMatrix(int **mat, unsigned n) {
     }
     free(mat);
 }
+int cmp_by_gaps(const void *a, const void *b) {
+    mafBlockSort_t **ia = (mafBlockSort_t **) a;
+    mafBlockSort_t **ib = (mafBlockSort_t **) b;
+    return ((*ia)->value >= (*ib)->value);
+}
+int64_t g_stableOrder = INT64_MIN;
+void mafBlock_sortBlockByIncreasingGap(mafBlock_t *mb) {
+    // take a pointer to mafblock, sort the maflines by 
+    // the number of gaps they contain smallest to largest. All non-sequence
+    // lines are stored in order of appearance and in the output will appear
+    // before the sequence lines. THIS MEANS THAT THIS SORT WILL BREAK UP
+    // RELATIONSHIPS BETWEEN COMMENT LINES AND 'e', 'q' and 'i' LINES AND
+    // THEIR PARTNER 's' LINES. BEWARE.
+    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
+    assert(ml != NULL);
+    int64_t i, n = maf_mafBlock_getNumberOfLines(mb);
+    int64_t value;
+    mafBlockSort_t **array = (mafBlockSort_t **) de_malloc(sizeof(mafBlockSort_t *) * n);
+    for (i = 0; i < n; ++i) {
+        array[i] = (mafBlockSort_t *) de_malloc(sizeof(mafBlockSort_t));
+        array[i]->ml = ml;
+        if (maf_mafLine_getType(ml) == 's') {
+            value = strlen(maf_mafLine_getSequence(ml)) - maf_mafLine_getLength(ml);
+            if (value == 0) {
+                // force stability for blocks without gaps
+                array[i]->value = ++g_stableOrder;
+            } else {
+                array[i]->value = value;
+            }
+        } else {
+            array[i]->value = ++g_stableOrder;
+        }
+        ml = maf_mafLine_getNext(ml);
+    }
+    // sort
+    qsort(array, n, sizeof(mafBlockSort_t *), cmp_by_gaps);
+    // rebuild mafBlockList
+    maf_mafBlock_setHeadLine(mb, array[0]->ml);
+    for (i = 0; i < (n - 1); ++i) {
+        ml = array[i]->ml;
+        maf_mafLine_setNext(ml, array[i + 1]->ml);
+    }
+    maf_mafLine_setNext(maf_mafLine_getNext(ml), NULL);
+    if (n > 1) {
+        i = n - 1;
+    } else {
+        i = 0;
+    }
+    maf_mafBlock_setTailLine(mb, array[i]->ml);
+    // clean up
+    for (i = 0; i < n; ++i)
+        free(array[i]);
+    free(array);
+}
 void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     // for a given block, add the alignment information to the threadset.
     de_debug("walkBlockAddingAlignments():\n");
+    if (g_isSort)
+        mafBlock_sortBlockByIncreasingGap(mb);
     uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
     if (numSeqs < 1) 
         return;
@@ -749,7 +817,8 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
             processPairForPinching(threadSet, a, starts[c->ref], sourceLengths[c->ref], strands[c->ref],
                                    mat[c->ref], b, starts[r], sourceLengths[r], strands[r], mat[r], 
                                    c->region->start, c->region->end, bookmarks[c->ref], bookmarks[r],
-                                   (lengths[r] != seqFieldLength));
+                                   (lengths[c->ref] != seqFieldLength), (lengths[r] != seqFieldLength), 
+                                   stPinchThread_pinch);
         }
         tmp = c;
         c = c->next;
