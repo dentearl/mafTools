@@ -735,7 +735,7 @@ void mafBlock_sortBlockByIncreasingGap(mafBlock_t *mb) {
     // before the sequence lines. THIS MEANS THAT THIS SORT WILL BREAK UP
     // RELATIONSHIPS BETWEEN COMMENT LINES AND 'e', 'q' and 'i' LINES AND
     // THEIR PARTNER 's' LINES. BEWARE.
-    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
+    mafLine_t *next = NULL, *ml = maf_mafBlock_getHeadLine(mb);
     assert(ml != NULL);
     int64_t i, n = maf_mafBlock_getNumberOfLines(mb);
     int64_t value;
@@ -764,7 +764,12 @@ void mafBlock_sortBlockByIncreasingGap(mafBlock_t *mb) {
         ml = array[i]->ml;
         maf_mafLine_setNext(ml, array[i + 1]->ml);
     }
-    maf_mafLine_setNext(maf_mafLine_getNext(ml), NULL);
+    if (ml != NULL) {
+        next = maf_mafLine_getNext(ml);
+        if (next != NULL) {
+            maf_mafLine_setNext(next, NULL);
+        }
+    }
     if (n > 1) {
         i = n - 1;
     } else {
