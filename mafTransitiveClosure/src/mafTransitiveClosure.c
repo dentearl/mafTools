@@ -796,7 +796,7 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
         vizMat = getVizMatrix(mb, numSeqs, seqFieldLength);
     }
     char *strands = maf_mafBlock_getStrandArray(mb);
-    char **names = maf_mafBlock_getSpeciesMatrix(mb);
+    char **names = maf_mafBlock_getSpeciesArray(mb);
     uint32_t *starts = maf_mafBlock_getStartArray(mb);
     uint32_t *sourceLengths = maf_mafBlock_getSourceLengthArray(mb);
     uint32_t *lengths = maf_mafBlock_getSequenceLengthArray(mb);
