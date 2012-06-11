@@ -189,7 +189,7 @@ mafBlock_t* maf_newMafBlock(void) {
     mb->numberOfLines = 0;
     return mb;
 }
-mafFileApi_t* maf_newMfa(char *filename, char const *mode) {
+mafFileApi_t* maf_newMfa(const char *filename, char const *mode) {
     mafFileApi_t *mfa = (mafFileApi_t *) de_malloc(sizeof(*mfa));
     mfa->lineNumber = 0;
     mfa->lastLine = NULL;
@@ -356,7 +356,7 @@ uint32_t* maf_mafBlock_getSequenceLengthArray(mafBlock_t *mb) {
     }
     return a;
 }
-char** maf_mafBlock_getSpeciesMatrix(mafBlock_t *mb) {
+char** maf_mafBlock_getSpeciesArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
     // should return an array of char pointers containing an in-order list of 
     // sequence name fields for all sequences.

@@ -32,7 +32,7 @@ typedef struct mafBlock mafBlock_t;
 typedef struct mafLine mafLine_t;
 
 // creators, destroyers
-mafFileApi_t* maf_newMfa(char *filename, char const *mode);
+mafFileApi_t* maf_newMfa(const char *filename, char const *mode);
 mafBlock_t* maf_newMafBlock(void);
 mafLine_t* maf_newMafLine(void);
 mafLine_t* maf_newMafLineFromString(char *s, uint32_t lineNumber);
@@ -60,7 +60,7 @@ uint32_t* maf_mafBlock_getPosCoordStartArray(mafBlock_t *mb);
 uint32_t* maf_mafBlock_getStartArray(mafBlock_t *mb);
 uint32_t* maf_mafBlock_getSourceLengthArray(mafBlock_t *mb);
 uint32_t* maf_mafBlock_getSequenceLengthArray(mafBlock_t *mb);
-char** maf_mafBlock_getSpeciesMatrix(mafBlock_t *mb);
+char** maf_mafBlock_getSpeciesArray(mafBlock_t *mb);
 mafBlock_t* maf_mafBlock_getNext(mafBlock_t *mb);
 char** maf_mafBlock_getSequenceMatrix(mafBlock_t *mb, unsigned n, unsigned m);
 char* maf_mafLine_getLine(mafLine_t *ml);

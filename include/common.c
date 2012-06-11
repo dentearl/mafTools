@@ -72,7 +72,7 @@ int32_t de_getline(char **s, int32_t *n, FILE *f) {
         ++i;
     }
 }
-FILE* de_open(char *filename, char const *mode) {
+FILE* de_open(const char *filename, char const *mode) {
     FILE *f = fopen(filename, mode);
     if (f == NULL) {
         if (errno == ENOENT) {
