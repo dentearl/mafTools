@@ -122,7 +122,7 @@ int64_t getTargetStartLine(mafLine_t *ml, char *targetSeq) {
     if (maf_mafLine_getType(ml) != 's')
         return INT64_MIN;
     if (strncmp(targetSeq, maf_mafLine_getSpecies(ml), strlen(targetSeq)) == 0) {
-        return (int64_t) maf_mafLine_getStart(ml);
+        return (int64_t) maf_mafLine_getPositiveLeftCoord(ml);
     }
     return INT64_MIN;
 }
@@ -158,7 +158,7 @@ void populateArray(mafBlock_t *mb, sortingMafBlock_t **array, char *targetSequen
 int cmp_by_targetStart(const void *a, const void *b) {
     sortingMafBlock_t **ia = (sortingMafBlock_t **) a;
     sortingMafBlock_t **ib = (sortingMafBlock_t **) b;
-    return ((*ia)->targetStart - (*ib)->targetStart);
+    return ((*ia)->targetStart >= (*ib)->targetStart);
 }
 void reportBlock(sortingMafBlock_t *smb) {
     // print out the single block pointed to by mb

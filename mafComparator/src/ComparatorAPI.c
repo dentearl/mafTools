@@ -24,7 +24,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
 */
-
 #include "ComparatorAPI.h"
 #include "cString.h"
 
@@ -47,7 +46,6 @@ void aPair_fillOut(APair *aPair, char *seq1, char *seq2, int32_t pos1,
         aPair->origPos2 = origPos2;
     }
 }
-
 void aTrio_fillOut(ATrio *aTrio, char *seq1, char *seq2, char *seq3, 
                    int32_t pos1, int32_t pos2, int32_t pos3, int32_t top) {
     ASolo structs[3];
@@ -70,7 +68,6 @@ void aTrio_fillOut(ATrio *aTrio, char *seq1, char *seq2, char *seq3,
 
     aTrio->top = top;
 }
-
 APair *aPair_construct(const char *seq1, const char *seq2, int32_t pos1, 
                        int32_t pos2, int32_t origPos1, int32_t origPos2) {
     APair *aPair = st_malloc(sizeof(APair));
@@ -79,7 +76,6 @@ APair *aPair_construct(const char *seq1, const char *seq2, int32_t pos1,
     aPair->seq2 = stString_copy(aPair->seq2);
     return aPair;
 }
-
 ResultPair *resultPair_construct(const char *seq1, const char *seq2) {
     APair *aPair = aPair_construct(seq1, seq2, 0, 0, 0, 0);
     ResultPair *resultPair = st_calloc(1, sizeof(ResultPair));
@@ -87,7 +83,6 @@ ResultPair *resultPair_construct(const char *seq1, const char *seq2) {
     free(aPair);
     return resultPair;
 }
-
 ATrio *aTrio_construct(const char *seq1, const char *seq2, const char *seq3, 
                        int32_t pos1, int32_t pos2, int32_t pos3, int32_t top) {
     int32_t i;
@@ -101,29 +96,24 @@ ATrio *aTrio_construct(const char *seq1, const char *seq2, const char *seq3,
     }
     return aTrio;
 }
-
 APair *aPair_copyConstruct(APair *pair) {
    return aPair_construct(pair->seq1, pair->seq2, pair->pos1, pair->pos2, pair->origPos1, pair->origPos2);
 }
-
 ATrio *aTrio_copyConstruct(ATrio *trio) {
     return aTrio_construct(trio->seq1, trio->seq2, trio->seq3, trio->pos1, trio->pos2, trio->pos3, trio->top);
 }
-
 void aPair_destruct(APair *pair, void *extraArgument) {
     assert(extraArgument == NULL); //because destruction takes place in avl_tree
     free(pair->seq1);
     free(pair->seq2);
     free(pair);
 }
-
 void resultPair_destruct(ResultPair *pair, void *extraArgument) {
     assert(extraArgument == NULL); //because destruction takes place in avl_tree
     free(pair->aPair.seq1);
     free(pair->aPair.seq2);
     free(pair);
 }
-
 void aTrio_destruct(ATrio *trio, void *extraArgument) {
     assert(extraArgument == NULL); //because destruction takes place in avl_tree
     free(trio->seq1);
@@ -131,7 +121,6 @@ void aTrio_destruct(ATrio *trio, void *extraArgument) {
     free(trio->seq3);
     free(trio);
 }
-
 int aSolo_cmpFunction(const void *a, const void *b) {
     ASolo *ia = (ASolo *) a;
     ASolo *ib = (ASolo *) b;
@@ -143,7 +132,6 @@ int aSolo_cmpFunction(const void *a, const void *b) {
     }
     return cmp;
 }
-
 int32_t aPair_cmpFunction_seqsOnly(APair *aPair1, APair *aPair2, void *a) {
     /*
      * Compares only the sequence name arguments of the a pairs.
@@ -155,7 +143,6 @@ int32_t aPair_cmpFunction_seqsOnly(APair *aPair1, APair *aPair2, void *a) {
     }
     return i;
 }
-
 int32_t aTrio_cmpFunction_seqsOnly(ATrio *aTrio1, ATrio *aTrio2, void *a) {
     /*
      * Compares only the sequence name arguments of the a trios.
@@ -170,7 +157,6 @@ int32_t aTrio_cmpFunction_seqsOnly(ATrio *aTrio1, ATrio *aTrio2, void *a) {
     }
     return i;
 }
-
 int32_t aPair_cmpFunction(APair *aPair1, APair *aPair2, void *a) {
     /*
      * Compares first the sequence then the position arguments of the a pairs.
@@ -184,7 +170,6 @@ int32_t aPair_cmpFunction(APair *aPair1, APair *aPair2, void *a) {
     }
     return i;
 }
-
 int32_t aTrio_cmpFunction_seqAndPos(ATrio *aTrio1, ATrio *aTrio2, void *a) {
     /*
      * Compares first the sequence then the position arguments of the a trios.
@@ -201,7 +186,6 @@ int32_t aTrio_cmpFunction_seqAndPos(ATrio *aTrio1, ATrio *aTrio2, void *a) {
     }
     return i;
 }
-
 int32_t aTrio_cmpFunction(ATrio *aTrio1, ATrio *aTrio2, void *a) {
     /*
      * Compares first the sequence, then the position, then the top arguments of the a trios.
@@ -212,7 +196,6 @@ int32_t aTrio_cmpFunction(ATrio *aTrio1, ATrio *aTrio2, void *a) {
     //  }
     return i;
 }
-
 void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extraArgument1, void *extraArgument2,
                                  void *extraArgument3, int32_t, int32_t), 
                stHash *intervalsHash, void *extraArgument1, void *extraArgument2,
@@ -224,7 +207,6 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
     char *sequence;
     char strand;
     static APair aPair;
-
     // process block function iterates through successive lines while we have not reached
     // the end of the file and the newline starts with 's'
     // for each line grep the sequence, start position and the length.
@@ -260,7 +242,6 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
         listAppend(ranges, sequence);
         *bytesRead = benLine(cA, nBytes, fileHandle);
     }
-
     //Now call the pair function for every pair of aligned bases.
     for (i = 0; i < ranges->length; i += 5) {
         char *seq1 = ranges->list[i];
@@ -303,22 +284,18 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
             }
         }
     }
-
     //cleanup the list
     destructList(ranges);
 }
-
 struct stringSortIdx {
     char *name;
     int32_t index;
 };
-
 int stringSortIdx_cmp(const void *a, const void *b) {
     struct stringSortIdx *ia = (struct stringSortIdx *) a;
     struct stringSortIdx *ib = (struct stringSortIdx *) b;
     return strcmp(ia->name, ib->name);
 }
-
 void getTriosP(void(*passTrioFn)(ATrio *trio, void *extraArgument1, void *extraArgument2, void *extraArgument3),
                void *extraArgument1, void *extraArgument2, void *extraArgument3, 
                int *bytesRead, int *nBytes, char **cA, FILE *fileHandle, 
@@ -330,15 +307,12 @@ void getTriosP(void(*passTrioFn)(ATrio *trio, void *extraArgument1, void *extraA
     char *sequence, *sequence2, *sequence3;
     char strand;
     static ATrio aTrio;
-
     TrioDecoder *decoder = trioDecoder_construct(treeString);
-
     //process block function iterates through successive lines while we have not reached
     //the end of the file and the newline starts with 's'
     //for each line grep the sequence, start position and the length.
     //all the lengths must be equal.
     *bytesRead = benLine(cA, nBytes, fileHandle);
-
     length = INT32_MAX;
     while (*bytesRead > 0 && (*cA)[0] == 's') {
         seqName = st_malloc(sizeof(char) * (1 + (*bytesRead)));
@@ -353,11 +327,8 @@ void getTriosP(void(*passTrioFn)(ATrio *trio, void *extraArgument1, void *extraA
             free(sequence);
             sequence = stString_print("");
         }
-
         length = strlen(sequence);
-
         listAppend(ranges, seqName);
-
         assert(strand == '+' || strand == '-');
         if (strand == '+') {
             listAppend(ranges, constructInt(start));
@@ -367,55 +338,44 @@ void getTriosP(void(*passTrioFn)(ATrio *trio, void *extraArgument1, void *extraA
             listAppend(ranges, constructInt(-1));
         }
         listAppend(ranges, sequence);
-
         *bytesRead = benLine(cA, nBytes, fileHandle);
     }
-
     struct stringSortIdx tmpNameArray[3];
     TrioNames *trio = NULL;
     int32_t index = 0;
     int32_t flag = 0;
-
     int32_t seq1_rowIndex = 0;
     int32_t seq2_rowIndex = 0;
     int32_t seq3_rowIndex = 0;
-
     //Now call the pair function for every pair of aligned bases.
     for (i = 0; i < ranges->length; i += 4) {
         char *seq1 = ranges->list[i];
         pos1 = *((int32_t *) ranges->list[i + 1]);
         inc1 = *((int32_t *) ranges->list[i + 2]);
         sequence = ranges->list[i + 3];
-
         for (j = i + 4; j < ranges->length; j += 4) {
             char *seq2 = ranges->list[j];
             pos2 = *((int32_t *) ranges->list[j + 1]);
             inc2 = *((int32_t *) ranges->list[j + 2]);
             sequence2 = ranges->list[j + 3];
-
             for (k = j + 4; k < ranges->length; k += 4) {
                 char *seq3 = ranges->list[k];
                 pos3 = *((int32_t *) ranges->list[k + 1]);
                 inc3 = *((int32_t *) ranges->list[k + 2]);
                 sequence3 = ranges->list[k + 3];
-
                 assert((int32_t)strlen(sequence) == length);
                 assert((int32_t)strlen(sequence2) == length);
                 assert((int32_t)strlen(sequence3) == length);
-
                 flag = 0;
-
                 seq1_rowIndex = i / 4;
                 seq2_rowIndex = j / 4;
                 seq3_rowIndex = k / 4;
-
                 tmpNameArray[0].name = seq1;
                 tmpNameArray[1].name = seq2;
                 tmpNameArray[2].name = seq3;
                 tmpNameArray[0].index = seq1_rowIndex;
                 tmpNameArray[1].index = seq2_rowIndex;
                 tmpNameArray[2].index = seq3_rowIndex;
-
                 qsort(tmpNameArray, 3, sizeof(struct stringSortIdx), stringSortIdx_cmp);
                 for (index = 0; index < speciesList->length; index++) {
                     trio = speciesList->list[index];
@@ -426,14 +386,11 @@ void getTriosP(void(*passTrioFn)(ATrio *trio, void *extraArgument1, void *extraA
                         break;
                     }
                 }
-
                 if (!flag) {
                     continue;
                 }
-
                 top = calcTrioState(decoder, tmpNameArray[0].index, tmpNameArray[1].index, tmpNameArray[2].index);
                 assert(top != -1);
-
                 for (l = 0; l < length; l++) {
                     if (sequence[l] != '-' && sequence2[l] != '-' && sequence3[l] != '-') {
                         aTrio_fillOut(&aTrio, seq1, seq2, seq3, pos1, pos2, pos3, top);
@@ -452,13 +409,11 @@ void getTriosP(void(*passTrioFn)(ATrio *trio, void *extraArgument1, void *extraA
             }
         }
     }
-
     //cleanup the list
     destructList(ranges);
     trioDecoder_destruct(decoder);
 }
-
-void getPairs(const char *mAFFile1, 
+void getPairs(const char *mafFile1, 
               void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extraArgument1, void *extraArgument2, 
                                 void *extraArgument3, int32_t isVerboseFailures, int32_t near), 
               stHash *intervalsHash,
@@ -467,14 +422,12 @@ void getPairs(const char *mAFFile1,
     /*
      * Iterates through all pairs of bases in a set of MAFs, calling the given function for each one.
      */
-    FILE *fileHandle = fopen(mAFFile1, "r");
+    FILE *fileHandle = fopen(mafFile1, "r");
     int bytesRead;
     int nBytes = 100;
     char *cA;
-
     cA = st_malloc(nBytes + 1);
     bytesRead = benLine(&cA, &nBytes, fileHandle);
-
     // read through lines until reaching a line starting with an 'a':
     // then call process block function passing it the next line.
     while (bytesRead != -1) {
@@ -486,27 +439,23 @@ void getPairs(const char *mAFFile1,
             bytesRead = benLine(&cA, &nBytes, fileHandle);
         }
     }
-
     //Cleanup
     free(cA);
     fclose(fileHandle);
 }
-
-void getTrios(const char *mAFFile1, 
+void getTrios(const char *mafFile1, 
               void(*passTrioFn)(ATrio *trio, void *extraArgument1, void *extraArgument2, void *extraArgument3), 
               void *extraArgument1, void *extraArgument2, void *extraArgument3, struct List *speciesList) {
     /*
      * Iterates through all trios of bases in a set of MAFs, calling the given function for each one.
      */
-    FILE *fileHandle = fopen(mAFFile1, "r");
+    FILE *fileHandle = fopen(mafFile1, "r");
     int bytesRead;
     int nBytes = 100;
     char *cA;
-
     char *treeString = NULL;
     char *match = NULL;
     int sscanfResultCnt = 0;
-
     cA = st_malloc(nBytes + 1);
     bytesRead = benLine(&cA, &nBytes, fileHandle);
 
@@ -528,13 +477,11 @@ void getTrios(const char *mAFFile1,
             bytesRead = benLine(&cA, &nBytes, fileHandle);
         }
     }
-
     //Cleanup
     free(cA);
     free(treeString);
     fclose(fileHandle);
 }
-
 int32_t encodeTopoMatIdx(int32_t top1, int32_t top2) {
     int32_t tmp;
 
@@ -543,10 +490,86 @@ int32_t encodeTopoMatIdx(int32_t top1, int32_t top2) {
         top1 = top2;
         top2 = tmp;
     }
-
     return 4 * top1 + top2 - ((top1 + 1) * top1 / 2);
 }
-
+bool* getLegitRows(char **names, uint32_t numSeqs, stSortedSet *legitPairs) {
+    bool *legitRows = (bool *) st_malloc(sizeof(bool) * numSeqs);
+    for (uint32_t i = 0; i < numSeqs; ++i) {
+        if (stSortedSet_search(legitPairs, names[i]) != NULL) {
+            legitRows[i] = true;
+        } else {
+            legitRows[i] = false;
+        }
+    }
+    return legitRows;
+}
+int64_t walkBlockCountingPairs(mafBlock_t *mb, stSortedSet *legitPairs, int64_t *chooseTwoArray) {
+    // size is the MAXIMUM INDEX of the chooseTwo array
+    int64_t count = 0;
+    uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
+    if (numSeqs < 1) {
+        return 0;
+    }
+    uint32_t seqFieldLength = maf_mafBlock_longestSequenceField(mb);
+    char **names = maf_mafBlock_getSpeciesArray(mb);
+    char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
+    bool *legitRows = getLegitRows(names, numSeqs, legitPairs);
+    uint32_t possiblePartners;
+    for (uint32_t c = 0; c < seqFieldLength; ++c) {
+        possiblePartners = 0;
+        for (uint32_t r = 0; r < numSeqs; ++r) {
+            if (!legitRows[r]) {
+                continue;
+            }
+            if (mat[r][c] != '-') {
+                ++possiblePartners;
+            }
+        }
+        if (possiblePartners < 101) {
+            count += chooseTwoArray[possiblePartners];
+        } else {
+            count += chooseTwo(possiblePartners);
+        }
+    }
+    // clean up
+    for (uint32_t i = 0; i < numSeqs; ++i) {
+        free(names[i]);
+    }
+    free(names);
+    maf_mafBlock_destroySequenceMatrix(mat, numSeqs);
+    free(legitRows);
+    return count;
+}
+int64_t chooseTwo(uint32_t n) {
+    return ((n * (n - 1)) / 2);
+}
+int64_t* buildChooseTwoArray(void) {
+    // pre-calculate a bunch of smaller sizes
+    int64_t *cta = (int64_t *) st_malloc(sizeof(int64_t) * 101);
+    cta[0] = 0;
+    cta[1] = 0;
+    cta[2] = 1;
+    cta[3] = 3;
+    cta[4] = 6;
+    for (uint32_t i = 5; i < 101; ++i) {
+        cta[i] = chooseTwo(i);
+    }
+    return cta;
+}
+int64_t countPairsInMaf(const char *filename, stSortedSet *legitPairs) {
+    mafFileApi_t *mfa = maf_newMfa(filename, "r");
+    mafBlock_t *mb = NULL;
+    int64_t counter = 0;
+    int64_t *chooseTwoArray = buildChooseTwoArray();
+    while ((mb = maf_readBlock(mfa)) != NULL) {
+        counter += walkBlockCountingPairs(mb, legitPairs, chooseTwoArray);
+        maf_destroyMafBlockList(mb);
+    }
+    // clean up
+    free(chooseTwoArray);
+    maf_destroyMfa(mfa);
+    return counter;
+}
 void countPairs(APair *pair, stHash *intervalsHash, int64_t *counter, 
                 stSortedSet *legitPairs, void *a, int32_t isVerboseFailures, int32_t near) {
     /*
@@ -560,7 +583,6 @@ void countPairs(APair *pair, stHash *intervalsHash, int64_t *counter,
         }
     }
 }
-
 void countTrios(ATrio *trio, int64_t *counter, struct hashtable *legitTrios, void *a) {
     /*
      * Counts the number of pairs in the MAF file.
@@ -572,7 +594,6 @@ void countTrios(ATrio *trio, int64_t *counter, struct hashtable *legitTrios, voi
             if (hashtable_search(legitTrios, trio->seq3) != NULL)
                 (*counter)++;
 }
-
 void samplePairs(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs, 
                  double *acceptProbability, stSortedSet *legitPairs, int32_t isVerboseFailures, 
                  int32_t near) {
@@ -584,7 +605,6 @@ void samplePairs(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs
             if (st_random() <= *acceptProbability)
                 avl_insert(pairs, aPair_copyConstruct(thisPair));
 }
-
 void sampleTrios(ATrio *trio, struct avl_table *trios, double *acceptProbability, struct hashtable *legitTrios) {
     /*
      * Adds *trio to *trios with a given probability.
@@ -595,7 +615,6 @@ void sampleTrios(ATrio *trio, struct avl_table *trios, double *acceptProbability
                 if (st_random() >= *acceptProbability)
                     avl_insert(trios, aTrio_copyConstruct(trio));
 }
-
 bool inInterval(stHash *intervalsHash, char *seq, int32_t position) {
     /* 
      * 
@@ -613,7 +632,6 @@ bool inInterval(stHash *intervalsHash, char *seq, int32_t position) {
     assert(stIntTuple_length(j) == 2);
     return stIntTuple_getPosition(j, 0) <= position && position < stIntTuple_getPosition(j, 1);
 }
-
 void getNearPairs(APair *thisPair, struct avl_table *pairs, int32_t near, stSortedSet *positivePairs) {
     /* given thisPair, if thisPair is in the table `pairs' then record it in the positivePairs set.
      * if the `near' option is set, do this not only for thisPair but for all pairs within +- `near'.
@@ -637,7 +655,6 @@ void getNearPairs(APair *thisPair, struct avl_table *pairs, int32_t near, stSort
     }
     thisPair->pos2 = i;
 }
-
 void homologyTests1(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs, 
                     stSortedSet *positivePairs, stSortedSet *legitPairs, int32_t isVerboseFailures, 
                     int32_t near) {
@@ -650,7 +667,6 @@ void homologyTests1(APair *thisPair, stHash *intervalsHash, struct avl_table *pa
         getNearPairs(thisPair, pairs, near, positivePairs);
     }
 }
-
 void homologyTestsTrio1(ATrio *trio, struct avl_table *trios, struct avl_table *resultTrios,
                         struct hashtable *legitTrios) {
     /*
@@ -667,7 +683,6 @@ void homologyTestsTrio1(ATrio *trio, struct avl_table *trios, struct avl_table *
             resultTrio = aTrio_construct(trio->seq1, trio->seq2, trio->seq3, 0, 0, 0, -1);
             avl_insert(resultTrios, resultTrio);
         }
-
         ATrio *triosTrio = avl_find(trios, trio);
         if (triosTrio != NULL) { //we use the positions as indices as to the outcome of the trio test.
             idx = encodeTopoMatIdx(trio->top, triosTrio->top);
@@ -676,7 +691,6 @@ void homologyTestsTrio1(ATrio *trio, struct avl_table *trios, struct avl_table *
         }
     }
 }
-
 void homologyTests2(struct avl_table *pairs, struct avl_table *resultPairs, stHash *intervalsHash,
                     stSortedSet *positivePairs, int32_t isVerboseFailures) {
     /*
@@ -730,7 +744,6 @@ void homologyTests2(struct avl_table *pairs, struct avl_table *resultPairs, stHa
         }
     }
 }
-
 void homologyTestsTrio2(struct avl_table *trios, struct avl_table *resultTrios) {
     /*
      * For every trio in 'trios', add 1 to the total number of trios tests for the sequence-trio.
@@ -749,8 +762,7 @@ void homologyTestsTrio2(struct avl_table *trios, struct avl_table *resultTrios) 
         resultTrio->pos2++;
     }
 }
-
-struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples,
+struct avl_table *compareMAFs_AB(const char *mafFileA, const char *mafFileB, int32_t numberOfSamples,
                                  stSortedSet *legitimateSequences, stHash *intervalsHash, 
                                  int32_t isVerboseFailures, int32_t near) {
     /*
@@ -758,19 +770,21 @@ struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int
      */
     int64_t pairNumber = 0;
     // count the number of pairs in mafFileA
-    getPairs(mAFFileA, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) countPairs,
-             intervalsHash, &pairNumber, legitimateSequences, NULL, isVerboseFailures, near);
+    // time_t start = time(NULL);
+    // getPairs(mafFileA, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) countPairs,
+    //          intervalsHash, &pairNumber, legitimateSequences, NULL, isVerboseFailures, near);
+    pairNumber = countPairsInMaf(mafFileA, legitimateSequences);
 
     double acceptProbability = ((double) numberOfSamples) / pairNumber;
     struct avl_table *pairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction, 
                                          NULL, NULL);
     // sample pairs from mafFileA
-    getPairs(mAFFileA, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) samplePairs,
+    getPairs(mafFileA, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) samplePairs,
              intervalsHash, pairs, &acceptProbability, legitimateSequences, isVerboseFailures, near);
 
     stSortedSet *positivePairs = stSortedSet_construct();
     // perform homology tests on mafFileB using sampled pairs from mafFileA
-    getPairs(mAFFileB, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) homologyTests1,
+    getPairs(mafFileB, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) homologyTests1,
              intervalsHash, pairs, positivePairs, legitimateSequences, isVerboseFailures, near);
 
     struct avl_table *resultPairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction_seqsOnly, NULL, NULL);
@@ -780,31 +794,29 @@ struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, int
     stSortedSet_destruct(positivePairs);
     return resultPairs;
 }
-
-struct avl_table *compareMAFs_AB_Trio(const char *mAFFileA, const char *mAFFileB, int32_t numberOfSamples,
+struct avl_table *compareMAFs_AB_Trio(const char *mafFileA, const char *mafFileB, int32_t numberOfSamples,
                                       struct hashtable *ht, struct List *speciesList) {
     /*
      * Gets samples.
      */
     int64_t trioNumber = 0;
-    getTrios(mAFFileA, (void(*)(ATrio *, void *, void *, void *)) countTrios, &trioNumber, ht, NULL, speciesList);
+    getTrios(mafFileA, (void(*)(ATrio *, void *, void *, void *)) countTrios, &trioNumber, ht, NULL, speciesList);
 
     double acceptProbability = 1.0 - ((double) numberOfSamples) / trioNumber;
     struct avl_table *trios =
             avl_create((int32_t(*)(const void *, const void *, void *)) aTrio_cmpFunction, NULL, NULL);
-    getTrios(mAFFileA, (void(*)(ATrio *, void *, void *, void *)) sampleTrios, trios, &acceptProbability, ht,
+    getTrios(mafFileA, (void(*)(ATrio *, void *, void *, void *)) sampleTrios, trios, &acceptProbability, ht,
             speciesList);
 
     struct avl_table *resultTrios = avl_create(
             (int32_t(*)(const void *, const void *, void *)) aTrio_cmpFunction_seqsOnly, NULL, NULL);
-    getTrios(mAFFileB, (void(*)(ATrio *, void *, void *, void *)) homologyTestsTrio1, trios, resultTrios, ht,
+    getTrios(mafFileB, (void(*)(ATrio *, void *, void *, void *)) homologyTestsTrio1, trios, resultTrios, ht,
             speciesList);
 
     homologyTestsTrio2(trios, resultTrios);
     avl_destroy(trios, (void(*)(void *, void *)) aTrio_destruct);
     return resultTrios;
 }
-
 void reportResult(const char *tagName, double total, double totalTrue, FILE *fileHandle, int tabLevel) {
     assert(total >= totalTrue);
     int i;
@@ -814,7 +826,6 @@ void reportResult(const char *tagName, double total, double totalTrue, FILE *fil
             tagName, (int32_t) total, (int32_t) totalTrue, 
             (int32_t) (total - totalTrue), total == 0 ? 0.0 : totalTrue / total);
 }
-
 ResultPair *aggregateResult(void *(*getNextPair)(void *, void *), void *arg1, void *arg2, 
                             const char *name1, const char *name2) {
     /* loop through all ResultPairs available via the getNextPair() iterator and aggregate their
@@ -845,7 +856,6 @@ ResultPair *aggregateResult(void *(*getNextPair)(void *, void *), void *arg1, vo
     }
     return resultPair2;
 }
-
 void *addReferencesAndDups_getDups(void *arg, void *arg2) {
     ResultPair *resultPair;
     while ((resultPair = avl_t_next(arg)) != NULL) {
@@ -855,7 +865,6 @@ void *addReferencesAndDups_getDups(void *arg, void *arg2) {
     }
     return resultPair;
 }
-
 void *addReferencesAndDups_getReferences(void *arg, void *arg2) {
     ResultPair *resultPair;
     while ((resultPair = avl_t_next(arg)) != NULL) {
@@ -865,7 +874,6 @@ void *addReferencesAndDups_getReferences(void *arg, void *arg2) {
     }
     return resultPair;
 }
-
 void addReferencesAndDups(struct avl_table *results_AB, stSortedSet *legitimateSequences) {
     /*
      * Adds tags for all against each species.
@@ -888,12 +896,10 @@ void addReferencesAndDups(struct avl_table *results_AB, stSortedSet *legitimateS
     }
     stList_destruct(list);
 }
-
 void *reportResults_fn(void *arg, void *arg2) {
    return avl_t_next(arg);
 }
-
-void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, FILE *fileHandle,
+void reportResults(struct avl_table *results_AB, const char *mafFileA, const char *mafFileB, FILE *fileHandle,
                    int32_t near, stSortedSet *legitimateSequences, const char *bedFiles) {
     /*
      * Report results in an XML formatted document.
@@ -908,7 +914,7 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
 
     fprintf(fileHandle, "\t<homologyTests fileA=\"%s\" fileB=\"%s\">\n"
             "\t\t<aggregateResults>\n", 
-            mAFFileA, mAFFileB);
+            mafFileA, mafFileB);
     reportResult("all", aggregateResults->total, aggregateResults->inAll, fileHandle, 3);
     if (bedFiles != NULL){
         reportResult("both", aggregateResults->totalBoth, aggregateResults->inBoth, fileHandle, 3);
@@ -945,13 +951,11 @@ void reportResults(struct avl_table *results_AB, const char *mAFFileA, const cha
                 "\t\t\t\t</singleHomologyTests>\n"
                 "\t\t\t</homologyTest>\n");
     }
-
     fprintf(fileHandle, "\t\t</homologyPairTests>\n\t</homologyTests>\n");
     return;
 }
-
-void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA, 
-                       const char *mAFFileB, FILE *fileHandle) {
+void reportResultsTrio(struct avl_table *results_AB, const char *mafFileA, 
+                       const char *mafFileB, FILE *fileHandle) {
     /*
      * Report results in an XML formatted document.
      */
@@ -966,7 +970,6 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA,
         positive += resultTrio->pos1;
         total += resultTrio->pos2;
     }
-
     //  char *topString = NULL;
     double goodDiagonal = 0.0;
     double goodTriangle = 0.0;
@@ -976,7 +979,7 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA,
             fileHandle,
             "\t<trioTests fileA=\"%s\" fileB=\"%s\" totalTests=\"%.0f\" "
             "totalTrue=\"%.0f\" totalFalse=\"%.0f\" average=\"%f\">\n",
-            mAFFileA, mAFFileB, total, positive, total - positive, positive / total);
+            mafFileA, mafFileB, total, positive, total - positive, positive / total);
     while ((resultTrio = avl_t_prev(&iterator)) != NULL) {
         assert(resultTrio->pos2 >= resultTrio->pos1);
         fprintf(
@@ -1003,7 +1006,6 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA,
                 totalTriangle += resultTrio->topMat[encodeTopoMatIdx(i, j)];
             }
         }
-
         fprintf(
                 fileHandle,
                 "\t\t\t<singleTrioTest sequenceA=\"%s\" sequenceB=\"%s\" "
@@ -1021,7 +1023,6 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA,
                         resultTrio->topMat[encodeTopoMatIdx(i, j)]);
             }
         }
-
         fprintf(fileHandle, "\t\t\t</singleTrioTest>\n");
         //      free(topString);
         //      topString = NULL;
@@ -1032,12 +1033,11 @@ void reportResultsTrio(struct avl_table *results_AB, const char *mAFFileA,
 
     return;
 }
-
-void populateNames(const char *mAFFile, stSortedSet *htp) {
+void populateNames(const char *mafFile, stSortedSet *htp) {
     /*
      * populates a hash table with the names of sequences from a MAF file.
      */
-    FILE *fileHandle = fopen(mAFFile, "r");
+    FILE *fileHandle = fopen(mafFile, "r");
     int bytesRead;
     int nBytes = 100;
     char *cA;
@@ -1064,12 +1064,10 @@ void populateNames(const char *mAFFile, stSortedSet *htp) {
         }
         bytesRead = benLine(&cA, &nBytes, fileHandle);
     }
-
     //Cleanup
     fclose(fileHandle);
     free(cA);
 }
-
 void printNameHash(struct hashtable *h) {
     // Debug function to iterate through a hash and print the contents.
     char *k;
@@ -1085,7 +1083,6 @@ void printNameHash(struct hashtable *h) {
         free(itr);
     }
 }
-
 void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3) {
     // intersects two hashes. (hash 1 \cap  hash 2) = hash 3.
     char *k;
@@ -1103,7 +1100,6 @@ void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtabl
         free(itr);
     }
 }
-
 int32_t countNodes(stTree *node) {
     int32_t i = 0;
     int32_t count = 0;
@@ -1117,7 +1113,6 @@ int32_t countNodes(stTree *node) {
         return count;
     }
 }
-
 int32_t countLeaves(stTree *node) {
     int32_t i = 0;
     int32_t count = 0;
@@ -1134,7 +1129,6 @@ int32_t countLeaves(stTree *node) {
         }
     }
 }
-
 void postOrderLabelNodes(stTree *node, int32_t *index, char **labelArray) {
     int32_t i = 0;
     for (i = 0; i < stTree_getChildNumber(node); i++) {
@@ -1145,7 +1139,6 @@ void postOrderLabelNodes(stTree *node, int32_t *index, char **labelArray) {
 
     return;
 }
-
 void postOrderLabelLeaves(stTree *node, int32_t *index, char **labelArray) {
     int32_t i = 0;
     for (i = 0; i < stTree_getChildNumber(node); i++) {
@@ -1155,10 +1148,8 @@ void postOrderLabelLeaves(stTree *node, int32_t *index, char **labelArray) {
         labelArray[*index] = stString_copy(stTree_getLabel(node));
         *index += 1;
     }
-
     return;
 }
-
 void lcaP(stTree *node, struct djs *uf, int32_t *ancestor, int32_t *color, 
           struct hashtable *ht, int32_t size, int32_t **lcaMatrix) {
     /*
@@ -1167,7 +1158,6 @@ void lcaP(stTree *node, struct djs *uf, int32_t *ancestor, int32_t *color,
     if (node == NULL) {
         return;
     }
-
     int32_t u = *((int *) hashtable_search(ht, (void *) stTree_getLabel(node)));
     djs_makeset(uf, u);
     ancestor[djs_findset(uf, u)] = u;
@@ -1189,10 +1179,8 @@ void lcaP(stTree *node, struct djs *uf, int32_t *ancestor, int32_t *color,
             lcaMatrix[i][u] = ancestor[djs_findset(uf, i)];
         }
     }
-
     return;
 }
-
 int32_t **lca(stTree *root, struct hashtable *ht) {
     int32_t nodeNum = countNodes(root);
 
@@ -1206,19 +1194,16 @@ int32_t **lca(stTree *root, struct hashtable *ht) {
     for (i = 0; i < nodeNum; i++) {
         ancestor[i] = 0;
     }
-
     int32_t *color = NULL;
     color = st_malloc(sizeof(int32_t) * nodeNum);
     for (i = 0; i < nodeNum; i++) {
         color[i] = 0;
     }
-
     int32_t **lcaMatrix = NULL;
     lcaMatrix = st_malloc(sizeof(int32_t *) * nodeNum);
     for (i = 0; i < nodeNum; i++) {
         lcaMatrix[i] = st_malloc(sizeof(int32_t) * nodeNum);
     }
-
     lcaP(root, uf, ancestor, color, ht, nodeNum, lcaMatrix);
 
     djs_free(uf);
@@ -1227,7 +1212,6 @@ int32_t **lca(stTree *root, struct hashtable *ht) {
 
     return lcaMatrix;
 }
-
 void lcaMatrix_free(int32_t **lcaMatrix, int32_t nodeNum) {
     int32_t i = 0;
 
@@ -1238,7 +1222,6 @@ void lcaMatrix_free(int32_t **lcaMatrix, int32_t nodeNum) {
 
     return;
 }
-
 char **createNodeLabelArray(stTree *tree, int32_t nodeNum) {
     char **labelArray = st_malloc(sizeof(char *) * nodeNum);
     int32_t po_index = 0;
@@ -1247,7 +1230,6 @@ char **createNodeLabelArray(stTree *tree, int32_t nodeNum) {
 
     return labelArray;
 }
-
 char **createLeafLabelArray(stTree *tree, int32_t nodeNum) {
     char **leafLabelArray = st_malloc(sizeof(char *) * nodeNum);
     int32_t po_index = 0;
@@ -1256,7 +1238,6 @@ char **createLeafLabelArray(stTree *tree, int32_t nodeNum) {
 
     return leafLabelArray;
 }
-
 void labelArray_destruct(char **labelArray, int32_t num) {
     int32_t i = 0;
     for (i = 0; i < num; i++) {
@@ -1265,7 +1246,6 @@ void labelArray_destruct(char **labelArray, int32_t num) {
     free(labelArray);
     return;
 }
-
 struct hashtable * getTreeLabelHash(char **labelArray, int32_t nodeNum) {
     struct hashtable *treeLabelHash = NULL;
     int32_t i = 0;
@@ -1273,10 +1253,8 @@ struct hashtable * getTreeLabelHash(char **labelArray, int32_t nodeNum) {
     for (i = 0; i < nodeNum; i++) {
         hashtable_insert(treeLabelHash, stString_copy(labelArray[i]), constructInt(i));
     }
-
     return treeLabelHash;
 }
-
 int32_t calcTrioState(TrioDecoder *decoder, int32_t spAIdx, int32_t spBIdx, int32_t spCIdx) {
     int32_t lca_AB = -1, lca_AC = -1, lca_BC = -1;
 
@@ -1310,7 +1288,6 @@ int32_t calcTrioState(TrioDecoder *decoder, int32_t spAIdx, int32_t spBIdx, int3
         return -1;
     }
 }
-
 TrioDecoder *trioDecoder_construct(char *treestring) {
     stTree *tree = NULL;
     tree = stTree_parseNewickString(treestring);
@@ -1336,7 +1313,6 @@ TrioDecoder *trioDecoder_construct(char *treestring) {
     stTree_destruct(tree);
     return decoder;
 }
-
 void trioDecoder_destruct(TrioDecoder *decoder) {
     labelArray_destruct(decoder->nodeLabelArray, decoder->nodeNum);
     labelArray_destruct(decoder->leafLabelArray, decoder->leafNum);
@@ -1346,7 +1322,6 @@ void trioDecoder_destruct(TrioDecoder *decoder) {
 
     return;
 }
-
 void writeXMLHeader(FILE *fileHandle){
    fprintf(fileHandle, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n");
    return;

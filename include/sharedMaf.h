@@ -32,7 +32,7 @@ typedef struct mafBlock mafBlock_t;
 typedef struct mafLine mafLine_t;
 
 // creators, destroyers
-mafFileApi_t* maf_newMfa(char *filename, char const *mode);
+mafFileApi_t* maf_newMfa(const char *filename, char const *mode);
 mafBlock_t* maf_newMafBlock(void);
 mafLine_t* maf_newMafLine(void);
 mafLine_t* maf_newMafLineFromString(char *s, uint32_t lineNumber);
@@ -53,12 +53,14 @@ uint32_t maf_mafFileApi_getLineNumber(mafFileApi_t *mfa);
 mafLine_t* maf_mafBlock_getHeadLine(mafBlock_t *mb);
 mafLine_t* maf_mafBlock_getTailLine(mafBlock_t *mb);
 uint32_t maf_mafBlock_getLineNumber(mafBlock_t *mb);
-unsigned maf_mafBlock_getNumberOfSequences(mafBlock_t *b);
+uint32_t maf_mafBlock_getNumberOfLines(mafBlock_t *b);
+uint32_t maf_mafBlock_getNumberOfSequences(mafBlock_t *b);
 char* maf_mafBlock_getStrandArray(mafBlock_t *mb);
 uint32_t* maf_mafBlock_getPosCoordStartArray(mafBlock_t *mb);
 uint32_t* maf_mafBlock_getStartArray(mafBlock_t *mb);
 uint32_t* maf_mafBlock_getSourceLengthArray(mafBlock_t *mb);
-char** maf_mafBlock_getSpeciesMatrix(mafBlock_t *mb);
+uint32_t* maf_mafBlock_getSequenceLengthArray(mafBlock_t *mb);
+char** maf_mafBlock_getSpeciesArray(mafBlock_t *mb);
 mafBlock_t* maf_mafBlock_getNext(mafBlock_t *mb);
 char** maf_mafBlock_getSequenceMatrix(mafBlock_t *mb, unsigned n, unsigned m);
 char* maf_mafLine_getLine(mafLine_t *ml);
@@ -71,17 +73,24 @@ char maf_mafLine_getStrand(mafLine_t *ml);
 uint32_t maf_mafLine_getSourceLength(mafLine_t *ml);
 char* maf_mafLine_getSequence(mafLine_t *ml);
 mafLine_t* maf_mafLine_getNext(mafLine_t *ml);
-void maf_mafLine_setType(mafLine_t *m, char c);
-void maf_mafLine_setStrand(mafLine_t *m, char c);
-void maf_mafLine_setStart(mafLine_t *m, uint32_t n);
-void maf_mafLine_setLength(mafLine_t *m, uint32_t n);
-void maf_mafLine_setSourceLength(mafLine_t *m, uint32_t n);
-void maf_mafLine_setSequence(mafLine_t *m, char *s);
+// setters
+void maf_mafBlock_setHeadLine(mafBlock_t *mb, mafLine_t *ml);
+void maf_mafBlock_setTailLine(mafBlock_t *mb, mafLine_t *ml);
+void maf_mafBlock_setNumberOfLines(mafBlock_t *mb, uint32_t n);
+void maf_mafLine_setType(mafLine_t *ml, char c);
+void maf_mafLine_setStrand(mafLine_t *ml, char c);
+void maf_mafLine_setStart(mafLine_t *ml, uint32_t n);
+void maf_mafLine_setLength(mafLine_t *ml, uint32_t n);
+void maf_mafLine_setSourceLength(mafLine_t *ml, uint32_t n);
+void maf_mafLine_setSequence(mafLine_t *ml, char *s);
+void maf_mafLine_setNext(mafLine_t *ml, mafLine_t *next);
 // utilities
 unsigned maf_mafBlock_getNumberOfBlocks(mafBlock_t *b);
 unsigned maf_mafBlock_longestSequenceField(mafBlock_t *b);
 bool maf_mafBlock_containsSequence(mafBlock_t *m);
-unsigned maf_mafLine_getNumberOfSequences(mafLine_t *m);
+uint32_t maf_mafLine_getNumberOfSequences(mafLine_t *m);
+uint32_t maf_mafLine_getPositiveCoord(mafLine_t *ml);
+uint32_t maf_mafLine_getPositiveLeftCoord(mafLine_t *ml);
 // print
 void maf_mafBlock_print(mafBlock_t *m);
 #endif // SHAREDMAF_H_

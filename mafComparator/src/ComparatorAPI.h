@@ -31,6 +31,7 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -44,7 +45,7 @@
 #include "hashTableC.h"
 #include "hashTableC_itr.h"
 #include "sonLib.h"
-
+#include "sharedMaf.h"
 #include "disjointset.h"
 
 typedef struct _solo {
@@ -118,5 +119,12 @@ void aTrio_destruct(ATrio *trio, void *extraArgument);
 TrioDecoder *trioDecoder_construct(char *treestring);
 int32_t calcTrioState(TrioDecoder *decoder, int32_t i, int32_t j, int32_t k);
 void writeXMLHeader( FILE *fileHandle );
+
+
+bool* getLegitRows(char **names, uint32_t numSeqs, stSortedSet *legitPairs);
+int64_t walkBlockCountingPairs(mafBlock_t *mb, stSortedSet *legitPairs, int64_t *chooseTwoArray);
+int64_t chooseTwo(uint32_t n);
+int64_t* buildChooseTwoArray(void);
+int64_t countPairsInMaf(const char *filename, stSortedSet *legitPairs);
 
 #endif /* _COMPARATOR_API_H_ */
