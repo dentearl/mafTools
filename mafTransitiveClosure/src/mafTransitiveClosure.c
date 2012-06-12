@@ -284,27 +284,37 @@ void walkBlockAddingSequence(mafBlock_t *mb, stHash *hash, stHash *nameHash) {
     // de_debug("walkBlockAddingSequence()\n");
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     mafTcSeq_t *mtcs = NULL;
+    char *name = NULL;
     while ((ml = maf_mafLine_getNext(ml)) != NULL) {
         if (maf_mafLine_getType(ml) == 's') {
-            if (stHash_search(hash, maf_mafLine_getSpecies(ml)) == NULL) {
-                mtcs = newMafTcSeq(stString_copy(maf_mafLine_getSpecies(ml)), maf_mafLine_getSourceLength(ml));
+            name = maf_mafLine_getSpecies(ml);
+            if (stHash_search(hash, name) == NULL) {
+                mtcs = newMafTcSeq(stString_copy(name), maf_mafLine_getSourceLength(ml));
                 // de_debug("Adding new sequence to hash: %s\n", maf_mafLine_getSpecies(ml));
                 addSequenceValuesToMtcSeq(ml, mtcs);
-                stHash_insert(hash, stString_copy(maf_mafLine_getSpecies(ml)), mtcs);
-                if (stHash_search(nameHash, (void*)(int64_t)stHash_stringKey(maf_mafLine_getSpecies(ml))) == NULL) {
-                    stHash_insert(nameHash, (void*)(int64_t)stHash_stringKey(maf_mafLine_getSpecies(ml)), 
-                                  stString_copy(maf_mafLine_getSpecies(ml)));
+                stHash_insert(hash, stString_copy(name), mtcs);
+                int64_t *key = (int64_t *)st_malloc(sizeof(*key));
+                *key = (int64_t) stHash_stringKey(name);
+                if (stHash_search(nameHash, key) == NULL) {
+                    // printf("Trying to store %" PRIi64 "\n", *key);
+                    stHash_insert(nameHash, key, stString_copy(name));
+                    // printf("key %" PRIi64 ": value: %s\n", *key, (char *)stHash_search(nameHash, key));
+                } else {
+                    free(key);
                 }
             } else {
-                addSequenceValuesToMtcSeq(ml, stHash_search(hash, (mafTcSeq_t *)maf_mafLine_getSpecies(ml)));
+                addSequenceValuesToMtcSeq(ml, stHash_search(hash, name));
             }
         }
     }
 }
+static int int64EqualKey(const void *key1, const void *key2) {
+    return *((int64_t *) key1) == *((int64_t*) key2);
+}
 void createSequenceHash(mafFileApi_t *mfa, stHash **hash, stHash **nameHash) {
     // de_debug("createSequenceHash()\n");
     *hash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, destroyMafTcSeq);
-    *nameHash = stHash_construct2(NULL, free);
+    *nameHash = stHash_construct3(stHash_stringKey, int64EqualKey, free, free);
     mafBlock_t *mb = NULL;
     while ((mb = maf_readBlock(mfa)) != NULL) {
         walkBlockAddingSequence(mb, *hash, *nameHash);
@@ -314,25 +324,29 @@ void createSequenceHash(mafFileApi_t *mfa, stHash **hash, stHash **nameHash) {
 void reportSequenceHash(stHash *hash, stHash *nameHash) {
     stHashIterator *hit = stHash_getIterator(hash);
     char *key = NULL;
+    printf("Sequence Hash:\n");
     while ((key = stHash_getNext(hit)) != NULL) {
         printf("found key: %s: ", key);
-        printf("value: %" PRIu32 "\n", ((mafTcSeq_t *)stHash_search(hash, key))->length);
+        printf("length: %" PRIu32 "\n", ((mafTcSeq_t *)stHash_search(hash, key))->length);
         printf("   %s\n", ((mafTcSeq_t *)stHash_search(hash, key))->sequence);
     }
     stHash_destructIterator(hit);
     hit = stHash_getIterator(nameHash);
     key = NULL;
+    printf("Name Hash:\n");
     while ((key = stHash_getNext(hit)) != NULL) {
-        printf("found key: %" PRIi64 ": ", (int64_t) key);
+        printf("found key: %" PRIi64 ": ", *((int64_t *)key));
         printf("value: %s\n", ((char *)stHash_search(nameHash, key)));
     }
-    stHash_destructIterator(hit);   
+    stHash_destructIterator(hit);
 }
 stPinchThreadSet* buildThreadSet(stHash *hash) {
     stPinchThreadSet *ts = stPinchThreadSet_construct();
     stHashIterator *hit = stHash_getIterator(hash);
     char *key = NULL;
+    // printf("bulidThreadSet()\n");
     while ((key = stHash_getNext(hit)) != NULL) {
+        // printf("adding thread prekey: %s key: %" PRIu32 "\n", key, stHash_stringKey(key));
         stPinchThreadSet_addThread(ts, stHash_stringKey(key), 0, 
                                    ((mafTcSeq_t *)stHash_search(hash, key))->length);
     }
@@ -874,9 +888,14 @@ void getMaxFieldLengths(stHash *hash, stHash *nameHash, stPinchBlock *block, uin
     char *temp = NULL;
     char *key = NULL;
     char strand = '\0';
+    int64_t *intKey = NULL;
     while ((thisSeg = stPinchBlockIt_getNext(&thisSegIt)) != NULL) {
         strand = stPinchSegment_getBlockOrientation(thisSeg) == 1 ? '+' : '-';
-        key = (char*)stHash_search(nameHash, (void *)stPinchSegment_getName(thisSeg));
+        intKey = (int64_t*) st_malloc(sizeof(*intKey));
+        *intKey = stPinchSegment_getName(thisSeg);
+        // printf("looking up key %" PRIi64, *intKey);
+        key = (char*) stHash_search(nameHash, (void*) intKey);
+        // printf(" value: %s\n", key);
         temp = (char*) de_malloc(kMaxStringLength);
         if (strand == '+') {
             sprintf(temp, "%" PRIi64, stPinchSegment_getStart(thisSeg));
@@ -899,6 +918,7 @@ void getMaxFieldLengths(stHash *hash, stHash *nameHash, stPinchBlock *block, uin
         if (*maxSource < strlen(temp))
             *maxSource = strlen(temp);
         free(temp);
+        free(intKey);
     }
 }
 char* getSequenceSubset(char *seq, int64_t start, char strand, int64_t length) {
@@ -928,15 +948,18 @@ void reportTransitiveClosure(stPinchThreadSet *threadSet, stHash *hash, stHash *
     printf("# mafTransitiveClosure %s\n\n", kVersion);
     uint32_t maxNameLength, maxStartLength, maxLengthLength, maxSourceLengthLength;
     int64_t xformedStart;
+    int64_t *intKey = NULL;
     maxNameLength = getMaxNameLength(hash);
     while ((thisBlock = stPinchThreadSetBlockIt_getNext(&thisBlockIt)) != NULL) {
-        getMaxFieldLengths(hash, nameHash, thisBlock, &maxStartLength, 
+        getMaxFieldLengths(hash, nameHash, thisBlock, &maxStartLength,
                            &maxLengthLength, &maxSourceLengthLength);
         printf("a degree=%" PRIu32 "\n", stPinchBlock_getDegree(thisBlock));
         thisSegIt = stPinchBlock_getSegmentIterator(thisBlock);
         while ((thisSeg = stPinchBlockIt_getNext(&thisSegIt)) != NULL) {
+            intKey = (int64_t *) st_malloc(sizeof(*intKey));
+            *intKey = stPinchSegment_getName(thisSeg);
             strand = stPinchSegment_getBlockOrientation(thisSeg) == 1 ? '+' : '-';
-            key = (char*)stHash_search(nameHash, (void *)stPinchSegment_getName(thisSeg));
+            key = (char*)stHash_search(nameHash, (void *)intKey);
             seq = getSequenceSubset(((mafTcSeq_t*)stHash_search(hash, key))->sequence,
                                     stPinchSegment_getStart(thisSeg),
                                     strand,
@@ -956,6 +979,7 @@ void reportTransitiveClosure(stPinchThreadSet *threadSet, stHash *hash, stHash *
                    seq
                    );
             free(seq);
+            free(intKey);
         }
         printf("\n");
     }
@@ -974,7 +998,10 @@ int main(int argc, char **argv) {
     // first pass, build sequence hash
     mafFileApi_t *mfa = maf_newMfa(filename, "r");
     createSequenceHash(mfa, &sequenceHash, &nameHash);
+    // reportSequenceHash(sequenceHash, nameHash);
     stPinchThreadSet *threadSet = buildThreadSet(sequenceHash);
+    // return EXIT_SUCCESS;
+
     maf_destroyMfa(mfa);
     
     // second pass, build pinch graph
