@@ -38,9 +38,13 @@ g_headers = ['''##maf version=1 scoring=tba.v8
 ''']
 
 def mafIsClosed(maf, outList):
+    if not os.path.exists(maf):
+        return False
     f = open(maf)
     lastLine = mtt.processHeader(f)
     block = mtt.extractBlockStr(f, lastLine)
+    if block is None:
+        return False
     while block is not None:
         lastLine = None
         block = block.strip()
