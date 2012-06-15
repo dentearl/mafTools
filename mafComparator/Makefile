@@ -4,7 +4,7 @@ binPath = ../bin
 
 extraAPI = src/cString.c src/disjointset.c ../include/sharedMaf.o ../external/CuTest.a ../include/common.o
 progs =  $(foreach f,mafComparator mergeMafComparatorResults.py setDiffDroppedMissing.py setDiffStatGenerator.py getRepeatBed mfaToMaf, ${binPath}/$f)
-# ${binPath}/src/PhyloComparator
+testObjects = src/test.ComparatorAPI.o 
 
 .PHONY: all clean test
 
@@ -13,11 +13,6 @@ all: ${progs}
 ${binPath}/mafComparator : src/mafComparator.c ${extraAPI} src/ComparatorAPI.c $(wildcard src/*.h) ${sonLibPath}/sonLib.a 
 	@mkdir -p $(dir $@)
 	${cxx} -I ${sonLibPath} -I ../include -I ../external -o $@.tmp $^ ${cflags}
-	mv $@.tmp $@
-
-${binPath}/PhyloComparator : src/PhyloComparator.c ${extraAPI} src/ComparatorAPI.c $(wildcard src/*.h) ${sonLibPath}/sonLib.a 
-	@mkdir -p $(dir $@)
-	${cxx} -I ${sonLibPath} -o $@.tmp $^ ${cflags}
 	mv $@.tmp $@
 
 ${binPath}/mfaToMaf : src/mfaToMaf.c src/eTreeExtras.c ${sonLibPath}/sonLib.a 
@@ -37,7 +32,7 @@ ${binPath}/%.py : src/%.py
 	mv $@.tmp $@
 
 %.o: %.c %.h
-	${cxx} -O3 -c -O3 $< -I ../external -o $@.tmp ${cflags}
+	${cxx} -O3 -c -O3 $< -I ${sonLibPath} -I ../external -I ../include -o $@.tmp ${cflags}
 	mv $@.tmp $@
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
@@ -47,8 +42,19 @@ ${binPath}/%.py : src/%.py
 	rm -f CuTest.o
 	mv CuTest.a $@
 
-test : all
-	python src/allTests.py -v
+test : all test/allTests test/testRand
+	./test/allTests && python2.7 src/allTests.py --verbose
+
+
+test/allTests: src/allTests.c src/ComparatorAPI.c ${extraAPI} ${testObjects} ${sonLibPath}/sonLib.a
+	mkdir -p $(dir $@)
+	${cxx} -g -O0 $^ -I ${sonLibPath} -I ../include -I ../external -o $@.tmp ${cflags}
+	mv $@.tmp $@
+
+test/testRand: src/testRand.c src/ComparatorRandom.c ${extraAPI} ${sonLibPath}/sonLib.a
+	mkdir -p $(dir $@)
+	${cxx} -g -O0 $^ -I ${sonLibPath} -I ../include -I ../external -o $@.tmp ${cflags}
+	mv $@.tmp $@
 
 clean :
 	rm -f *.o ${progs}
