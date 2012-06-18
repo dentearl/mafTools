@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2012 by 
+ * Copyright (C) 2009-2012 by 
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * ... and other members of the Reconstruction Team of David Haussler's 
  * lab (BME Dept. UCSC).
@@ -21,24 +21,24 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
- */
-#ifndef COMMON_H_
-#define COMMON_H_
-#include <stdio.h>
-#include <stdint.h>
+*/
 
-int g_verbose_flag;
-int g_debug_flag;
-const int kMaxStringLength;
-const int kMaxMessageLength;
-const int kMaxSeqName;
+#include "CuTest.h"
+#include "ComparatorAPI.h"
+#include "ComparatorRandom.h"
+#include "test.ComparatorAPI.h"
 
-void de_verbose(char const *fmt, ...);
-void de_debug(char const *fmt, ...);
-void failBadFormat(void);
-void* de_malloc(size_t n);
-int32_t de_getline(char **s, int32_t *n, FILE *f);
-FILE* de_fopen(const char *s, char const *mode);
-char* de_strdup(const char *s);
-
-#endif // COMMON_H_
+int main(int argc, char **argv) {
+    if (argc != 5) {
+        fprintf(stderr, "Usage: %s numberOfSamples n p randomSeed\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+    uint32_t numSamples = atoi(argv[1]);
+    uint32_t n = atoi(argv[2]);
+    double p = atof(argv[3]);
+    st_randomSeed(atoi(argv[4]));
+    for (uint32_t i = 0; i < numSamples; ++i) {
+        printf("%" PRIu64 "\n", rbinom(n, p));
+    }
+    return EXIT_SUCCESS;
+}

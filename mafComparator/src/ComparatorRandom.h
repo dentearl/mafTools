@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2012 by 
+ * Copyright (C) 2009-2012 by 
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * ... and other members of the Reconstruction Team of David Haussler's 
  * lab (BME Dept. UCSC).
@@ -21,24 +21,14 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
- */
-#ifndef COMMON_H_
-#define COMMON_H_
-#include <stdio.h>
+*/
+
+#ifndef _COMPARATOR_RANDOM_H_
+#define _COMPARATOR_RANDOM_H_
+
 #include <stdint.h>
+#include "sonLib.h"
 
-int g_verbose_flag;
-int g_debug_flag;
-const int kMaxStringLength;
-const int kMaxMessageLength;
-const int kMaxSeqName;
+uint64_t rbinom(const uint64_t n, const double p);
 
-void de_verbose(char const *fmt, ...);
-void de_debug(char const *fmt, ...);
-void failBadFormat(void);
-void* de_malloc(size_t n);
-int32_t de_getline(char **s, int32_t *n, FILE *f);
-FILE* de_fopen(const char *s, char const *mode);
-char* de_strdup(const char *s);
-
-#endif // COMMON_H_
+#endif // _COMPARATOR_RANDOM_H_

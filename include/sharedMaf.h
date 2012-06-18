@@ -77,6 +77,8 @@ mafLine_t* maf_mafLine_getNext(mafLine_t *ml);
 void maf_mafBlock_setHeadLine(mafBlock_t *mb, mafLine_t *ml);
 void maf_mafBlock_setTailLine(mafBlock_t *mb, mafLine_t *ml);
 void maf_mafBlock_setNumberOfLines(mafBlock_t *mb, uint32_t n);
+void maf_mafBlock_setNumberOfSequences(mafBlock_t *mb, uint32_t n);
+void maf_mafBlock_setLineNumber(mafBlock_t *mb, uint32_t n);
 void maf_mafLine_setType(mafLine_t *ml, char c);
 void maf_mafLine_setStrand(mafLine_t *ml, char c);
 void maf_mafLine_setStart(mafLine_t *ml, uint32_t n);

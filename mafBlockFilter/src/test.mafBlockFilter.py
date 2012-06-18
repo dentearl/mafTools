@@ -340,6 +340,7 @@ class FilterTest(unittest.TestCase):
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFilter')))
             cmd += ['--maf', testMafPath, '--include', '%s' % g_sequenceList]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             filtered = mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), g_knownIncludes[i][1], g_header)
             self.assertTrue(filtered)
@@ -359,6 +360,7 @@ class FilterTest(unittest.TestCase):
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFilter')))
             cmd += ['--maf', testMafPath, '--exclude', '%s' % g_sequenceList]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             filtered = mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), g_knownExcludes[i][1], g_header)
             self.assertTrue(filtered)
@@ -381,6 +383,7 @@ class FilterTest(unittest.TestCase):
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFilter')))
             cmd += ['--maf', testMafPath, '--include', '%s' % g_sequenceList]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             filtered = mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), g_knownIncludes[i][1], g_header)
             self.assertTrue(filtered)
@@ -403,6 +406,7 @@ class FilterTest(unittest.TestCase):
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFilter')))
             cmd += ['--maf', testMafPath, '--exclude', '%s' % g_sequenceList]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             filtered = mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), g_knownExcludes[i][1], g_header)
             self.assertTrue(filtered)

@@ -193,7 +193,7 @@ mafFileApi_t* maf_newMfa(const char *filename, char const *mode) {
     mafFileApi_t *mfa = (mafFileApi_t *) de_malloc(sizeof(*mfa));
     mfa->lineNumber = 0;
     mfa->lastLine = NULL;
-    mfa->mfp = de_open(filename, mode);
+    mfa->mfp = de_fopen(filename, mode);
     mfa->filename = de_strdup(filename);
     return mfa;
 }
@@ -472,8 +472,14 @@ void maf_mafBlock_setHeadLine(mafBlock_t *mb, mafLine_t *ml) {
 void maf_mafBlock_setTailLine(mafBlock_t *mb, mafLine_t *ml) {
     mb->tailLine = ml;
 }
+void maf_mafBlock_setNumberOfSequences(mafBlock_t *mb, uint32_t n) {
+    mb->numberOfSequences = n;
+}
 void maf_mafBlock_setNumberOfLines(mafBlock_t *mb, uint32_t n) {
     mb->numberOfLines = n;
+}
+void maf_mafBlock_setLineNumber(mafBlock_t *mb, uint32_t n) {
+    mb->lineNumber = n;
 }
 void maf_mafLine_setType(mafLine_t *ml, char c) {
     ml->type = c;

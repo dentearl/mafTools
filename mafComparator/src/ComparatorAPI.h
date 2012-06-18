@@ -71,22 +71,23 @@ typedef struct _resultPair {
     int32_t totalNeither;
 } ResultPair;
 
-void populateNames(const char *mAFFile, stSortedSet *htp);
+void populateNames(const char *mAFFile, stHash *hash);
 void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3);
 void printNameHash(struct hashtable *h);
 struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint32_t numberOfSamples, 
-                                 stSortedSet *legitimateSequences, stHash *intervalsHash, 
+                                 stHash *legitimateSequences, stHash *intervalsHash, 
                                  int32_t verbose, uint32_t near);
 void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, 
-                   FILE *fileHandle, uint32_t near, stSortedSet *legitimateSequences, const char *bedFiles);
+                   FILE *fileHandle, uint32_t near, stHash *legitimateSequences, const char *bedFiles);
 void aPair_destruct(APair *pair, void *extraArgument);
 void writeXMLHeader( FILE *fileHandle );
-bool* getLegitRows(char **names, uint32_t numSeqs, stSortedSet *legitPairs);
-uint64_t walkBlockCountingPairs(mafBlock_t *mb, stSortedSet *legitPairs, uint64_t *chooseTwoArray);
+bool* getLegitRows(char **names, uint32_t numSeqs, stHash *legitPairs);
+uint64_t walkBlockCountingPairs(mafBlock_t *mb, stHash *legitPairs, uint64_t *chooseTwoArray);
 uint64_t chooseTwo(uint32_t n);
 uint64_t* buildChooseTwoArray(void);
-uint64_t countPairsInMaf(const char *filename, stSortedSet *legitPairs);
+uint64_t countPairsInMaf(const char *filename, stHash *legitPairs);
 void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i);
 void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c);
+stHash* stHash_getIntersection(stHash *seqNames1, stHash *seqNames2);
 
 #endif /* _COMPARATOR_API_H_ */

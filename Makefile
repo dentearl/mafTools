@@ -2,6 +2,12 @@ include include.mk
 SHELL:=/bin/bash -e
 export SHELLOPTS=pipefail
 
+python_version_full := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
+python_version_major := $(word 1,${python_version_full})
+python_version_minor := $(word 2,${python_version_full})
+ifeq (0, $(shell python -c 'import numpy;' >> /dev/null 2>&1 && echo $$?))
+ifeq (0, $(shell python -c 'import scipy;' >> /dev/null 2>&1 && echo $$?))
+
 ##############################
 # These modules are dependent and are
 # only included if their depedencies exist!
@@ -18,11 +24,6 @@ else
 	TransitiveClosure = mafTransitiveClosure
 endif
 endif
-python_version_full := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
-python_version_major := $(word 1,${python_version_full})
-python_version_minor := $(word 2,${python_version_full})
-ifeq (0, $(shell python -c 'import numpy;' >> /dev/null 2>&1 && echo $$?))
-ifeq (0, $(shell python -c 'import scipy;' >> /dev/null 2>&1 && echo $$?))
 	CoveragePickles = mafCoveragePickles
 else
 	CoveragePickles = 
@@ -38,6 +39,11 @@ dependentModules= ${Comparator} ${TransitiveClosure} ${CoveragePickles}
 modules = include ${dependentModules} mafValidator mafBlockFinder mafBlockExtractor mafBlockSorter mafBlockDuplicateFilter mafBlockFilter
 
 .PHONY: all %.all clean %.clean test %.test
+
+python :
+	@echo ${python_version_full}
+	@echo ${python_version_major}
+	@echo ${python_version_minor}
 
 all: ${modules:%=%.all}
 

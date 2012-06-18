@@ -225,6 +225,7 @@ class DuplicationFilterTest(unittest.TestCase):
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
                    '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), expectedOutput))
             mtt.removeDir(tmpDir)
@@ -242,6 +243,7 @@ class DuplicationFilterTest(unittest.TestCase):
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
                    '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), expectedOutput))
             mtt.removeDir(tmpDir)
@@ -277,6 +279,7 @@ class DuplicationFilterTest(unittest.TestCase):
             cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
                    '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)
@@ -298,6 +301,7 @@ class DuplicationFilterTest(unittest.TestCase):
             cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafBlockDuplicateFilter')), 
                    '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)

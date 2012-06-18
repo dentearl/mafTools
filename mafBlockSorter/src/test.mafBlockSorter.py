@@ -183,6 +183,7 @@ class SortTest(unittest.TestCase):
             cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
                     '--seq', 'hg18.chr7']
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'sorted.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsSorted(os.path.join(tmpDir, 'sorted.maf')))
             mtt.removeDir(tmpDir)
@@ -214,6 +215,7 @@ class SortTest(unittest.TestCase):
             cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
                     '--seq', 'hg18.chr7']
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'sorted.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)

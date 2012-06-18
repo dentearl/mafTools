@@ -205,6 +205,23 @@ def testFile(mafFile, s, headers):
     f.write(s)
     f.close()
     return mafFile, header
+def recordCommands(cmdList, tmpDir, inPipes=None, outPipes=None):
+    """
+    given a path to the tmpDir, and the command list that was executed, record the command(s)
+    """
+    f = open(os.path.join(tmpDir, 'commands'), 'a')
+    if inPipes is None:
+        inPipes = [None] * len(cmdList)
+    if outPipes is None:
+        outPipes = [None] * len(cmdList)
+    for i, c in enumerate(cmdList, 0):
+        pipes = ''
+        if inPipes[i] is not None:
+            pipes += ' < %s' % inPipes[i]
+        if outPipes[i] is not None:
+            pipes += ' > %s' % outPipes[i]
+        f.write('%s%s\n' % (' '.join(c), pipes))
+    f.close()
 def genericValgrind(tmpDir):
     """ 
     returns a list (in the subprocess command style) containing
