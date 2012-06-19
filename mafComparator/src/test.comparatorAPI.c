@@ -29,7 +29,7 @@
 #include "CuTest.h"
 #include "common.h"
 #include "sonLib.h"
-#include "ComparatorAPI.h"
+#include "comparatorAPI.h"
 
 static void printMat(uint64_t **mat, uint64_t n) {
     printf("printMat(mat, %" PRIi64 ")\n", n);

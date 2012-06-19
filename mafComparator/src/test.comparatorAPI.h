@@ -31,7 +31,7 @@
 #include "CuTest.h"
 #include "common.h"
 #include "sonLib.h"
-#include "ComparatorAPI.h"
+#include "comparatorAPI.h"
 
 CuSuite* mafComparator_TestSuite(void);
 

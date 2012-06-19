@@ -52,10 +52,8 @@ typedef struct _solo {
 typedef struct _pair {
     char *seq1;
     char *seq2;
-    int32_t pos1;
-    int32_t pos2;
-    int32_t origPos1;
-    int32_t origPos2;
+    uint32_t pos1;
+    uint32_t pos2;
 } APair;
 typedef struct _resultPair {
     APair aPair;
@@ -89,5 +87,17 @@ uint64_t countPairsInMaf(const char *filename, stHash *legitPairs);
 void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i);
 void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c);
 stHash* stHash_getIntersection(stHash *seqNames1, stHash *seqNames2);
+void samplePairsFromColumn(char **mat, uint32_t c, bool *legitRows, 
+                           char **names, double acceptProbability, struct avl_table *pairs, 
+                           uint32_t numSeqs, uint64_t *chooseTwoArray,
+                           mafLine_t **mlArray, uint32_t *positions);
+void samplePairsFromColumnBruteForce(char **mat, uint32_t c, bool *legitRows, 
+                                     char **names, double acceptProbability, struct avl_table *pairs, 
+                                     uint32_t numSeqs, uint64_t *chooseTwoArray,
+                                     mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs);
+void samplePairsFromColumnAnalytic(char **mat, uint32_t c, bool *legitRows, 
+                                   char **names, double acceptProbability, struct avl_table *pairs, 
+                                   uint32_t numSeqs, uint64_t *chooseTwoArray,
+                                   mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs);
 
 #endif /* _COMPARATOR_API_H_ */

@@ -25,7 +25,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <math.h>
-#include "ComparatorRandom.h"
+#include "comparatorRandom.h"
 #include "sonLib.h"
 
 enum STATE {

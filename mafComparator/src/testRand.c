@@ -24,9 +24,9 @@
 */
 
 #include "CuTest.h"
-#include "ComparatorAPI.h"
-#include "ComparatorRandom.h"
-#include "test.ComparatorAPI.h"
+#include "comparatorAPI.h"
+#include "comparatorRandom.h"
+#include "test.comparatorAPI.h"
 
 int main(int argc, char **argv) {
     if (argc != 5) {

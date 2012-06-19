@@ -25,8 +25,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "CuTest.h"
-#include "ComparatorAPI.h"
-#include "test.ComparatorAPI.h"
+#include "comparatorAPI.h"
+#include "test.comparatorAPI.h"
 
 CuSuite* comparatorAPI_TestSuite(void);
 

@@ -281,8 +281,7 @@ char* maf_mafBlock_getStrandArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
     // should return a char array containing an in-order list of strandedness
     // for all sequence lines. Either + or - char permitted.
-    char* a = NULL;
-    a = (char*) de_malloc(maf_mafBlock_getNumberOfSequences(mb) + 1);
+    char *a = (char*) de_malloc(sizeof(*a) * (maf_mafBlock_getNumberOfSequences(mb) + 1));
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     unsigned i = 0;
     while (ml != NULL) {
@@ -291,6 +290,25 @@ char* maf_mafBlock_getStrandArray(mafBlock_t *mb) {
         ml = ml->next;
     }
     a[i] = '\0';
+    return a;
+}
+int* maf_mafBlock_getStrandIntArray(mafBlock_t *mb) {
+    // currently this is not stored and must be built
+    // should return an int array containing an in-order list of strandedness
+    // for all sequence lines. Either 1 or -1
+    int *a = (int*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
+    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
+    unsigned i = 0;
+    while (ml != NULL) {
+        if (ml->type == 's') {
+            if (ml->strand == '+') {
+                a[i++] = 1;
+            } else {
+                a[i++] = -1;
+            }
+        }
+        ml = ml->next;
+    }
     return a;
 }
 uint32_t* maf_mafBlock_getStartArray(mafBlock_t *mb) {

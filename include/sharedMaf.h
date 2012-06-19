@@ -56,6 +56,7 @@ uint32_t maf_mafBlock_getLineNumber(mafBlock_t *mb);
 uint32_t maf_mafBlock_getNumberOfLines(mafBlock_t *b);
 uint32_t maf_mafBlock_getNumberOfSequences(mafBlock_t *b);
 char* maf_mafBlock_getStrandArray(mafBlock_t *mb);
+int* maf_mafBlock_getStrandIntArray(mafBlock_t *mb);
 uint32_t* maf_mafBlock_getPosCoordStartArray(mafBlock_t *mb);
 uint32_t* maf_mafBlock_getStartArray(mafBlock_t *mb);
 uint32_t* maf_mafBlock_getSourceLengthArray(mafBlock_t *mb);

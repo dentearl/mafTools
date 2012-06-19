@@ -294,12 +294,13 @@ class randomSeedTests(unittest.TestCase):
         """
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('seedTesting'))
+        parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         for maf1, maf2  in self.knownValues:
             testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
                                     maf1, g_headers)
             testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
                                     maf2, g_headers)
-            cmd = ['mafComparator', 
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
                    '--mafFile1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
                    '--mafFile2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
                    '--outputFile', os.path.join(tmpDir, 'output.xml'),
@@ -332,13 +333,14 @@ class randomSeedTests(unittest.TestCase):
             return
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('memory_1'))
+        parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         for maf1, maf2  in self.knownValues:
             testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
                                     maf1, g_headers)
             testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
                                     maf2, g_headers)
             cmd = mtt.genericValgrind(tmpDir)
-            cmd += ['mafComparator', 
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
                     '--mafFile1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
                     '--mafFile2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
                     '--outputFile', os.path.join(tmpDir, 'output.xml'),

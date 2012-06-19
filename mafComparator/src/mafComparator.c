@@ -44,8 +44,9 @@
 #include "hashTableC_itr.h"
 #include "bioioC.h"
 #include "sonLibRandom.h" // seeds and sampling
-#include "ComparatorAPI.h"
+#include "comparatorAPI.h"
 #include "common.h"
+#include "sonLib.h"
 
 const char *g_version = "version 0.5 June 2012";
 bool g_isVerboseFailures = false;
