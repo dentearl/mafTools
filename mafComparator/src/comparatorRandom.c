@@ -71,6 +71,12 @@ uint64_t rbinom(const uint64_t n, const double p) {
     (void) (rbinom_smallNaive);
     (void) (rbinom_smallLog);
     (void) (rbinom_smallCdf);
+    if (p == 0.0) {
+        return 0;
+    }
+    if (p >= 1.0) {
+        return n;
+    }
     if (n < 20)
         return rbinom_smallCdf(n, p);
     else

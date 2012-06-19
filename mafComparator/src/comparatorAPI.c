@@ -398,6 +398,9 @@ void samplePairsFromColumnAnalytic(char **mat, uint32_t c, bool *legitRows,
                                    uint32_t numSeqs, uint64_t *chooseTwoArray,
                                    mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs) {
     uint64_t n = rbinom(numPairs, acceptProbability);
+    if (n == 0) {
+        return;
+    }
     stHash *hash = stHash_construct3(int32Key, int32EqualKey, free, free);
     int32_t *tmp = st_malloc(sizeof(*tmp));
     uint32_t i = 0;
@@ -409,7 +412,7 @@ void samplePairsFromColumnAnalytic(char **mat, uint32_t c, bool *legitRows,
         // sample n many pairs
         m = n;
     }
-    while (i < n) {
+    while (i < m) {
         *tmp = st_randomInt(0, numPairs);
         if (stHash_search(hash, tmp) == NULL) {
             stHash_insert(hash, copyInt32(tmp), copyInt32(tmp));
@@ -423,7 +426,7 @@ void samplePairsFromColumnAnalytic(char **mat, uint32_t c, bool *legitRows,
         // items in hash have been sampled
         while ((key = stHash_getNext(hit)) != NULL) {
             // use mlArray
-            arrayIndexToPairIndices((uint64_t)(*key), m, &p1, &p2);
+            arrayIndexToPairIndices((uint64_t)(*key), numSeqs, &p1, &p2);
             APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                            maf_mafLine_getSpecies(mlArray[p2]),
                                            positions[p1], positions[p2]);
@@ -434,7 +437,7 @@ void samplePairsFromColumnAnalytic(char **mat, uint32_t c, bool *legitRows,
         for (uint32_t i = 0; i < numSeqs; ++i) {
             *tmp = i;
             if (stHash_search(hash, tmp) == NULL) {
-                arrayIndexToPairIndices((uint64_t)i, m, &p1, &p2);
+                arrayIndexToPairIndices((uint64_t)i, numSeqs, &p1, &p2);
                 APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                                maf_mafLine_getSpecies(mlArray[p2]),
                                                positions[p1], positions[p2]);
@@ -684,6 +687,9 @@ struct avl_table* compareMAFs_AB(const char *mafFileA, const char *mafFileB, uin
     // count the number of pairs in mafFileA
     numberOfPairs = countPairsInMaf(mafFileA, legitSequences);
     double acceptProbability = ((double) numberOfSamples) / numberOfPairs;
+    if (acceptProbability > 1.0) {
+        acceptProbability = 1.0;
+    }
     struct avl_table *pairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction, 
                                          NULL, NULL);
     // sample pairs from mafFileA

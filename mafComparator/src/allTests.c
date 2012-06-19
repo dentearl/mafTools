@@ -27,14 +27,18 @@
 #include "CuTest.h"
 #include "comparatorAPI.h"
 #include "test.comparatorAPI.h"
+#include "test.comparatorRandom.h"
 
 CuSuite* comparatorAPI_TestSuite(void);
+CuSuite* comparatorRandom_TestSuite(void);
 
-int comparatorAPI_RunAllTests(void) {
+int comparator_RunAllTests(void) {
     CuString *output = CuStringNew();
     CuSuite *suite = CuSuiteNew();
     CuSuite *comparatorAPI_s = comparatorAPI_TestSuite();
+    CuSuite *comparatorRandom_s = comparatorRandom_TestSuite();
     CuSuiteAddSuite(suite, comparatorAPI_s);
+    CuSuiteAddSuite(suite, comparatorRandom_s);
     CuSuiteRun(suite);
     CuSuiteSummary(suite, output);
     CuSuiteDetails(suite, output);
@@ -42,9 +46,10 @@ int comparatorAPI_RunAllTests(void) {
     CuStringDelete(output);
     int status = (suite->failCount > 0);
     free(comparatorAPI_s);
+    free(comparatorRandom_s);
     CuSuiteDelete(suite);
     return status;
 }
 int main(void) {
-    return comparatorAPI_RunAllTests();
+    return comparator_RunAllTests();
 }

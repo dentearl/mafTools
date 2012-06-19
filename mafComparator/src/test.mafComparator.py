@@ -118,6 +118,32 @@ s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 
 ''', 2, 8),
+                   ('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', 60, 0),
+                   ('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+s A  0 10 + 20 ACGTACGTAC
+s B  0 10 + 20 ATGTACGTAC
+s C 10 10 + 20 ACGTACGTAC
+s D  0 10 + 20 ATGTACGTAC
+
+''', 30, 30),
                    ]
     def test_knownValues(self):
         """ mafComparator should return correct results for hand-calculable problems
@@ -149,7 +175,7 @@ s B 0 10 + 20 ATGTACGTAC
         if valgrind is None:
             return
         mtt.makeTempDirParent()        
-        tmpDir = os.path.abspath(mtt.makeTempDir('knownValues'))
+        tmpDir = os.path.abspath(mtt.makeTempDir('memory_2'))
         for maf1, maf2, totalTrue, totalFalse in self.knownValues:
             testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
                                     maf1, g_headers)

@@ -23,20 +23,24 @@
  * THE SOFTWARE. 
 */
 
+#include <time.h>
 #include "CuTest.h"
 #include "comparatorAPI.h"
 #include "comparatorRandom.h"
 #include "test.comparatorAPI.h"
 
 int main(int argc, char **argv) {
-    if (argc != 5) {
-        fprintf(stderr, "Usage: %s numberOfSamples n p randomSeed\n", argv[0]);
+    if (argc == 5) {
+        st_randomSeed(atoi(argv[4]));
+    } else if (argc == 4) {
+        st_randomSeed(time(NULL));
+    } else {
+        fprintf(stderr, "Usage: %s numberOfSamples n p [optional: randomSeed]\n", argv[0]);
         return EXIT_FAILURE;
     }
     uint32_t numSamples = atoi(argv[1]);
     uint32_t n = atoi(argv[2]);
     double p = atof(argv[3]);
-    st_randomSeed(atoi(argv[4]));
     for (uint32_t i = 0; i < numSamples; ++i) {
         printf("%" PRIu64 "\n", rbinom(n, p));
     }

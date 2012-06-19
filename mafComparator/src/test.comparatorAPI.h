@@ -22,8 +22,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
-#ifndef TEST_COMPARATORAPI_H_
-#define TEST_COMPARATORAPI_H_
+#ifndef TEST_COMPARATOR_API_H_
+#define TEST_COMPARATOR_API_H_
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -33,6 +33,6 @@
 #include "sonLib.h"
 #include "comparatorAPI.h"
 
-CuSuite* mafComparator_TestSuite(void);
+CuSuite* comparatorAPI_TestSuite(void);
 
-#endif // TEST_COMPARATORAPI_H_
+#endif // TEST_COMPARATOR_API_H_

@@ -5,7 +5,7 @@ binPath = ../bin
 extraAPI = src/cString.c src/disjointset.c ../include/sharedMaf.o ../external/CuTest.a ../include/common.o src/comparatorRandom.o
 testAPI = src/cString.c src/disjointset.c test/sharedMaf.o ../external/CuTest.a test/common.o test/comparatorRandom.o
 progs =  $(foreach f,mafComparator mergeMafComparatorResults.py getRepeatBed mfaToMaf, ${binPath}/$f)
-testObjects = src/test.comparatorAPI.o 
+testObjects = src/test.comparatorAPI.o src/test.comparatorRandom.o
 testArgs = -O0 -g -Wall -Werror --pedantic -lm
 
 .PHONY: all clean test
