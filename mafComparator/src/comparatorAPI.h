@@ -68,13 +68,13 @@ typedef struct _resultPair {
     int32_t totalB;
     int32_t totalNeither;
 } ResultPair;
-
 void populateNames(const char *mAFFile, stHash *hash);
 void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3);
 void printNameHash(struct hashtable *h);
 struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint32_t numberOfSamples, 
                                  stHash *legitimateSequences, stHash *intervalsHash, 
                                  int32_t verbose, uint32_t near);
+void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...);
 void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, 
                    FILE *fileHandle, uint32_t near, stHash *legitimateSequences, const char *bedFiles);
 void aPair_destruct(APair *pair, void *extraArgument);

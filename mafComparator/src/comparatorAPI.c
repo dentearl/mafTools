@@ -24,9 +24,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
 */
+
 #include "sonLib.h"
 #include "comparatorAPI.h"
-#include "cString.h"
 #include "comparatorRandom.h"
 
 void aPair_fillOut(APair *aPair, char *seq1, char *seq2, uint32_t pos1, uint32_t pos2) {
@@ -734,7 +734,10 @@ struct avl_table* compareMAFs_AB(const char *mafFileA, const char *mafFileB, uin
     uint64_t numberOfPairs = 0;
     // count the number of pairs in mafFileA
     numberOfPairs = countPairsInMaf(mafFileA, legitSequences);
-    double acceptProbability = ((double) numberOfSamples) / numberOfPairs;
+    if (numberOfPairs == 0) {
+        return avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction_seqsOnly, NULL, NULL);
+    }
+    double acceptProbability = ((double) numberOfSamples) / (double) numberOfPairs;
     struct avl_table *pairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction, 
                                          NULL, NULL);
     // sample pairs from mafFileA
@@ -750,14 +753,12 @@ struct avl_table* compareMAFs_AB(const char *mafFileA, const char *mafFileB, uin
     stSortedSet_destruct(positivePairs);
     return resultPairs;
 }
-void reportResult(const char *tagName, double total, double totalTrue, FILE *fileHandle, int tabLevel) {
+void reportResult(const char *tagName, double total, double totalTrue, FILE *fileHandle, unsigned tabLevel) {
     assert(total >= totalTrue);
-    int i;
-    for (i = 0; i < tabLevel; i++)
-        fprintf(fileHandle, "\t");
-    fprintf(fileHandle, "<%s totalTests=\"%i\" totalTrue=\"%i\" totalFalse=\"%i\" average=\"%f\"/>\n",
-            tagName, (int32_t) total, (int32_t) totalTrue, 
-            (int32_t) (total - totalTrue), total == 0 ? 0.0 : totalTrue / total);
+    findentprintf(fileHandle, tabLevel, "<%s totalTests=\"%" PRIi32 "\" totalTrue=\"%" PRIi32 "\" "
+                  "totalFalse=\"%" PRIi32 "\" average=\"%f\"/>\n",
+                  tagName, (int32_t) total, (int32_t) totalTrue, 
+                  (int32_t) (total - totalTrue), total == 0 ? 0.0 : totalTrue / total);
 }
 ResultPair* aggregateResult(void *(*getNextPair)(void *, void *), void *arg1, void *arg2, 
                             const char *name1, const char *name2) {
@@ -815,7 +816,7 @@ void addReferencesAndDups(struct avl_table *results_AB, stHash *legitSequences) 
     avl_t_init(&iterator, results_AB);
     stList *list = stList_construct();
     stList_append(list, aggregateResult(addReferencesAndDups_getDups, &iterator, NULL, "self", "self"));
-    //Add references
+    // Add references
     while((species = stHash_getNext(speciesIt)) != NULL) {
         avl_t_init(&iterator, results_AB);
         stList_append(list, aggregateResult(addReferencesAndDups_getReferences, &iterator, 
@@ -830,6 +831,21 @@ void addReferencesAndDups(struct avl_table *results_AB, stHash *legitSequences) 
 void *reportResults_fn(void *arg, void *arg2) {
    return avl_t_next(arg);
 }
+void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char str[16384];
+    int n = vsprintf(str, fmt, args);
+        if (n >= 16384) {
+            fprintf(stderr, "Error, failure in findentprintf, (n = %u) >= 16384\n", n);
+            exit(EXIT_FAILURE);
+        }
+    for (unsigned i = 0; i < indent; ++i) {
+        fprintf(fp, "\t");
+    }
+    fprintf(fp, str);
+    va_end(args);
+}
 void reportResults(struct avl_table *results_AB, const char *mafFileA, const char *mafFileB, FILE *fileHandle,
                    uint32_t near, stHash *legitSequences, const char *bedFiles) {
     /*
@@ -840,9 +856,8 @@ void reportResults(struct avl_table *results_AB, const char *mafFileA, const cha
     ResultPair *resultPair;
     ResultPair *aggregateResults = aggregateResult(reportResults_fn, &iterator, NULL, "", "");
     addReferencesAndDups(results_AB, legitSequences);
-    fprintf(fileHandle, "\t<homologyTests fileA=\"%s\" fileB=\"%s\">\n"
-            "\t\t<aggregateResults>\n", 
-            mafFileA, mafFileB);
+    findentprintf(fileHandle, 1, "<homologyTests fileA=\"%s\" fileB=\"%s\">\n", mafFileA, mafFileB);
+    findentprintf(fileHandle, 2, "<aggregateResults>\n");
     reportResult("all", aggregateResults->total, aggregateResults->inAll, fileHandle, 3);
     if (bedFiles != NULL){
         reportResult("both", aggregateResults->totalBoth, aggregateResults->inBoth, fileHandle, 3);
@@ -850,11 +865,12 @@ void reportResults(struct avl_table *results_AB, const char *mafFileA, const cha
         reportResult("B", aggregateResults->totalB, aggregateResults->inB, fileHandle, 3);
         reportResult("neither", aggregateResults->totalNeither, aggregateResults->inNeither, fileHandle, 3);
     }
-    fprintf(fileHandle, "\t\t</aggregateResults>\n\t\t<homologyPairTests>\n");
+    findentprintf(fileHandle, 2, "</aggregateResults>\n");
+    findentprintf(fileHandle, 2, "<homologyPairTests>\n");
     while ((resultPair = avl_t_prev(&iterator)) != NULL) {
-        fprintf(fileHandle, "\t\t\t<homologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n"
-                "\t\t\t\t<aggregateResults>\n",
-                resultPair->aPair.seq1, resultPair->aPair.seq2);
+        findentprintf(fileHandle, 3, "<homologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n",
+                      resultPair->aPair.seq1, resultPair->aPair.seq2);
+        findentprintf(fileHandle, 4, "<aggregateResults>\n");
         reportResult("all", resultPair->total, resultPair->inAll, fileHandle, 5);
         if (bedFiles != NULL){
             reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 5);
@@ -862,10 +878,12 @@ void reportResults(struct avl_table *results_AB, const char *mafFileA, const cha
             reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 5);
             reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 5);
         }
-        fprintf(fileHandle, "\t\t\t\t</aggregateResults>\n\t\t\t\t<singleHomologyTests>\n");
-        fprintf(fileHandle, "\t\t\t\t\t<singleHomologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n"
-                "\t\t\t\t\t\t<aggregateResults>\n",
-                resultPair->aPair.seq1, resultPair->aPair.seq2);
+                      
+        findentprintf(fileHandle, 4, "</aggregateResults>\n");
+        findentprintf(fileHandle, 4, "<singleHomologyTests>\n");
+        findentprintf(fileHandle, 5, "<singleHomologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n", 
+                      resultPair->aPair.seq1, resultPair->aPair.seq2);
+        findentprintf(fileHandle, 6, "<aggregateResults>\n");
         reportResult("all", resultPair->total, resultPair->inAll, fileHandle, 6);
         if (bedFiles != NULL){
             reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 6);
@@ -873,12 +891,13 @@ void reportResults(struct avl_table *results_AB, const char *mafFileA, const cha
             reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 6);
             reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 6);
         }
-        fprintf(fileHandle,"\t\t\t\t\t\t</aggregateResults>\n"
-                "\t\t\t\t\t</singleHomologyTest>\n"
-                "\t\t\t\t</singleHomologyTests>\n"
-                "\t\t\t</homologyTest>\n");
+        findentprintf(fileHandle, 6, "</aggregateResults>\n");
+        findentprintf(fileHandle, 5, "</singleHomologyTest>\n");
+        findentprintf(fileHandle, 4, "</singleHomologyTests>\n");
+        findentprintf(fileHandle, 3, "</homologyTest>\n");
     }
-    fprintf(fileHandle, "\t\t</homologyPairTests>\n\t</homologyTests>\n");
+    findentprintf(fileHandle, 2, "</homologyPairTests>\n");
+    findentprintf(fileHandle, 1, "</homologyTests>\n");
     resultPair_destruct(aggregateResults, NULL);
     return;
 }

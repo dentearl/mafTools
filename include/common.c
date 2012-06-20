@@ -110,7 +110,7 @@ void de_verbose(char const *fmt, ...) {
                 "(kMaxMessageLength %d)\n", n, kMaxMessageLength);
         exit(EXIT_FAILURE);
     }
-    de_message("Verbose", str, args);
+    de_message("Verbose", str);
     va_end(args);
 }
 void de_debug(char const *fmt, ...) {
@@ -126,7 +126,7 @@ void de_debug(char const *fmt, ...) {
                 "(kMaxMessageLength %d)\n", n, kMaxMessageLength);
         exit(EXIT_FAILURE);
     }
-    de_message("Debug", str, args);
+    de_message("Debug", str);
     va_end(args);
 }
 void failBadFormat(void) {
