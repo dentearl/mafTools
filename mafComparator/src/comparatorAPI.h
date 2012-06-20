@@ -87,16 +87,14 @@ uint64_t countPairsInMaf(const char *filename, stHash *legitPairs);
 void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i);
 void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c);
 stHash* stHash_getIntersection(stHash *seqNames1, stHash *seqNames2);
-void samplePairsFromColumn(char **mat, uint32_t c, bool *legitRows, 
-                           char **names, double acceptProbability, struct avl_table *pairs, 
-                           uint32_t numSeqs, uint64_t *chooseTwoArray,
+void samplePairsFromColumn(char ** mat, uint32_t c, bool *legtRows, double acceptProbability, 
+                           struct avl_table *pairs, 
+                           uint32_t numRows, uint32_t numLegitGaplessSeqs, uint64_t *chooseTwoArray,
                            mafLine_t **mlArray, uint32_t *positions);
-void samplePairsFromColumnBruteForce(char **mat, uint32_t c, bool *legitRows, 
-                                     char **names, double acceptProbability, struct avl_table *pairs, 
+void samplePairsFromColumnBruteForce(double acceptProbability, struct avl_table *pairs, 
                                      uint32_t numSeqs, uint64_t *chooseTwoArray,
                                      mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs);
-void samplePairsFromColumnAnalytic(char **mat, uint32_t c, bool *legitRows, 
-                                   char **names, double acceptProbability, struct avl_table *pairs, 
+void samplePairsFromColumnAnalytic(double acceptProbability, struct avl_table *pairs, 
                                    uint32_t numSeqs, uint64_t *chooseTwoArray,
                                    mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs);
 

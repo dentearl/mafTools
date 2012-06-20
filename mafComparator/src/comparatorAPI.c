@@ -282,7 +282,6 @@ bool* getLegitRows(char **names, uint32_t numSeqs, stHash *legitSequences) {
 uint64_t countPairsInColumn(char **mat, uint32_t c, uint32_t numSeqs, 
                             bool *legitRows, uint64_t *chooseTwoArray) {
     uint32_t possiblePartners = 0;
-    uint64_t count = 0;
     for (uint32_t r = 0; r < numSeqs; ++r) {
         if (!legitRows[r]) {
             continue;
@@ -292,11 +291,10 @@ uint64_t countPairsInColumn(char **mat, uint32_t c, uint32_t numSeqs,
         }
     }
     if (possiblePartners < 101) {
-        count += chooseTwoArray[possiblePartners];
+        return chooseTwoArray[possiblePartners];
     } else {
-        count += chooseTwo(possiblePartners);
+        return chooseTwo(possiblePartners);
     }
-    return count;
 }
 uint64_t walkBlockCountingPairs(mafBlock_t *mb, stHash *legitSequences, uint64_t *chooseTwoArray) {
     // size is the MAXIMUM INDEX of the chooseTwo array
@@ -362,30 +360,35 @@ int32_t* copyInt32(int32_t *i) {
     *j = *i;
     return j;
 }
-void samplePairsFromColumn(char **mat, uint32_t c, bool *legitRows, 
-                           char **names, double acceptProbability, struct avl_table *pairs, 
-                           uint32_t numSeqs, uint64_t *chooseTwoArray,
+void samplePairsFromColumn(char **mat, uint32_t c, bool *legitRows, double acceptProbability, 
+                           struct avl_table *pairs, 
+                           uint32_t numRows, uint32_t numLegitGaplessSeqs, uint64_t *chooseTwoArray,
                            mafLine_t **mlArray, uint32_t *positions) {
-    uint64_t numPairs = countPairsInColumn(mat, c, numSeqs, legitRows, chooseTwoArray);
+    // mat is the matrix of characters representing the alignment, c is the current column,
+    // legtRows is a boolean array with true for a legit sequence, acceptProbability is the per
+    // base accept probability, pairs is where we store pairs, numRows is the number of total sequences
+    // in the matrix, numLegitGaplessSeqs is the number of gapless & legit sequences -- also the length
+    // of the mlArray and positions arrays.
+    uint64_t numPairs = countPairsInColumn(mat, c, numRows, legitRows, chooseTwoArray);
     if (numPairs < 5) {
         // keep in mind the sequence of v = k choose 2 is 
         // k: 2 3 4  5 ...
         // v: 1 3 6 10 ...
-        samplePairsFromColumnBruteForce(mat, c, legitRows, names, acceptProbability, pairs,
-                                        numSeqs, chooseTwoArray, mlArray, positions, numPairs);
+        samplePairsFromColumnBruteForce(acceptProbability, pairs,
+                                        numLegitGaplessSeqs, chooseTwoArray, mlArray, positions, numPairs);
     } else {
-        samplePairsFromColumnAnalytic(mat, c, legitRows, names, acceptProbability, pairs,
-                                      numSeqs, chooseTwoArray, mlArray, positions, numPairs);
+        samplePairsFromColumnAnalytic(acceptProbability, pairs,
+                                      numLegitGaplessSeqs, chooseTwoArray, mlArray, positions, numPairs);
     }
 }
-void samplePairsFromColumnBruteForce(char **mat, uint32_t c, bool *legitRows, 
-                                     char **names, double acceptProbability, struct avl_table *pairs, 
+void samplePairsFromColumnBruteForce(double acceptProbability, struct avl_table *pairs, 
                                      uint32_t numSeqs, uint64_t *chooseTwoArray,
                                      mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs) {
     uint64_t p1, p2;
     for (uint64_t i = 0; i < numPairs; ++i) {
         if (st_random() <= acceptProbability) {
             arrayIndexToPairIndices(i, numSeqs, &p1, &p2);
+            // printf("brute force pairing %s:%"PRIu32" with %s:%"PRIu32"\n", maf_mafLine_getSpecies(mlArray[p1]), positions[p1], maf_mafLine_getSpecies(mlArray[p2]), positions[p2]);
             APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                            maf_mafLine_getSpecies(mlArray[p2]),
                                            positions[p1], positions[p2]);
@@ -393,8 +396,7 @@ void samplePairsFromColumnBruteForce(char **mat, uint32_t c, bool *legitRows,
         }
     }
 }
-void samplePairsFromColumnAnalytic(char **mat, uint32_t c, bool *legitRows, 
-                                   char **names, double acceptProbability, struct avl_table *pairs, 
+void samplePairsFromColumnAnalytic(double acceptProbability, struct avl_table *pairs, 
                                    uint32_t numSeqs, uint64_t *chooseTwoArray,
                                    mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs) {
     uint64_t n = rbinom(numPairs, acceptProbability);
@@ -403,7 +405,6 @@ void samplePairsFromColumnAnalytic(char **mat, uint32_t c, bool *legitRows,
     }
     stHash *hash = stHash_construct3(int32Key, int32EqualKey, free, free);
     int32_t *tmp = st_malloc(sizeof(*tmp));
-    uint32_t i = 0;
     uint64_t m = 0;
     if (((double) n > numPairs / 2.0) && (numPairs > n)) {
         // sample (numPairs - n) many pairs
@@ -412,6 +413,7 @@ void samplePairsFromColumnAnalytic(char **mat, uint32_t c, bool *legitRows,
         // sample n many pairs
         m = n;
     }
+    uint32_t i = 0;
     while (i < m) {
         *tmp = st_randomInt(0, numPairs);
         if (stHash_search(hash, tmp) == NULL) {
@@ -427,6 +429,7 @@ void samplePairsFromColumnAnalytic(char **mat, uint32_t c, bool *legitRows,
         while ((key = stHash_getNext(hit)) != NULL) {
             // use mlArray
             arrayIndexToPairIndices((uint64_t)(*key), numSeqs, &p1, &p2);
+            // printf("analytic pairing %s:%"PRIu32" with %s:%"PRIu32"\n", maf_mafLine_getSpecies(mlArray[p1]), positions[p1], maf_mafLine_getSpecies(mlArray[p2]), positions[p2]);
             APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                            maf_mafLine_getSpecies(mlArray[p2]),
                                            positions[p1], positions[p2]);
@@ -438,6 +441,7 @@ void samplePairsFromColumnAnalytic(char **mat, uint32_t c, bool *legitRows,
             *tmp = i;
             if (stHash_search(hash, tmp) == NULL) {
                 arrayIndexToPairIndices((uint64_t)i, numSeqs, &p1, &p2);
+                // printf("analytic pairing %s:%"PRIu32" with %s:%"PRIu32"\n", maf_mafLine_getSpecies(mlArray[p1]), positions[p1], maf_mafLine_getSpecies(mlArray[p2]), positions[p2]);
                 APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                                maf_mafLine_getSpecies(mlArray[p2]),
                                                positions[p1], positions[p2]);
@@ -451,11 +455,11 @@ void samplePairsFromColumnAnalytic(char **mat, uint32_t c, bool *legitRows,
     free(tmp);
 }
 mafLine_t** createMafLineArray(mafBlock_t *mb, uint32_t numLegit, bool *legitRows) {
-    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
-    uint32_t i, j;
     if (numLegit == 0) {
         return NULL;
     }
+    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
+    uint32_t i, j;
     mafLine_t **mlArray = (mafLine_t**) st_malloc(sizeof(*mlArray) * numLegit);
     i = 0;
     j = 0;
@@ -470,9 +474,11 @@ mafLine_t** createMafLineArray(mafBlock_t *mb, uint32_t numLegit, bool *legitRow
     }
     return mlArray;
 }
-void updatePositions(uint32_t *positions, int *strandInts, uint32_t numSeqs) {
+void updatePositions(char **mat, uint32_t c, uint32_t *positions, int *strandInts, uint32_t numSeqs) {
     for (uint32_t i = 0; i < numSeqs; ++i) {
-        positions[i] += strandInts[i];
+        if (mat[i][c] != '-') {
+            positions[i] += strandInts[i];
+        }
     }
 }
 uint32_t* cullPositions(uint32_t *allPositions, uint32_t numSeqs, bool *legitRows, uint32_t numLegit) {
@@ -503,6 +509,39 @@ uint32_t sumBoolArray(bool *legitRows, uint32_t numSeqs) {
     }
     return a;
 }
+uint32_t countLegitPositions(char **mat, uint32_t c, uint32_t numRows) {
+    uint32_t n = 0;
+    for (uint32_t r = 0; r < numRows; ++r) {
+        if (mat[r][c] != '-') {
+            ++n;
+        }
+    }
+    return n;
+}
+mafLine_t** cullMlArrayByColumn(char **mat, uint32_t c, uint32_t numRows, uint32_t numColLegit, 
+                                mafLine_t **mlArray) {
+    // create an array of mafLine_t for a given column, excluding all sequences that contain gaps 
+    mafLine_t **colMlArray = (mafLine_t**) st_malloc(sizeof(*mlArray) * numColLegit);
+    uint32_t j = 0;
+    for (uint32_t r = 0; r < numRows; ++r) {
+        if (mat[r][c] != '-') {
+            colMlArray[j++] = mlArray[r];
+        }
+    }
+    return colMlArray;
+}
+uint32_t* cullPositionsByColumn(char **mat, uint32_t c, uint32_t numRows, uint32_t numColLegit, 
+                                uint32_t *positions) {
+    // create an array of positive coordinate position values that excludes all sequences that contain gaps
+    uint32_t *colPositions = (uint32_t*) st_malloc(sizeof(*positions) * numColLegit);
+    uint32_t j = 0;
+    for (uint32_t r = 0; r < numRows; ++r) {
+        if (mat[r][c] != '-') {
+            colPositions[j++] = positions[r];
+        }
+    }
+    return colPositions;
+}
 void walkBlockSamplingPairs(mafBlock_t *mb, struct avl_table *pairs,
                             double acceptProbability, stHash *legitSequences, 
                             uint64_t *chooseTwoArray) {
@@ -516,14 +555,23 @@ void walkBlockSamplingPairs(mafBlock_t *mb, struct avl_table *pairs,
     bool *legitRows = getLegitRows(names, numSeqs, legitSequences);
     uint32_t numLegit = sumBoolArray(legitRows, numSeqs);
     mafLine_t **mlArray = createMafLineArray(mb, numLegit, legitRows);
-    uint32_t *allPositions = maf_mafBlock_getStartArray(mb);
+    mafLine_t **columnMlArray = NULL;
+    uint32_t *allPositions = maf_mafBlock_getPosCoordStartArray(mb);
     uint32_t *positions = cullPositions(allPositions, numSeqs, legitRows, numLegit);
+    uint32_t *columnPositions = NULL;
+    uint32_t numColLegit;
     int *allStrandInts = maf_mafBlock_getStrandIntArray(mb);
     int *strandInts = cullStrandInts(allStrandInts, numSeqs, legitRows, numLegit);
     for (uint32_t c = 0; c < seqFieldLength; ++c) {
-        samplePairsFromColumn(mat, c, legitRows, names, acceptProbability, pairs, 
-                              numLegit, chooseTwoArray, mlArray, positions);
-        updatePositions(positions, strandInts, numLegit);
+        numColLegit = countLegitPositions(mat, c, numLegit);
+        // printf("  column %"PRIu32", numColLegit:%"PRIu32"\n", c, numColLegit);
+        columnMlArray = cullMlArrayByColumn(mat, c, numLegit, numColLegit, mlArray);
+        columnPositions = cullPositionsByColumn(mat, c, numLegit, numColLegit, positions);
+        samplePairsFromColumn(mat, c, legitRows, acceptProbability, pairs, numSeqs, numColLegit, chooseTwoArray, 
+                              columnMlArray, columnPositions);
+        updatePositions(mat, c, positions, strandInts, numLegit);
+        free(columnMlArray);
+        free(columnPositions);
     }
     // clean up
     free(mlArray);
@@ -687,17 +735,12 @@ struct avl_table* compareMAFs_AB(const char *mafFileA, const char *mafFileB, uin
     // count the number of pairs in mafFileA
     numberOfPairs = countPairsInMaf(mafFileA, legitSequences);
     double acceptProbability = ((double) numberOfSamples) / numberOfPairs;
-    if (acceptProbability > 1.0) {
-        acceptProbability = 1.0;
-    }
     struct avl_table *pairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction, 
                                          NULL, NULL);
     // sample pairs from mafFileA
     samplePairsFromMaf(mafFileA, pairs, acceptProbability, legitSequences);
-    // getPairs(mafFileA, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) samplePairs,
-    //          intervalsHash, pairs, &acceptProbability, legitSequences, isVerboseFailures, near);
-    stSortedSet *positivePairs = stSortedSet_construct();
     // perform homology tests on mafFileB using sampled pairs from mafFileA
+    stSortedSet *positivePairs = stSortedSet_construct();
     getPairs(mafFileB, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) homologyTests1,
              intervalsHash, pairs, positivePairs, legitSequences, isVerboseFailures, near);
     struct avl_table *resultPairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction_seqsOnly, NULL, NULL);

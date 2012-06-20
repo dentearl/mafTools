@@ -64,6 +64,7 @@ class KnownValuesTest(unittest.TestCase):
     # knownValues contains quad-tuples,
     # maf1, maf2, totalTrue (comparing maf1 as fileA to maf2), 
     # totalFalse (comparing maf1 as fileA to maf2)
+    
     knownValues = [('''a score=0
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
@@ -72,7 +73,7 @@ s B 0 10 + 20 ATGTACGTAC
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 
-''', 10, 0),
+''', 10, 0), # test 0
                    ('''a score=0
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
@@ -81,7 +82,7 @@ s B 0 10 + 20 ATGTACGTAC
 s A 10 10 + 20 GTACGTACGT
 s B 10 10 + 20 ATGTACGTAC
 
-''', 0, 10),
+''', 0, 10), # test 1
                    ('''a score=0
 s A 0 10 + 10 ACGTACGTAC
 s B 0 10 + 10 ATGTACGTAC
@@ -90,7 +91,7 @@ s B 0 10 + 10 ATGTACGTAC
 s A 0 10 - 10 GTACGTACGT
 s B 0 10 - 10 ATGTACGTAC
 
-''', 10, 0),
+''', 10, 0), # test 2
                    ('''a score=0
 s A 0 5 + 10 ACGTA
 s B 0 5 + 10 ATGTA
@@ -99,7 +100,7 @@ s B 0 5 + 10 ATGTA
 s A  5 5 - 10 TACGT
 s B  5 5 - 10 TACAT
 
-''', 5, 0),
+''', 5, 0), # test 3
                    ('''a score=0
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
@@ -108,7 +109,7 @@ s B 0 10 + 20 ATGTACGTAC
 s A 10 10 - 20 GTACGTACGT
 s B 10 10 - 20 GTACGTACAT
 
-''', 10, 0),
+''', 10, 0), # test 4
                    ('''a score=0
 s A 8 10 + 20 ACGTACGTAC
 s B 8 10 + 20 ATGTACGTAC
@@ -117,7 +118,7 @@ s B 8 10 + 20 ATGTACGTAC
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 
-''', 2, 8),
+''', 2, 8), # test 5
                    ('''a score=0
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
@@ -130,7 +131,7 @@ s B 0 10 + 20 ATGTACGTAC
 s C 0 10 + 20 ACGTACGTAC
 s D 0 10 + 20 ATGTACGTAC
 
-''', 60, 0),
+''', 60, 0), # test 6
                    ('''a score=0
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
@@ -143,14 +144,42 @@ s B  0 10 + 20 ATGTACGTAC
 s C 10 10 + 20 ACGTACGTAC
 s D  0 10 + 20 ATGTACGTAC
 
-''', 30, 30),
+''', 30, 30), # test 7
+                   ('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0  5 + 20 A-----GTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''',  33, 12), # test 8
+                   ('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0  5 + 20 A-----GTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', 33, 27), # test 9
                    ]
     def test_knownValues(self):
         """ mafComparator should return correct results for hand-calculable problems
         """
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('knownValues'))
+        i = 0
         for maf1, maf2, totalTrue, totalFalse in self.knownValues:
+            i += 1
             testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
                                     maf1, g_headers)
             testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 

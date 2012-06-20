@@ -328,8 +328,26 @@ uint32_t* maf_mafBlock_getStartArray(mafBlock_t *mb) {
 }
 uint32_t* maf_mafBlock_getPosCoordStartArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
-    // should return a uint32_t array containing an in-order list of source lengths 
-    // for all sequence lines. 
+    // should return a uint32_t array containing an in-order list of the left-most
+    // positive coordinate.
+    uint32_t *a = (uint32_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
+    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
+    unsigned i = 0;
+    while (ml != NULL) {
+        if (ml->type == 's') {
+            if (ml->strand == '+')
+                a[i++] = ml->start;
+            else
+                a[i++] = ml->sourceLength - ml->start;
+        }
+        ml = ml->next;
+    }
+    return a;
+}
+uint32_t* maf_mafBlock_getPosCoordLeftArray(mafBlock_t *mb) {
+    // currently this is not stored and must be built
+    // should return a uint32_t array containing an in-order list of the left-most
+    // positive coordinate.
     uint32_t *a = (uint32_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     unsigned i = 0;
