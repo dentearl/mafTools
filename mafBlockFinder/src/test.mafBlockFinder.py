@@ -164,6 +164,7 @@ class FindTest(unittest.TestCase):
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder'))]
             cmd += ['--maf', testMafPath, '--seq', g_targetSeq, '--pos', '%d' % g_overlappingBlocks[i][1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(foundLines(g_overlappingBlocks[i][2], os.path.join(tmpDir, 'found.txt'), g_header))
             mtt.removeDir(tmpDir)
@@ -180,6 +181,7 @@ class FindTest(unittest.TestCase):
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder'))]
             cmd += ['--maf', testMafPath, '--seq', g_targetSeq, '--pos', '%d' % g_nonOverlappingBlocks[i][1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.fileIsEmpty(os.path.join(tmpDir, 'found.txt')))
             mtt.removeDir(tmpDir)
@@ -200,6 +202,7 @@ class FindTest(unittest.TestCase):
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder')))
             cmd += ['--maf', testMafPath, '--seq', g_targetSeq, '--pos', '%d' % g_overlappingBlocks[i][1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)
@@ -220,6 +223,7 @@ class FindTest(unittest.TestCase):
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFinder')))
             cmd += ['--maf', testMafPath, '--seq', g_targetSeq, '--pos', '%d' % g_nonOverlappingBlocks[i][1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'found.txt'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)

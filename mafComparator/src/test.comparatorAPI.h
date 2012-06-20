@@ -22,23 +22,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
-#ifndef COMMON_H_
-#define COMMON_H_
+#ifndef TEST_COMPARATOR_API_H_
+#define TEST_COMPARATOR_API_H_
+#include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
-#include <stdint.h>
+#include <stdlib.h>
+#include "CuTest.h"
+#include "common.h"
+#include "sonLib.h"
+#include "comparatorAPI.h"
 
-int g_verbose_flag;
-int g_debug_flag;
-const int kMaxStringLength;
-const int kMaxMessageLength;
-const int kMaxSeqName;
+CuSuite* comparatorAPI_TestSuite(void);
 
-void de_verbose(char const *fmt, ...);
-void de_debug(char const *fmt, ...);
-void failBadFormat(void);
-void* de_malloc(size_t n);
-int32_t de_getline(char **s, int32_t *n, FILE *f);
-FILE* de_fopen(const char *s, char const *mode);
-char* de_strdup(const char *s);
-
-#endif // COMMON_H_
+#endif // TEST_COMPARATOR_API_H_

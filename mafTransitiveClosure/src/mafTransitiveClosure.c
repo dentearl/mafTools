@@ -54,8 +54,7 @@ void parseOptions(int argc, char **argv, char *filename) {
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        c = getopt_long(argc, argv, "d:m:s:h:v:t",
-                        long_options, &option_index);
+        c = getopt_long(argc, argv, "d:m:s:h:v:t", long_options, &option_index);
         if (c == -1)
             break;
         switch (c) {

@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2012 by 
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * ... and other members of the Reconstruction Team of David Haussler's 
@@ -22,23 +22,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
-#ifndef COMMON_H_
-#define COMMON_H_
+#include <stdlib.h>
 #include <stdio.h>
-#include <stdint.h>
+#include "CuTest.h"
+#include "comparatorAPI.h"
+#include "test.comparatorAPI.h"
+#include "test.comparatorRandom.h"
 
-int g_verbose_flag;
-int g_debug_flag;
-const int kMaxStringLength;
-const int kMaxMessageLength;
-const int kMaxSeqName;
+CuSuite* comparatorAPI_TestSuite(void);
+CuSuite* comparatorRandom_TestSuite(void);
 
-void de_verbose(char const *fmt, ...);
-void de_debug(char const *fmt, ...);
-void failBadFormat(void);
-void* de_malloc(size_t n);
-int32_t de_getline(char **s, int32_t *n, FILE *f);
-FILE* de_fopen(const char *s, char const *mode);
-char* de_strdup(const char *s);
-
-#endif // COMMON_H_
+int comparator_RunAllTests(void) {
+    CuString *output = CuStringNew();
+    CuSuite *suite = CuSuiteNew();
+    CuSuite *comparatorAPI_s = comparatorAPI_TestSuite();
+    CuSuite *comparatorRandom_s = comparatorRandom_TestSuite();
+    CuSuiteAddSuite(suite, comparatorAPI_s);
+    CuSuiteAddSuite(suite, comparatorRandom_s);
+    CuSuiteRun(suite);
+    CuSuiteSummary(suite, output);
+    CuSuiteDetails(suite, output);
+    printf("%s\n", output->buffer);
+    CuStringDelete(output);
+    int status = (suite->failCount > 0);
+    free(comparatorAPI_s);
+    free(comparatorRandom_s);
+    CuSuiteDelete(suite);
+    return status;
+}
+int main(void) {
+    return comparator_RunAllTests();
+}

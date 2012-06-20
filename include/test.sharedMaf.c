@@ -39,7 +39,7 @@ int createTmpFolder(void) {
     return mkdir("test_tmp", S_IRWXU | S_IRUSR | S_IXUSR | S_IWUSR);
 }
 void writeStringToTmpFile(char *s) {
-    FILE *f = de_open("test_tmp/test.maf", "w+");
+    FILE *f = de_fopen("test_tmp/test.maf", "w+");
     fprintf(f, "%s", s);
     fclose(f);
 }

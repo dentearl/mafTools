@@ -34,8 +34,28 @@
 #include "stPinchGraphs.h"
 #include "mafTransitiveClosure.h"
 
+void printRegionList(mafTcRegion_t *reg, FILE *ofp);
+bool regionListsAreEqual(mafTcRegion_t *expected, mafTcRegion_t *obs, bool verbose);
+void printTestComparisonOrder(mafTcComparisonOrder_t *co);
+bool comparisonOrdersAreEqual(mafTcComparisonOrder_t *eo, mafTcComparisonOrder_t *oo, bool verbose);
+bool mafBlocksAreEqual(mafBlock_t *input, mafBlock_t *expected, bool verbose);
+void test_reverseComplement(CuTest *testCase);
+void test_rowAlignmentBlockComparisonOrdering_0(CuTest *testCase);
 void test_rowAlignmentBlockComparisonOrdering_1(CuTest *testCase);
 void test_rowAlignmentBlockComparisonOrdering_2(CuTest *testCase);
+void test_rowAlignmentBlockComparisonOrdering_3(CuTest *testCase);
+void test_matrixAlignmentBlockComparisonOrdering_0(CuTest *testCase);
+void test_matrixAlignmentBlockComparisonOrdering_1(CuTest *testCase);
+void test_matrixAlignmentBlockComparisonOrdering_2(CuTest *testCase);
+void test_matrixAlignmentBlockComparisonOrdering_3(CuTest *testCase);
+void test_matrixAlignmentBlockComparisonOrdering_4(CuTest *testCase);
+void test_addSequenceValuesToMtcSeq_0(CuTest *testCase);
+void test_localSeqCoords_0(CuTest *testCase);
+void test_localSeqCoordsToGlobalPositiveCoords_0(CuTest *testCase);
+void test_localSeqCoordsToGlobalPositiveStartCoords_0(CuTest *testCase);
+void test_coordinateTransforms_0(CuTest *testCase);
+void test_coordinateTransforms_1(CuTest *testCase);
+void test_mafBlockGapSorting_0(CuTest *testCase);
 CuSuite* mafTransitiveClosure_TestSuite(void);
 
 #endif // TEST_MAFTRANSITIVECLOSURE_H_

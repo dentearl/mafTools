@@ -32,14 +32,14 @@
 #include "stPinchGraphs.h"
 #include "mafTransitiveClosure.h"
 
-void printRegionList(mafTcRegion_t *reg, FILE *ofp) {
+static void printRegionList(mafTcRegion_t *reg, FILE *ofp) {
     while (reg != NULL) {
         fprintf(ofp, "[%" PRIu32 ", %" PRIu32 "], ", reg->start, reg->end);
         reg = reg->next;
     }
     fprintf(ofp, "\n");
 }
-bool regionListsAreEqual(mafTcRegion_t *expected, mafTcRegion_t *obs, bool verbose) {
+static bool regionListsAreEqual(mafTcRegion_t *expected, mafTcRegion_t *obs, bool verbose) {
     if (verbose) {
         printf("  regionListsAreEqual()\n");
     }
@@ -86,21 +86,21 @@ bool regionListsAreEqual(mafTcRegion_t *expected, mafTcRegion_t *obs, bool verbo
     }
     return true;
 }
-static void printComparisonOrder(mafTcComparisonOrder_t *co) {
-    fprintf(stderr, "printComparisonOrder()\n");
+static void printTestComparisonOrder(mafTcComparisonOrder_t *co) {
+    fprintf(stderr, "printTestComparisonOrder()\n");
     while (co != NULL) {
         fprintf(stderr, " ref: %2" PRIu32 " \n", co->ref);
         printRegionList(co->region, stderr);
         co = co->next;
     }
 }
-bool comparisonOrdersAreEqual(mafTcComparisonOrder_t *eo, mafTcComparisonOrder_t *oo, bool verbose) {
+static bool comparisonOrdersAreEqual(mafTcComparisonOrder_t *eo, mafTcComparisonOrder_t *oo, bool verbose) {
     if (verbose) {
         printf("comparisonOrdersAreEqual()\n");
         printf("expected:\n");
-        printComparisonOrder(eo);
+        printTestComparisonOrder(eo);
         printf("observed:\n");
-        printComparisonOrder(oo);
+        printTestComparisonOrder(oo);
     }
     while (eo != NULL && oo != NULL) {
         if (eo->ref != oo->ref) {
@@ -123,7 +123,7 @@ bool comparisonOrdersAreEqual(mafTcComparisonOrder_t *eo, mafTcComparisonOrder_t
         if (verbose) {
             printf("premature end of observed comparison order\n");
             printf("remaining expected:\n");
-            printComparisonOrder(eo);
+            printTestComparisonOrder(eo);
         }
         return false;
     }
@@ -131,7 +131,7 @@ bool comparisonOrdersAreEqual(mafTcComparisonOrder_t *eo, mafTcComparisonOrder_t
         if (verbose) {
             printf("premature end of expected comparison order\n");
             printf("remaining observed:\n");
-            printComparisonOrder(oo);
+            printTestComparisonOrder(oo);
         }
         return false;
     }

@@ -193,7 +193,7 @@ mafFileApi_t* maf_newMfa(const char *filename, char const *mode) {
     mafFileApi_t *mfa = (mafFileApi_t *) de_malloc(sizeof(*mfa));
     mfa->lineNumber = 0;
     mfa->lastLine = NULL;
-    mfa->mfp = de_open(filename, mode);
+    mfa->mfp = de_fopen(filename, mode);
     mfa->filename = de_strdup(filename);
     return mfa;
 }
@@ -281,8 +281,7 @@ char* maf_mafBlock_getStrandArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
     // should return a char array containing an in-order list of strandedness
     // for all sequence lines. Either + or - char permitted.
-    char* a = NULL;
-    a = (char*) de_malloc(maf_mafBlock_getNumberOfSequences(mb) + 1);
+    char *a = (char*) de_malloc(sizeof(*a) * (maf_mafBlock_getNumberOfSequences(mb) + 1));
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     unsigned i = 0;
     while (ml != NULL) {
@@ -291,6 +290,25 @@ char* maf_mafBlock_getStrandArray(mafBlock_t *mb) {
         ml = ml->next;
     }
     a[i] = '\0';
+    return a;
+}
+int* maf_mafBlock_getStrandIntArray(mafBlock_t *mb) {
+    // currently this is not stored and must be built
+    // should return an int array containing an in-order list of strandedness
+    // for all sequence lines. Either 1 or -1
+    int *a = (int*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
+    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
+    unsigned i = 0;
+    while (ml != NULL) {
+        if (ml->type == 's') {
+            if (ml->strand == '+') {
+                a[i++] = 1;
+            } else {
+                a[i++] = -1;
+            }
+        }
+        ml = ml->next;
+    }
     return a;
 }
 uint32_t* maf_mafBlock_getStartArray(mafBlock_t *mb) {
@@ -472,8 +490,14 @@ void maf_mafBlock_setHeadLine(mafBlock_t *mb, mafLine_t *ml) {
 void maf_mafBlock_setTailLine(mafBlock_t *mb, mafLine_t *ml) {
     mb->tailLine = ml;
 }
+void maf_mafBlock_setNumberOfSequences(mafBlock_t *mb, uint32_t n) {
+    mb->numberOfSequences = n;
+}
 void maf_mafBlock_setNumberOfLines(mafBlock_t *mb, uint32_t n) {
     mb->numberOfLines = n;
+}
+void maf_mafBlock_setLineNumber(mafBlock_t *mb, uint32_t n) {
+    mb->lineNumber = n;
 }
 void maf_mafLine_setType(mafLine_t *ml, char c) {
     ml->type = c;

@@ -154,6 +154,7 @@ class ExtractionTest(unittest.TestCase):
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsExtracted(os.path.join(tmpDir, 'extracted.maf')))
             mtt.removeDir(tmpDir)
@@ -172,6 +173,7 @@ class ExtractionTest(unittest.TestCase):
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.fileIsEmpty(os.path.join(tmpDir, 'extracted.maf')))
             mtt.removeDir(tmpDir)
@@ -206,6 +208,7 @@ class ExtractionTest(unittest.TestCase):
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)
@@ -228,6 +231,7 @@ class ExtractionTest(unittest.TestCase):
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1]]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)

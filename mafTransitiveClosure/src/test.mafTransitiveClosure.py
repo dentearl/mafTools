@@ -154,6 +154,7 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), 
                    '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'transitiveClosure.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             passed = mafIsClosed(os.path.join(tmpDir, 'transitiveClosure.maf'), outList)
             self.assertTrue(passed)
@@ -170,6 +171,7 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), 
                    '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')), '--sort']
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'transitiveClosure.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             passed = mafIsClosed(os.path.join(tmpDir, 'transitiveClosure.maf'), outList)
             self.assertTrue(passed)
@@ -190,6 +192,7 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
             cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), 
                     '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')) ]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'transitiveClosure.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
             self.assertTrue(passed)
@@ -205,6 +208,7 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
         cmd = mtt.genericValgrind(tmpDir)
         cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), '--test']
         outpipes = [os.path.abspath(os.path.join(tmpDir, 'transitiveClosure.maf'))]
+        mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
         mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
         passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
         self.assertTrue(passed)
@@ -225,6 +229,7 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
             cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), 
                     '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')), '--sort']
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'transitiveClosure.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
             self.assertTrue(passed)
