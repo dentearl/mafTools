@@ -68,13 +68,13 @@ typedef struct _resultPair {
     int32_t totalB;
     int32_t totalNeither;
 } ResultPair;
-
 void populateNames(const char *mAFFile, stHash *hash);
 void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3);
 void printNameHash(struct hashtable *h);
 struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint32_t numberOfSamples, 
                                  stHash *legitimateSequences, stHash *intervalsHash, 
                                  int32_t verbose, uint32_t near);
+void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...);
 void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, 
                    FILE *fileHandle, uint32_t near, stHash *legitimateSequences, const char *bedFiles);
 void aPair_destruct(APair *pair, void *extraArgument);
@@ -87,16 +87,14 @@ uint64_t countPairsInMaf(const char *filename, stHash *legitPairs);
 void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i);
 void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c);
 stHash* stHash_getIntersection(stHash *seqNames1, stHash *seqNames2);
-void samplePairsFromColumn(char **mat, uint32_t c, bool *legitRows, 
-                           char **names, double acceptProbability, struct avl_table *pairs, 
-                           uint32_t numSeqs, uint64_t *chooseTwoArray,
+void samplePairsFromColumn(char ** mat, uint32_t c, bool *legtRows, double acceptProbability, 
+                           struct avl_table *pairs, 
+                           uint32_t numRows, uint32_t numLegitGaplessSeqs, uint64_t *chooseTwoArray,
                            mafLine_t **mlArray, uint32_t *positions);
-void samplePairsFromColumnBruteForce(char **mat, uint32_t c, bool *legitRows, 
-                                     char **names, double acceptProbability, struct avl_table *pairs, 
+void samplePairsFromColumnBruteForce(double acceptProbability, struct avl_table *pairs, 
                                      uint32_t numSeqs, uint64_t *chooseTwoArray,
                                      mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs);
-void samplePairsFromColumnAnalytic(char **mat, uint32_t c, bool *legitRows, 
-                                   char **names, double acceptProbability, struct avl_table *pairs, 
+void samplePairsFromColumnAnalytic(double acceptProbability, struct avl_table *pairs, 
                                    uint32_t numSeqs, uint64_t *chooseTwoArray,
                                    mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs);
 
