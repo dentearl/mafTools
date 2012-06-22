@@ -58,7 +58,7 @@ test/%.o: src/%.c src/%.h
 	mv CuTest.a $@
 
 test : test/allTests test/testRand test/mafComparator
-	./test/allTests && python2.7 src/test.mafComparator.py --verbose && rm -rf ./test/ && rmdir ./tempTestDir
+	./test/allTests && python2.7 src/test.mafComparator.py --verbose # && rm -rf ./test/ && rmdir ./tempTestDir
 
 test/allTests: src/allTests.c src/comparatorAPI.c ${extraAPI} ${testObjects} ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
@@ -67,7 +67,7 @@ test/allTests: src/allTests.c src/comparatorAPI.c ${extraAPI} ${testObjects} ${s
 
 test/testRand: src/testRand.c ${extraAPI} ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
-	${cxx} -g -O0 $^ -I ${sonLibPath} -I ../include -I ../external -o $@.tmp ${cflags}
+	${cxx} -g -O0 -pg $^ -I ${sonLibPath} -I ../include -I ../external -o $@.tmp ${cflags}
 	mv $@.tmp $@
 
 clean :

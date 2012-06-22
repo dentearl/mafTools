@@ -520,6 +520,9 @@ void maf_mafBlock_setLineNumber(mafBlock_t *mb, uint32_t n) {
 void maf_mafLine_setType(mafLine_t *ml, char c) {
     ml->type = c;
 }
+void maf_mafLine_setSpecies(mafLine_t *ml, char *s) {
+    ml->species = s;
+}
 void maf_mafLine_setStrand(mafLine_t *ml, char c) {
     ml->strand = c;
 }

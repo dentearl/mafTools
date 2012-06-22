@@ -97,5 +97,16 @@ void samplePairsFromColumnBruteForce(double acceptProbability, struct avl_table 
 void samplePairsFromColumnAnalytic(double acceptProbability, struct avl_table *pairs, 
                                    uint32_t numSeqs, uint64_t *chooseTwoArray,
                                    mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs);
-
+void samplePairsFromColumnNaive(char **mat, uint32_t c, bool *legitRows, double acceptProbability, 
+                                struct avl_table *pairs, 
+                                uint32_t numRows, uint32_t numLegit, uint64_t *chooseTwoArray, 
+                                mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs);
+uint32_t countLegitPositions(char **mat, uint32_t c, uint32_t numRows);
+mafLine_t** cullMlArrayByColumn(char **mat, uint32_t c, uint32_t numRows, bool *legitRows, mafLine_t **mlArray, uint32_t numLegitGaplessPositions);
+uint32_t* cullPositionsByColumn(char **mat, uint32_t c, uint32_t numRows, bool *legitRows, uint32_t *positions, uint32_t numLegitGaplessPositions);
+void walkBlockSamplingPairs(mafBlock_t *mb, struct avl_table *pairs, double acceptProbability, stHash *legitSequences, uint64_t *chooseTwoArray);
+int32_t aPair_cmpFunction(APair *aPair1, APair *aPair2, void *a);
+uint32_t sumBoolArray(bool *legitRows, uint32_t numSeqs);
+mafLine_t** createMafLineArray(mafBlock_t *mb, uint32_t numLegit, bool *legitRows);
+void updatePositions(char **mat, uint32_t c, uint32_t *positions, int *strandInts, uint32_t numSeqs);
 #endif /* _COMPARATOR_API_H_ */

@@ -29,6 +29,12 @@
 #include <stdint.h>
 #include "sonLib.h"
 
+// Makes a draw from a random binomial with parameters n, p 
+// Uses 
+// BTPE (Binomial, Trinagle, Parallelogram, Exponential)
+// Kachitvichyanukul, Voratas and Schmeiser, Bruce W. (1988)
+// Binomial Random Variate Generation, Communications of the ACM, 31(2): 216-222
 uint64_t rbinom(const uint64_t n, const double p);
+// NOT MULTITHREAD SAFE.
 
 #endif // _COMPARATOR_RANDOM_H_

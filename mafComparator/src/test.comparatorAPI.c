@@ -26,6 +26,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include "CuTest.h"
 #include "common.h"
 #include "sonLib.h"
@@ -80,7 +82,9 @@ static void test_mappingMatrixToArray_0(CuTest *testCase) {
 static void test_mappingArrayToMatrix_0(CuTest *testCase) {
     uint64_t **mat = NULL;
     uint64_t index, resultRow, resultCol;
-    for (uint64_t n = 2; n < 11; ++n) {
+    uint64_t n;
+    for (uint64_t p = 0; p < 12; ++p) {
+        n = 2 << p;
         // build out mat
         mat = (uint64_t **) st_malloc(sizeof(*mat) * n);
         for (uint64_t r = 0; r < n; ++r) {
@@ -224,11 +228,161 @@ static void test_pairCounting_0(CuTest *testCase) {
     maf_destroyMafBlockList(mb);
     stHash_destruct(legitPairs);
 }
+static char** createRandomColumn(uint32_t n, uint32_t colLength, double gapProb) {
+    char **mat = (char**) st_malloc(sizeof(*mat) * n);
+    for (uint32_t i = 0; i < n; ++i) {
+        mat[i] = st_malloc(sizeof(char) * colLength + 1);
+        for (uint32_t j = 0; j < colLength; ++j) {
+            if (st_random() <= gapProb) {
+                mat[i][j] = '-';
+            } else {
+                mat[i][j] = 'A';
+            }
+        }
+        mat[i][colLength] = '\0'; // unused
+    }
+    return mat;
+}
+static bool* createRandomLegitRow(uint32_t n, double alpha) {
+    bool *legitRow = (bool*) st_malloc(sizeof(*legitRow) * n);
+    for (uint32_t i = 0; i < n; ++i) {
+        if (st_random() <= alpha) {
+            legitRow[i] = true;
+        } else {
+            legitRow[i] = false;
+        }
+    }
+    return legitRow;
+}
+static double runningAverage(double m, double x, uint32_t i) {
+    m += (x - m) / (i + 1);
+    return m;
+}
+static char* randomName(uint32_t n) {
+    char *s = (char*) st_malloc(sizeof(*s) * (n + 9));
+    strcpy(s, "species_");
+    for (uint32_t i = 8; i < n + 8; ++i) {
+        if (st_random() < 0.5) {
+            // upper case
+            s[i] = st_randomInt(65, 91);
+        } else {
+            // lower case 
+            s[i] = st_randomInt(97, 123);
+        }
+    }
+    s[n] = '\0';
+    return s;
+}
+static mafLine_t** createMlArray(uint32_t n) {
+    mafLine_t **mlArray = (mafLine_t**) st_malloc(sizeof(*mlArray) * n);
+    for (uint32_t i = 0; i < n; ++i) {
+        mlArray[i] = maf_newMafLine();
+        maf_mafLine_setSpecies(mlArray[i], randomName(20));
+    }
+    return mlArray;
+}
+static void u32set(uint32_t *a, uint64_t v, uint32_t n) {
+    for (uint32_t i = 0; i < n; ++i) {
+        a[i] = v;
+    }
+}
+static void intset(int *a, int v, uint32_t n) {
+    for (uint32_t i = 0; i < n; ++i) {
+        a[i] = v;
+    }
+}
+static void test_columnSampling_timing_0(CuTest *testCase) {
+    // this should not be enabled for the default test.
+    char **mat = NULL;
+    bool *legitRows = NULL;
+    uint32_t n, m;
+    uint32_t *positions = NULL;
+    int *strandInts = NULL;
+    uint64_t *chooseTwoArray = buildChooseTwoArray();
+    mafLine_t **mlArray = NULL;
+    double timeClever, timeNaive, p;
+    time_t t1;
+    uint32_t colLength = 2000;
+    struct avl_table *pairs = NULL;
+    printf("#Rows        p      n*p clever naive\n");
+    for (uint32_t i = 0; i < 9; ++i) {
+        pairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction, 
+                           NULL, NULL);
+        n = 2 << i;
+        p = 2.0 / (n * (n - 1));
+        mat = createRandomColumn(n, colLength, 0.1);
+        legitRows = createRandomLegitRow(n, 0.9);
+        m = sumBoolArray(legitRows, n);
+        positions = (uint32_t*) st_malloc(sizeof(*positions) * n);
+        u32set(positions, 0, n);
+        strandInts = (int*) st_malloc(sizeof(*strandInts) * n);
+        intset(strandInts, 1, n);
+        mlArray = createMlArray(n);
+        timeClever = 0.0;
+        timeNaive = 0.0;
+        t1 = time(NULL);
+        for (uint32_t c = 0; c < colLength; ++c) {
+            samplePairsFromColumn(mat, c, legitRows, 0.01, pairs, n, m, chooseTwoArray, mlArray, positions);
+            updatePositions(mat, c, positions, strandInts, n);
+        }
+        timeClever = difftime(time(NULL), t1);
+        free(positions);
+        avl_destroy(pairs, (void(*)(void *, void *)) aPair_destruct);
+        positions = (uint32_t*) st_malloc(sizeof(*positions) * n);
+        memset(positions, 0, sizeof(*positions) * n);
+        pairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction, 
+                           NULL, NULL);
+        t1 = time(NULL);
+        for (uint32_t c = 0; c < colLength; ++c) {
+            samplePairsFromColumnNaive(mat, c, legitRows, 0.01, pairs, n, m, chooseTwoArray, 
+                                       mlArray, positions, chooseTwo(n));
+            updatePositions(mat, c, positions, strandInts, n);
+        }
+        timeNaive = difftime(time(NULL), t1);
+        printf("%5" PRIu32 " %6.2e %6f %4.0fs %4.0fs\n", n, p, p * n, timeClever, timeNaive);
+        // clean up
+        for (uint32_t j = 0; j < n; ++j) {
+            free(mat[j]);
+            maf_destroyMafLineList(mlArray[j]);
+        }
+        free(mat);
+        free(mlArray);
+        free(legitRows);
+    }
+    free(chooseTwoArray);
+    CuAssertTrue(testCase, true);
+}
+static void test_chooseTwoValues_0(CuTest *testCase) {
+    CuAssertTrue(testCase, chooseTwo(0) == 0);
+    CuAssertTrue(testCase, chooseTwo(1) == 0);
+    CuAssertTrue(testCase, chooseTwo(2) == 1);
+    CuAssertTrue(testCase, chooseTwo(3) == 3);
+    CuAssertTrue(testCase, chooseTwo(4) == 6);
+    CuAssertTrue(testCase, chooseTwo(5) == 10);
+    CuAssertTrue(testCase, chooseTwo(48) == 1128);
+    CuAssertTrue(testCase, chooseTwo(64) == 2016);
+    CuAssertTrue(testCase, chooseTwo(100) == 4950);
+    CuAssertTrue(testCase, chooseTwo(1000) == 499500);
+    uint64_t *cta = buildChooseTwoArray();
+    for (uint32_t i = 0; i < 101; ++i) {
+        CuAssertTrue(testCase, chooseTwo(i) == cta[i]);
+    }
+    free(cta);
+}
 CuSuite* comparatorAPI_TestSuite(void) {
     (void) (printMat);
+    (void) (runningAverage);
+    (void) (test_columnSampling_timing_0);
+    (void) (test_mappingMatrixToArray_0);
+    (void) (test_mappingArrayToMatrix_0);
+    (void) (test_pairCounting_0);
+    (void) (test_chooseTwoValues_0);
+    (void) (test_columnSampling_timing_0);
     CuSuite* suite = CuSuiteNew();
     SUITE_ADD_TEST(suite, test_mappingMatrixToArray_0);
     SUITE_ADD_TEST(suite, test_mappingArrayToMatrix_0);
     SUITE_ADD_TEST(suite, test_pairCounting_0);
+    SUITE_ADD_TEST(suite, test_chooseTwoValues_0);
+    // SUITE_ADD_TEST(suite, test_columnSampling_timing_0);
     return suite;
 }
