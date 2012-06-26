@@ -261,10 +261,11 @@ void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c) {
         *c = 1;
         return;
     }
-    uint64_t x = n * (n - 1) / 2 - 1 - i;
+    assert(i < ((n * (n - 1)) << 1));
+    uint64_t x = (n * (n - 1)) / 2 - 1 - i;
     uint64_t k = floor((sqrt(8 * x + 1) - 1) / 2);
     *r = n - 2 - k;
-    *c = i - ((*r) * n - (*r) * ((*r) + 1) / 2 - (*r) -1);
+    *c = i - ((*r) * n - ((*r) * ((*r) + 1)) / 2 - (*r) -1);
     assert((*r) < n);
     assert((*c) < n);
 }
@@ -320,17 +321,16 @@ uint64_t walkBlockCountingPairs(mafBlock_t *mb, stHash *legitSequences, uint64_t
     return count;
 }
 uint64_t chooseTwo(uint32_t n) {
-    return (uint64_t)((n * (n - 1)) / 2);
+    if ((n == 0) || (n == 1)) {
+        return 0;
+    } else {
+        return ((n * (n - 1)) >> 1);
+    }
 }
 uint64_t* buildChooseTwoArray(void) {
     // pre-calculate a bunch of smaller sizes
     uint64_t *cta = (uint64_t *) st_malloc(sizeof(int64_t) * 101);
-    cta[0] = 0;
-    cta[1] = 0;
-    cta[2] = 1;
-    cta[3] = 3;
-    cta[4] = 6;
-    for (uint32_t i = 5; i < 101; ++i) {
+    for (uint32_t i = 0; i < 101; ++i) {
         cta[i] = chooseTwo(i);
     }
     return cta;
@@ -360,26 +360,55 @@ int32_t* copyInt32(int32_t *i) {
     *j = *i;
     return j;
 }
+void printmlarray(mafLine_t **mlArray, uint32_t n) {
+    for (uint32_t i = 0; i < n; ++i) {
+        printf("%" PRIu32 ":%s, ", i, maf_mafLine_getSpecies(mlArray[i]));
+    }
+    printf("\n");
+}
+uint32_t countLegitGaplessPositions(char **mat, uint32_t c, uint32_t numRows, bool *legitRows) {
+    uint32_t a = 0;
+    for (uint32_t r = 0; r < numRows; ++r) {
+        if (!legitRows[r]) {
+            continue;
+        }
+        if (mat[r][c] != '-') {
+            ++a;
+        }
+    }
+    return a;
+}
 void samplePairsFromColumn(char **mat, uint32_t c, bool *legitRows, double acceptProbability, 
                            struct avl_table *pairs, 
-                           uint32_t numRows, uint32_t numLegitGaplessSeqs, uint64_t *chooseTwoArray,
+                           uint32_t numRows, uint32_t numLegit, uint64_t *chooseTwoArray, 
                            mafLine_t **mlArray, uint32_t *positions) {
     // mat is the matrix of characters representing the alignment, c is the current column,
     // legtRows is a boolean array with true for a legit sequence, acceptProbability is the per
     // base accept probability, pairs is where we store pairs, numRows is the number of total sequences
-    // in the matrix, numLegitGaplessSeqs is the number of gapless & legit sequences -- also the length
+    // in the matrix, numLegit is the number of legit sequences -- also the length
     // of the mlArray and positions arrays.
+    mafLine_t **columnMlArray = NULL;
+    uint32_t *columnPositions = NULL;
+    uint32_t numLegitGaplessPositions = countLegitGaplessPositions(mat, c, numRows, legitRows);
+    // printmlarray(mlArray, numRows);
+    columnMlArray = cullMlArrayByColumn(mat, c, numRows, legitRows, mlArray, numLegitGaplessPositions);
+    // printmlarray(mlArray, sumBoolArray(legitRows, numRows));
+    columnPositions = cullPositionsByColumn(mat, c, numRows, legitRows, positions, numLegitGaplessPositions);
     uint64_t numPairs = countPairsInColumn(mat, c, numRows, legitRows, chooseTwoArray);
     if (numPairs < 5) {
         // keep in mind the sequence of v = k choose 2 is 
         // k: 2 3 4  5 ...
         // v: 1 3 6 10 ...
         samplePairsFromColumnBruteForce(acceptProbability, pairs,
-                                        numLegitGaplessSeqs, chooseTwoArray, mlArray, positions, numPairs);
+                                        numLegitGaplessPositions, chooseTwoArray, columnMlArray, 
+                                        columnPositions, numPairs);
     } else {
         samplePairsFromColumnAnalytic(acceptProbability, pairs,
-                                      numLegitGaplessSeqs, chooseTwoArray, mlArray, positions, numPairs);
+                                      numLegitGaplessPositions, chooseTwoArray, columnMlArray, 
+                                      columnPositions, numPairs);
     }
+    free(columnMlArray);
+    free(columnPositions);
 }
 void samplePairsFromColumnBruteForce(double acceptProbability, struct avl_table *pairs, 
                                      uint32_t numSeqs, uint64_t *chooseTwoArray,
@@ -388,7 +417,6 @@ void samplePairsFromColumnBruteForce(double acceptProbability, struct avl_table 
     for (uint64_t i = 0; i < numPairs; ++i) {
         if (st_random() <= acceptProbability) {
             arrayIndexToPairIndices(i, numSeqs, &p1, &p2);
-            // printf("brute force pairing %s:%"PRIu32" with %s:%"PRIu32"\n", maf_mafLine_getSpecies(mlArray[p1]), positions[p1], maf_mafLine_getSpecies(mlArray[p2]), positions[p2]);
             APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                            maf_mafLine_getSpecies(mlArray[p2]),
                                            positions[p1], positions[p2]);
@@ -429,7 +457,6 @@ void samplePairsFromColumnAnalytic(double acceptProbability, struct avl_table *p
         while ((key = stHash_getNext(hit)) != NULL) {
             // use mlArray
             arrayIndexToPairIndices((uint64_t)(*key), numSeqs, &p1, &p2);
-            // printf("analytic pairing %s:%"PRIu32" with %s:%"PRIu32"\n", maf_mafLine_getSpecies(mlArray[p1]), positions[p1], maf_mafLine_getSpecies(mlArray[p2]), positions[p2]);
             APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                            maf_mafLine_getSpecies(mlArray[p2]),
                                            positions[p1], positions[p2]);
@@ -437,11 +464,10 @@ void samplePairsFromColumnAnalytic(double acceptProbability, struct avl_table *p
         }
     } else {
         // items not in hash have been sampled
-        for (uint32_t i = 0; i < numSeqs; ++i) {
+        for (uint64_t i = 0; i < numSeqs; ++i) {
             *tmp = i;
             if (stHash_search(hash, tmp) == NULL) {
-                arrayIndexToPairIndices((uint64_t)i, numSeqs, &p1, &p2);
-                // printf("analytic pairing %s:%"PRIu32" with %s:%"PRIu32"\n", maf_mafLine_getSpecies(mlArray[p1]), positions[p1], maf_mafLine_getSpecies(mlArray[p2]), positions[p2]);
+                arrayIndexToPairIndices(i, numSeqs, &p1, &p2);
                 APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                                maf_mafLine_getSpecies(mlArray[p2]),
                                                positions[p1], positions[p2]);
@@ -453,6 +479,32 @@ void samplePairsFromColumnAnalytic(double acceptProbability, struct avl_table *p
     stHash_destructIterator(hit);
     stHash_destruct(hash);
     free(tmp);
+}
+void samplePairsFromColumnNaive(char **mat, uint32_t c, bool *legitRows, double acceptProbability, 
+                                struct avl_table *pairs, 
+                                uint32_t numRows, uint32_t numLegit, uint64_t *chooseTwoArray, 
+                                mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs) {
+    // mat is the matrix of characters representing the alignment, c is the current column,
+    // legtRows is a boolean array with true for a legit sequence, acceptProbability is the per
+    // base accept probability, pairs is where we store pairs, numRows is the number of total sequences
+    // in the matrix, numLegit is the number of legit sequences -- also the length
+    // of the mlArray and positions arrays.
+    uint64_t p1, p2;
+    for (uint64_t i = 0; i < numPairs; ++i) {
+        arrayIndexToPairIndices(i, numRows, &p1, &p2);
+        if ((!legitRows[p1]) || (!legitRows[p2])) {
+            continue;
+        }
+        if ((mat[p1][c] == '-') || (mat[p2][c]) == '-') {
+            continue;
+        }
+        if (st_random() <= acceptProbability) {
+            APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
+                                           maf_mafLine_getSpecies(mlArray[p2]),
+                                           positions[p1], positions[p2]);
+            avl_insert(pairs, aPair);
+        }
+    }
 }
 mafLine_t** createMafLineArray(mafBlock_t *mb, uint32_t numLegit, bool *legitRows) {
     if (numLegit == 0) {
@@ -518,24 +570,30 @@ uint32_t countLegitPositions(char **mat, uint32_t c, uint32_t numRows) {
     }
     return n;
 }
-mafLine_t** cullMlArrayByColumn(char **mat, uint32_t c, uint32_t numRows, uint32_t numColLegit, 
-                                mafLine_t **mlArray) {
+mafLine_t** cullMlArrayByColumn(char **mat, uint32_t c, uint32_t numRows, bool *legitRows, 
+                                mafLine_t **mlArray, uint32_t numLegitGaplessPositions) {
     // create an array of mafLine_t for a given column, excluding all sequences that contain gaps 
-    mafLine_t **colMlArray = (mafLine_t**) st_malloc(sizeof(*mlArray) * numColLegit);
+    mafLine_t **colMlArray = (mafLine_t**) st_malloc(sizeof(*mlArray) * numLegitGaplessPositions);
     uint32_t j = 0;
     for (uint32_t r = 0; r < numRows; ++r) {
+        if (!legitRows[r]) {
+            continue;
+        }
         if (mat[r][c] != '-') {
             colMlArray[j++] = mlArray[r];
         }
     }
     return colMlArray;
 }
-uint32_t* cullPositionsByColumn(char **mat, uint32_t c, uint32_t numRows, uint32_t numColLegit, 
-                                uint32_t *positions) {
+uint32_t* cullPositionsByColumn(char **mat, uint32_t c, uint32_t numRows, bool *legitRows,
+                                uint32_t *positions, uint32_t numLegitGaplessPositions) {
     // create an array of positive coordinate position values that excludes all sequences that contain gaps
-    uint32_t *colPositions = (uint32_t*) st_malloc(sizeof(*positions) * numColLegit);
+    uint32_t *colPositions = (uint32_t*) st_malloc(sizeof(*positions) * numLegitGaplessPositions);
     uint32_t j = 0;
     for (uint32_t r = 0; r < numRows; ++r) {
+        if (!legitRows[r]) {
+            continue;
+        }
         if (mat[r][c] != '-') {
             colPositions[j++] = positions[r];
         }
@@ -546,7 +604,7 @@ void walkBlockSamplingPairs(mafBlock_t *mb, struct avl_table *pairs,
                             double acceptProbability, stHash *legitSequences, 
                             uint64_t *chooseTwoArray) {
     uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
-    if (numSeqs < 1) {
+    if (numSeqs < 2) {
         return;
     }
     uint32_t seqFieldLength = maf_mafBlock_longestSequenceField(mb);
@@ -554,29 +612,21 @@ void walkBlockSamplingPairs(mafBlock_t *mb, struct avl_table *pairs,
     char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
     bool *legitRows = getLegitRows(names, numSeqs, legitSequences);
     uint32_t numLegit = sumBoolArray(legitRows, numSeqs);
+    if (numLegit < 2) {
+        return;
+    }
     mafLine_t **mlArray = createMafLineArray(mb, numLegit, legitRows);
-    mafLine_t **columnMlArray = NULL;
     uint32_t *allPositions = maf_mafBlock_getPosCoordStartArray(mb);
-    uint32_t *positions = cullPositions(allPositions, numSeqs, legitRows, numLegit);
-    uint32_t *columnPositions = NULL;
-    uint32_t numColLegit;
     int *allStrandInts = maf_mafBlock_getStrandIntArray(mb);
     int *strandInts = cullStrandInts(allStrandInts, numSeqs, legitRows, numLegit);
     for (uint32_t c = 0; c < seqFieldLength; ++c) {
-        numColLegit = countLegitPositions(mat, c, numLegit);
-        // printf("  column %"PRIu32", numColLegit:%"PRIu32"\n", c, numColLegit);
-        columnMlArray = cullMlArrayByColumn(mat, c, numLegit, numColLegit, mlArray);
-        columnPositions = cullPositionsByColumn(mat, c, numLegit, numColLegit, positions);
-        samplePairsFromColumn(mat, c, legitRows, acceptProbability, pairs, numSeqs, numColLegit, chooseTwoArray, 
-                              columnMlArray, columnPositions);
-        updatePositions(mat, c, positions, strandInts, numLegit);
-        free(columnMlArray);
-        free(columnPositions);
+        samplePairsFromColumn(mat, c, legitRows, acceptProbability, pairs, numSeqs, numLegit, chooseTwoArray, 
+                              mlArray, allPositions);
+        updatePositions(mat, c, allPositions, strandInts, numLegit);
     }
     // clean up
     free(mlArray);
     free(allPositions);
-    free(positions);
     free(allStrandInts);
     free(strandInts);
     for (uint32_t i = 0; i < numLegit; ++i) {

@@ -30,6 +30,7 @@
 
 enum STATE {
     done,
+    initialization,
     selectRegion,
     parallelograms,
     leftExponentialTail,
@@ -40,16 +41,19 @@ enum STATE {
     acceptRejectFinal,
     correctPvalue
 };
-
 typedef struct btpeCalc {
-    uint64_t n;
-    double p, r, q, f_M, M, p1, x_M, x_L, x_R, c, l_L, l_R, p2, p3, p4, u, v, y, m, A, k;
+    uint64_t n, nsave;
+    double p, psave, r, q, fm, p1, xm, xl, xr, c, laml, lamr, p2, p3, p4, u, v, A;
     enum STATE nextStep; // used to traverse the inner subroutines
-    uint64_t result;   // the ultimate result, a binomal draw from binom(n, p);
+    enum STATE prevStep; // debugging
+    uint64_t result; 
+    int64_t y, k, m;
 } btpeCalc_t;
+static char*stateStrings[] = {"done", "initilaization", "selectRegion", "parallelograms", "leftExponentialTail", "rightExponentialTail", "acceptRejectTest", "acceptRejectRecursive", "acceptRejectSqueeze", "acceptRejectFinal", "correctPvalue"};
 
+static double dmin(double a, double b);
 static uint64_t rbinom_smallNaive(const uint64_t n, const double p);
-static uint64_t rbinom_smallLog(const uint64_t n, const double p);
+static uint64_t rbinom_smallamlog(const uint64_t n, const double p);
 static uint64_t rbinom_smallCdf(const uint64_t n, const double p);
 static btpeCalc_t* newBtpeCalc(const uint64_t n, const double p);
 static void rbinom_btpe_selectRegion_1(btpeCalc_t *b);
@@ -65,22 +69,38 @@ static uint64_t rbinom_btpe(uint64_t n, double p);
     // BTPE (Binomial, Trinagle, Parallelogram, Exponential)
     // Kachitvichyanukul, Voratas and Schmeiser, Bruce W. (1988)
     // Binomial Random Variate Generation, Communications of the ACM, 31(2): 216-222
-
 uint64_t rbinom(const uint64_t n, const double p) {
     // make a draw from a binomial distribution with parameters n and p
     (void) (rbinom_smallNaive);
-    (void) (rbinom_smallLog);
+    (void) (rbinom_smallamlog);
+    (void) (rbinom_btpe);
     (void) (rbinom_smallCdf);
+    (void) (stateStrings);
+    uint64_t result;
+    double q = dmin(p, 1.0 - p);
+    if (n > 9223372036854775807) {
+        // since we cast down to int64_t we must verify that n will fit
+        // 2^63
+        fprintf(stderr, "Error in rbinom(), n greater than 9223372036854775807: %"PRIu64"\n", n);
+        exit(EXIT_FAILURE);
+    }
     if (p == 0.0) {
         return 0;
+    }
+    if (p < 0.0) {
+        fprintf(stderr, "Error in rbinom(), p value less than 0: %f\n", p);
+        exit(EXIT_FAILURE);
     }
     if (p >= 1.0) {
         return n;
     }
-    if (n < 20)
-        return rbinom_smallCdf(n, p);
-    else
-        return rbinom_btpe(n, p);
+    if (n * q <= 30) {
+        result = rbinom_smallCdf(n, p);
+    } else {
+        result = rbinom_btpe(n, p);
+    }
+    assert(result <= n);
+    return result;
 }
 static uint64_t rbinom_smallNaive(const uint64_t n, const double p) {
     // speed proportional to n
@@ -92,7 +112,7 @@ static uint64_t rbinom_smallNaive(const uint64_t n, const double p) {
     }
     return x;
 }
-static uint64_t rbinom_smallLog(const uint64_t n, const double p) {
+static uint64_t rbinom_smallamlog(const uint64_t n, const double p) {
     // Binomial via Geometric, a la Devroye
     // speed proportional to n * p
     uint64_t x = 0, y = 0;
@@ -132,37 +152,52 @@ static uint64_t rbinom_smallCdf(const uint64_t n, const double p) {
     }
     return x;
 }
+static btpeCalc_t* emptyBtpeCalc(void) {
+    btpeCalc_t *b = (btpeCalc_t*) st_malloc(sizeof(btpeCalc_t));
+    b->nsave = 0;
+    b->psave = -1.0;
+    return b;
+}
+static double dmin(double a, double b) {
+    if (a < b)
+        return a;
+    else
+        return b;
+}
 static btpeCalc_t* newBtpeCalc(uint64_t n, double p) {
     /* step 0. 
        Set-up constants as functions of n and p. Execute whenever the value of n or p change
      */
-    btpeCalc_t *b = (btpeCalc_t*) st_malloc(sizeof(*b));
-    double a;
-    b->n = n;
-    b->p = p;
-    b->result = 0;
-    b->nextStep = selectRegion;
-    if (b->p < 1.0 - b->p) {
-        b->r = b->p;
-    } else {
-        b->r = 1.0 - b->p;
+    //////////////////////////////////////////////////
+    // not multithread safe due to use of static pointer here
+    //////////////////////////////////////////////////
+    static btpeCalc_t *b;
+    if (b == NULL) {
+         b = emptyBtpeCalc();
     }
-    b->q = 1.0 - b->r;
-    b->f_M = n * b->r + b->r;
-    b->M = floor(b->f_M);
-    b->p1 = floor(2.195 * sqrt(b->n * b->r * b->q) - 4.6 * b->q);
-    b->x_M = b->M + 0.5;
-    b->x_L = b->x_M - b->p1;
-    b->x_R = b->x_M + b->p1;
-    b->c = 0.134 + 20.5 / (15.3 + b->M);
-    a = (b->f_M - b->x_L) / (b->f_M - b->x_L * b->r);
-    b->l_L = a * (a + a / 2.0);
-    a = (b->x_R - b->f_M) / (b->x_R * b->q);
-    b->l_R = a * (1.0 + a / 2.0);
-    b->p2 = b->p1 * (1.0 + 2.0 * b->c);
-    b->p3 = b->p2 + b->c / b->l_L;
-    b->p4 = b->p3 + b->c / b->l_R;
-    b->m = b->n * b->p + b->p;
+    if ((b->nsave != n) | (b->psave != p)) {
+        double a;
+        b->n = n;
+        b->p = p;
+        b->r = dmin(b->p, 1.0 - b->p);
+        b->q = 1.0 - b->r;
+        b->fm = b->n * b->r + b->r;
+        b->m = (int64_t) floor(b->fm);
+        b->p1 = floor(2.195 * sqrt(b->n * b->r * b->q) - 4.6 * b->q) + 0.5;
+        b->xm = b->m + 0.5;
+        b->xl = b->xm - b->p1;
+        b->xr = b->xm + b->p1;
+        b->c = 0.134 + 20.5 / (15.3 + b->m);
+        a = (b->fm - b->xl) / (b->fm - b->xl * b->r);
+        b->laml = a * (1.0 + a / 2.0);
+        a = (b->xr - b->fm) / (b->xr * b->q);
+        b->lamr = a * (1.0 + a / 2.0);
+        b->p2 = b->p1 * (1.0 + 2.0 * b->c);
+        b->p3 = b->p2 + b->c / b->laml;
+        b->p4 = b->p3 + b->c / b->lamr;
+    }
+    b->prevStep = initialization;
+    b->nextStep = selectRegion;
     return b;
 }
 static void rbinom_btpe_selectRegion_1(btpeCalc_t *b) {
@@ -175,9 +210,10 @@ static void rbinom_btpe_selectRegion_1(btpeCalc_t *b) {
     if (b->u > b->p1) {
         b->nextStep = parallelograms;
     } else {
-        b->y = floor(b->x_M - b->p1 * b->v + b->u);
+        b->y = (int64_t) floor(b->xm - b->p1 * b->v + b->u);
         b->nextStep = correctPvalue;
     }
+    b->prevStep = selectRegion;
 }
 static void rbinom_btpe_parallelograms_2(btpeCalc_t *b) {
     /* step 2.
@@ -188,15 +224,16 @@ static void rbinom_btpe_parallelograms_2(btpeCalc_t *b) {
     if (b->u > b->p2) {
         b->nextStep = leftExponentialTail;
     } else {
-        x = b->x_L + (b->u - b->p1) / b->c;
-        b->v = b->v * b->c + 1.0 - fabs(b->M - x + 0.5) / b->p1;
+        x = b->xl + (b->u - b->p1) / b->c;
+        b->v = b->v * b->c + 1.0 - fabs(b->m - x + 0.5) / b->p1;
         if (b->v > 1.0) {
             b->nextStep = selectRegion;
         } else {
-            b->y = floor(x);
+            b->y = (int64_t) floor(x);
             b->nextStep = acceptRejectTest;
         }
     }
+    b->prevStep = parallelograms;
 }
 static void rbinom_btpe_leftExponentialTail_3(btpeCalc_t *b) {
     /* step 3.
@@ -205,37 +242,40 @@ static void rbinom_btpe_leftExponentialTail_3(btpeCalc_t *b) {
     if (b->u > b->p3) {
         b->nextStep = rightExponentialTail;
     } else {
-        b->y = floor(b->x_L + log(b->v) / b->l_L);
+        b->y = (int64_t) floor(b->xl + log(b->v) / b->laml);
         if (b->y < 0) {
             b->nextStep = selectRegion;
         } else {
-            b->v = b->v * (b->u - b->p2) * b->l_L;
+            b->v = b->v * (b->u - b->p2) * b->laml;
             b->nextStep = acceptRejectTest;
         }
     }
+    b->prevStep = leftExponentialTail;
 }
 static void rbinom_btpe_rightExponentialTail_4(btpeCalc_t *b) {
     /* step 4.
        Region 4, right exponential tail.
      */
-    b->y = floor(b->x_R - log(b->v) / b->l_R);
+    b->y = (int64_t) floor(b->xr - log(b->v) / b->lamr);
     if (b->y > b->n) {
         b->nextStep = selectRegion;
     } else {
-        b->v = b->v * (b->u - b->p3) * b->l_R;
+        b->v = b->v * (b->u - b->p3) * b->lamr;
         b->nextStep = acceptRejectTest;
     }
+    b->prevStep = rightExponentialTail;
 }
 static void rbinom_btpe_acceptRejectTest_5_0(btpeCalc_t *b) {
     /* step 5.0
        Acceptance / Rejection comparison. Test for appropriate method of evaluating f(y).
      */
-    b->k = fabs(b->y - b->M);
+    b->k = (int64_t) fabs(b->y - b->m);
     if ((b->k > 20) && (b->k < ((b->n * b->r * b->q) / 2.0 - 1.0))) {
         b->nextStep = acceptRejectSqueeze;
     } else {
         b->nextStep = acceptRejectRecursive;
     }
+    b->prevStep = acceptRejectTest;
 }
 static void rbinom_btpe_acceptRejectRecursive_5_1(btpeCalc_t *b) {
     /* step 5.1
@@ -247,21 +287,23 @@ static void rbinom_btpe_acceptRejectRecursive_5_1(btpeCalc_t *b) {
     a = s * (b->n + 1);
     F = 1.0;
     if (b->m < b->y) {
-        for (i = b->M + 1; i <= b-> y; ++i) {
-            F = F * (a / i - s);
+        for (i = b->m; i <= b->y; ++i) {
+            F *= (a / i - s);
         }
+        b->nextStep = acceptRejectSqueeze;
+    } else if (b->m > b->y) {
+        for (i = b->y; i <= b->m; ++i) {
+            F /= (a / i - s);
+        }
+        b->nextStep = acceptRejectSqueeze;
     } else {
-        if (b->M > b->y) {
-            for (i = b->y + 1; i <= b->M; ++i) {
-                F = F / ( a / i - s);
-            }
+        if (b->v > F) {
+            b->nextStep = selectRegion;
+        } else {
+            b->nextStep = correctPvalue;
         }
     }
-    if (b->v > F) {
-        b->nextStep = selectRegion;
-    } else {
-        b->nextStep = correctPvalue;
-    }
+    b->prevStep = acceptRejectRecursive;
 }
 static void rbinom_btpe_acceptRejectSqueeze_5_2(btpeCalc_t *b) {
     /* step 5.2
@@ -271,7 +313,7 @@ static void rbinom_btpe_acceptRejectSqueeze_5_2(btpeCalc_t *b) {
     bool setStep = false;
     rho = (b->k / (b->n * b->r * b->q)) * ((b->k * (b->k / 3.0 + 0.625) + 0.16666666666666666) / 
                                            (b->n * b->r * b->q) + 0.5);
-    t = -(b->k * b->k) / (2.0 * b->n * b->r * b->q);
+    t = -b->k * b->k / (2.0 * b->n * b->r * b->q);
     b->A = log(b->v);
     if (b->A < t - rho) {
         b->nextStep = correctPvalue;
@@ -284,6 +326,7 @@ static void rbinom_btpe_acceptRejectSqueeze_5_2(btpeCalc_t *b) {
     if (!setStep) {
         b->nextStep = acceptRejectFinal;
     }
+    b->prevStep = acceptRejectSqueeze;
 }
 static void rbinom_btpe_acceptRejectFinal_5_3(btpeCalc_t *b) {
     /* step 5.3
@@ -291,23 +334,25 @@ static void rbinom_btpe_acceptRejectFinal_5_3(btpeCalc_t *b) {
      */
     double x1, x2, f1, f2, z1, z2, w1, w2;
     x1 = b->y + 1.0;
-    f1 = b->M + 1.0;
-    z1 = b->n + 1.0 - b->M;
+    f1 = b->m + 1.0;
+    z1 = b->n + 1.0 - b->m;
     w1 = b->n - b->y + 1.0;
     x2 = x1 * x1;
     f2 = f1 * f1;
     z2 = z1 * z1;
     w2 = w1 * w1;
-    if (b->A > (b->x_M * log(f1 / x1) + (b->n - b->M + 0.5) * log(z1 / w1) 
-                + (b->y - b->M) * log(w1 * b->r / x1 * b->q)
-                + (13860.0 - (462.0 - (132.0 - (99.0 - 140.0 / f2) / f2) / f2) / f2) / f1 / 166320.0
-                + (13860.0 - (462.0 - (132.0 - (99.0 - 140.0 / z2) / z2) / z2) / z2) / z1 / 166320.0
-                + (13860.0 - (462.0 - (132.0 - (99.0 - 140.0 / x2) / x2) / x2) / x2) / x1 / 166320.0
-                + (13860.0 - (462.0 - (132.0 - (99.0 - 140.0 / w2) / w2) / w2) / w2) / w1 / 166320.0)) {
+    if (b->A > (b->xm * log(f1 / x1) 
+                + (b->n - b->m + 0.5) * log(z1 / w1) 
+                + (b->y - b->m) * log((w1 * b->r) / (x1 * b->q))
+                + (13860. - (462. - (132. - (99. - 140. / f2) / f2) / f2) / f2) / f1 / 166320.
+                + (13860. - (462. - (132. - (99. - 140. / z2) / z2) / z2) / z2) / z1 / 166320.
+                + (13860. - (462. - (132. - (99. - 140. / x2) / x2) / x2) / x2) / x1 / 166320.
+                + (13860. - (462. - (132. - (99. - 140. / w2) / w2) / w2) / w2) / w1 / 166320.)) {
         b->nextStep = selectRegion;
     } else {
         b->nextStep = correctPvalue;
     }
+    b->prevStep = acceptRejectFinal;
 }
 static void rbinom_btpe_correctPvalue_6(btpeCalc_t *b) {
     /* step 6.
@@ -315,11 +360,10 @@ static void rbinom_btpe_correctPvalue_6(btpeCalc_t *b) {
        If so, return n - y;
      */
     if (b->p > 0.5) {
-        b->result = b->n - b->y;
-    } else {
-        b->result = b->y;
+        b->y = b->n - b->y;
     }
     b->nextStep = done;
+    b->prevStep = correctPvalue;
 }
 static uint64_t rbinom_btpe(uint64_t n, double p) {
     // BTPE (Binomial, Trinagle, Parallelogram, Exponential)
@@ -357,9 +401,12 @@ static uint64_t rbinom_btpe(uint64_t n, double p) {
             break;
         case done:
             break;
+        case initialization:
+            break;
         }
     }
-    uint64_t result = b->result;
-    free(b);
+    assert(b->y <= b->n); // unsigned wrap around
+    uint64_t result = (uint64_t) b->y;
+    // free(b); // don't do this now that b is a local static pointer.
     return result;
 }

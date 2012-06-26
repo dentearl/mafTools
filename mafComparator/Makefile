@@ -67,7 +67,7 @@ test/allTests: src/allTests.c src/comparatorAPI.c ${extraAPI} ${testObjects} ${s
 
 test/testRand: src/testRand.c ${extraAPI} ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
-	${cxx} -g -O0 $^ -I ${sonLibPath} -I ../include -I ../external -o $@.tmp ${cflags}
+	${cxx} -g -O0 -pg $^ -I ${sonLibPath} -I ../include -I ../external -o $@.tmp ${cflags}
 	mv $@.tmp $@
 
 clean :

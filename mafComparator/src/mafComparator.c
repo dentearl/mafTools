@@ -253,7 +253,7 @@ int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **ou
             break;
         case 'v':
             version();
-            return 0;
+            exit(EXIT_SUCCESS);
         case 'p':
             g_isVerboseFailures = true;
             break;
