@@ -58,46 +58,54 @@ ResultPair *resultPair_construct(const char *seq1, const char *seq2) {
 APair *aPair_copyConstruct(APair *pair) {
    return aPair_construct(pair->seq1, pair->seq2, pair->pos1, pair->pos2);
 }
-void aPair_destruct(APair *pair, void *extraArgument) {
-    assert(extraArgument == NULL); //because destruction takes place in avl_tree
+void aPair_destruct(APair *pair) { // , void *extraArgument) {
+    // assert(extraArgument == NULL); //because destruction takes place in stSortedSet
     free(pair->seq1);
     free(pair->seq2);
     free(pair);
 }
-void resultPair_destruct(ResultPair *pair, void *extraArgument) {
-    assert(extraArgument == NULL); //because destruction takes place in avl_tree
+void resultPair_destruct(ResultPair *pair) { //, void *extraArgument) {
+    // assert(extraArgument == NULL); //because destruction takes place in stSortedSet
     free(pair->aPair.seq1);
     free(pair->aPair.seq2);
     free(pair);
 }
-int32_t aPair_cmpFunction_seqsOnly(APair *aPair1, APair *aPair2, void *a) {
+int aPair_cmpFunction_seqsOnly(APair *aPair1, APair *aPair2) {
     /*
      * Compares only the sequence name arguments of the a pairs.
      */
-    assert(a == NULL);
-    int32_t i = strcmp(aPair1->seq1, aPair2->seq1);
+    int i = strcmp(aPair1->seq1, aPair2->seq1);
     if (i == 0) {
         i = strcmp(aPair1->seq2, aPair2->seq2);
     }
     return i;
 }
-int32_t aPair_cmpFunction(APair *aPair1, APair *aPair2, void *a) {
+int aPair_cmpFunction(APair *aPair1, APair *aPair2) {
     /*
      * Compares first the sequence then the position arguments of the a pairs.
      */
-    int32_t i = aPair_cmpFunction_seqsOnly(aPair1, aPair2, a);
+    int i = aPair_cmpFunction_seqsOnly(aPair1, aPair2);
     if (i == 0) {
-        i = aPair1->pos1 - aPair2->pos1;
-        if (i == 0) {
-            i = aPair1->pos2 - aPair2->pos2;
+        if (aPair1->pos1 < aPair2->pos1) {
+            i = -1;
+        } else if (aPair1->pos1 > aPair2->pos1) {
+            i = 1;
+        } else {
+            if (aPair1->pos2 < aPair2->pos2) {
+                i = -1;
+            } else if (aPair1->pos2 > aPair2->pos2) {
+                i = 1;
+            } else {
+                i = 0;
+            }
         }
     }
     return i;
 }
 void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extraArgument1, void *extraArgument2,
-                                 void *extraArgument3, int32_t, int32_t), 
+                                 void *extraArgument3, uint32_t), 
                stHash *intervalsHash, void *extraArgument1, void *extraArgument2,
-               void *extraArgument3, int32_t isVerboseFailures, int32_t near, 
+               void *extraArgument3, uint32_t near, 
                int *bytesRead, int *nBytes, char **cA, FILE *fileHandle) {
     int32_t length, start, seqLength, i, j, k, pos1, pos2, inc1, inc2, origPos1, origPos2;
     struct List *ranges = constructEmptyList(0, free);
@@ -161,7 +169,7 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
                     if (sequence2[k] != '-') {
                         aPair_fillOut(&aPair, seq1, seq2, pos1, pos2);
                         passPairFn(&aPair, intervalsHash, extraArgument1, extraArgument2, 
-                                   extraArgument3, isVerboseFailures, near);
+                                   extraArgument3, near);
                         pos2 += inc2;
                         origPos2 ++;
                     }
@@ -190,10 +198,10 @@ int stringSortIdx_cmp(const void *a, const void *b) {
 }
 void getPairs(const char *mafFile1, 
               void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extraArgument1, void *extraArgument2, 
-                                void *extraArgument3, int32_t isVerboseFailures, int32_t near), 
+                                void *extraArgument3, uint32_t near), 
               stHash *intervalsHash,
               void *extraArgument1, void *extraArgument2, void *extraArgument3, 
-              int32_t isVerboseFailures, int32_t near) {
+              uint32_t near) {
     /*
      * Iterates through all pairs of bases in a set of MAFs, calling the given function for each one.
      */
@@ -208,7 +216,7 @@ void getPairs(const char *mafFile1,
     while (bytesRead != -1) {
         if (bytesRead > 0 && cA[0] == 'a') {
             getPairsP(passPairFn, intervalsHash, extraArgument1, extraArgument2, 
-                      extraArgument3, isVerboseFailures, near,
+                      extraArgument3, near,
                       &bytesRead, &nBytes, &cA, fileHandle);
         } else { //deal with empty, white space lines.
             bytesRead = benLine(&cA, &nBytes, fileHandle);
@@ -379,7 +387,7 @@ uint32_t countLegitGaplessPositions(char **mat, uint32_t c, uint32_t numRows, bo
     return a;
 }
 void samplePairsFromColumn(char **mat, uint32_t c, bool *legitRows, double acceptProbability, 
-                           struct avl_table *pairs, 
+                           stSortedSet *pairs, 
                            uint32_t numRows, uint32_t numLegit, uint64_t *chooseTwoArray, 
                            mafLine_t **mlArray, uint32_t *positions) {
     // mat is the matrix of characters representing the alignment, c is the current column,
@@ -410,7 +418,7 @@ void samplePairsFromColumn(char **mat, uint32_t c, bool *legitRows, double accep
     free(columnMlArray);
     free(columnPositions);
 }
-void samplePairsFromColumnBruteForce(double acceptProbability, struct avl_table *pairs, 
+void samplePairsFromColumnBruteForce(double acceptProbability, stSortedSet *pairs, 
                                      uint32_t numSeqs, uint64_t *chooseTwoArray,
                                      mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs) {
     uint64_t p1, p2;
@@ -420,11 +428,11 @@ void samplePairsFromColumnBruteForce(double acceptProbability, struct avl_table 
             APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                            maf_mafLine_getSpecies(mlArray[p2]),
                                            positions[p1], positions[p2]);
-            avl_insert(pairs, aPair);
+            stSortedSet_insert(pairs, aPair);
         }
     }
 }
-void samplePairsFromColumnAnalytic(double acceptProbability, struct avl_table *pairs, 
+void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs, 
                                    uint32_t numSeqs, uint64_t *chooseTwoArray,
                                    mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs) {
     uint64_t n = rbinom(numPairs, acceptProbability);
@@ -460,7 +468,7 @@ void samplePairsFromColumnAnalytic(double acceptProbability, struct avl_table *p
             APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                            maf_mafLine_getSpecies(mlArray[p2]),
                                            positions[p1], positions[p2]);
-            avl_insert(pairs, aPair);
+            stSortedSet_insert(pairs, aPair);
         }
     } else {
         // items not in hash have been sampled
@@ -471,7 +479,7 @@ void samplePairsFromColumnAnalytic(double acceptProbability, struct avl_table *p
                 APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                                maf_mafLine_getSpecies(mlArray[p2]),
                                                positions[p1], positions[p2]);
-                avl_insert(pairs, aPair);
+                stSortedSet_insert(pairs, aPair);
             }
         }
     }
@@ -481,7 +489,7 @@ void samplePairsFromColumnAnalytic(double acceptProbability, struct avl_table *p
     free(tmp);
 }
 void samplePairsFromColumnNaive(char **mat, uint32_t c, bool *legitRows, double acceptProbability, 
-                                struct avl_table *pairs, 
+                                stSortedSet *pairs, 
                                 uint32_t numRows, uint32_t numLegit, uint64_t *chooseTwoArray, 
                                 mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs) {
     // mat is the matrix of characters representing the alignment, c is the current column,
@@ -502,7 +510,7 @@ void samplePairsFromColumnNaive(char **mat, uint32_t c, bool *legitRows, double 
             APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                            maf_mafLine_getSpecies(mlArray[p2]),
                                            positions[p1], positions[p2]);
-            avl_insert(pairs, aPair);
+            stSortedSet_insert(pairs, aPair);
         }
     }
 }
@@ -600,7 +608,7 @@ uint32_t* cullPositionsByColumn(char **mat, uint32_t c, uint32_t numRows, bool *
     }
     return colPositions;
 }
-void walkBlockSamplingPairs(mafBlock_t *mb, struct avl_table *pairs,
+void walkBlockSamplingPairs(mafBlock_t *mb, stSortedSet *pairs,
                             double acceptProbability, stHash *legitSequences, 
                             uint64_t *chooseTwoArray) {
     uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
@@ -636,7 +644,7 @@ void walkBlockSamplingPairs(mafBlock_t *mb, struct avl_table *pairs,
     maf_mafBlock_destroySequenceMatrix(mat, numSeqs);
     free(legitRows);
 }
-void samplePairsFromMaf(const char *filename, struct avl_table *pairs,
+void samplePairsFromMaf(const char *filename, stSortedSet *pairs,
                         double acceptProbability, stHash *legitSequences) {
     mafFileApi_t *mfa = maf_newMfa(filename, "r");
     mafBlock_t *mb = NULL;
@@ -650,7 +658,7 @@ void samplePairsFromMaf(const char *filename, struct avl_table *pairs,
     maf_destroyMfa(mfa);
 }
 void countPairs(APair *pair, stHash *intervalsHash, int64_t *counter, 
-                stSortedSet *legitPairs, void *a, int32_t isVerboseFailures, int32_t near) {
+                stSortedSet *legitPairs, void *a, int32_t near) {
     /*
      * Counts the number of pairs in the MAF file.
      */
@@ -662,16 +670,15 @@ void countPairs(APair *pair, stHash *intervalsHash, int64_t *counter,
         }
     }
 }
-void samplePairs(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs, 
-                 double *acceptProbability, stHash *legitPairs, int32_t isVerboseFailures, 
-                 int32_t near) {
+void samplePairs(APair *thisPair, stHash *intervalsHash, stSortedSet *pairs, 
+                 double *acceptProbability, stHash *legitPairs, int32_t near) {
     /*
      * Adds *thisPair to *pairs with a given probability.
      */
     if (stHash_search(legitPairs, thisPair->seq1) != NULL)
         if (stHash_search(legitPairs, thisPair->seq2) != NULL)
             if (st_random() <= *acceptProbability)
-                avl_insert(pairs, aPair_copyConstruct(thisPair));
+                stSortedSet_insert(pairs, aPair_copyConstruct(thisPair));
 }
 bool inInterval(stHash *intervalsHash, char *seq, int32_t position) {
     /* 
@@ -690,16 +697,16 @@ bool inInterval(stHash *intervalsHash, char *seq, int32_t position) {
     assert(stIntTuple_length(j) == 2);
     return stIntTuple_getPosition(j, 0) <= position && position < stIntTuple_getPosition(j, 1);
 }
-void getNearPairs(APair *thisPair, struct avl_table *pairs, int32_t near, stSortedSet *positivePairs) {
+void getNearPairs(APair *thisPair, stSortedSet *pairs, uint32_t near, stSortedSet *positivePairs) {
     /* given thisPair, if thisPair is in the table `pairs' then record it in the positivePairs set.
      * if the `near' option is set, do this not only for thisPair but for all pairs within +- `near'.
      * if near = 0 this will just look at thisPair->pos1 and thisPair->pos2 and record those values.
      */
     APair *aPair;
-    int32_t i = thisPair->pos1;
+    int64_t i = thisPair->pos1;
     // Try modifying position 1
     for (thisPair->pos1 -= near; thisPair->pos1 < i + near + 1; thisPair->pos1++) {
-        if ((aPair = avl_find(pairs, thisPair)) != NULL) {
+        if ((aPair = stSortedSet_search(pairs, thisPair)) != NULL) {
             stSortedSet_insert(positivePairs, aPair);
         }
     }
@@ -707,17 +714,16 @@ void getNearPairs(APair *thisPair, struct avl_table *pairs, int32_t near, stSort
     // Try modifying position 2
     i = thisPair->pos2;
     for (thisPair->pos2 -= near; thisPair->pos2 < i + near + 1; thisPair->pos2++) {
-        if ((aPair = avl_find(pairs, thisPair)) != NULL) {
+        if ((aPair = stSortedSet_search(pairs, thisPair)) != NULL) {
             stSortedSet_insert(positivePairs, aPair);
         }
     }
     thisPair->pos2 = i;
 }
-void homologyTests1(APair *thisPair, stHash *intervalsHash, struct avl_table *pairs, 
-                    stSortedSet *positivePairs, stHash *legitPairs, int32_t isVerboseFailures, 
-                    int32_t near) {
+void homologyTests1(APair *thisPair, stHash *intervalsHash, stSortedSet *pairs, 
+                    stSortedSet *positivePairs, stHash *legitPairs, int32_t near) {
     /*
-     * If both members of *thisPair are in the intersection of MAFFileA and MAFFileB,
+     * If both members of *thisPair are in the intersection of maf1 and maf2,
      * and *thisPair is in the set *pairs then adds to the result pair a positive result.
      */
     if ((stHash_search(legitPairs, thisPair->seq1) != NULL)
@@ -725,99 +731,93 @@ void homologyTests1(APair *thisPair, stHash *intervalsHash, struct avl_table *pa
         getNearPairs(thisPair, pairs, near, positivePairs);
     }
 }
-void homologyTests2(struct avl_table *pairs, struct avl_table *resultPairs, stHash *intervalsHash,
-                    stSortedSet *positivePairs, int32_t isVerboseFailures) {
+void homologyTests2(stSortedSet *pairs, stSortedSet *resultPairs, stHash *intervalsHash,
+                    stSortedSet *positivePairs) {
     /*
      * For every pair in 'pairs', add 1 to the total number of homology tests for the sequence-pair.
      * We don't bother with the seqNames hashtable here because the ht was used to build *pairs
      * in the first place.
      */
-    static struct avl_traverser iterator;
-    avl_t_init(&iterator, pairs);
+    static stSortedSetIterator *iterator;
+    iterator = stSortedSet_getIterator(pairs);
     APair *pair;
-    while ((pair = avl_t_next(&iterator)) != NULL) {
-        ResultPair *resultPair = avl_find(resultPairs, pair);
-        if (resultPair == NULL) {
-            resultPair = resultPair_construct(pair->seq1, pair->seq2);
-            avl_insert(resultPairs, resultPair);
+    while ((pair = stSortedSet_getNext(iterator)) != NULL) {
+        ResultPair *thisResultPair = stSortedSet_search(resultPairs, pair);
+        if (thisResultPair == NULL) {
+            thisResultPair = resultPair_construct(pair->seq1, pair->seq2);
+            stSortedSet_insert(resultPairs, thisResultPair);
         }
-        bool b = stSortedSet_search(positivePairs, pair) != NULL;
+        bool foundPair = stSortedSet_search(positivePairs, pair) != NULL;
         if (inInterval(intervalsHash, pair->seq1, pair->pos1)) {
             if (inInterval(intervalsHash, pair->seq2, pair->pos2)) {
-                resultPair->totalBoth++;
-                if (b) {
-                    resultPair->inBoth++;
+                ++(thisResultPair->totalBoth);
+                if (foundPair) {
+                    ++(thisResultPair->inBoth);
                 }
             } else {
-                resultPair->totalA++;
-                if (b) {
-                    resultPair->inA++;
+                ++(thisResultPair->totalA);
+                if (foundPair) {
+                    ++(thisResultPair->inA);
                 }
             }
         } else {
             if (inInterval(intervalsHash, pair->seq2, pair->pos2)) {
-                resultPair->totalB++;
-                if (b) {
-                    resultPair->inB++;
+                ++(thisResultPair->totalB);
+                if (foundPair) {
+                    ++(thisResultPair->inB);
                 }
             } else {
-                resultPair->totalNeither++;
-                if (b) {
-                    resultPair->inNeither++;
+                ++(thisResultPair->totalNeither);
+                if (foundPair) {
+                    ++(thisResultPair->inNeither);
                 }
             }
         }
-        resultPair->total++;
-        if (b) {
-            resultPair->inAll++;
+        ++(thisResultPair->total);
+        if (foundPair) {
+            ++(thisResultPair->inAll);
         } else {
-           if (isVerboseFailures){
+           if (g_isVerboseFailures){
               fprintf(stderr, "%s\t%d\t\t%s\t%d\n", pair->seq1, pair->pos1, 
                       pair->seq2, pair->pos2);
            }
         }
     }
+    stSortedSet_destructIterator(iterator);
 }
-struct avl_table* compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint32_t numberOfSamples,
-                                 stHash *legitSequences, stHash *intervalsHash, 
-                                 int32_t isVerboseFailures, uint32_t near) {
+stSortedSet* compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint32_t numberOfSamples,
+                            stHash *legitSequences, stHash *intervalsHash, 
+                            uint32_t near) {
     uint64_t numberOfPairs = 0;
     // count the number of pairs in mafFileA
     numberOfPairs = countPairsInMaf(mafFileA, legitSequences);
     if (numberOfPairs == 0) {
-        return avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction_seqsOnly, NULL, NULL);
+        return stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction_seqsOnly, (void(*)(void *)) aPair_destruct);
     }
     double acceptProbability = ((double) numberOfSamples) / (double) numberOfPairs;
-    struct avl_table *pairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction, 
-                                         NULL, NULL);
+    stSortedSet *pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction, (void(*)(void *)) aPair_destruct);
     // sample pairs from mafFileA
     samplePairsFromMaf(mafFileA, pairs, acceptProbability, legitSequences);
     // perform homology tests on mafFileB using sampled pairs from mafFileA
     stSortedSet *positivePairs = stSortedSet_construct();
-    getPairs(mafFileB, (void(*)(APair *, stHash *, void *, void *, void *, int32_t, int32_t)) homologyTests1,
-             intervalsHash, pairs, positivePairs, legitSequences, isVerboseFailures, near);
-    struct avl_table *resultPairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction_seqsOnly, NULL, NULL);
-    homologyTests2(pairs, resultPairs, intervalsHash, positivePairs, isVerboseFailures);
+    getPairs(mafFileB, (void(*)(APair *, stHash *, void *, void *, void *, uint32_t)) homologyTests1,
+             intervalsHash, pairs, positivePairs, legitSequences, near);
+    stSortedSet *resultPairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction_seqsOnly, (void(*)(void *)) aPair_destruct);
+    homologyTests2(pairs, resultPairs, intervalsHash, positivePairs);
     // clean up
-    avl_destroy(pairs, (void(*)(void *, void *)) aPair_destruct);
+    stSortedSet_destruct(pairs);
     stSortedSet_destruct(positivePairs);
     return resultPairs;
 }
-void reportResult(const char *tagName, double total, double totalTrue, FILE *fileHandle, unsigned tabLevel) {
-    assert(total >= totalTrue);
-    findentprintf(fileHandle, tabLevel, "<%s totalTests=\"%" PRIi32 "\" totalTrue=\"%" PRIi32 "\" "
-                  "totalFalse=\"%" PRIi32 "\" average=\"%f\"/>\n",
-                  tagName, (int32_t) total, (int32_t) totalTrue, 
-                  (int32_t) (total - totalTrue), total == 0 ? 0.0 : totalTrue / total);
-}
-ResultPair* aggregateResult(void *(*getNextPair)(void *, void *), void *arg1, void *arg2, 
+ResultPair* aggregateResult(void *(*getNextPair)(void *, void *), stSortedSet *set, void *seqName, 
                             const char *name1, const char *name2) {
     /* loop through all ResultPairs available via the getNextPair() iterator and aggregate their
      * results into a single ResultPair, return this struct.
      */
     ResultPair *resultPair;
     ResultPair *resultPair2 = resultPair_construct(name1, name2);
-    while ((resultPair = getNextPair(arg1, arg2)) != NULL) {
+    stSortedSetIterator *iterator = stSortedSet_getIterator(set);
+    while ((resultPair = getNextPair(iterator, seqName)) != NULL) {
         assert(resultPair->inAll == resultPair->inBoth + resultPair->inA + resultPair->inB + resultPair->inNeither);
         assert(resultPair->total == resultPair->totalBoth + resultPair->totalA + resultPair->totalB + resultPair->totalNeither);
         assert(resultPair->total >= resultPair->inAll);
@@ -836,50 +836,49 @@ ResultPair* aggregateResult(void *(*getNextPair)(void *, void *), void *arg1, vo
         resultPair2->totalB += resultPair->totalB;
         resultPair2->totalNeither += resultPair->totalNeither;
     }
+    stSortedSet_destructIterator(iterator);
     return resultPair2;
 }
-void *addReferencesAndDups_getDups(void *arg, void *arg2) {
+void* addReferencesAndDups_getDups(void *iterator, void *seqName) {
     ResultPair *resultPair;
-    while ((resultPair = avl_t_next(arg)) != NULL) {
+    while ((resultPair = stSortedSet_getNext(iterator)) != NULL) {
         if(strcmp(resultPair->aPair.seq1, resultPair->aPair.seq2) == 0) {
             break;
         }
     }
     return resultPair;
 }
-void *addReferencesAndDups_getReferences(void *arg, void *arg2) {
+void* addReferencesAndDups_getReferences(void *iterator, void *seqName) {
     ResultPair *resultPair;
-    while ((resultPair = avl_t_next(arg)) != NULL) {
-        if(strcmp(resultPair->aPair.seq1, arg2) == 0 || strcmp(resultPair->aPair.seq2, arg2) == 0) {
+    while ((resultPair = stSortedSet_getNext(iterator)) != NULL) {
+        if(strcmp(resultPair->aPair.seq1, seqName) == 0 || strcmp(resultPair->aPair.seq2, seqName) == 0) {
             break;
         }
     }
     return resultPair;
 }
-void addReferencesAndDups(struct avl_table *results_AB, stHash *legitSequences) {
+void addReferencesAndDups(stSortedSet *results_AB, stHash *legitSequences) {
     /*
      * Adds tags for all against each species.
      */
     stHashIterator *speciesIt = stHash_getIterator(legitSequences);
-    static struct avl_traverser iterator;
     char *species;
-    avl_t_init(&iterator, results_AB);
     stList *list = stList_construct();
-    stList_append(list, aggregateResult(addReferencesAndDups_getDups, &iterator, NULL, "self", "self"));
-    // Add references
+    // add duplicates
+    stList_append(list, aggregateResult(addReferencesAndDups_getDups, results_AB, NULL, "self", "self"));
+    // add references
     while((species = stHash_getNext(speciesIt)) != NULL) {
-        avl_t_init(&iterator, results_AB);
-        stList_append(list, aggregateResult(addReferencesAndDups_getReferences, &iterator, 
+        stList_append(list, aggregateResult(addReferencesAndDups_getReferences, results_AB, 
                                             species, species, "aggregate"));
     }
     stHash_destructIterator(speciesIt);
     for(int32_t i = 0; i < stList_length(list); i++) {
-        avl_insert(results_AB, stList_get(list, i));
+        stSortedSet_insert(results_AB, stList_get(list, i));
     }
     stList_destruct(list);
 }
-void *reportResults_fn(void *arg, void *arg2) {
-   return avl_t_next(arg);
+void* reportResults_fn(void *iterator, void *seqName) {
+   return stSortedSet_getNext(iterator);
 }
 void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...) {
     va_list args;
@@ -896,59 +895,69 @@ void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...) {
     fprintf(fp, str);
     va_end(args);
 }
-void reportResults(struct avl_table *results_AB, const char *mafFileA, const char *mafFileB, FILE *fileHandle,
+void reportResult(const char *tagName, double total, double totalTrue, FILE *fileHandle, unsigned tabLevel) {
+    assert(total >= totalTrue);
+    findentprintf(fileHandle, tabLevel, "<%s totalTests=\"%" PRIu32 "\" totalTrue=\"%" PRIu32 "\" "
+                  "totalFalse=\"%" PRIu32 "\" average=\"%f\"/>\n",
+                  tagName, (uint32_t) total, (uint32_t) totalTrue, 
+                  (uint32_t) (total - totalTrue), total == 0 ? 0.0 : totalTrue / total);
+}
+void reportResults(stSortedSet *results_AB, const char *mafFileA, const char *mafFileB, FILE *fileHandle,
                    uint32_t near, stHash *legitSequences, const char *bedFiles) {
     /*
      * Report results in an XML formatted document.
      */
-    static struct avl_traverser iterator;
-    avl_t_init(&iterator, results_AB);
+    stSortedSetIterator *iterator = NULL;
     ResultPair *resultPair;
-    ResultPair *aggregateResults = aggregateResult(reportResults_fn, &iterator, NULL, "", "");
+    unsigned tabLevel = 1;
+    ResultPair *aggregateResults = aggregateResult(reportResults_fn, results_AB, NULL, "", "");
     addReferencesAndDups(results_AB, legitSequences);
-    findentprintf(fileHandle, 1, "<homologyTests fileA=\"%s\" fileB=\"%s\">\n", mafFileA, mafFileB);
-    findentprintf(fileHandle, 2, "<aggregateResults>\n");
-    reportResult("all", aggregateResults->total, aggregateResults->inAll, fileHandle, 3);
+    findentprintf(fileHandle, tabLevel++, "<homologyTests fileA=\"%s\" fileB=\"%s\">\n", mafFileA, mafFileB);
+    findentprintf(fileHandle, tabLevel++, "<aggregateResults>\n");
+    reportResult("all", aggregateResults->total, aggregateResults->inAll, fileHandle, tabLevel);
     if (bedFiles != NULL){
-        reportResult("both", aggregateResults->totalBoth, aggregateResults->inBoth, fileHandle, 3);
-        reportResult("A", aggregateResults->totalA, aggregateResults->inA, fileHandle, 3);
-        reportResult("B", aggregateResults->totalB, aggregateResults->inB, fileHandle, 3);
-        reportResult("neither", aggregateResults->totalNeither, aggregateResults->inNeither, fileHandle, 3);
+        reportResult("both", aggregateResults->totalBoth, aggregateResults->inBoth, fileHandle, tabLevel);
+        reportResult("A", aggregateResults->totalA, aggregateResults->inA, fileHandle, tabLevel);
+        reportResult("B", aggregateResults->totalB, aggregateResults->inB, fileHandle, tabLevel);
+        reportResult("neither", aggregateResults->totalNeither, aggregateResults->inNeither, fileHandle, tabLevel);
     }
-    findentprintf(fileHandle, 2, "</aggregateResults>\n");
-    findentprintf(fileHandle, 2, "<homologyPairTests>\n");
-    while ((resultPair = avl_t_prev(&iterator)) != NULL) {
-        findentprintf(fileHandle, 3, "<homologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n",
+    findentprintf(fileHandle, --tabLevel, "</aggregateResults>\n");
+    findentprintf(fileHandle, tabLevel++, "<homologyPairTests>\n");
+    iterator = stSortedSet_getIterator(results_AB);
+    while ((resultPair = stSortedSet_getPrevious(iterator)) != NULL) {
+        findentprintf(fileHandle, tabLevel++, "<homologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n",
                       resultPair->aPair.seq1, resultPair->aPair.seq2);
-        findentprintf(fileHandle, 4, "<aggregateResults>\n");
-        reportResult("all", resultPair->total, resultPair->inAll, fileHandle, 5);
+        findentprintf(fileHandle, tabLevel++, "<aggregateResults>\n");
+        reportResult("all", resultPair->total, resultPair->inAll, fileHandle, tabLevel);
         if (bedFiles != NULL){
-            reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 5);
-            reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, 5);
-            reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 5);
-            reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 5);
+            reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, tabLevel);
+            reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, tabLevel);
+            reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, tabLevel);
+            reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, tabLevel);
         }
                       
-        findentprintf(fileHandle, 4, "</aggregateResults>\n");
-        findentprintf(fileHandle, 4, "<singleHomologyTests>\n");
-        findentprintf(fileHandle, 5, "<singleHomologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n", 
+        findentprintf(fileHandle, --tabLevel, "</aggregateResults>\n");
+        findentprintf(fileHandle, tabLevel++, "<singleHomologyTests>\n");
+        findentprintf(fileHandle, tabLevel++, "<singleHomologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n", 
                       resultPair->aPair.seq1, resultPair->aPair.seq2);
-        findentprintf(fileHandle, 6, "<aggregateResults>\n");
-        reportResult("all", resultPair->total, resultPair->inAll, fileHandle, 6);
+        findentprintf(fileHandle, tabLevel++, "<aggregateResults>\n");
+        reportResult("all", resultPair->total, resultPair->inAll, fileHandle, tabLevel);
         if (bedFiles != NULL){
-            reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, 6);
-            reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, 6);
-            reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, 6);
-            reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, 6);
+            reportResult("both", resultPair->totalBoth, resultPair->inBoth, fileHandle, tabLevel);
+            reportResult("A", resultPair->totalA, resultPair->inA, fileHandle, tabLevel);
+            reportResult("B", resultPair->totalB, resultPair->inB, fileHandle, tabLevel);
+            reportResult("neither", resultPair->totalNeither, resultPair->inNeither, fileHandle, tabLevel);
         }
-        findentprintf(fileHandle, 6, "</aggregateResults>\n");
-        findentprintf(fileHandle, 5, "</singleHomologyTest>\n");
-        findentprintf(fileHandle, 4, "</singleHomologyTests>\n");
-        findentprintf(fileHandle, 3, "</homologyTest>\n");
+        findentprintf(fileHandle, --tabLevel, "</aggregateResults>\n");
+        findentprintf(fileHandle, --tabLevel, "</singleHomologyTest>\n");
+        findentprintf(fileHandle, --tabLevel, "</singleHomologyTests>\n");
+        findentprintf(fileHandle, --tabLevel, "</homologyTest>\n");
     }
-    findentprintf(fileHandle, 2, "</homologyPairTests>\n");
-    findentprintf(fileHandle, 1, "</homologyTests>\n");
-    resultPair_destruct(aggregateResults, NULL);
+    findentprintf(fileHandle, --tabLevel, "</homologyPairTests>\n");
+    findentprintf(fileHandle, --tabLevel, "</homologyTests>\n");
+    resultPair_destruct(aggregateResults);
+    stSortedSet_destructIterator(iterator);
+    assert(tabLevel == 1);
     return;
 }
 void populateNames(const char *filename, stHash *hash) {
@@ -986,38 +995,6 @@ stHash* stHash_getIntersection(stHash *seqNames1, stHash *seqNames2) {
     }
     stHash_destructIterator(hit);
     return hash;
-}
-void printNameHash(struct hashtable *h) {
-    // Debug function to iterate through a hash and print the contents.
-    char *k;
-    struct hashtable_itr *itr = NULL;
-    if (hashtable_count(h) > 0) {
-        itr = hashtable_iterator(h);
-        do {
-            k = hashtable_iterator_key(itr);
-            fprintf(stderr, "%s\n", k);
-        } while (hashtable_iterator_advance(itr));
-    }
-    if (itr != NULL) {
-        free(itr);
-    }
-}
-void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3) {
-    // intersects two hashes. (hash 1 \cap  hash 2) = hash 3.
-    char *k;
-    struct hashtable_itr *itr = NULL;
-    if (hashtable_count(h1) > 0) {
-        itr = hashtable_iterator(h1);
-        do {
-            k = hashtable_iterator_key(itr);
-            if (hashtable_search(h2, k) != NULL) {
-                hashtable_insert(h3, k, constructInt(1));
-            }
-        } while (hashtable_iterator_advance(itr));
-    }
-    if (itr != NULL) {
-        free(itr);
-    }
 }
 int32_t countNodes(stTree *node) {
     int32_t i = 0;

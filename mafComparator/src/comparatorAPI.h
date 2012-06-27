@@ -36,7 +36,6 @@
 #include <string.h>
 #include <time.h>
 #include <getopt.h>
-#include "avl.h"
 #include "bioioC.h"
 #include "commonC.h"
 #include "hashTableC.h"
@@ -47,7 +46,7 @@
 
 typedef struct _solo {
     char *name;
-    int32_t pos;
+    uint32_t pos;
 } ASolo;
 typedef struct _pair {
     char *seq1;
@@ -57,27 +56,29 @@ typedef struct _pair {
 } APair;
 typedef struct _resultPair {
     APair aPair;
-    int32_t inAll;
-    int32_t inBoth;
-    int32_t inA;
-    int32_t inB;
-    int32_t inNeither;
-    int32_t total;
-    int32_t totalBoth;
-    int32_t totalA;
-    int32_t totalB;
-    int32_t totalNeither;
+    uint32_t inAll;
+    uint32_t inBoth;
+    uint32_t inA;
+    uint32_t inB;
+    uint32_t inNeither;
+    uint32_t total;
+    uint32_t totalBoth;
+    uint32_t totalA;
+    uint32_t totalB;
+    uint32_t totalNeither;
 } ResultPair;
+bool g_isVerboseFailures;
+
 void populateNames(const char *mAFFile, stHash *hash);
 void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3);
 void printNameHash(struct hashtable *h);
-struct avl_table *compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint32_t numberOfSamples, 
+stSortedSet* compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint32_t numberOfSamples, 
                                  stHash *legitimateSequences, stHash *intervalsHash, 
-                                 int32_t verbose, uint32_t near);
+                                 uint32_t near);
 void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...);
-void reportResults(struct avl_table *results_AB, const char *mAFFileA, const char *mAFFileB, 
+void reportResults(stSortedSet *results_AB, const char *mAFFileA, const char *mAFFileB, 
                    FILE *fileHandle, uint32_t near, stHash *legitimateSequences, const char *bedFiles);
-void aPair_destruct(APair *pair, void *extraArgument);
+void aPair_destruct(APair *pair);
 void writeXMLHeader( FILE *fileHandle );
 bool* getLegitRows(char **names, uint32_t numSeqs, stHash *legitPairs);
 uint64_t walkBlockCountingPairs(mafBlock_t *mb, stHash *legitPairs, uint64_t *chooseTwoArray);
@@ -88,24 +89,24 @@ void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i);
 void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c);
 stHash* stHash_getIntersection(stHash *seqNames1, stHash *seqNames2);
 void samplePairsFromColumn(char ** mat, uint32_t c, bool *legtRows, double acceptProbability, 
-                           struct avl_table *pairs, 
+                           stSortedSet *pairs, 
                            uint32_t numRows, uint32_t numLegitGaplessSeqs, uint64_t *chooseTwoArray,
                            mafLine_t **mlArray, uint32_t *positions);
-void samplePairsFromColumnBruteForce(double acceptProbability, struct avl_table *pairs, 
+void samplePairsFromColumnBruteForce(double acceptProbability, stSortedSet *pairs, 
                                      uint32_t numSeqs, uint64_t *chooseTwoArray,
                                      mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs);
-void samplePairsFromColumnAnalytic(double acceptProbability, struct avl_table *pairs, 
+void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs, 
                                    uint32_t numSeqs, uint64_t *chooseTwoArray,
                                    mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs);
 void samplePairsFromColumnNaive(char **mat, uint32_t c, bool *legitRows, double acceptProbability, 
-                                struct avl_table *pairs, 
+                                stSortedSet *pairs, 
                                 uint32_t numRows, uint32_t numLegit, uint64_t *chooseTwoArray, 
                                 mafLine_t **mlArray, uint32_t *positions, uint64_t numPairs);
 uint32_t countLegitPositions(char **mat, uint32_t c, uint32_t numRows);
 mafLine_t** cullMlArrayByColumn(char **mat, uint32_t c, uint32_t numRows, bool *legitRows, mafLine_t **mlArray, uint32_t numLegitGaplessPositions);
 uint32_t* cullPositionsByColumn(char **mat, uint32_t c, uint32_t numRows, bool *legitRows, uint32_t *positions, uint32_t numLegitGaplessPositions);
-void walkBlockSamplingPairs(mafBlock_t *mb, struct avl_table *pairs, double acceptProbability, stHash *legitSequences, uint64_t *chooseTwoArray);
-int32_t aPair_cmpFunction(APair *aPair1, APair *aPair2, void *a);
+void walkBlockSamplingPairs(mafBlock_t *mb, stSortedSet *pairs, double acceptProbability, stHash *legitSequences, uint64_t *chooseTwoArray);
+int aPair_cmpFunction(APair *aPair1, APair *aPair2);
 uint32_t sumBoolArray(bool *legitRows, uint32_t numSeqs);
 mafLine_t** createMafLineArray(mafBlock_t *mb, uint32_t numLegit, bool *legitRows);
 void updatePositions(char **mat, uint32_t c, uint32_t *positions, int *strandInts, uint32_t numSeqs);

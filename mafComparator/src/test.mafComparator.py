@@ -409,7 +409,7 @@ class randomSeedTests(unittest.TestCase):
                 self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
         mtt.removeDir(tmpDir)
 class CuTestTests(unittest.TestCase):
-    # disabled due to excessive time spent
+    # disabled due to excessive amout of time this takes to run
     def dtest_CuTestTests(self):
         """ Yo dawg, I heard you liked unit tests so I put some unit tests in your unit test so now you can unit test when you unit test.
         """
