@@ -37,12 +37,8 @@
 #include <time.h>
 #include <getopt.h>
 #include "bioioC.h"
-#include "commonC.h"
-#include "hashTableC.h"
-#include "hashTableC_itr.h"
 #include "sonLib.h"
 #include "sharedMaf.h"
-#include "disjointset.h"
 
 typedef struct _solo {
     char *name;
@@ -70,8 +66,6 @@ typedef struct _resultPair {
 bool g_isVerboseFailures;
 
 void populateNames(const char *mAFFile, stHash *hash);
-void intersectHashes(struct hashtable *h1, struct hashtable *h2, struct hashtable *h3);
-void printNameHash(struct hashtable *h);
 stSortedSet* compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint32_t numberOfSamples, 
                                  stHash *legitimateSequences, stHash *intervalsHash, 
                                  uint32_t near);

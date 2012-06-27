@@ -24,7 +24,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
 */
-
+#include <math.h>
 #include "sonLib.h"
 #include "comparatorAPI.h"
 #include "comparatorRandom.h"
@@ -102,13 +102,18 @@ int aPair_cmpFunction(APair *aPair1, APair *aPair2) {
     }
     return i;
 }
+int32_t* buildInt(int32_t n) {
+    int32_t *p = (int32_t*) st_malloc(sizeof(*p));
+    *p = n;
+    return p;
+}
 void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extraArgument1, void *extraArgument2,
                                  void *extraArgument3, uint32_t), 
                stHash *intervalsHash, void *extraArgument1, void *extraArgument2,
                void *extraArgument3, uint32_t near, 
                int *bytesRead, int *nBytes, char **cA, FILE *fileHandle) {
     int32_t length, start, seqLength, i, j, k, pos1, pos2, inc1, inc2, origPos1, origPos2;
-    struct List *ranges = constructEmptyList(0, free);
+    stList *ranges = stList_construct3(0, free);
     char *seqName;
     char *sequence;
     char strand;
@@ -134,32 +139,32 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
         }
         length = strlen(sequence);
         assert(strand == '+' || strand == '-');
-        listAppend(ranges, seqName);
+        stList_append(ranges, seqName);
         if (strand == '+') {
-            listAppend(ranges, constructInt(start));
-            listAppend(ranges, constructInt(1));
-            listAppend(ranges, constructInt(start));
+            stList_append(ranges, buildInt(start));
+            stList_append(ranges, buildInt(1));
+            stList_append(ranges, buildInt(start));
         } else {
-            listAppend(ranges, constructInt(seqLength - 1 - start));
-            listAppend(ranges, constructInt(-1));
-            listAppend(ranges, constructInt(start));
+            stList_append(ranges, buildInt(seqLength - 1 - start));
+            stList_append(ranges, buildInt(-1));
+            stList_append(ranges, buildInt(start));
         }
-        listAppend(ranges, sequence);
+        stList_append(ranges, sequence);
         *bytesRead = benLine(cA, nBytes, fileHandle);
     }
     //Now call the pair function for every pair of aligned bases.
-    for (i = 0; i < ranges->length; i += 5) {
-        char *seq1 = ranges->list[i];
-        inc1 = *((int32_t *) ranges->list[i + 2]);
-        const char *sequence1 = ranges->list[i + 4];
-        for (j = i + 5; j < ranges->length; j += 5) {
-            char *seq2 = ranges->list[j];
-            pos2 = *((int32_t *) ranges->list[j + 1]);
-            inc2 = *((int32_t *) ranges->list[j + 2]);
-            origPos2 = *((int32_t *) ranges->list[j + 3]);
-            const char *sequence2 = ranges->list[j + 4];
-            pos1 = *((int32_t *) ranges->list[i + 1]);
-            origPos1 = *((int32_t *) ranges->list[i + 3]);
+    for (i = 0; i < stList_length(ranges); i += 5) {
+        char *seq1 = stList_get(ranges, i);
+        inc1 = *((int32_t *) stList_get(ranges, i + 2));
+        const char *sequence1 = stList_get(ranges, i + 4);
+        for (j = i + 5; j < stList_length(ranges); j += 5) {
+            char *seq2 = stList_get(ranges, j);
+            pos2 = *((int32_t *) stList_get(ranges, j + 1));
+            inc2 = *((int32_t *) stList_get(ranges, j + 2));
+            origPos2 = *((int32_t *) stList_get(ranges, j + 3));
+            const char *sequence2 = stList_get(ranges, j + 4);
+            pos1 = *((int32_t *) stList_get(ranges, i + 1));
+            origPos1 = *((int32_t *) stList_get(ranges, i + 3));
             // fprintf(stderr, "%s %d %d %d\n", seq1, pos1, inc1, origPos1);
             // fprintf(stderr, "%s %d %d %d\n", seq2, pos2, inc2, origPos2);
             assert((int32_t)strlen(sequence1) == length);
@@ -185,7 +190,7 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
         }
     }
     //cleanup the list
-    destructList(ranges);
+    stList_destruct(ranges);
 }
 struct stringSortIdx {
     char *name;
@@ -720,6 +725,57 @@ void getNearPairs(APair *thisPair, stSortedSet *pairs, uint32_t near, stSortedSe
     }
     thisPair->pos2 = i;
 }
+void testHomologyOnColumn(char **mat, uint32_t c, bool *legitRows, stSortedSet *pairs, 
+                          stSortedSet *positivePairs, mafLine_t **mlArray, uint32_t *allPositions, 
+                          stHash *intervalsHash, uint32_t near) {
+    
+}
+void walkBlockTestingHomology(mafBlock_t *mb, stSortedSet *pairs, stSortedSet *positivePairs, 
+                              stHash *legitSequences, stHash *intervalsHash, uint32_t near) {
+    uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
+    if (numSeqs < 2) {
+        return;
+    }
+    uint32_t seqFieldLength = maf_mafBlock_longestSequenceField(mb);
+    char **names = maf_mafBlock_getSpeciesArray(mb);
+    char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
+    bool *legitRows = getLegitRows(names, numSeqs, legitSequences);
+    uint32_t numLegit = sumBoolArray(legitRows, numSeqs);
+    if (numLegit < 2) {
+        return;
+    }
+    mafLine_t **mlArray = createMafLineArray(mb, numLegit, legitRows);
+    uint32_t *allPositions = maf_mafBlock_getPosCoordStartArray(mb);
+    int *allStrandInts = maf_mafBlock_getStrandIntArray(mb);
+    int *strandInts = cullStrandInts(allStrandInts, numSeqs, legitRows, numLegit);
+    for (uint32_t c = 0; c < seqFieldLength; ++c) {
+        testHomologyOnColumn(mat, c, legitRows, pairs, positivePairs, 
+                             mlArray, allPositions, intervalsHash, near);
+        updatePositions(mat, c, allPositions, strandInts, numLegit);
+    }
+    // clean up
+    free(mlArray);
+    free(allPositions);
+    free(allStrandInts);
+    free(strandInts);
+    for (uint32_t i = 0; i < numLegit; ++i) {
+         free(names[i]);
+    }
+    free(names);
+    maf_mafBlock_destroySequenceMatrix(mat, numSeqs);
+    free(legitRows);
+}
+void performHomologyTests(const char *filename, stSortedSet *pairs, stSortedSet *positivePairs, 
+                          stHash *legitSequences, stHash *intervalsHash, uint32_t near) {
+    mafFileApi_t *mfa = maf_newMfa(filename, "r");
+    mafBlock_t *mb = NULL;
+    while ((mb = maf_readBlock(mfa)) != NULL) {
+        walkBlockTestingHomology(mb, pairs, positivePairs, legitSequences, intervalsHash, near);
+        maf_destroyMafBlockList(mb);
+    }
+    // clean up
+    maf_destroyMfa(mfa);
+}
 void homologyTests1(APair *thisPair, stHash *intervalsHash, stSortedSet *pairs, 
                     stSortedSet *positivePairs, stHash *legitPairs, int32_t near) {
     /*
@@ -802,6 +858,7 @@ stSortedSet* compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint32_t
     stSortedSet *positivePairs = stSortedSet_construct();
     getPairs(mafFileB, (void(*)(APair *, stHash *, void *, void *, void *, uint32_t)) homologyTests1,
              intervalsHash, pairs, positivePairs, legitSequences, near);
+    // performHomologyTests(mafFileB, pairs, positivePairs, legitSequences, intervalsHash, near);
     stSortedSet *resultPairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction_seqsOnly, (void(*)(void *)) aPair_destruct);
     homologyTests2(pairs, resultPairs, intervalsHash, positivePairs);
     // clean up
@@ -995,146 +1052,6 @@ stHash* stHash_getIntersection(stHash *seqNames1, stHash *seqNames2) {
     }
     stHash_destructIterator(hit);
     return hash;
-}
-int32_t countNodes(stTree *node) {
-    int32_t i = 0;
-    int32_t count = 0;
-    if (node == NULL) {
-        return 0;
-    } else {
-        count = 1;
-        for (i = 0; i < stTree_getChildNumber(node); i++) {
-            count += countNodes(stTree_getChild(node, i));
-        }
-        return count;
-    }
-}
-int32_t countLeaves(stTree *node) {
-    int32_t i = 0;
-    int32_t count = 0;
-    if (node == NULL) {
-        return 0;
-    } else {
-        if (stTree_getChildNumber(node) == 0) {
-            return 1;
-        } else {
-            for (i = 0; i < stTree_getChildNumber(node); i++) {
-                count += countLeaves(stTree_getChild(node, i));
-            }
-            return count;
-        }
-    }
-}
-void postOrderLabelNodes(stTree *node, int32_t *index, char **labelArray) {
-    int32_t i = 0;
-    for (i = 0; i < stTree_getChildNumber(node); i++) {
-        postOrderLabelNodes(stTree_getChild(node, i), index, labelArray);
-    }
-    labelArray[*index] = stString_copy(stTree_getLabel(node));
-    *index += 1;
-    return;
-}
-void postOrderLabelLeaves(stTree *node, int32_t *index, char **labelArray) {
-    int32_t i = 0;
-    for (i = 0; i < stTree_getChildNumber(node); i++) {
-        postOrderLabelLeaves(stTree_getChild(node, i), index, labelArray);
-    }
-    if (stTree_getChildNumber(node) == 0) {
-        labelArray[*index] = stString_copy(stTree_getLabel(node));
-        *index += 1;
-    }
-    return;
-}
-void lcaP(stTree *node, struct djs *uf, int32_t *ancestor, int32_t *color, 
-          struct hashtable *ht, int32_t size, int32_t **lcaMatrix) {
-    /*
-     * 
-     */
-    if (node == NULL) {
-        return;
-    }
-    int32_t u = *((int *) hashtable_search(ht, (void *) stTree_getLabel(node)));
-    djs_makeset(uf, u);
-    ancestor[djs_findset(uf, u)] = u;
-    int32_t v;
-    int32_t i = 0;
-    for (i = 0; i < stTree_getChildNumber(node); i++) {
-        lcaP(stTree_getChild(node, i), uf, ancestor, color, ht, size, lcaMatrix);
-        v = *((int *) hashtable_search(ht, (void *) stTree_getLabel(stTree_getChild(node, i))));
-        djs_union(uf, u, v);
-        ancestor[djs_findset(uf, u)] = u;
-    }
-    color[u] = 1;
-    for (i = 0; i < size; i++) {
-        if (color[i] == 1) {
-            lcaMatrix[u][i] = ancestor[djs_findset(uf, i)];
-            lcaMatrix[i][u] = ancestor[djs_findset(uf, i)];
-        }
-    }
-    return;
-}
-int32_t **lca(stTree *root, struct hashtable *ht) {
-    int32_t nodeNum = countNodes(root);
-    struct djs *uf = NULL;
-    uf = djs_new(nodeNum);
-    int32_t i = 0;
-    int32_t *ancestor = NULL;
-    ancestor = st_malloc(sizeof(int32_t) * nodeNum);
-    for (i = 0; i < nodeNum; i++) {
-        ancestor[i] = 0;
-    }
-    int32_t *color = NULL;
-    color = st_malloc(sizeof(int32_t) * nodeNum);
-    for (i = 0; i < nodeNum; i++) {
-        color[i] = 0;
-    }
-    int32_t **lcaMatrix = NULL;
-    lcaMatrix = st_malloc(sizeof(int32_t *) * nodeNum);
-    for (i = 0; i < nodeNum; i++) {
-        lcaMatrix[i] = st_malloc(sizeof(int32_t) * nodeNum);
-    }
-    lcaP(root, uf, ancestor, color, ht, nodeNum, lcaMatrix);
-    djs_free(uf);
-    free(ancestor);
-    free(color);
-    return lcaMatrix;
-}
-void lcaMatrix_free(int32_t **lcaMatrix, int32_t nodeNum) {
-    int32_t i = 0;
-    for (i = 0; i < nodeNum; i++) {
-        free(lcaMatrix[i]);
-    }
-    free(lcaMatrix);
-    return;
-}
-char **createNodeLabelArray(stTree *tree, int32_t nodeNum) {
-    char **labelArray = st_malloc(sizeof(char *) * nodeNum);
-    int32_t po_index = 0;
-    postOrderLabelNodes(tree, &po_index, labelArray);
-    return labelArray;
-}
-char **createLeafLabelArray(stTree *tree, int32_t nodeNum) {
-    char **leafLabelArray = st_malloc(sizeof(char *) * nodeNum);
-    int32_t po_index = 0;
-    postOrderLabelLeaves(tree, &po_index, leafLabelArray);
-    return leafLabelArray;
-}
-void labelArray_destruct(char **labelArray, int32_t num) {
-    int32_t i = 0;
-    for (i = 0; i < num; i++) {
-        free(labelArray[i]);
-    }
-    free(labelArray);
-    return;
-}
-struct hashtable * getTreeLabelHash(char **labelArray, int32_t nodeNum) {
-    struct hashtable *treeLabelHash = NULL;
-    int32_t i = 0;
-    treeLabelHash = create_hashtable(256, hashtable_stringHashKey, hashtable_stringEqualKey, free, free);
-    for (i = 0; i < nodeNum; i++) {
-        hashtable_insert(treeLabelHash, stString_copy(labelArray[i]), constructInt(i));
-    }
-    return treeLabelHash;
 }
 void writeXMLHeader(FILE *fileHandle){
    fprintf(fileHandle, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n");
