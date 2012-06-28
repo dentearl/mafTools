@@ -790,7 +790,7 @@ void getNearPairs(APair *thisPair, stSortedSet *pairs, uint32_t near, stSortedSe
             stSortedSet_insert(positivePairs, aPair);
         }
     }
-    thisPair->pos1 = i; // reset pos 1.
+    thisPair->pos1 = i; // reset pos 1
     // Try modifying position 2
     i = thisPair->pos2;
     for (thisPair->pos2 = findLowerBound(thisPair->pos2, near); thisPair->pos2 < i + near + 1; thisPair->pos2++) {
@@ -798,7 +798,7 @@ void getNearPairs(APair *thisPair, stSortedSet *pairs, uint32_t near, stSortedSe
             stSortedSet_insert(positivePairs, aPair);
         }
     }
-    thisPair->pos2 = i;
+    thisPair->pos2 = i; // reset pos 2
 }
 stHash* constructPositionHash(char **names, uint32_t numSeqs, uint32_t *allPositions, bool *legitRows) {
     stHash *posHash = stHash_construct3(aPositionKey, aPositionEqualKey, aPosition_destruct, free);
