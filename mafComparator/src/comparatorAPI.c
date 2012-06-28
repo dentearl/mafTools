@@ -41,8 +41,16 @@ void aPair_fillOut(APair *aPair, char *seq1, char *seq2, uint32_t pos1, uint32_t
         aPair->pos2 = pos2;
     }
 }
-APair* aPair_construct(const char *seq1, const char *seq2, uint32_t pos1, uint32_t pos2) {
+APair* aPair_init(void) {
     APair *aPair = st_malloc(sizeof(APair));
+    aPair->seq1 = NULL;
+    aPair->seq2 = NULL;
+    aPair->pos1 = 0;
+    aPair->pos2 = 0;
+    return aPair;
+}
+APair* aPair_construct(const char *seq1, const char *seq2, uint32_t pos1, uint32_t pos2) {
+    APair *aPair = aPair_init();
     aPair_fillOut(aPair, (char *) seq1, (char *) seq2, pos1, pos2);
     aPair->seq1 = stString_copy(aPair->seq1);
     aPair->seq2 = stString_copy(aPair->seq2);
@@ -55,17 +63,35 @@ ResultPair *resultPair_construct(const char *seq1, const char *seq2) {
     free(aPair);
     return resultPair;
 }
-APair *aPair_copyConstruct(APair *pair) {
+APair* aPair_copyConstruct(APair *pair) {
    return aPair_construct(pair->seq1, pair->seq2, pair->pos1, pair->pos2);
 }
-void aPair_destruct(APair *pair) { // , void *extraArgument) {
-    // assert(extraArgument == NULL); //because destruction takes place in stSortedSet
+void aPosition_fillOut(APosition *aPosition, char *name, uint32_t pos) {
+    aPosition->name = name;
+    aPosition->pos = pos;
+}
+APosition*  aPosition_init(void) {
+    APosition *aPosition = st_malloc(sizeof(*aPosition));
+    aPosition->name = NULL;
+    aPosition->pos = 0;
+    return aPosition;
+}
+APosition* aPosition_construct(const char *name, uint32_t pos) {
+    APosition *aPosition = st_malloc(sizeof(*aPosition));
+    aPosition_fillOut(aPosition, (char *) name, pos);
+    return aPosition;
+}
+void aPair_destruct(APair *pair) {
     free(pair->seq1);
     free(pair->seq2);
     free(pair);
 }
-void resultPair_destruct(ResultPair *pair) { //, void *extraArgument) {
-    // assert(extraArgument == NULL); //because destruction takes place in stSortedSet
+void aPosition_destruct(void *p) {
+    APosition *pos = (APosition*)p;
+    free(pos->name);
+    free(pos);
+}
+void resultPair_destruct(ResultPair *pair) {
     free(pair->aPair.seq1);
     free(pair->aPair.seq2);
     free(pair);
@@ -101,6 +127,46 @@ int aPair_cmpFunction(APair *aPair1, APair *aPair2) {
         }
     }
     return i;
+}
+uint32_t aPositionKey(const void *p) {
+    // maybe not the best composite hash function,
+    APosition *pos = (APosition*)p;
+    return stHash_stringKey(pos->name) + pos->pos;
+}
+int aPositionEqualKey(const void *k1, const void *k2) {
+    APosition *ik1 = (APosition*) k1;
+    APosition *ik2 = (APosition*) k2;
+    int i = strcmp(ik1->name, ik2->name);
+    if (i == 0) {
+        if (ik1->pos < ik2->pos) {
+            i = -1;
+        } else if (ik1->pos > ik2->pos) {
+            i = i;
+        } else {
+            i = 0;
+        }
+    }
+    return i;
+}
+int closeEnough(uint32_t p1, uint32_t p2, uint32_t near) {
+    if (p1 == p2) {
+        return 1;
+    } else if (p1 < p2 ) {
+        if (p1 + near >= p2) {
+            return 1;
+        } else {
+            return 0;
+        }
+    } else if (p1 > p2) {
+        if (p1 <= p2 + near) {
+            return 1;
+        } else {
+            return 0;
+        }
+    } else {
+        // compiler complains without this explicit return
+        return 0;
+    }
 }
 int32_t* buildInt(int32_t n) {
     int32_t *p = (int32_t*) st_malloc(sizeof(*p));
@@ -663,7 +729,7 @@ void samplePairsFromMaf(const char *filename, stSortedSet *pairs,
     maf_destroyMfa(mfa);
 }
 void countPairs(APair *pair, stHash *intervalsHash, int64_t *counter, 
-                stSortedSet *legitPairs, void *a, int32_t near) {
+                stSortedSet *legitPairs, void *a, uint32_t near) {
     /*
      * Counts the number of pairs in the MAF file.
      */
@@ -676,7 +742,7 @@ void countPairs(APair *pair, stHash *intervalsHash, int64_t *counter,
     }
 }
 void samplePairs(APair *thisPair, stHash *intervalsHash, stSortedSet *pairs, 
-                 double *acceptProbability, stHash *legitPairs, int32_t near) {
+                 double *acceptProbability, stHash *legitPairs, uint32_t near) {
     /*
      * Adds *thisPair to *pairs with a given probability.
      */
@@ -702,33 +768,111 @@ bool inInterval(stHash *intervalsHash, char *seq, int32_t position) {
     assert(stIntTuple_length(j) == 2);
     return stIntTuple_getPosition(j, 0) <= position && position < stIntTuple_getPosition(j, 1);
 }
+uint32_t findLowerBound(uint32_t pos, uint32_t near) {
+    // since we have unsigned values we must be careful about subtracting 
+    // the "near" value willy-nilly.
+    if (near >= pos) {
+        return 0;
+    } else {
+        return pos - near;
+    }
+}
 void getNearPairs(APair *thisPair, stSortedSet *pairs, uint32_t near, stSortedSet *positivePairs) {
     /* given thisPair, if thisPair is in the table `pairs' then record it in the positivePairs set.
      * if the `near' option is set, do this not only for thisPair but for all pairs within +- `near'.
      * if near = 0 this will just look at thisPair->pos1 and thisPair->pos2 and record those values.
      */
     APair *aPair;
-    int64_t i = thisPair->pos1;
+    uint32_t i = thisPair->pos1;
     // Try modifying position 1
-    for (thisPair->pos1 -= near; thisPair->pos1 < i + near + 1; thisPair->pos1++) {
+    for (thisPair->pos1 = findLowerBound(thisPair->pos1, near); thisPair->pos1 < i + near + 1; thisPair->pos1++) {
         if ((aPair = stSortedSet_search(pairs, thisPair)) != NULL) {
             stSortedSet_insert(positivePairs, aPair);
         }
     }
-    thisPair->pos1 = i;
+    thisPair->pos1 = i; // reset pos 1.
     // Try modifying position 2
     i = thisPair->pos2;
-    for (thisPair->pos2 -= near; thisPair->pos2 < i + near + 1; thisPair->pos2++) {
+    for (thisPair->pos2 = findLowerBound(thisPair->pos2, near); thisPair->pos2 < i + near + 1; thisPair->pos2++) {
         if ((aPair = stSortedSet_search(pairs, thisPair)) != NULL) {
             stSortedSet_insert(positivePairs, aPair);
         }
     }
     thisPair->pos2 = i;
 }
-void testHomologyOnColumn(char **mat, uint32_t c, bool *legitRows, stSortedSet *pairs, 
-                          stSortedSet *positivePairs, mafLine_t **mlArray, uint32_t *allPositions, 
+stHash* constructPositionHash(char **names, uint32_t numSeqs, uint32_t *allPositions, bool *legitRows) {
+    stHash *posHash = stHash_construct3(aPositionKey, aPositionEqualKey, aPosition_destruct, free);
+    APosition *pos = NULL;
+    for (uint32_t r = 0; r < numSeqs; ++r) {
+        if (!legitRows[r]) {
+            continue;
+        }
+        assert(stHash_search(posHash, pos) == NULL);
+        pos = aPosition_construct(names[r], allPositions[r]);
+        stHash_insert(posHash, pos, stString_copy(""));
+    }
+    return posHash;
+}
+int pairMemberInPositionHash(stHash *positionHash, APair *thisPair) {
+    // we know seq1 and pos1 are in the position hash. what matters is if seq2 and pos2 are in.
+    APosition *p = aPosition_init();
+    p->name = stString_copy(thisPair->seq2);
+    p->pos = thisPair->pos2;
+    if (stHash_search(positionHash, p) != NULL) {
+        aPosition_destruct(p);
+        return 1;
+    }
+    aPosition_destruct(p);
+    return 0;
+}
+void testHomologyOnColumn(char **mat, uint32_t c, uint32_t numSeqs, bool *legitRows, char **names, 
+                          stSortedSet *pairs, stSortedSet *positivePairs, mafLine_t **mlArray, 
+                          uint32_t *allPositions, 
                           stHash *intervalsHash, uint32_t near) {
-    
+    /* For a given column, 
+       1) hash all the positions in the column
+       2) For each position in the hash:
+       ..a) Iterate over pairs involving the position in the sortedSet, 
+       .....i) check if other aligned positions are in the hash of step 1.
+     */
+    APair *thisPair = NULL;
+    APair *thatPair = NULL;
+    APair *otherPair = NULL;
+    APosition *key = NULL;
+    stHash *positionHash = NULL;
+    stHashIterator *hit = NULL;
+    stSortedSetIterator *sit = NULL;
+    // 1.
+    positionHash = constructPositionHash(names, numSeqs, allPositions, legitRows);
+    hit = stHash_getIterator(positionHash);
+    // 2.
+    while ((key = stHash_getNext(hit)) != NULL) {
+        thisPair = aPair_init();
+        thisPair->seq1 = stString_copy(key->name);
+        thisPair->pos1 = key->pos;
+        if ((thatPair = stSortedSet_searchGreaterThanOrEqual(pairs, thisPair)) != NULL) {
+            sit = stSortedSet_getIteratorFrom(pairs, thatPair);
+            // 2a.
+            while ((otherPair = stSortedSet_getNext(sit)) != NULL) {
+                if ((strcmp(thisPair->seq1, otherPair->seq1) != 0) || 
+                    (!closeEnough(thisPair->pos1, otherPair->pos1, near))) {
+                    // bail out on iteration once we've overstepped the range of interest
+                    break;
+                }
+                thisPair->seq2 = stString_copy(otherPair->seq2);
+                thisPair->pos2 = otherPair->pos2;
+                // 2ai.
+                if (pairMemberInPositionHash(positionHash, thisPair)) {
+                    stSortedSet_insert(positivePairs, aPair_copyConstruct(thisPair));
+                }
+                free(thisPair->seq2);
+            }
+            stSortedSet_destructIterator(sit);
+        }
+        aPair_destruct(thisPair);
+    }
+    stHash_destructIterator(hit);
+    stHash_destruct(positionHash);
 }
 void walkBlockTestingHomology(mafBlock_t *mb, stSortedSet *pairs, stSortedSet *positivePairs, 
                               stHash *legitSequences, stHash *intervalsHash, uint32_t near) {
@@ -749,7 +893,7 @@ void walkBlockTestingHomology(mafBlock_t *mb, stSortedSet *pairs, stSortedSet *p
     int *allStrandInts = maf_mafBlock_getStrandIntArray(mb);
     int *strandInts = cullStrandInts(allStrandInts, numSeqs, legitRows, numLegit);
     for (uint32_t c = 0; c < seqFieldLength; ++c) {
-        testHomologyOnColumn(mat, c, legitRows, pairs, positivePairs, 
+        testHomologyOnColumn(mat, c, numSeqs, legitRows, names, pairs, positivePairs, 
                              mlArray, allPositions, intervalsHash, near);
         updatePositions(mat, c, allPositions, strandInts, numLegit);
     }

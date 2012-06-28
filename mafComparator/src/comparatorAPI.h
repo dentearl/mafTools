@@ -50,6 +50,10 @@ typedef struct _pair {
     uint32_t pos1;
     uint32_t pos2;
 } APair;
+typedef struct _position {
+    char *name;
+    uint32_t pos;
+} APosition;
 typedef struct _resultPair {
     APair aPair;
     uint32_t inAll;
@@ -72,7 +76,7 @@ stSortedSet* compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint32_t
 void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...);
 void reportResults(stSortedSet *results_AB, const char *mAFFileA, const char *mAFFileB, 
                    FILE *fileHandle, uint32_t near, stHash *legitimateSequences, const char *bedFiles);
-void aPair_destruct(APair *pair);
+void aPair_destructo(APair *pair);
 void writeXMLHeader( FILE *fileHandle );
 bool* getLegitRows(char **names, uint32_t numSeqs, stHash *legitPairs);
 uint64_t walkBlockCountingPairs(mafBlock_t *mb, stHash *legitPairs, uint64_t *chooseTwoArray);
