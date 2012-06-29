@@ -1044,7 +1044,7 @@ void homologyTests1(APair *thisPair, stHash *intervalsHash, stSortedSet *pairs,
      */
     if ((stHash_search(legitPairs, thisPair->seq1) != NULL)
         && (stHash_search(legitPairs, thisPair->seq2) != NULL)) {
-        getNearPairs(thisPair, pairs, near, positivePairs);
+        recordNearPair(thisPair, pairs, near, positivePairs);
     } 
 }
 void homologyTests2(stSortedSet *pairs, stSortedSet *resultPairs, stHash *intervalsHash,
