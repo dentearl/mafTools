@@ -44,66 +44,80 @@ g_headers = ['''##maf version=1
 ''',]
 
 knownValues = [('''a score=0
+# test 0.0
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 
 ''', '''a score=0
+# test 0.1
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 
 ''', 10, 0), # test 0
                ('''a score=0
+# test 1.0
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 
 ''', '''a score=0
+# test 1.1
 s A 10 10 + 20 GTACGTACGT
 s B 10 10 + 20 ATGTACGTAC
 
 ''', 0, 10), # test 1
                ('''a score=0
+# test 2.0
 s A 0 10 + 10 ACGTACGTAC
 s B 0 10 + 10 ATGTACGTAC
 
 ''', '''a score=0
+# test 2.1
 s A 0 10 - 10 GTACGTACGT
 s B 0 10 - 10 ATGTACGTAC
 
 ''', 10, 0), # test 2
                ('''a score=0
+# test 3.0
 s A 0 5 + 10 ACGTA
 s B 0 5 + 10 ATGTA
 
 ''', '''a score=0
+# test 3.1
 s A  5 5 - 10 TACGT
 s B  5 5 - 10 TACAT
 
 ''', 5, 0), # test 3
                ('''a score=0
+# test 4.0
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 
 ''', '''a score=0
+# test 4.1
 s A 10 10 - 20 GTACGTACGT
 s B 10 10 - 20 GTACGTACAT
 
 ''', 10, 0), # test 4
                ('''a score=0
+# test 5.0
 s A 8 10 + 20 ACGTACGTAC
 s B 8 10 + 20 ATGTACGTAC
 
 ''', '''a score=0
+# test 5.1
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 
 ''', 2, 8), # test 5
                ('''a score=0
+# test 6.0
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 s C 0 10 + 20 ACGTACGTAC
 s D 0 10 + 20 ATGTACGTAC
 
 ''', '''a score=0
+# test 6.1
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 s C 0 10 + 20 ACGTACGTAC
@@ -111,12 +125,14 @@ s D 0 10 + 20 ATGTACGTAC
 
 ''', 60, 0), # test 6
                ('''a score=0
+# test 7.0
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 s C 0 10 + 20 ACGTACGTAC
 s D 0 10 + 20 ATGTACGTAC
 
 ''', '''a score=0
+# test 7.1
 s A  0 10 + 20 ACGTACGTAC
 s B  0 10 + 20 ATGTACGTAC
 s C 10 10 + 20 ACGTACGTAC
@@ -124,12 +140,14 @@ s D  0 10 + 20 ATGTACGTAC
 
 ''', 30, 30), # test 7
                ('''a score=0
+# test 8.0
 s A 0 10 + 20 ACGTACGTAC
 s B 0  5 + 20 A-----GTAC
 s C 0 10 + 20 ACGTACGTAC
 s D 0 10 + 20 ATGTACGTAC
 
 ''', '''a score=0
+# test 8.1
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 s C 0 10 + 20 ACGTACGTAC
@@ -137,12 +155,14 @@ s D 0 10 + 20 ATGTACGTAC
 
 ''',  33, 12), # test 8
                ('''a score=0
+# test 9.0
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 s C 0 10 + 20 ACGTACGTAC
 s D 0 10 + 20 ATGTACGTAC
 
 ''', '''a score=0
+# test 9.1
 s A 0 10 + 20 ACGTACGTAC
 s B 0  5 + 20 A-----GTAC
 s C 0 10 + 20 ACGTACGTAC
@@ -150,18 +170,46 @@ s D 0 10 + 20 ATGTACGTAC
 
 ''', 33, 27), # test 9
                ('''a score=0
+# test 10.0
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 s C 0 10 + 20 ACGTACGTAC
 s D 0 10 + 20 ATGTACGTAC
 
 ''', '''a score=0
+# test 10.1
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 s C 0 10 + 20 ACGTACGTAC
 s D 1 10 + 20 ATGTACGTAC
 
 ''', 30, 30), # test 10
+               ('''a score=0
+# test 11.0
+s z 0 10 + 20 ACGTACGTAC
+s A 0 10 + 20 ACGTACGTAC
+s y 0 10 + 20 ACGTACGTAC
+s x 0 10 + 20 ACGTACGTAC
+s w 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s t 0 10 + 20 ACGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+# test 11.1
+s k 0 10 + 20 ACGTACGTAC
+s l 0 10 + 20 ACGTACGTAC
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s m 0 10 + 20 ACGTACGTAC
+s n 0 10 + 20 ACGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+s p 0 10 + 20 ACGTACGTAC
+s q 0 10 + 20 ACGTACGTAC
+
+''', 60, 0), # test 11
                ]
 
 def xmlBedRegionPassed(filename, totalTrue, totalTrueInInterval):
