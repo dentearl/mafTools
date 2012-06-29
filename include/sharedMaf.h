@@ -65,6 +65,7 @@ uint32_t* maf_mafBlock_getSequenceLengthArray(mafBlock_t *mb);
 char** maf_mafBlock_getSpeciesArray(mafBlock_t *mb);
 mafBlock_t* maf_mafBlock_getNext(mafBlock_t *mb);
 char** maf_mafBlock_getSequenceMatrix(mafBlock_t *mb, unsigned n, unsigned m);
+mafLine_t** maf_mafBlock_getMafLineArray_seqOnly(mafBlock_t *mb);
 char* maf_mafLine_getLine(mafLine_t *ml);
 uint32_t maf_mafLine_getLineNumber(mafLine_t *ml);
 char maf_mafLine_getType(mafLine_t *ml);
