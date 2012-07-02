@@ -45,19 +45,19 @@ in **A**.
 
 ### Options
 * <code>mafComparator, version 0.6 July 2012</code>
-* <code>-a --logLevel</code> : Set the log level. [off, critical, info, debug] in ascending order.
+* <code>-a --logLevel</code> : Set the log level. [off, critical, info, debug] in ascending order
 * <code>--maf1</code> : The location of the first MAF file. If comparing true to predicted alignments, this is the truth.
-* <code>--maf2</code> : The location of the second MAF file
+* <code>--maf2</code> : The location of the second MAF file.
 * <code>--out</code> : The output XML formatted results file.
 * <code>--samples</code> : The ideal number of sample homology tests to perform for the two comparisons (i.e. file1 -> file and file2 -> file1). This number is an ideal because pairs are sampled and thus the actual number may be slightly higher or slightly lower than this value. If this value is equal to or greater than the total number of pairs in a file, then all pairs will be tested. [default 1000000]
 * <code>--bedFiles</code> : The location of bed file(s) used to filter the pairwise comparisons. Comma separated list.
 * <code>-g --near</code> : The number of bases in either sequence to allow a match to slip by. I.e. <code>--near=n</code> (where _n_ is a non-negative integer) will consider a homology test for a given pair (**S1**:_x_, **S2**:_y_) where **S1** and **S2** are sequences and _x_ and _y_ are positions in the respective sequences, to be a true homology test so long as there is a pair within the other alignment (**S1**:_w_, **S2**:_z_) where EITHER (_w_ is equal to _x_ and _y_ - _n_ <= _z_ <= _y_ + _n_) OR (_x_ - _n_ <= _w_ <= _x_ + _n_ and _y_ is equal to _z_).
 * <code>-s --seed</code> : An integer to seed the random number generator. Omitting this causes the seed to be pseudorandom (via <code>time()</code> and <code>getpid()</code>). The seed value is always stored in the output xml.
-* <code>-v --version</code> : Print current version number
-* <code>-h --help</code> : Print this help screen
+* <code>-v --version</code> : Print current version number.
+* <code>-h --help</code> : Print this help screen.
 
 ## Example
-Two mafs are included in the example/ directory and can be compared using the command
+Two mafs are included in the example/ directory and can be compared using the command:
 
     $ mafComparator --maf1 example/a.maf --maf2 example/b.maf --out comparison_a-b.xml
 

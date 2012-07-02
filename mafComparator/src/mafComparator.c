@@ -161,39 +161,78 @@ void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
     free(spaceSepFiles);
     st_logDebug("Done parsing bed files\n");
 }
-
+int min(int a, int b) {
+    if (a < b)
+        return a;
+    else 
+        return b;
+}
+void usageMessage(const char *name, const char *description) {
+    // pretty print a usage() message
+    int lineLength = 70;
+    int indent = 4;
+    int length = strlen(name);
+    int linePos = length + indent + 5;
+    int strPos = 0;
+    for (int i = 0; i < indent; ++i) {
+        fprintf(stderr, " ");
+    }
+    fprintf(stderr, "--%s : ", name);
+    while (strPos < strlen(description)) {
+        fprintf(stderr, "%c", description[strPos++]);
+        ++linePos;
+        if (linePos >= lineLength) {
+            if (description[strPos] == ' ') {
+                linePos = 0;
+                fprintf(stderr, "\n");
+                for (int i = 0; i < min(length + indent + 5, indent + 5); ++i) {
+                    fprintf(stderr, " ");
+                }
+                while (description[strPos] != '\0' && description[strPos] == ' ') {
+                    ++strPos;
+                }
+            }
+        }
+    }
+    fprintf(stderr, "\n");
+}
 void usage(void) {
-    fprintf(stderr, "mafComparator, %s\n", g_version);
-    fprintf(stderr,
-            "--maf1 : The location of the first MAF file. "
-            "If comparing true to predicted "
-            "alignments, this is the truth.\n");
-    fprintf(stderr, "--maf2 : The location of the second MAF file. "
-            "If comparing true to predicted "
-            "alignments, this is the prediction.\n");
-    fprintf(stderr,
-            "--out : The output XML formatted results file.\n");
-    fprintf(stderr,
-            "--samples : The number of sample homology tests to perform "
-            "(total) [default 1000000].\n");
-    fprintf(stderr,
-            "--bedFiles : The location of bed file(s) used to filter the "
-            "pairwise comparisons, separated by commas.\n");
-    fprintf(stderr,
-            "--near : The number of bases in either sequence to allow a "
-            "match to slip by.\n");
-    fprintf(stderr,
-            "--logLevel : Set the log level. [off, critical, info, debug] "
-            "in ascending order.\n");
-    fprintf(stderr,
-            "--printFailures : Print tab-delimited details about failed "
-            "tests to stderr.\n");
-    fprintf(stderr,
-            "--seed : an integer used to seed the random number generator "
-            "used to perform sampling. If omitted a seed is pseudorandomly "
-            "generated.\n");
-    fprintf(stderr, "-v --version : Print current version number\n");
-    fprintf(stderr, "-h --help : Print this help screen\n");
+    fprintf(stderr, "mafComparator, %s\n\n", g_version);
+    fprintf(stderr, "usage: $ mafComparator --maf1=FILE1 --maf2=FILE2 --out=OUT.xml [options]\n\n");
+    fprintf(stderr, "  Options:\n");
+    usageMessage("maf1", "The location of the first MAF file. "
+                 "If comparing true to predicted "
+                 "alignments, this is the truth.");
+    usageMessage("maf2", "The location of the second MAF file. "
+                 "If comparing true to predicted "
+                 "alignments, this is the prediction.");
+    usageMessage("out", "The output XML formatted results file.");
+    usageMessage("samples", "The ideal number of sample homology tests to perform for the "
+                 "two comparisons (i.e. file1 -> file and file2 -> file1). This "
+                 "number is an ideal because pairs are sampled and thus the "
+                 "actual number may be slightly higher or slightly lower than "
+                 "this value. If this value is equal to or greater than the "
+                 "total number of pairs in a file, then all pairs will be "
+                 "tested. [default 1000000]");
+    usageMessage("bedFiles", "The location of bed file(s) used to filter the "
+                 "pairwise comparisons, separated by commas.");
+    usageMessage("near", "The number of bases in either sequence to allow a match "
+                 "to slip by. I.e. --near=n (where _n_ is a non-negative integer) "
+                 "will consider a homology test for a given pair (S1:_x_, S2:_y_) "
+                 "where S1 and S2 are sequences and _x_ and _y_ are positions in "
+                 "the respective sequences, to be a true homology test so long as "
+                 "there is a pair within the other alignment (S1:_w_, S2:_z_) where "
+                 "EITHER (_w_ is equal to _x_ and _y_ - _n_ <= _z_ <= _y_ + _n_) "
+                 "OR (_x_ - _n_ <= _w_ <= _x_ + _n_ and _y_ is equal to _z_).");
+    usageMessage("logLevel", "Set the log level. [off, critical, info, debug] "
+                 "in ascending order.");
+    usageMessage("printFailures", "Print tab-delimited details about failed "
+                 "tests to stderr.");
+    usageMessage("seed", "an integer used to seed the random number generator "
+                 "used to perform sampling. If omitted a seed is pseudorandomly "
+                 "generated. The seed value is always stored in the output xml.");
+    usageMessage("version", "Print current version number.");
+    usageMessage("help", "Print this help screen.");
 }
 void version(void) {
     fprintf(stderr, "mafComparator, %s\n", g_version);
@@ -269,7 +308,7 @@ int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **ou
             break;
         case 'h':
             usage();
-            return 0;
+            exit(EXIT_SUCCESS);
         case 'f':
             *bedFiles = stString_copy(optarg);
             break;
@@ -279,7 +318,7 @@ int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **ou
             break;
         default:
             usage();
-            return 1;
+            exit(EXIT_SUCCESS);
         }
         key = getopt_long(argc, argv, optString, longOpts, &longIndex);
     }
