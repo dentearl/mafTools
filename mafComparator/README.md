@@ -14,23 +14,23 @@ It is suitable for running over very large alignments (those with many positions
 because it does not attempt to hold everything in memory but instead 
 takes a sampling approach.
 
-For two sets of pairwise alignments, *A* and *B*, a homology test is 
-defined as follows. Pick a pair of aligned positions in *A*, called a 
-homology pair -- the *AB* homology test returns _true_ if the pair is present in *B*, 
+For two sets of pairwise alignments, **A** and **B**, a homology test is 
+defined as follows. Pick a pair of aligned positions in **A**, called a 
+homology pair -- the **AB** homology test returns _true_ if the pair is present in **B**, 
 otherwise it returns _false_. The set of possible homology tests for the 
-ordered pair (*A*, *B*) is not necessarily equivalent to the set of 
-possible (*B*, *A*) homology tests. We call the proportion of _true_ tests 
-(as a percentage of the total of a set of *C* many homology tests), from 
-(*A*, *B*) *A~B*.
+ordered pair (**A**, **B**) is not necessarily equivalent to the set of 
+possible (**B**, **A**) homology tests. We call the proportion of _true_ tests 
+(as a percentage of the total of a set of **C** many homology tests), from 
+(**A**, **B**) **A~B**.
 
-If *A* is the set of true pairwise alignments and *B* the predicted set of 
-alignments then *A~B* (over large enough  *C*), is a proxy to 
+If **A** is the set of true pairwise alignments and **B** the predicted set of 
+alignments then *A~B* (over large enough  **C**), is a proxy to 
 [_sensitivity_](http://en.wikipedia.org/wiki/Sensitivity_and_specificity)
-of *B* in predicted the set of correctly aligned pairs in *A*. Conversely 
-*B~A* (over large enough *C*) is a proxy to the 
+of **B** in predicted the set of correctly aligned pairs in **A**. Conversely 
+**B~A** (over large enough **C**) is a proxy to the 
 [_specificity_](http://en.wikipedia.org/wiki/Sensitivity_and_specificity) of the 
-aligned pairs in *B* with respect to the set of correctly aligned pairs 
-in *A*.
+aligned pairs in **B** with respect to the set of correctly aligned pairs 
+in **A**.
 
 ## Dependencies
 * sonLib https://github.com/benedictpaten/sonLib/
