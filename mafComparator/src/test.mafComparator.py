@@ -240,7 +240,7 @@ class KnownValuesTest(unittest.TestCase):
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('knownValues'))
         i = 0
-        for maf1, maf2, totalTrue, totalFalse in knownValues[8:9]:
+        for maf1, maf2, totalTrue, totalFalse in knownValues:
             i += 1
             testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
                                     maf1, g_headers)
@@ -259,7 +259,7 @@ class KnownValuesTest(unittest.TestCase):
             passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
             self.assertTrue(passedTT and passedTF)
         mtt.removeDir(tmpDir)
-    def dtest_memory_2(self):
+    def test_memory_2(self):
         """ mafComparator should be memory clean for known values
         """
         valgrind = mtt.which('valgrind')
@@ -326,7 +326,7 @@ class BedParsingTest(unittest.TestCase):
                     'test1.chr0\t1\t100\n',
                     20, 19),
                    ]
-    def dtest_bedParsing(self):
+    def test_bedParsing(self):
         """ mafComparator should parse a bed file and use the intervals for testing
         """
         mtt.makeTempDirParent()
@@ -353,7 +353,7 @@ class BedParsingTest(unittest.TestCase):
                                         totalTrue, totalTrueInInterval)
             self.assertTrue(passed)
         mtt.removeDir(tmpDir)
-    def dtest_memory_0(self):
+    def test_memory_0(self):
         """ mafComparator should be memory clean for bed parsing examples
         """
         valgrind = mtt.which('valgrind')
@@ -406,7 +406,7 @@ class randomSeedTests(unittest.TestCase):
                     's test2.chr0 40 60 + 100 ACGTACGTACGTACGTACGT\n',
                     ),
                    ]
-    def dtest_seedTesting(self):
+    def test_seedTesting(self):
         """ mafComparator should have replicable runs via the --seed command
         """
         mtt.makeTempDirParent()
@@ -442,7 +442,7 @@ class randomSeedTests(unittest.TestCase):
                     self.assertEqual(homTests[1].find('aggregateResults').find('all').attrib[elm],
                                      origHomTests[1].find('aggregateResults').find('all').attrib[elm])
         mtt.removeDir(tmpDir)
-    def dtest_memory_1(self):
+    def test_memory_1(self):
         """ mafComparator should be memory clean for seed testing examples
         """
         valgrind = mtt.which('valgrind')
@@ -550,7 +550,7 @@ s D 0 10 + 20 ATGTACGTAC
 
 ''', 5, 60, 0),
                        ]
-    def dtest_nearSimple(self):
+    def test_nearSimple(self):
         """ mafComparator should return correct results for hand-calculable problems that use the --near=0 option
         """
         mtt.makeTempDirParent()
@@ -576,7 +576,7 @@ s D 0 10 + 20 ATGTACGTAC
             passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
             self.assertTrue(passedTT and passedTF)
         mtt.removeDir(tmpDir)
-    def dtest_near(self):
+    def test_near(self):
         """ mafComparator should return correct results for hand-calculable problems that use the --near option
         """
         mtt.makeTempDirParent()
@@ -602,7 +602,7 @@ s D 0 10 + 20 ATGTACGTAC
             passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
             self.assertTrue(passedTT and passedTF)
         mtt.removeDir(tmpDir)
-    def dtest_memory_3(self):
+    def test_memory_3(self):
         """ mafComparator should be memory clean for known values using --near option
         """
         valgrind = mtt.which('valgrind')

@@ -64,7 +64,7 @@ ResultPair *resultPair_construct(const char *seq1, const char *seq2) {
     return resultPair;
 }
 APair* aPair_copyConstruct(APair *pair) {
-   return aPair_construct(pair->seq1, pair->seq2, pair->pos1, pair->pos2);
+    return aPair_construct(stString_copy(pair->seq1), stString_copy(pair->seq2), pair->pos1, pair->pos2);
 }
 void aPosition_fillOut(APosition *aPosition, char *name, uint32_t pos) {
     aPosition->name = name;
@@ -82,6 +82,9 @@ APosition* aPosition_construct(const char *name, uint32_t pos) {
     return aPosition;
 }
 void aPair_destruct(APair *pair) {
+    if (pair == NULL) {
+        return;
+    }
     if (pair->seq1 != NULL) {
         free(pair->seq1);
     }
@@ -89,15 +92,24 @@ void aPair_destruct(APair *pair) {
         free(pair->seq2);
     }
     free(pair);
+    pair = NULL;
 }
 void aPosition_destruct(void *p) {
+    if (p == NULL) {
+        return;
+    }
     free(((APosition*)p)->name);
     free(p);
+    p = NULL;
 }
 void resultPair_destruct(ResultPair *rp) {
+    if (rp == NULL) {
+        return;
+    }
     free(rp->aPair.seq1);
     free(rp->aPair.seq2);
     free(rp);
+    rp = NULL;
 }
 int aPair_cmpFunction_seqsOnly(APair *aPair1, APair *aPair2) {
     /*
@@ -130,6 +142,7 @@ int aPair_cmpFunction_seqsOnly(APair *aPair1, APair *aPair2) {
     return i;
 }
 int strcmpnull(const char *s1, const char *s2) {
+    // do strcmp with NULL strings. Totally problematic.
     int i;
     if ((s1 == NULL) && (s2 == NULL)) {
         i = 0;
@@ -144,13 +157,14 @@ int strcmpnull(const char *s1, const char *s2) {
 }
 int aPair_cmpFunction(APair *p1, APair *p2) {
     /*
-     * Compares first the sequence then the position arguments of the a pairs.
+     * Compares first the sequence then the first position, then the second sequence,
+     * then the second position. Allows us to traverse the pairs sortedSet quickly
      */
     int i = strcmpnull(p1->seq1, p2->seq1);
     if (i == 0) {
         if (p1->pos1 < p2->pos1) {
             i = -1;
-        } else if (p1->pos1 > p2->pos2) {
+        } else if (p1->pos1 > p2->pos1) {
             i = 1;
         } else {
             i = 0;
@@ -158,9 +172,9 @@ int aPair_cmpFunction(APair *p1, APair *p2) {
         if (i == 0) {
             i = strcmpnull(p1->seq2, p2->seq2);
             if (i == 0) {
-                if (p1->pos1 < p2->pos1) {
+                if (p1->pos2 < p2->pos2) {
                     i = -1;
-                } else if (p1->pos1 > p2->pos2) {
+                } else if (p1->pos2 > p2->pos2) {
                     i = 1;
                 } else {
                     i = 0;
@@ -168,22 +182,6 @@ int aPair_cmpFunction(APair *p1, APair *p2) {
             }
         }
     }
-    /* int i = aPair_cmpFunction_seqsOnly(aPair1, aPair2); */
-    /* if (i == 0) { */
-    /*     if (aPair1->pos1 < aPair2->pos1) { */
-    /*         i = -1; */
-    /*     } else if (aPair1->pos1 > aPair2->pos1) { */
-    /*         i = 1; */
-    /*     } else { */
-    /*         if (aPair1->pos2 < aPair2->pos2) { */
-    /*             i = -1; */
-    /*         } else if (aPair1->pos2 > aPair2->pos2) { */
-    /*             i = 1; */
-    /*         } else { */
-    /*             i = 0; */
-    /*         } */
-    /*     } */
-    /* } */
     return i;
 }
 uint32_t aPositionKey(const void *p) {
@@ -204,22 +202,20 @@ int aPositionEqualKey(const void *k1, const void *k2) {
 }
 bool closeEnough(uint32_t p1, uint32_t p2, uint32_t near) {
     if (p1 == p2) {
-        return 1;
+        return true;
     } else if (p1 < p2 ) {
         if (p1 + near >= p2) {
-            return 1;
+            return true;
         } else {
-            return 0;
-        }
-    } else if (p1 > p2) {
-        if (p1 <= p2 + near) {
-            return 1;
-        } else {
-            return 0;
+            return false;
         }
     } else {
-        // compiler complains without this explicit return
-        return 0;
+        // (p1 > p2)
+        if (p1 <= p2 + near) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 int32_t* buildInt(int32_t n) {
@@ -555,6 +551,8 @@ void samplePairsFromColumnBruteForce(double acceptProbability, stSortedSet *pair
     for (uint64_t i = 0; i < numPairs; ++i) {
         if (st_random() <= acceptProbability) {
             arrayIndexToPairIndices(i, numPairs, &p1, &p2);
+            // printf("1. adding pair (%s %u):(%s %u)\n", maf_mafLine_getSpecies(mlArray[p1]),
+            //        positions[p1], maf_mafLine_getSpecies(mlArray[p2]), positions[p2]);
             APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                            maf_mafLine_getSpecies(mlArray[p2]),
                                            positions[p1], positions[p2]);
@@ -596,6 +594,8 @@ void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs,
         while ((key = stHash_getNext(hit)) != NULL) {
             // use mlArray
             arrayIndexToPairIndices((uint64_t)(*key), numSeqs, &p1, &p2);
+            // printf("2. adding pair (%s %u):(%s %u)\n", maf_mafLine_getSpecies(mlArray[p1]),
+            //        positions[p1], maf_mafLine_getSpecies(mlArray[p2]), positions[p2]);
             APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                            maf_mafLine_getSpecies(mlArray[p2]),
                                            positions[p1], positions[p2]);
@@ -607,6 +607,8 @@ void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs,
             *tmp = i;
             if (stHash_search(hash, tmp) == NULL) {
                 arrayIndexToPairIndices(i, numSeqs, &p1, &p2);
+                // printf("3. adding pair (%s %u):(%s %u)\n", maf_mafLine_getSpecies(mlArray[p1]),
+                //    positions[p1], maf_mafLine_getSpecies(mlArray[p2]), positions[p2]);
                 APair *aPair = aPair_construct(maf_mafLine_getSpecies(mlArray[p1]),
                                                maf_mafLine_getSpecies(mlArray[p2]),
                                                positions[p1], positions[p2]);
@@ -664,15 +666,12 @@ mafLine_t** createMafLineArray(mafBlock_t *mb, uint32_t numLegit, bool *legitRow
     }
     return mlArray;
 }
-void updatePositions(char **mat, uint32_t c, uint32_t *positions, int *strandInts, uint32_t numSeqs) {
-    printf("positions: [");
+void updatePositions(char **mat, uint32_t c, uint32_t *allPositions, int *allStrandInts, uint32_t numSeqs) {
     for (uint32_t i = 0; i < numSeqs; ++i) {
-        printf("%u, ", positions[i]);
         if (mat[i][c] != '-') {
-            positions[i] += strandInts[i];
+            allPositions[i] += allStrandInts[i];
         }
     }
-    printf("]\n");
 }
 uint32_t* cullPositions(uint32_t *allPositions, uint32_t numSeqs, bool *legitRows, uint32_t numLegit) {
     uint32_t *positions = (uint32_t*) st_malloc(sizeof(*positions) * numLegit);
@@ -820,13 +819,13 @@ bool inInterval(stHash *intervalsHash, char *seq, uint32_t pos) {
      */
     stSortedSet *intervals = stHash_search(intervalsHash, seq);
     if (intervals == NULL) {
-        return 0;
+        return false;
     }
     stIntTuple *i = stIntTuple_construct(2, pos, INT32_MAX);
     stIntTuple *j = stSortedSet_searchLessThanOrEqual(intervals, i);
     stIntTuple_destruct(i);
     if (j == NULL) {
-        return 0;
+        return false;
     }
     assert(stIntTuple_length(j) == 2);
     return stIntTuple_getPosition(j, 0) <= pos && pos < stIntTuple_getPosition(j, 1);
@@ -850,25 +849,27 @@ void recordNearPair(APair *thisPair, stSortedSet *pairs, uint32_t near, stSorted
     // Try modifying position 1
     for (thisPair->pos1 = findLowerBound(thisPair->pos1, near); thisPair->pos1 < i + near + 1; thisPair->pos1++) {
         if ((aPair = stSortedSet_search(pairs, thisPair)) != NULL) {
-            printf("positivePair1: (%s %u, %s %u)\n", 
-                   aPair->seq1, aPair->pos1, aPair->seq2, aPair->pos2);
-            stSortedSet_insert(positivePairs, aPair);
-        } else {
-            printf("badPair1: (%s %u, %s %u)\n", 
-                   thisPair->seq1, thisPair->pos1, thisPair->seq2, thisPair->pos2);
-        }
+            if (strcmp(thisPair->seq1, aPair->seq1) == 0 && strcmp(thisPair->seq2, aPair->seq2) == 0 &&
+                thisPair->pos1 == aPair->pos1 && thisPair->pos2 == aPair->pos2) {
+                // printf("positivePair1: (%s %u, %s %u):(%s %u, %s %u)\n", 
+                //        thisPair->seq1, thisPair->pos1, thisPair->seq2, thisPair->pos2,
+                //        aPair->seq1, aPair->pos1, aPair->seq2, aPair->pos2);
+                stSortedSet_insert(positivePairs, aPair);
+            }
+        } 
     }
     thisPair->pos1 = i; // reset pos 1
     // Try modifying position 2
     i = thisPair->pos2;
     for (thisPair->pos2 = findLowerBound(thisPair->pos2, near); thisPair->pos2 < i + near + 1; thisPair->pos2++) {
         if ((aPair = stSortedSet_search(pairs, thisPair)) != NULL) {
-            printf("positivePair2: (%s %u, %s %u)\n", 
-                   aPair->seq1, aPair->pos1, aPair->seq2, aPair->pos2);
-            stSortedSet_insert(positivePairs, aPair);
-        } else {
-            printf("badPair2: (%s %u, %s %u)\n", 
-                   thisPair->seq1, thisPair->pos1, thisPair->seq2, thisPair->pos2);
+            if (strcmp(thisPair->seq1, aPair->seq1) == 0 && strcmp(thisPair->seq2, aPair->seq2) == 0 &&
+                thisPair->pos1 == aPair->pos1 && thisPair->pos2 == aPair->pos2) {
+                // printf("positivePair2: (%s %u, %s %u):(%s %u, %s %u)\n", 
+                //        thisPair->seq1, thisPair->pos1, thisPair->seq2, thisPair->pos2,
+                //        aPair->seq1, aPair->pos1, aPair->seq2, aPair->pos2);
+                stSortedSet_insert(positivePairs, aPair);
+            }
         }
     }
     thisPair->pos2 = i; // reset pos 2
@@ -877,17 +878,19 @@ stHash* constructPositionHash(char **mat, uint32_t c, char **names, uint32_t num
                               uint32_t *allPositions, bool *legitRows) {
     stHash *posHash = stHash_construct3(aPositionKey, aPositionEqualKey, aPosition_destruct, free);
     APosition *pos = NULL;
-    printf("constructing position hash\n");
+    // printf("constructing position hash on col %"PRIu32", numseqs: %"PRIu32"\n", c, numSeqs);
     for (uint32_t r = 0; r < numSeqs; ++r) {
         if (!legitRows[r]) {
+            // printf("row %"PRIu32" not legit.\n", r);
             continue;
         }
         if (mat[r][c] == '-') {
+            // printf("row %"PRIu32" col %"PRIu32" is gap.\n", r, c);
             continue;
         }
         pos = aPosition_construct(stString_copy(names[r]), allPositions[r]);
         if (stHash_search(posHash, pos) == NULL) {
-            printf("adding position to posHash (%s %u %c)\n", names[r], allPositions[r], mat[r][c]);
+            // printf("adding position to posHash (%s %u %c)\n", names[r], allPositions[r], mat[r][c]);
             stHash_insert(posHash, pos, stString_copy(""));
         } else {
             aPosition_destruct(pos);
@@ -900,18 +903,13 @@ bool pairMemberInPositionHash(stHash *positionHash, APair *thisPair) {
     APosition *p = aPosition_init();
     p->name = stString_copy(thisPair->seq2);
     p->pos = thisPair->pos2;
-    printf("checking to see if pairmemberinpositionhash, (%s %u)... ", p->name, p->pos);
+    // printf("checking to see if pairmemberinpositionhash, (%s %u)... ", p->name, p->pos);
     if (stHash_search(positionHash, p) != NULL) {
-        printf("YES :D\n");
+        // printf("YES :D\n");
         aPosition_destruct(p);
         return true;
     } else {
-        printf("NO :(\n");
-    }
-    stHashIterator *hit = stHash_getIterator(positionHash);
-    APosition *a = NULL;
-    while ((a = stHash_getNext(hit)) != NULL) {
-        printf("position hash contains: (%s %u)\n", a->name, a->pos);
+        // printf("NO :(\n");
     }
     aPosition_destruct(p);
     return false;
@@ -925,6 +923,17 @@ void printSortedSet(stSortedSet *pairs) {
         printf("pair: (%s %u, %s %u)\n", 
                pair->seq1, pair->pos1, pair->seq2, pair->pos2);
     }
+}
+void printHash(stHash *hash) {
+    stHashIterator *hit = NULL;
+    hit = stHash_getIterator(hash);
+    APosition *key = NULL;
+    printf("Position hash: ");
+    while ((key = stHash_getNext(hit)) != NULL) {
+        printf("(%s %u), ", key->name, key->pos);
+    }
+    printf("\n");
+    stHash_destructIterator(hit);
 }
 void testHomologyOnColumn(char **mat, uint32_t c, uint32_t numSeqs, bool *legitRows, char **names, 
                           stSortedSet *pairs, stSortedSet *positivePairs, mafLine_t **mlArray, 
@@ -943,39 +952,47 @@ void testHomologyOnColumn(char **mat, uint32_t c, uint32_t numSeqs, bool *legitR
     stHash *positionHash = NULL;
     stHashIterator *hit = NULL;
     stSortedSetIterator *sit = NULL;
-    printSortedSet(pairs);
     // 1.
     positionHash = constructPositionHash(mat, c, names, numSeqs, allPositions, legitRows);
-    
+    // printHash(positionHash);
     hit = stHash_getIterator(positionHash);
     // 2.
     while ((key = stHash_getNext(hit)) != NULL) {
-        printf("while-ing a position %s %u\n", key->name, key->pos);
+        // printf("while-ing a position %s %u\n", key->name, key->pos);
+        assert(thisPair == NULL);
         thisPair = aPair_init();
         thisPair->seq1 = stString_copy(key->name);
         thisPair->pos1 = key->pos;
-        printf("created thisPair (%s %u, %s %u)\n", 
-                   thisPair->seq1, thisPair->pos1, thisPair->seq2, thisPair->pos2);
+        // printf("created thisPair (%s %u, %s %u)\n", 
+        //        thisPair->seq1, thisPair->pos1, thisPair->seq2, thisPair->pos2);
         if ((thatPair = stSortedSet_searchGreaterThanOrEqual(pairs, thisPair)) != NULL) {
-            printf("found a matching thatPair (%s %u, %s %u)\n", 
-                   thatPair->seq1, thatPair->pos1, thatPair->seq2, thatPair->pos2);
+            // printf("found a matching thatPair (%s %u, %s %u)\n", 
+            //    thatPair->seq1, thatPair->pos1, thatPair->seq2, thatPair->pos2);
             if (strcmp(thisPair->seq1, thatPair->seq1) != 0){
+                aPair_destruct(thisPair);
+                thisPair = NULL;
                 continue;
             }
             if (thisPair->pos1 != thatPair->pos1) {
+                aPair_destruct(thisPair);
+                thisPair = NULL;
                 continue;
             }
             sit = stSortedSet_getIteratorFrom(pairs, thatPair);
             // 2a.
             while ((otherPair = stSortedSet_getNext(sit)) != NULL) {
-                printf("iterating with otherPair (%s %u, %s %u)\n", 
-                   otherPair->seq1, otherPair->pos1, otherPair->seq2, otherPair->pos2);
+                // printf("iterating with otherPair (%s %u, %s %u)\n", 
+                //        otherPair->seq1, otherPair->pos1, otherPair->seq2, otherPair->pos2);
                 if ((strcmp(thatPair->seq1, thatPair->seq1) != 0) || 
                     (!closeEnough(thatPair->pos1, otherPair->pos1, near))) {
                     // bail out on iteration once we've overstepped the range of interest
-                    printf("fts! I'm out.\n");
+                    // printf("fts! I'm out. strcmp:%d, closeEnough:%d, thatPair->seq1:%s thatPair->pos1:%"PRIu32" otherPair->seq1:%s otherPair->pos1:%"PRIu32", near:%"PRIu32"\n", strcmp(thatPair->seq1, thatPair->seq1), closeEnough(thatPair->pos1, otherPair->pos1, near), thatPair->seq1, thatPair->pos1, otherPair->seq1, otherPair->pos1, near);
+                    aPair_destruct(thisPair);
+                    thisPair = NULL;
                     break;
                 }
+                // printf("this pair is looking good... (%s %u, %s %u)\n", 
+                //        otherPair->seq1, otherPair->pos1, otherPair->seq2, otherPair->pos2);
                 thisPair->seq2 = stString_copy(otherPair->seq2);
                 thisPair->pos2 = otherPair->pos2;
                 // 2ai.
@@ -988,9 +1005,25 @@ void testHomologyOnColumn(char **mat, uint32_t c, uint32_t numSeqs, bool *legitR
             stSortedSet_destructIterator(sit);
         }
         aPair_destruct(thisPair);
+        thisPair = NULL;
     }
+    assert(thisPair == NULL);
     stHash_destructIterator(hit);
     stHash_destruct(positionHash);
+}
+void printAllPositions(uint32_t *allPositions, mafBlock_t *mb) {
+    printf("allPositions: [");
+    for (uint32_t i = 0; i < maf_mafBlock_getNumberOfSequences(mb); ++i) {
+        printf("%"PRIu32", ", allPositions[i]);
+    }
+    printf("]\n");
+}
+void printAllStrandInts(int *allStrandInts, mafBlock_t *mb) {
+    printf("allStrandInts: [");
+    for (uint32_t i = 0; i < maf_mafBlock_getNumberOfSequences(mb); ++i) {
+        printf("%+i, ", allStrandInts[i]);
+    }
+    printf("]\n");
 }
 void walkBlockTestingHomology(mafBlock_t *mb, stSortedSet *pairs, stSortedSet *positivePairs, 
                               stHash *legitSequences, stHash *intervalsHash, uint32_t near) {
@@ -1012,13 +1045,13 @@ void walkBlockTestingHomology(mafBlock_t *mb, stSortedSet *pairs, stSortedSet *p
     for (uint32_t c = 0; c < seqFieldLength; ++c) {
         testHomologyOnColumn(mat, c, numSeqs, legitRows, names, pairs, positivePairs, 
                              mlArray, allPositions, intervalsHash, near);
-        updatePositions(mat, c, allPositions, allStrandInts, numLegit);
+        updatePositions(mat, c, allPositions, allStrandInts, numSeqs);
     }
     // clean up
     free(mlArray);
     free(allPositions);
     free(allStrandInts);
-    for (uint32_t i = 0; i < numLegit; ++i) {
+    for (uint32_t i = 0; i < numSeqs; ++i) {
          free(names[i]);
     }
     free(names);
@@ -1047,8 +1080,8 @@ void homologyTests1(APair *thisPair, stHash *intervalsHash, stSortedSet *pairs,
         recordNearPair(thisPair, pairs, near, positivePairs);
     } 
 }
-void homologyTests2(stSortedSet *pairs, stSortedSet *resultPairs, stHash *intervalsHash,
-                    stSortedSet *positivePairs) {
+void enumerateHomologyResults(stSortedSet *pairs, stSortedSet *resultPairs, stHash *intervalsHash,
+                              stSortedSet *positivePairs) {
     /*
      * For every pair in 'pairs', add 1 to the total number of homology tests for the sequence-pair.
      * We don't bother with the seqNames hashtable here because the ht was used to build *pairs
@@ -1094,20 +1127,12 @@ void homologyTests2(stSortedSet *pairs, stSortedSet *resultPairs, stHash *interv
             ++(thisResultPair->inAll);
         } else {
            if (g_isVerboseFailures){
-              fprintf(stderr, "%s\t%d\t\t%s\t%d\n", pair->seq1, pair->pos1, 
+              fprintf(stderr, "unable to locate pair: (%s, %"PRIu32"):(%s, %"PRIu32")\n", pair->seq1, pair->pos1, 
                       pair->seq2, pair->pos2);
            }
         }
     }
     stSortedSet_destructIterator(iterator);
-}
-void printSet(stSortedSet *set) {
-    stSortedSetIterator *sit = stSortedSet_getIterator(set);
-    APair *p = NULL;
-    while ((p = stSortedSet_getNext(sit)) != NULL) {
-        printf("pair in set: (%s %u):(%s %u)\n", p->seq1, p->pos1, p->seq2, p->pos2);
-    }
-    stSortedSet_destructIterator(sit);
 }
 stSortedSet* compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint32_t numberOfSamples,
                             stHash *legitSequences, stHash *intervalsHash, 
@@ -1124,13 +1149,12 @@ stSortedSet* compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint32_t
     samplePairsFromMaf(mafFileA, pairs, acceptProbability, legitSequences);
     // perform homology tests on mafFileB using sampled pairs from mafFileA
     stSortedSet *positivePairs = stSortedSet_construct();
-    printf("homology testing from A:%s to B:%s\n", mafFileA, mafFileB);
-    getPairs(mafFileB, (void(*)(APair *, stHash *, void *, void *, void *, uint32_t)) homologyTests1, 
-             intervalsHash, pairs, positivePairs, legitSequences, near); 
-    
-    // performHomologyTests(mafFileB, pairs, positivePairs, legitSequences, intervalsHash, near);
+    // printf("homology testing from A:%s to B:%s\n", mafFileA, mafFileB);
+    // getPairs(mafFileB, (void(*)(APair *, stHash *, void *, void *, void *, uint32_t)) homologyTests1,
+    //          intervalsHash, pairs, positivePairs, legitSequences, near); 
+    performHomologyTests(mafFileB, pairs, positivePairs, legitSequences, intervalsHash, near);
     stSortedSet *resultPairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction_seqsOnly, (void(*)(void *)) aPair_destruct);
-    homologyTests2(pairs, resultPairs, intervalsHash, positivePairs);
+    enumerateHomologyResults(pairs, resultPairs, intervalsHash, positivePairs);
     // clean up
     stSortedSet_destruct(pairs);
     stSortedSet_destruct(positivePairs);
