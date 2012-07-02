@@ -71,11 +71,13 @@ bool g_isVerboseFailures;
 
 void populateNames(const char *mAFFile, stHash *hash);
 stSortedSet* compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint32_t numberOfSamples, 
-                                 stHash *legitimateSequences, stHash *intervalsHash, 
-                                 uint32_t near);
+                            uint32_t *numberOfPairsInFile,
+                            stHash *legitimateSequences, stHash *intervalsHash, 
+                            uint32_t near);
 void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...);
 void reportResults(stSortedSet *results_AB, const char *mAFFileA, const char *mAFFileB, 
-                   FILE *fileHandle, uint32_t near, stHash *legitimateSequences, const char *bedFiles);
+                   FILE *fileHandle, uint32_t near, stHash *legitimateSequences, 
+                   const char *bedFiles);
 APair* aPair_init(void);
 APair* aPair_construct(const char *seq1, const char *seq2, uint32_t pos1, uint32_t pos2);
 APair* aPair_copyConstruct(APair *pair);

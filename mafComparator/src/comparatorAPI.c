@@ -249,7 +249,7 @@ void getPairsP(void(*passPairFn)(APair *pair, stHash *intervalsHash, void *extra
         // printf("Got the line :##%s#%i %i\n", *cA, (int)strlen(*cA), *bytesRead);
         // printf("I read %i \n", sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i /*ignore the length field*/, &strand, &seqLength, sequence));
         // printf("%s,  %i %i %c %i %s\n", seqName, start, i /*ignore the length field*/, strand, seqLength, sequence);
-        j = sscanf(*cA, "s %s %i %i %c %i %s", seqName, &start, &i, /*ignore the length field*/
+        j = sscanf(*cA, "s %s %" PRIi32 " %" PRIi32 " %c %" PRIi32 " %s", seqName, &start, &i, /*ignore the length field*/
                    &strand, &seqLength, sequence);
         assert(j == 6 || (j == 5 && seqLength == 0));
         if (j == 5) {
@@ -1135,15 +1135,15 @@ void enumerateHomologyResults(stSortedSet *pairs, stSortedSet *resultPairs, stHa
     stSortedSet_destructIterator(iterator);
 }
 stSortedSet* compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint32_t numberOfSamples,
+                            uint32_t *numberOfPairs,
                             stHash *legitSequences, stHash *intervalsHash, 
                             uint32_t near) {
-    uint64_t numberOfPairs = 0;
     // count the number of pairs in mafFileA
-    numberOfPairs = countPairsInMaf(mafFileA, legitSequences);
-    if (numberOfPairs == 0) {
+    *numberOfPairs = countPairsInMaf(mafFileA, legitSequences);
+    if (*numberOfPairs == 0) {
         return stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction_seqsOnly, (void(*)(void *)) aPair_destruct);
     }
-    double acceptProbability = ((double) numberOfSamples) / (double) numberOfPairs;
+    double acceptProbability = ((double) numberOfSamples) / (double) *numberOfPairs;
     stSortedSet *pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction, (void(*)(void *)) aPair_destruct);
     // sample pairs from mafFileA
     samplePairsFromMaf(mafFileA, pairs, acceptProbability, legitSequences);

@@ -90,7 +90,7 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
         if (bytesRead > 0) {
             int32_t start, stop;
             char *cA3 = stString_copy(cA2);
-            int32_t i = sscanf(cA2, "%s %i %i", cA3, &start, &stop);
+            int32_t i = sscanf(cA2, "%s %" PRIi32 " %" PRIi32 "", cA3, &start, &stop);
             assert(i == 3);
             stSortedSet *intervals = stHash_search(intervalsHash, cA3);
             if (intervals == NULL) {
@@ -105,7 +105,8 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
             if (k != NULL) {
                 if (stIntTuple_getPosition(k, 1) > start) {
                     st_errAbort(
-                            "Found an overlapping interval in the bed file: %s %i %i overlaps %s %i %i",
+                            "Found an overlapping interval in the bed file: %s %" PRIi32 " "
+                            "%" PRIi32 " overlaps %s %" PRIi32 " %" PRIi32 "",
                             cA3, start, stop, cA2,
                             stIntTuple_getPosition(k, 0),
                             stIntTuple_getPosition(k, 1));
@@ -115,14 +116,15 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
             if (k != NULL) {
                 if (stIntTuple_getPosition(k, 1) < stop) {
                     st_errAbort(
-                            "Found an overlapping interval in the bed file: %s %i %i overlaps %s %i %i",
+                            "Found an overlapping interval in the bed file: %s %" PRIi32 " "
+                            "%" PRIi32 " overlaps %s %" PRIi32 " %" PRIi32 "",
                             cA3, start, stop, cA2,
                             stIntTuple_getPosition(k, 0),
                             stIntTuple_getPosition(k, 1));
                 }
             }
             assert(stSortedSet_search(intervals, j) == NULL);
-            st_logDebug("Adding in an interval: %s %i %i\n", cA3, start, stop);
+            st_logDebug("Adding in an interval: %s %" PRIi32 " %" PRIi32 "\n", cA3, start, stop);
             stSortedSet_insert(intervals, j);
             free(cA3);
         }
@@ -341,7 +343,7 @@ int main(int argc, char **argv) {
     st_logInfo("MAF file 1 name : %s\n", mafFile1);
     st_logInfo("MAF file 2 name : %s\n", mafFile2);
     st_logInfo("Output stats file : %s\n", outputFile);
-    st_logInfo("Bed files parsed : %i\n", stHash_size(intervalsHash));
+    st_logInfo("Bed files parsed : %" PRIi32 "\n", stHash_size(intervalsHash));
     st_logInfo("Number of samples %" PRIu32 "\n", sampleNumber);
     // note that random seed has already been logged.
     //////////////////////////////////////////////
@@ -359,29 +361,33 @@ int main(int argc, char **argv) {
         fprintf(stderr, "# Comparing %s to %s\n", mafFile1, mafFile2);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    stSortedSet *results_12 = compareMAFs_AB(mafFile1, mafFile2, sampleNumber, seqNames, 
-                                                  intervalsHash, near);
+    uint32_t numPairs1 = 0;
+    stSortedSet *results_12 = compareMAFs_AB(mafFile1, mafFile2, sampleNumber, &numPairs1, seqNames, 
+                                             intervalsHash, near);
     if (g_isVerboseFailures) {
         fprintf(stderr, "# Comparing %s to %s\n", mafFile2, mafFile1);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    stSortedSet *results_21 = compareMAFs_AB(mafFile2, mafFile1, sampleNumber, seqNames, 
-                                                  intervalsHash, near);
+    uint32_t numPairs2 = 0;
+    stSortedSet *results_21 = compareMAFs_AB(mafFile2, mafFile1, sampleNumber, &numPairs2, seqNames, 
+                                             intervalsHash, near);
     fileHandle = de_fopen(outputFile, "w");
     //////////////////////////////////////////////
     // Report results.
     //////////////////////////////////////////////
     writeXMLHeader(fileHandle);
-    if (bedFiles == NULL) {
-        fprintf(fileHandle, "<alignmentComparisons sampleNumber=\"%i\" "
-                "near=\"%i\" seed=\"%u\">\n",
-                sampleNumber, near, randomSeed);
+    char bedString[kMaxStringLength];
+    if (bedFiles != NULL) {
+        sprintf(bedString, " bedFiles=\"%s\"", bedFiles);
     } else {
-        fprintf(fileHandle,
-                "<alignmentComparisons sampleNumber=\"%i\" near=\"%i\" seed=\"%u\" "
-                "bedFiles=\"%s\">\n",
-                sampleNumber, near, randomSeed, bedFiles);
+        bedString[0] = '\0';
     }
+    fprintf(fileHandle, "<alignmentComparisons sampleNumber=\"%" PRIu32 "\" "
+            "near=\"%" PRIu32 "\" seed=\"%" PRIu32 "\" maf1=\"%s\" maf2=\"%s\" "
+            "numberOfPairsInMaf1=\"%" PRIu32 "\" "
+            "numberOfPairsInMaf2=\"%" PRIu32 "\"%s>\n",
+            sampleNumber, near, randomSeed, mafFile1, mafFile2, numPairs1, numPairs2, bedString);
+        
     reportResults(results_12, mafFile1, mafFile2, fileHandle, near, seqNames, bedFiles);
     reportResults(results_21, mafFile2, mafFile1, fileHandle, near, seqNames, bedFiles);
     fprintf(fileHandle, "</alignmentComparisons>\n");
