@@ -41,7 +41,7 @@
 #include "comparatorAPI.h"
 #include "common.h"
 
-const char *g_version = "version 0.5 June 2012";
+const char *g_version = "version 0.6 July 2012";
 bool g_isVerboseFailures = false;
 
 /*
