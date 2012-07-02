@@ -76,7 +76,10 @@ stSortedSet* compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint32_t
 void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...);
 void reportResults(stSortedSet *results_AB, const char *mAFFileA, const char *mAFFileB, 
                    FILE *fileHandle, uint32_t near, stHash *legitimateSequences, const char *bedFiles);
-void aPair_destructo(APair *pair);
+APair* aPair_init(void);
+APair* aPair_construct(const char *seq1, const char *seq2, uint32_t pos1, uint32_t pos2);
+APair* aPair_copyConstruct(APair *pair);
+void aPair_destruct(APair *pair);
 void writeXMLHeader( FILE *fileHandle );
 bool* getLegitRows(char **names, uint32_t numSeqs, stHash *legitPairs);
 uint64_t walkBlockCountingPairs(mafBlock_t *mb, stHash *legitPairs, uint64_t *chooseTwoArray);
@@ -110,4 +113,5 @@ int aPair_cmpFunction(APair *aPair1, APair *aPair2);
 uint32_t sumBoolArray(bool *legitRows, uint32_t numSeqs);
 mafLine_t** createMafLineArray(mafBlock_t *mb, uint32_t numLegit, bool *legitRows);
 void updatePositions(char **mat, uint32_t c, uint32_t *positions, int *strandInts, uint32_t numSeqs);
+void printSortedSet(stSortedSet *pairs);
 #endif /* _COMPARATOR_API_H_ */

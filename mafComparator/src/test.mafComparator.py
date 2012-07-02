@@ -536,6 +536,19 @@ s C 0 10 + 20 ACGTACGTAC
 s D 2 10 + 20 ATGTACGTAC
 
 ''', 0, 30, 30),
+                       ('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', 5, 60, 0),
                        ]
     def test_nearSimple(self):
         """ mafComparator should return correct results for hand-calculable problems that use the --near=0 option
