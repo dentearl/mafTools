@@ -51,7 +51,7 @@ test/%.o: src/%.c src/%.h ${sonLibPath}/sonLib.a
 	rm -f CuTest.o
 	mv CuTest.a $@
 
-test: test/allTests test/mafComparator #test/testRand
+test: test/allTests test/mafComparator test/testRand
 	./test/allTests && python2.7 src/test.mafComparator.py --verbose  && rm -rf ./test/ && rmdir ./tempTestDir
 
 test/allTests: src/allTests.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a
@@ -59,7 +59,8 @@ test/allTests: src/allTests.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a
 	${cxx} $^ -I ${sonLibPath} -I ../include -I ../external -o $@.tmp ${testFlags}
 	mv $@.tmp $@
 
-test/testRand: src/testRand.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a 
+# to actually use the testRand program, comment out the rm -rf on the "test:" rule and run "make test"
+test/testRand: src/testRand.c ${testAPI} ${sonLibPath}/sonLib.a 
 	mkdir -p $(dir $@)
 	${cxx} $^ -I ${sonLibPath} -I ../include -I ../external -o $@.tmp ${testFlags}
 	mv $@.tmp $@
