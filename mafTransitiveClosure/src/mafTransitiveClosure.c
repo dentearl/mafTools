@@ -249,8 +249,7 @@ char complementChar(char c) {
 }
 void addSequenceValuesToMtcSeq(mafLine_t *ml, mafTcSeq_t *mtcs) {
     // add sequence values to maf transitive closure sequence
-    int s; // transformed pos coordinate start (zero based)
-    int e; // transformed pos coordinate stop (one based)
+    int32_t s; // transformed pos coordinate start (zero based)
     if (maf_mafLine_getStrand(ml) == '+') {
         s = maf_mafLine_getStart(ml);
     } else {
@@ -258,7 +257,6 @@ void addSequenceValuesToMtcSeq(mafLine_t *ml, mafTcSeq_t *mtcs) {
         reverseComplementSequence(maf_mafLine_getSequence(ml), strlen(maf_mafLine_getSequence(ml)));
         s = maf_mafLine_getSourceLength(ml) - (maf_mafLine_getStart(ml) + maf_mafLine_getLength(ml));
     }
-    e = s + maf_mafLine_getLength(ml);
     char *seq = maf_mafLine_getSequence(ml);
     uint32_t n = strlen(maf_mafLine_getSequence(ml));
     for (uint32_t i = 0, p = 0; i < n; ++i) {

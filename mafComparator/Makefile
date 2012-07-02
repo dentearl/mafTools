@@ -2,37 +2,27 @@ include ../include.mk
 sonLibPath = ../../sonLib/lib
 binPath = ../bin
 
-extraAPI = src/cString.c src/disjointset.c ../include/sharedMaf.o ../external/CuTest.a ../include/common.o src/comparatorRandom.o
-testAPI = src/cString.c src/disjointset.c test/sharedMaf.o ../external/CuTest.a test/common.o test/comparatorRandom.o
-progs =  $(foreach f,mafComparator mergeMafComparatorResults.py getRepeatBed mfaToMaf, ${binPath}/$f)
-testObjects = src/test.comparatorAPI.o src/test.comparatorRandom.o
-testArgs = -O0 -g -Wall -Werror --pedantic -lm
+extraAPI = src/cString.c ../include/sharedMaf.o ../external/CuTest.a ../include/common.o src/comparatorRandom.o src/comparatorAPI.o ${sonLibPath}/sonLib.a 
+testAPI = src/cString.c test/sharedMaf.o ../external/CuTest.a test/common.o test/comparatorRandom.o test/comparatorAPI.o ${sonLibPath}/sonLib.a 
+progs =  $(foreach f,mafComparator, ${binPath}/$f)
+testObjects = test/test.comparatorAPI.o test/test.comparatorRandom.o
+testFlags = -O0 -g -Wall -Werror --pedantic -lm
 
 .PHONY: all clean test
 
 all: ${progs}
 
-${binPath}/mafComparator : src/mafComparator.c ${extraAPI} src/comparatorAPI.c $(wildcard src/*.h) ${sonLibPath}/sonLib.a 
+${binPath}/mafComparator: src/mafComparator.c ${extraAPI} $(wildcard src/*.h)
 	@mkdir -p $(dir $@)
 	${cxx} -I ${sonLibPath} -I ../include -I ../external -o $@.tmp $^ ${cflags}
 	mv $@.tmp $@
 
-test/mafComparator : src/mafComparator.c ${testAPI} src/comparatorAPI.c $(wildcard src/*.h) ${sonLibPath}/sonLib.a
+test/mafComparator: src/mafComparator.c ${testAPI} $(wildcard src/*.h)
 	@mkdir -p $(dir $@)
-	${cxx} -I ${sonLibPath} -I ../include -I ../external -o $@.tmp $^ ${testArgs}
+	${cxx} -I ${sonLibPath} -I ../include -I ../external -o $@.tmp $^ ${testFlags}
 	mv $@.tmp $@
 
-${binPath}/mfaToMaf : src/mfaToMaf.c src/eTreeExtras.c ${sonLibPath}/sonLib.a 
-	@mkdir -p $(dir $@)
-	${cxx} -I ${sonLibPath} ${tokyoCabinetIncl} -I ./ -o $@.tmp $^ ${cflags}
-	mv $@.tmp $@
-
-${binPath}/getRepeatBed: src/getRepeatBed.py
-	@mkdir -p $(dir $@)
-	cp $< $@
-	chmod +x $@
-
-${binPath}/%.py : src/%.py
+${binPath}/%.py: src/%.py
 	@mkdir -p $(dir $@)
 	cp $< $@.tmp
 	chmod +x $@.tmp
@@ -43,11 +33,15 @@ ${binPath}/%.py : src/%.py
 	mv $@.tmp $@
 test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
-	${cxx} -g -O0 -c $< -o $@.tmp -I ../external -I ../include
+	${cxx} -g -O0 -c $< -o $@.tmp -I ${sonLibPath} -I ../external -I ../include -I ./src ${testFlags}
 	mv $@.tmp $@
-test/%.o: src/%.c src/%.h
+test/test.comparatorAPI.o: src/test.comparatorAPI.c src/test.comparatorAPI.h test/comparatorAPI.o
 	mkdir -p $(dir $@)
-	${cxx} -g -O0 -c $< -I ${sonLibPath} -o $@.tmp -I ../external -I ../include
+	${cxx} -g -O0 -c $< -o $@.tmp -I ${sonLibPath} -I ../external -I ../include -I ./src ${testFlags}
+	mv $@.tmp $@
+test/%.o: src/%.c src/%.h ${sonLibPath}/sonLib.a
+	mkdir -p $(dir $@)
+	${cxx} -g -O0 -c $< -I ${sonLibPath} -o $@.tmp -I ../external -I ../include ${testFlags}
 	mv $@.tmp $@
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
@@ -57,18 +51,19 @@ test/%.o: src/%.c src/%.h
 	rm -f CuTest.o
 	mv CuTest.a $@
 
-test : test/allTests test/testRand test/mafComparator
-	./test/allTests && python2.7 src/test.mafComparator.py --verbose && rm -rf ./test/ && rmdir ./tempTestDir
+test: test/allTests test/mafComparator # test/testRand
+	./test/allTests && python2.7 src/test.mafComparator.py --verbose  && rm -rf ./test/ && rmdir ./tempTestDir
+#	python2.7 src/test.mafComparator.py --verbose  && rm -rf ./test/ && rmdir ./tempTestDir
 
-test/allTests: src/allTests.c src/comparatorAPI.c ${extraAPI} ${testObjects} ${sonLibPath}/sonLib.a
+test/allTests: src/allTests.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
-	${cxx} -g -O0 $^ -I ${sonLibPath} -I ../include -I ../external -o $@.tmp ${cflags}
+	${cxx} $^ -I ${sonLibPath} -I ../include -I ../external -o $@.tmp ${testFlags}
 	mv $@.tmp $@
 
-test/testRand: src/testRand.c ${extraAPI} ${sonLibPath}/sonLib.a
+test/testRand: src/testRand.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a 
 	mkdir -p $(dir $@)
-	${cxx} -g -O0 -pg $^ -I ${sonLibPath} -I ../include -I ../external -o $@.tmp ${cflags}
+	${cxx} $^ -I ${sonLibPath} -I ../include -I ../external -o $@.tmp ${testFlags}
 	mv $@.tmp $@
 
-clean :
+clean:
 	rm -f *.o ${progs} src/*.o && rm -rf ./test/

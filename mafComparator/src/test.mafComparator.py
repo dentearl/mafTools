@@ -43,6 +43,175 @@ g_headers = ['''##maf version=1
 
 ''',]
 
+knownValues = [('''a score=0
+# test 0.0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+# test 0.1
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+
+''', 10, 0), # test 0
+               ('''a score=0
+# test 1.0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+# test 1.1
+s A 10 10 + 20 GTACGTACGT
+s B 10 10 + 20 ATGTACGTAC
+
+''', 0, 10), # test 1
+               ('''a score=0
+# test 2.0
+s A 0 10 + 10 ACGTACGTAC
+s B 0 10 + 10 ATGTACGTAC
+
+''', '''a score=0
+# test 2.1
+s A 0 10 - 10 GTACGTACGT
+s B 0 10 - 10 ATGTACGTAC
+
+''', 10, 0), # test 2
+               ('''a score=0
+# test 3.0
+s A 0 5 + 10 ACGTA
+s B 0 5 + 10 ATGTA
+
+''', '''a score=0
+# test 3.1
+s A  5 5 - 10 TACGT
+s B  5 5 - 10 TACAT
+
+''', 5, 0), # test 3
+               ('''a score=0
+# test 4.0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+# test 4.1
+s A 10 10 - 20 GTACGTACGT
+s B 10 10 - 20 GTACGTACAT
+
+''', 10, 0), # test 4
+               ('''a score=0
+# test 5.0
+s A 8 10 + 20 ACGTACGTAC
+s B 8 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+# test 5.1
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+
+''', 2, 8), # test 5
+               ('''a score=0
+# test 6.0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+# test 6.1
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', 60, 0), # test 6
+               ('''a score=0
+# test 7.0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+# test 7.1
+s A  0 10 + 20 ACGTACGTAC
+s B  0 10 + 20 ATGTACGTAC
+s C 10 10 + 20 ACGTACGTAC
+s D  0 10 + 20 ATGTACGTAC
+
+''', 30, 30), # test 7
+               ('''a score=0
+# test 8.0
+s A 0 10 + 20 ACGTACGTAC
+s B 0  5 + 20 A-----GTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+# test 8.1
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''',  33, 12), # test 8
+               ('''a score=0
+# test 9.0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+# test 9.1
+s A 0 10 + 20 ACGTACGTAC
+s B 0  5 + 20 A-----GTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', 33, 27), # test 9
+               ('''a score=0
+# test 10.0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+# test 10.1
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 1 10 + 20 ATGTACGTAC
+
+''', 30, 30), # test 10
+               ('''a score=0
+# test 11.0
+s z 0 10 + 20 ACGTACGTAC
+s A 0 10 + 20 ACGTACGTAC
+s y 0 10 + 20 ACGTACGTAC
+s x 0 10 + 20 ACGTACGTAC
+s w 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s t 0 10 + 20 ACGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+# test 11.1
+s k 0 10 + 20 ACGTACGTAC
+s l 0 10 + 20 ACGTACGTAC
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s m 0 10 + 20 ACGTACGTAC
+s n 0 10 + 20 ACGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+s p 0 10 + 20 ACGTACGTAC
+s q 0 10 + 20 ACGTACGTAC
+
+''', 60, 0), # test 11
+               ]
+
 def xmlBedRegionPassed(filename, totalTrue, totalTrueInInterval):
     tree = ET.parse(filename)
     homTests = tree.findall('homologyTests')
@@ -65,120 +234,13 @@ class KnownValuesTest(unittest.TestCase):
     # maf1, maf2, totalTrue (comparing maf1 as fileA to maf2), 
     # totalFalse (comparing maf1 as fileA to maf2)
     
-    knownValues = [('''a score=0
-s A 0 10 + 20 ACGTACGTAC
-s B 0 10 + 20 ATGTACGTAC
-
-''', '''a score=0
-s A 0 10 + 20 ACGTACGTAC
-s B 0 10 + 20 ATGTACGTAC
-
-''', 10, 0), # test 0
-                   ('''a score=0
-s A 0 10 + 20 ACGTACGTAC
-s B 0 10 + 20 ATGTACGTAC
-
-''', '''a score=0
-s A 10 10 + 20 GTACGTACGT
-s B 10 10 + 20 ATGTACGTAC
-
-''', 0, 10), # test 1
-                   ('''a score=0
-s A 0 10 + 10 ACGTACGTAC
-s B 0 10 + 10 ATGTACGTAC
-
-''', '''a score=0
-s A 0 10 - 10 GTACGTACGT
-s B 0 10 - 10 ATGTACGTAC
-
-''', 10, 0), # test 2
-                   ('''a score=0
-s A 0 5 + 10 ACGTA
-s B 0 5 + 10 ATGTA
-
-''', '''a score=0
-s A  5 5 - 10 TACGT
-s B  5 5 - 10 TACAT
-
-''', 5, 0), # test 3
-                   ('''a score=0
-s A 0 10 + 20 ACGTACGTAC
-s B 0 10 + 20 ATGTACGTAC
-
-''', '''a score=0
-s A 10 10 - 20 GTACGTACGT
-s B 10 10 - 20 GTACGTACAT
-
-''', 10, 0), # test 4
-                   ('''a score=0
-s A 8 10 + 20 ACGTACGTAC
-s B 8 10 + 20 ATGTACGTAC
-
-''', '''a score=0
-s A 0 10 + 20 ACGTACGTAC
-s B 0 10 + 20 ATGTACGTAC
-
-''', 2, 8), # test 5
-                   ('''a score=0
-s A 0 10 + 20 ACGTACGTAC
-s B 0 10 + 20 ATGTACGTAC
-s C 0 10 + 20 ACGTACGTAC
-s D 0 10 + 20 ATGTACGTAC
-
-''', '''a score=0
-s A 0 10 + 20 ACGTACGTAC
-s B 0 10 + 20 ATGTACGTAC
-s C 0 10 + 20 ACGTACGTAC
-s D 0 10 + 20 ATGTACGTAC
-
-''', 60, 0), # test 6
-                   ('''a score=0
-s A 0 10 + 20 ACGTACGTAC
-s B 0 10 + 20 ATGTACGTAC
-s C 0 10 + 20 ACGTACGTAC
-s D 0 10 + 20 ATGTACGTAC
-
-''', '''a score=0
-s A  0 10 + 20 ACGTACGTAC
-s B  0 10 + 20 ATGTACGTAC
-s C 10 10 + 20 ACGTACGTAC
-s D  0 10 + 20 ATGTACGTAC
-
-''', 30, 30), # test 7
-                   ('''a score=0
-s A 0 10 + 20 ACGTACGTAC
-s B 0  5 + 20 A-----GTAC
-s C 0 10 + 20 ACGTACGTAC
-s D 0 10 + 20 ATGTACGTAC
-
-''', '''a score=0
-s A 0 10 + 20 ACGTACGTAC
-s B 0 10 + 20 ATGTACGTAC
-s C 0 10 + 20 ACGTACGTAC
-s D 0 10 + 20 ATGTACGTAC
-
-''',  33, 12), # test 8
-                   ('''a score=0
-s A 0 10 + 20 ACGTACGTAC
-s B 0 10 + 20 ATGTACGTAC
-s C 0 10 + 20 ACGTACGTAC
-s D 0 10 + 20 ATGTACGTAC
-
-''', '''a score=0
-s A 0 10 + 20 ACGTACGTAC
-s B 0  5 + 20 A-----GTAC
-s C 0 10 + 20 ACGTACGTAC
-s D 0 10 + 20 ATGTACGTAC
-
-''', 33, 27), # test 9
-                   ]
     def test_knownValues(self):
         """ mafComparator should return correct results for hand-calculable problems
         """
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('knownValues'))
         i = 0
-        for maf1, maf2, totalTrue, totalFalse in self.knownValues:
+        for maf1, maf2, totalTrue, totalFalse in knownValues:
             i += 1
             testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
                                     maf1, g_headers)
@@ -205,7 +267,7 @@ s D 0 10 + 20 ATGTACGTAC
             return
         mtt.makeTempDirParent()        
         tmpDir = os.path.abspath(mtt.makeTempDir('memory_2'))
-        for maf1, maf2, totalTrue, totalFalse in self.knownValues:
+        for maf1, maf2, totalTrue, totalFalse in knownValues:
             testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
                                     maf1, g_headers)
             testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
@@ -408,8 +470,168 @@ class randomSeedTests(unittest.TestCase):
                 mtt.runCommandsS([cmd], tmpDir)
                 self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
         mtt.removeDir(tmpDir)
+class NearTests(unittest.TestCase):
+    knownNearValues = [('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', 0, 60, 0),
+                   ('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 1 10 + 20 ATGTACGTAC
+
+''', 1, 60, 0),
+                   ('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 1 10 + 20 ATGTACGTAC
+
+''', 0, 30, 30),
+                       ('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 2 10 + 20 ATGTACGTAC
+
+''', 2, 60, 0),
+                   ('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 2 10 + 20 ATGTACGTAC
+
+''', 0, 30, 30),
+                       ('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', '''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ATGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+s D 0 10 + 20 ATGTACGTAC
+
+''', 5, 60, 0),
+                       ]
+    def test_nearSimple(self):
+        """ mafComparator should return correct results for hand-calculable problems that use the --near=0 option
+        """
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('nearSimple'))
+        i = 0
+        for maf1, maf2, totalTrue, totalFalse in knownValues:
+            i += 1
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                   '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+                   '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                   '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
+                   '--near=0', 
+                   '--samples=1000', '--logLevel=critical',
+                   ]
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
+            passedTT = totalTrue == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalTrue')
+            passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
+            self.assertTrue(passedTT and passedTF)
+        mtt.removeDir(tmpDir)
+    def test_near(self):
+        """ mafComparator should return correct results for hand-calculable problems that use the --near option
+        """
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('near'))
+        i = 0
+        for maf1, maf2, near, totalTrue, totalFalse in self.knownNearValues:
+            i += 1
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                   '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+                   '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                   '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
+                   '--near=%d' % near, 
+                   '--samples=1000', '--logLevel=critical',
+                   ]
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
+            passedTT = totalTrue == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalTrue')
+            passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
+            self.assertTrue(passedTT and passedTF)
+        mtt.removeDir(tmpDir)
+    def test_memory_3(self):
+        """ mafComparator should be memory clean for known values using --near option
+        """
+        valgrind = mtt.which('valgrind')
+        if valgrind is None:
+            return
+        mtt.makeTempDirParent()        
+        tmpDir = os.path.abspath(mtt.makeTempDir('memory_3'))
+        for maf1, maf2, near, totalTrue, totalFalse in self.knownNearValues:
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = mtt.genericValgrind(tmpDir)
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                    '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+                    '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                    '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
+                    '--near=%d' % near, 
+                    '--samples=1000', '--logLevel=critical',
+                    ]
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
+            passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
+            self.assertTrue(passed)
+        mtt.removeDir(tmpDir)
+        
 class CuTestTests(unittest.TestCase):
-    # disabled due to excessive time spent
+    # disabled due to excessive amout of time this takes to run
     def dtest_CuTestTests(self):
         """ Yo dawg, I heard you liked unit tests so I put some unit tests in your unit test so now you can unit test when you unit test.
         """

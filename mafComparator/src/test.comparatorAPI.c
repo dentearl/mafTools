@@ -303,11 +303,11 @@ static void test_columnSampling_timing_0(CuTest *testCase) {
     double timeClever, timeNaive, p;
     time_t t1;
     uint32_t colLength = 2000;
-    struct avl_table *pairs = NULL;
+    stSortedSet *pairs = NULL;
     printf("#Rows        p      n*p clever naive\n");
     for (uint32_t i = 0; i < 9; ++i) {
-        pairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction, 
-                           NULL, NULL);
+        pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction, 
+                                       (void(*)(void *)) aPair_destruct);
         n = 2 << i;
         p = 2.0 / (n * (n - 1));
         mat = createRandomColumn(n, colLength, 0.1);
@@ -322,20 +322,20 @@ static void test_columnSampling_timing_0(CuTest *testCase) {
         timeNaive = 0.0;
         t1 = time(NULL);
         for (uint32_t c = 0; c < colLength; ++c) {
-            samplePairsFromColumn(mat, c, legitRows, 0.01, pairs, n, m, chooseTwoArray, mlArray, positions);
+            samplePairsFromColumn(mat, c, 0.01, pairs, m, chooseTwoArray, mlArray, positions);
             updatePositions(mat, c, positions, strandInts, n);
         }
         timeClever = difftime(time(NULL), t1);
         free(positions);
-        avl_destroy(pairs, (void(*)(void *, void *)) aPair_destruct);
+        stSortedSet_destruct(pairs);
         positions = (uint32_t*) st_malloc(sizeof(*positions) * n);
         memset(positions, 0, sizeof(*positions) * n);
-        pairs = avl_create((int32_t(*)(const void *, const void *, void *)) aPair_cmpFunction, 
-                           NULL, NULL);
+        pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction, 
+                                       (void(*)(void *)) aPair_destruct);
         t1 = time(NULL);
         for (uint32_t c = 0; c < colLength; ++c) {
-            samplePairsFromColumnNaive(mat, c, legitRows, 0.01, pairs, n, m, chooseTwoArray, 
-                                       mlArray, positions, chooseTwo(n));
+            samplePairsFromColumnNaive(mat, c, legitRows, 0.01, pairs, chooseTwoArray, 
+                                       mlArray, positions, n, chooseTwo(n));
             updatePositions(mat, c, positions, strandInts, n);
         }
         timeNaive = difftime(time(NULL), t1);
@@ -367,7 +367,103 @@ static void test_chooseTwoValues_0(CuTest *testCase) {
     for (uint32_t i = 0; i < 101; ++i) {
         CuAssertTrue(testCase, chooseTwo(i) == cta[i]);
     }
+    // clean up
     free(cta);
+}
+static void checkPair(CuTest *testCase, stSortedSetIterator *sit, const char *a, const char *b, uint32_t i) {
+    APair *p = NULL;
+    p = stSortedSet_getNext(sit);
+    CuAssertTrue(testCase, p != NULL);
+    // printf("a %s b %s i %"PRIu32"\n", a, b, i);
+    // printf("s1 %s p1 %"PRIu32" s2 %s p2 %"PRIu32"\n", p->seq1, p->pos1, p->seq2, p->pos2);
+    CuAssertTrue(testCase, strcmp(p->seq1, a) == 0);
+    CuAssertTrue(testCase, strcmp(p->seq2, b) == 0);
+    CuAssertTrue(testCase, p->pos1 == i);
+    CuAssertTrue(testCase, p->pos2 == i);
+}
+static void createAndInsertPair(stSortedSet *pairs, const char *a, const char *b, uint32_t i) {
+    APair *p = aPair_construct(stString_copy(a), stString_copy(b), i, i);
+    stSortedSet_insert(pairs, aPair_copyConstruct(p));
+    aPair_destruct(p);
+}
+static void test_pairSortComparison_0(CuTest *testCase) {
+    stSortedSet *pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction, (void(*)(void *)) aPair_destruct);
+    APair *p = NULL;
+    for (uint32_t i = 0; i < 5; ++i) {
+        createAndInsertPair(pairs, "C", "D", i);
+        createAndInsertPair(pairs, "B", "D", i);
+        createAndInsertPair(pairs, "B", "C", i);
+        createAndInsertPair(pairs, "A", "D", i);
+        createAndInsertPair(pairs, "A", "C", i);
+        createAndInsertPair(pairs, "A", "B", i);
+        createAndInsertPair(pairs, ".", "z", i);
+    }
+    stSortedSetIterator *sit = stSortedSet_getIterator(pairs);
+    for (uint32_t i = 0; i < 5; ++i) {
+        checkPair(testCase, sit, ".", "z", i);
+    }
+    for (uint32_t i = 0; i < 5; ++i) {
+        checkPair(testCase, sit, "A", "B", i);
+        checkPair(testCase, sit, "A", "C", i);
+        checkPair(testCase, sit, "A", "D", i);
+    }
+    for (uint32_t i = 0; i < 5; ++i) {
+        checkPair(testCase, sit, "B", "C", i);
+        checkPair(testCase, sit, "B", "D", i);
+    }
+    for (uint32_t i = 0; i < 5; ++i) {
+        checkPair(testCase, sit, "C", "D", i);
+    }
+    stSortedSet_destructIterator(sit);
+    APair *q = aPair_init();
+    q->seq1 = stString_copy("A");
+    q->pos1 = 1;
+    p = stSortedSet_searchGreaterThanOrEqual(pairs, q);
+    CuAssertTrue(testCase, p != NULL);
+    sit = stSortedSet_getIteratorFrom(pairs, p);
+    for (uint32_t i = 1; i < 5; ++i) {
+        checkPair(testCase, sit, "A", "B", i);
+        checkPair(testCase, sit, "A", "C", i);
+        checkPair(testCase, sit, "A", "D", i);
+    }
+    aPair_destruct(q);
+    stSortedSet_destructIterator(sit);
+    q = aPair_init();
+    q->seq1 = stString_copy("B");
+    q->pos1 = 2;
+    p = stSortedSet_searchGreaterThanOrEqual(pairs, q);
+    CuAssertTrue(testCase, p != NULL);
+    sit = stSortedSet_getIteratorFrom(pairs, p);
+    for (uint32_t i = 2; i < 5; ++i) {
+        checkPair(testCase, sit, "B", "C", i);
+        checkPair(testCase, sit, "B", "D", i);
+    }
+    for (uint32_t i = 0; i < 5; ++i) {
+        checkPair(testCase, sit, "C", "D", i);
+    }
+    aPair_destruct(q);
+    stSortedSet_destructIterator(sit);
+    q = aPair_init();
+    q->seq1 = stString_copy("C");
+    q->pos1 = 3;
+    p = stSortedSet_searchGreaterThanOrEqual(pairs, q);
+    CuAssertTrue(testCase, p != NULL);
+    sit = stSortedSet_getIteratorFrom(pairs, p);
+    for (uint32_t i = 3; i < 5; ++i) {
+        checkPair(testCase, sit, "C", "D", i);
+    }
+    aPair_destruct(q);
+    stSortedSet_destructIterator(sit);
+    q = aPair_init();
+    q->seq1 = stString_copy("D");
+    q->pos1 = 3;
+    p = stSortedSet_searchGreaterThanOrEqual(pairs, q);
+    CuAssertTrue(testCase, p == NULL);
+    aPair_destruct(q);
+    // clean up
+    
+    stSortedSet_destruct(pairs);
+    
 }
 CuSuite* comparatorAPI_TestSuite(void) {
     (void) (printMat);
@@ -383,6 +479,7 @@ CuSuite* comparatorAPI_TestSuite(void) {
     SUITE_ADD_TEST(suite, test_mappingArrayToMatrix_0);
     SUITE_ADD_TEST(suite, test_pairCounting_0);
     SUITE_ADD_TEST(suite, test_chooseTwoValues_0);
+    SUITE_ADD_TEST(suite, test_pairSortComparison_0);
     // SUITE_ADD_TEST(suite, test_columnSampling_timing_0);
     return suite;
 }

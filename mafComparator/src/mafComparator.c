@@ -347,13 +347,10 @@ int main(int argc, char **argv) {
     //////////////////////////////////////////////
     // Create sequence name hashtable from the first MAF file.
     //////////////////////////////////////////////
-    // stSortedSet *seqNames1 = stSortedSet_construct3((int(*)(const void *, const void *)) strcmp, free);
     stHash *seqNames1 = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
     populateNames(mafFile1, seqNames1);
-    // stSortedSet *seqNames2 = stSortedSet_construct3((int(*)(const void *, const void *)) strcmp, free);
     stHash *seqNames2 = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
     populateNames(mafFile2, seqNames2);
-    // stSortedSet *seqNames = stSortedSet_getIntersection(seqNames1, seqNames2);
     stHash *seqNames = stHash_getIntersection(seqNames1, seqNames2);
     //////////////////////////////////////////////
     // Do comparisons.
@@ -362,14 +359,14 @@ int main(int argc, char **argv) {
         fprintf(stderr, "# Comparing %s to %s\n", mafFile1, mafFile2);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_12 = compareMAFs_AB(mafFile1, mafFile2, sampleNumber, seqNames, 
-                                                  intervalsHash, g_isVerboseFailures, near);
+    stSortedSet *results_12 = compareMAFs_AB(mafFile1, mafFile2, sampleNumber, seqNames, 
+                                                  intervalsHash, near);
     if (g_isVerboseFailures) {
         fprintf(stderr, "# Comparing %s to %s\n", mafFile2, mafFile1);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    struct avl_table *results_21 = compareMAFs_AB(mafFile2, mafFile1, sampleNumber, seqNames, 
-                                                  intervalsHash, g_isVerboseFailures, near);
+    stSortedSet *results_21 = compareMAFs_AB(mafFile2, mafFile1, sampleNumber, seqNames, 
+                                                  intervalsHash, near);
     fileHandle = de_fopen(outputFile, "w");
     //////////////////////////////////////////////
     // Report results.
@@ -392,8 +389,8 @@ int main(int argc, char **argv) {
     ///////////////////////////////////////////////////////////////////////////
     // Clean up.
     ///////////////////////////////////////////////////////////////////////////
-    avl_destroy(results_12, (void(*)(void *, void *)) aPair_destruct);
-    avl_destroy(results_21, (void(*)(void *, void *)) aPair_destruct);
+    stSortedSet_destruct(results_12);
+    stSortedSet_destruct(results_21);
     free(mafFile1);
     free(mafFile2);
     free(bedFiles);
