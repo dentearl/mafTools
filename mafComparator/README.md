@@ -24,7 +24,7 @@ possible (**B**, **A**) homology tests. We call the proportion of _true_ tests
 (**A**, **B**) **A~B**.
 
 If **A** is the set of true pairwise alignments and **B** the predicted set of 
-alignments then *A~B* (over large enough  **C**), is a proxy to 
+alignments then **A~B** (over large enough  **C**), is a proxy to 
 [_sensitivity_](http://en.wikipedia.org/wiki/Sensitivity_and_specificity)
 of **B** in predicted the set of correctly aligned pairs in **A**. Conversely 
 **B~A** (over large enough **C**) is a proxy to the 
