@@ -281,6 +281,13 @@ static mafLine_t** createMlArray(uint32_t n) {
     }
     return mlArray;
 }
+static char** createNameArray(uint32_t n) {
+    char **nameArray = (char**) st_malloc(sizeof(*nameArray) * n);
+    for (uint32_t i = 0; i < n; ++i) {
+        nameArray[i] = randomName(20); // this now needs to be free'd
+    }
+    return nameArray;
+}
 static void u32set(uint32_t *a, uint64_t v, uint32_t n) {
     for (uint32_t i = 0; i < n; ++i) {
         a[i] = v;
@@ -293,17 +300,18 @@ static void intset(int *a, int v, uint32_t n) {
 }
 static void test_columnSampling_timing_0(CuTest *testCase) {
     // this should not be enabled for the default test.
+    (void) (createMlArray);
     char **mat = NULL;
     bool *legitRows = NULL;
     uint32_t n, m;
     uint32_t *positions = NULL;
     int *strandInts = NULL;
     uint64_t *chooseTwoArray = buildChooseTwoArray();
-    mafLine_t **mlArray = NULL;
     double timeClever, timeNaive, p;
     time_t t1;
     uint32_t colLength = 2000;
     stSortedSet *pairs = NULL;
+    char **nameArray = NULL;
     printf("#Rows        p      n*p clever naive\n");
     for (uint32_t i = 0; i < 9; ++i) {
         pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction, 
@@ -317,12 +325,12 @@ static void test_columnSampling_timing_0(CuTest *testCase) {
         u32set(positions, 0, n);
         strandInts = (int*) st_malloc(sizeof(*strandInts) * n);
         intset(strandInts, 1, n);
-        mlArray = createMlArray(n);
+        nameArray = createNameArray(n);
         timeClever = 0.0;
         timeNaive = 0.0;
         t1 = time(NULL);
         for (uint32_t c = 0; c < colLength; ++c) {
-            samplePairsFromColumn(mat, c, 0.01, pairs, m, chooseTwoArray, mlArray, positions);
+            samplePairsFromColumn(0.01, pairs, m, chooseTwoArray, nameArray, positions);
             updatePositions(mat, c, positions, strandInts, n);
         }
         timeClever = difftime(time(NULL), t1);
@@ -335,7 +343,7 @@ static void test_columnSampling_timing_0(CuTest *testCase) {
         t1 = time(NULL);
         for (uint32_t c = 0; c < colLength; ++c) {
             samplePairsFromColumnNaive(mat, c, legitRows, 0.01, pairs, chooseTwoArray, 
-                                       mlArray, positions, n, chooseTwo(n));
+                                       nameArray, positions, n, chooseTwo(n));
             updatePositions(mat, c, positions, strandInts, n);
         }
         timeNaive = difftime(time(NULL), t1);
@@ -343,10 +351,10 @@ static void test_columnSampling_timing_0(CuTest *testCase) {
         // clean up
         for (uint32_t j = 0; j < n; ++j) {
             free(mat[j]);
-            maf_destroyMafLineList(mlArray[j]);
+            free(nameArray[j]); // we ONLY do this in this test example, not in production code.
         }
         free(mat);
-        free(mlArray);
+        free(nameArray);
         free(legitRows);
     }
     free(chooseTwoArray);

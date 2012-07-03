@@ -226,7 +226,7 @@ void usage(void) {
                  "OR (_x_ - _n_ <= _w_ <= _x_ + _n_ and _y_ is equal to _z_).");
     usageMessage("logLevel", "Set the log level. [off, critical, info, debug] "
                  "in ascending order.");
-    usageMessage("printFailures", "Print tab-delimited details about failed "
+    usageMessage("printFailed", "Print tab-delimited details about failed "
                  "tests to stderr.");
     usageMessage("seed", "an integer used to seed the random number generator "
                  "used to perform sampling. If omitted a seed is pseudorandomly "
@@ -238,7 +238,9 @@ void version(void) {
     fprintf(stderr, "mafComparator, %s\n", g_version);
 }
 
-int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **outputFile, char **bedFiles, uint32_t *sampleNumber, uint32_t *randomSeed, uint32_t *near, char **logLevelString) {
+int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **outputFile, 
+              char **bedFiles, uint32_t *sampleNumber, uint32_t *randomSeed, uint32_t *near, 
+              char **logLevelString) {
     static const char *optString = "a:b:c:d:e:p:v:h:f:g:s:";
     static const struct option longOpts[] = {
         {"logLevel", required_argument, 0, 'a'},
@@ -355,20 +357,14 @@ int main(int argc, char **argv) {
     uint32_t sampleNumber = 1000000; // by default do a million samples per pair.
     uint32_t randomSeed = (time(NULL) << 16) | (getpid() & 65535); // Likely to be unique
     uint32_t near = 0;
-    ///////////////////////////////////////////////////////////////////////////
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
-    ///////////////////////////////////////////////////////////////////////////
     parseArgs(argc, argv, &mafFile1, &mafFile2, &outputFile, &bedFiles, &sampleNumber, 
               &randomSeed, &near, &logLevelString);
-    //////////////////////////////////////////////
     // Set up logging
-    //////////////////////////////////////////////
     st_setLogLevelFromString(logLevelString);
     st_logDebug("Seeding the random number generator with the value %lo\n", randomSeed);
     st_randomSeed(randomSeed);
-    ///////////////////////////////////////////////////////////////////////////
     // (0) Check the inputs.
-    ///////////////////////////////////////////////////////////////////////////
     //Parse the bed file hashes
     if(bedFiles != NULL) {
         parseBedFiles(bedFiles, intervalsHash);
@@ -376,26 +372,20 @@ int main(int argc, char **argv) {
     else {
         st_logDebug("No bed files specified\n");
     }
-    //////////////////////////////////////////////
     //Log (some of) the inputs
-    //////////////////////////////////////////////
     st_logInfo("MAF file 1 name : %s\n", mafFile1);
     st_logInfo("MAF file 2 name : %s\n", mafFile2);
     st_logInfo("Output stats file : %s\n", outputFile);
     st_logInfo("Bed files parsed : %" PRIi32 "\n", stHash_size(intervalsHash));
     st_logInfo("Number of samples %" PRIu32 "\n", sampleNumber);
     // note that random seed has already been logged.
-    //////////////////////////////////////////////
     // Create sequence name hashtable from the first MAF file.
-    //////////////////////////////////////////////
     stHash *seqNames1 = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
     populateNames(mafFile1, seqNames1);
     stHash *seqNames2 = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
     populateNames(mafFile2, seqNames2);
     stHash *seqNames = stHash_getIntersection(seqNames1, seqNames2);
-    //////////////////////////////////////////////
     // Do comparisons.
-    //////////////////////////////////////////////
     if (g_isVerboseFailures) {
         fprintf(stderr, "# Comparing %s to %s\n", mafFile1, mafFile2);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
@@ -411,9 +401,7 @@ int main(int argc, char **argv) {
     stSortedSet *results_21 = compareMAFs_AB(mafFile2, mafFile1, sampleNumber, &numPairs2, seqNames, 
                                              intervalsHash, near);
     fileHandle = de_fopen(outputFile, "w");
-    //////////////////////////////////////////////
     // Report results.
-    //////////////////////////////////////////////
     writeXMLHeader(fileHandle);
     char bedString[kMaxStringLength];
     if (bedFiles != NULL) {
@@ -431,9 +419,7 @@ int main(int argc, char **argv) {
     reportResults(results_21, mafFile2, mafFile1, fileHandle, near, seqNames, bedFiles);
     fprintf(fileHandle, "</alignmentComparisons>\n");
     fclose(fileHandle);
-    ///////////////////////////////////////////////////////////////////////////
     // Clean up.
-    ///////////////////////////////////////////////////////////////////////////
     stSortedSet_destruct(results_12);
     stSortedSet_destruct(results_21);
     free(mafFile1);
@@ -445,6 +431,5 @@ int main(int argc, char **argv) {
     stHash_destruct(seqNames1);
     stHash_destruct(seqNames2);
     stHash_destruct(intervalsHash);
-    
-    return EXIT_SUCCESS;
+    return(EXIT_SUCCESS);
 }
