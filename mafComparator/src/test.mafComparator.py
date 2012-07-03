@@ -210,6 +210,28 @@ s p 0 10 + 20 ACGTACGTAC
 s q 0 10 + 20 ACGTACGTAC
 
 ''', 60, 0), # test 11
+               ('''a score=0
+# test 12.0
+s Anc3.0                       75484 13 + 607219 ACCAAGGAGTATG
+s simMouse_chr6_simMouse.chr6 548643 13 - 636262 ACCACGGGGTATG
+
+''', '''a score=0
+# test 12.1
+s Anc3.0                      531722 13 - 607219 CATACTCCTTGGT
+s simMouse_chr6_simMouse.chr6  87606 13 + 636262 CATACCCCGTGGT
+
+''', 13, 0), # test 12
+               ('''a score=0
+# test 13.1
+s Anc3.0                      531722 13 - 607219 CATACTCCTTGGT
+s simMouse_chr6_simMouse.chr6  87606 13 + 636262 CATACCCCGTGGT
+
+''', '''a score=0
+# test 13.0
+s Anc3.0                       75484 13 + 607219 ACCAAGGAGTATG
+s simMouse_chr6_simMouse.chr6 548643 13 - 636262 ACCACGGGGTATG
+
+''', 13, 0), # test 13
                ]
 
 def xmlBedRegionPassed(filename, totalTrue, totalTrueInInterval):
@@ -239,7 +261,7 @@ class KnownValuesTest(unittest.TestCase):
         """
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('knownValues'))
-        i = 0
+        i = -1
         for maf1, maf2, totalTrue, totalFalse in knownValues:
             i += 1
             testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
@@ -257,6 +279,8 @@ class KnownValuesTest(unittest.TestCase):
             mtt.runCommandsS([cmd], tmpDir)
             passedTT = totalTrue == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalTrue')
             passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
+            if not (passedTT and passedTF):
+                print 'knownValues Test failed on test %d' % i
             self.assertTrue(passedTT and passedTF)
         mtt.removeDir(tmpDir)
     def test_memory_2(self):
