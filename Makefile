@@ -40,15 +40,15 @@ modules = include ${dependentModules} mafValidator mafBlockFinder mafBlockExtrac
 
 .PHONY: all %.all clean %.clean test %.test
 
-python :
-	@echo ${python_version_full}
-	@echo ${python_version_major}
-	@echo ${python_version_minor}
-
 all: ${modules:%=%.all}
 
 %.all:
 	cd $* && make all
+
+# python :
+# 	@echo ${python_version_full}
+# 	@echo ${python_version_major}
+# 	@echo ${python_version_minor}
 
 clean: ${modules:%=%.clean}
 

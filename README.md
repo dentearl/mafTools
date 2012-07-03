@@ -1,6 +1,6 @@
 # mafTools
 
-**mafTools** is a collection of tools that operate on Multiple Alignment Fomat ([maf](http://genome.ucsc.edu/FAQ/FAQformat.html#format5)) files.
+**mafTools** is a collection of tools that operate on Multiple Alignment Format ([maf](http://genome.ucsc.edu/FAQ/FAQformat.html#format5)) files.
 
 ## Authors
 [Dent Earl](https://github.com/dentearl/), [Benedict Paten](https://github.com/benedictpaten/), [Mark Diekhans](https://github.com/diekhans)
@@ -22,7 +22,7 @@ With the exception of the python dependencies, when a component is missing a dep
 ## Components
 * **mafBlockDuplicateFilter** A program to filter alignment blocks to remove duplicate species. One sequence per species is allowed to remain, chosen by comparing the sequence to the consensus for the block and computing a similarity bit score between the IUPAC formatted consensus and the sequence. The highest scoring duplicate stays, or in the case of ties, the sequence closest to the start of the file stays.
 * **mafBlockExtractor** A program to extract all alignment blocks that contain a region in a particular sequence. Useful for isolating regions of interest in large maf files.
-* **mafBlockFilter** A program to filter a maf based on sequnce names. Can be used to include or exclude sequence names. Useful for removing extraneous sequences from maf files.
+* **mafBlockFilter** A program to filter a maf based on sequence names. Can be used to include or exclude sequence names. Useful for removing extraneous sequences from maf files.
 * **mafBlockFinder** A program to search for a position in a particular sequence. Useful for determining where in maf a particular part of the alignment resides.
 * **mafBlockSorter** A program to sort all of the blocks in a MAF based on the (absolute) start position of one of the sequences. Blocks without the sequence are placed at the start of the output in their original order.
 * **mafComparator** A program to compare two maf files by sampling. Useful when testing predicted alignments against known true alignments.
