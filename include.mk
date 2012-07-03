@@ -13,7 +13,6 @@ else
 # -Wno-unused-result
 endif
 
-
 #Release compiler flags
 cflags_opt = -O3 -g -Wall -Werror --pedantic -funroll-loops -lm
 

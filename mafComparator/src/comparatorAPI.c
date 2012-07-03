@@ -26,6 +26,7 @@
 */
 #include <math.h>
 #include "sonLib.h"
+#include "common.h"
 #include "comparatorAPI.h"
 #include "comparatorRandom.h"
 
@@ -1106,16 +1107,16 @@ void* reportResults_fn(void *iterator, void *seqName) {
 void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    char str[16384];
+    char str[kMaxStringLength];
     int n = vsprintf(str, fmt, args);
-        if (n >= 16384) {
-            fprintf(stderr, "Error, failure in findentprintf, (n = %u) >= 16384\n", n);
+        if (n >= kMaxStringLength) {
+            fprintf(stderr, "Error, failure in findentprintf, (n = %d) >= %d\n", n, kMaxStringLength);
             exit(EXIT_FAILURE);
         }
     for (unsigned i = 0; i < indent; ++i) {
         fprintf(fp, "\t");
     }
-    fprintf(fp, str);
+    fprintf(fp, "%s", str);
     va_end(args);
 }
 void reportResult(const char *tagName, double total, double totalTrue, FILE *fileHandle, unsigned tabLevel) {

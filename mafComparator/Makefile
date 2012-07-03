@@ -29,19 +29,19 @@ ${binPath}/%.py: src/%.py
 	mv $@.tmp $@
 
 %.o: %.c %.h
-	${cxx} -O3 -c -O3 $< -I ${sonLibPath} -I ../external -I ../include -o $@.tmp ${cflags}
+	${cxx} -c $< -I ${sonLibPath} -I ../external -I ../include -o $@.tmp ${cflags}
 	mv $@.tmp $@
 test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
-	${cxx} -g -O0 -c $< -o $@.tmp -I ${sonLibPath} -I ../external -I ../include -I ./src ${testFlags}
+	${cxx} -c $< -o $@.tmp -I ${sonLibPath} -I ../external -I ../include -I ./src ${testFlags}
 	mv $@.tmp $@
 test/test.comparatorAPI.o: src/test.comparatorAPI.c src/test.comparatorAPI.h test/comparatorAPI.o
 	mkdir -p $(dir $@)
-	${cxx} -g -O0 -c $< -o $@.tmp -I ${sonLibPath} -I ../external -I ../include -I ./src ${testFlags}
+	${cxx} -c $< -o $@.tmp -I ${sonLibPath} -I ../external -I ../include -I ./src ${testFlags}
 	mv $@.tmp $@
 test/%.o: src/%.c src/%.h ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
-	${cxx} -g -O0 -c $< -I ${sonLibPath} -o $@.tmp -I ../external -I ../include ${testFlags}
+	${cxx} -c $< -I ${sonLibPath} -o $@.tmp -I ../external -I ../include ${testFlags}
 	mv $@.tmp $@
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
