@@ -961,8 +961,6 @@ void enumerateHomologyResults(stSortedSet *pairs, stSortedSet *resultPairs, stHa
                               stSortedSet *positivePairs) {
     /*
      * For every pair in 'pairs', add 1 to the total number of homology tests for the sequence-pair.
-     * We don't bother with the seqNames hashtable here because the ht was used to build *pairs
-     * in the first place.
      */
     static stSortedSetIterator *iterator;
     iterator = stSortedSet_getIterator(pairs);
@@ -1004,8 +1002,8 @@ void enumerateHomologyResults(stSortedSet *pairs, stSortedSet *resultPairs, stHa
             ++(thisResultPair->inAll);
         } else {
            if (g_isVerboseFailures){
-              fprintf(stderr, "unable to locate pair: (%s, %"PRIu32"):(%s, %"PRIu32")\n", pair->seq1, pair->pos1, 
-                      pair->seq2, pair->pos2);
+              fprintf(stderr, "sampled pair not present in comparison: (%s, %" PRIu32 "):(%s, %" PRIu32 ")\n", 
+                      pair->seq1, pair->pos1, pair->seq2, pair->pos2);
            }
         }
     }
