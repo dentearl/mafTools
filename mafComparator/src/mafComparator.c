@@ -387,14 +387,14 @@ int main(int argc, char **argv) {
     stHash *seqNames = stHash_getIntersection(seqNames1, seqNames2);
     // Do comparisons.
     if (g_isVerboseFailures) {
-        fprintf(stderr, "# Comparing %s to %s\n", mafFile1, mafFile2);
+        fprintf(stderr, "# Sampling from %s, comparing to %s\n", mafFile1, mafFile2);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
     uint32_t numPairs1 = 0;
     stSortedSet *results_12 = compareMAFs_AB(mafFile1, mafFile2, sampleNumber, &numPairs1, seqNames, 
                                              intervalsHash, near);
     if (g_isVerboseFailures) {
-        fprintf(stderr, "# Comparing %s to %s\n", mafFile2, mafFile1);
+        fprintf(stderr, "# Sampling from %s, comparing to %s\n", mafFile2, mafFile1);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
     uint32_t numPairs2 = 0;
