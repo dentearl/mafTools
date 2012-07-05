@@ -143,15 +143,31 @@ int minint(int a, int b) {
 void usageMessage(const char *name, const char *description) {
     // pretty print a usage() message a la:
     //     --option : blah blah blah, explanation blah blah.
+
+
+
+    //    //    // fix this, no : should be 25 char, if option name too long put in a \n
+
+
     int lineLength = 70;
-    int indent = 4;
+    int indent = 2;
     int length = strlen(name);
     int linePos = length + indent + 5;
     int strPos = 0;
     for (int i = 0; i < indent; ++i) {
         fprintf(stderr, " ");
     }
-    fprintf(stderr, "--%s : ", name);
+    fprintf(stderr, "--%s", name);
+    if (indent + length + 2 < 25) {
+        for (int i = indent + length + 2; i < 25; ++i) {
+            fprintf(stderr, " ");
+        }
+    } else {
+        fprintf(stderr, "\n");
+        for (int i = 0; i < 25; ++i) {
+            fprintf(stderr, " ");
+        }
+    }
     while (strPos < strlen(description)) {
         fprintf(stderr, "%c", description[strPos++]);
         ++linePos;
@@ -159,7 +175,7 @@ void usageMessage(const char *name, const char *description) {
             if (description[strPos] == ' ') {
                 linePos = 0;
                 fprintf(stderr, "\n");
-                for (int i = 0; i < minint(length + indent + 5, indent + 5); ++i) {
+                for (int i = 0; i < 25; ++i) {
                     fprintf(stderr, " ");
                 }
                 while (description[strPos] != '\0' && description[strPos] == ' ') {

@@ -159,7 +159,7 @@ void usage(void) {
             "reads the second MAF checking to see which, if any, of the sampled pairs, \n"
             "is present. The comparison is then reversed and repeated. Statistics are\n"
             "then reported in an XML formatted file. \n\n");
-    fprintf(stderr, "  Options:\n");
+    fprintf(stderr, "Options:\n");
     usageMessage("maf1", "The location of the first MAF file. "
                  "If comparing true to predicted "
                  "alignments, this is the truth.");
