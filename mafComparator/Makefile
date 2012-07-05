@@ -4,7 +4,7 @@ binPath = ../bin
 
 extraAPI = src/cString.c ../include/sharedMaf.o ../external/CuTest.a ../include/common.o src/comparatorRandom.o src/comparatorAPI.o ${sonLibPath}/sonLib.a 
 testAPI = src/cString.c test/sharedMaf.o ../external/CuTest.a test/common.o test/comparatorRandom.o test/comparatorAPI.o ${sonLibPath}/sonLib.a 
-progs =  $(foreach f,mafComparator, ${binPath}/$f)
+progs =  $(foreach f, mafComparator mafPairCounter, ${binPath}/$f)
 testObjects = test/test.comparatorAPI.o test/test.comparatorRandom.o
 testFlags = -O0 -g -Wall -Werror --pedantic -lm
 
@@ -12,12 +12,12 @@ testFlags = -O0 -g -Wall -Werror --pedantic -lm
 
 all: ${progs}
 
-${binPath}/mafComparator: src/mafComparator.c ${extraAPI} $(wildcard src/*.h)
+${binPath}/%: src/%.c ${extraAPI} $(wildcard src/*.h)
 	@mkdir -p $(dir $@)
 	${cxx} -I ${sonLibPath} -I ../include -I ../external -o $@.tmp $^ ${cflags}
 	mv $@.tmp $@
 
-test/mafComparator: src/mafComparator.c ${testAPI} $(wildcard src/*.h)
+test/%: src/%.c ${testAPI} $(wildcard src/*.h)
 	@mkdir -p $(dir $@)
 	${cxx} -I ${sonLibPath} -I ../include -I ../external -o $@.tmp $^ ${testFlags}
 	mv $@.tmp $@

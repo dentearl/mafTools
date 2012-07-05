@@ -134,17 +134,6 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
     fclose(fileHandle);
     st_logDebug("Finished parsing the bed file: %s\n", filepath);
 }
-char* stringCommasToSpaces(const char *string) {
-    /* swap all commas, ',', for spaces ' '.
-     */
-    char *s = stString_copy(string);
-    int i = 0;
-    for (i = 0; i < strlen(s); i++) {
-        if (s[i] == ',')
-            s[i] = ' ';
-    }
-    return s;
-}
 void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
     /*
      * takes input from the command line, swaps spaces, ' ', for commas
@@ -160,41 +149,6 @@ void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
     }
     free(spaceSepFiles);
     st_logDebug("Done parsing bed files\n");
-}
-int min(int a, int b) {
-    if (a < b)
-        return a;
-    else 
-        return b;
-}
-void usageMessage(const char *name, const char *description) {
-    // pretty print a usage() message
-    int lineLength = 70;
-    int indent = 4;
-    int length = strlen(name);
-    int linePos = length + indent + 5;
-    int strPos = 0;
-    for (int i = 0; i < indent; ++i) {
-        fprintf(stderr, " ");
-    }
-    fprintf(stderr, "--%s : ", name);
-    while (strPos < strlen(description)) {
-        fprintf(stderr, "%c", description[strPos++]);
-        ++linePos;
-        if (linePos >= lineLength) {
-            if (description[strPos] == ' ') {
-                linePos = 0;
-                fprintf(stderr, "\n");
-                for (int i = 0; i < min(length + indent + 5, indent + 5); ++i) {
-                    fprintf(stderr, " ");
-                }
-                while (description[strPos] != '\0' && description[strPos] == ' ') {
-                    ++strPos;
-                }
-            }
-        }
-    }
-    fprintf(stderr, "\n");
 }
 void usage(void) {
     fprintf(stderr, "mafComparator, %s\n\n", g_version);
@@ -237,7 +191,6 @@ void usage(void) {
 void version(void) {
     fprintf(stderr, "mafComparator, %s\n", g_version);
 }
-
 int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **outputFile, 
               char **bedFiles, uint32_t *sampleNumber, uint32_t *randomSeed, uint32_t *near, 
               char **logLevelString) {

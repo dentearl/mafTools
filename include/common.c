@@ -133,3 +133,51 @@ void failBadFormat(void) {
     fprintf(stderr, "The maf sequence lines are incorrectly formatted, exiting\n");
     exit(EXIT_FAILURE);
 }
+int minint(int a, int b) {
+    if (a < b) {
+        return a;
+    } else {
+        return b;
+    }
+}
+void usageMessage(const char *name, const char *description) {
+    // pretty print a usage() message a la:
+    //     --option : blah blah blah, explanation blah blah.
+    int lineLength = 70;
+    int indent = 4;
+    int length = strlen(name);
+    int linePos = length + indent + 5;
+    int strPos = 0;
+    for (int i = 0; i < indent; ++i) {
+        fprintf(stderr, " ");
+    }
+    fprintf(stderr, "--%s : ", name);
+    while (strPos < strlen(description)) {
+        fprintf(stderr, "%c", description[strPos++]);
+        ++linePos;
+        if (linePos >= lineLength) {
+            if (description[strPos] == ' ') {
+                linePos = 0;
+                fprintf(stderr, "\n");
+                for (int i = 0; i < minint(length + indent + 5, indent + 5); ++i) {
+                    fprintf(stderr, " ");
+                }
+                while (description[strPos] != '\0' && description[strPos] == ' ') {
+                    ++strPos;
+                }
+            }
+        }
+    }
+    fprintf(stderr, "\n");
+}
+char* stringCommasToSpaces(const char *string) {
+    /* swap all commas, ',', for spaces ' '.
+     */
+    char *s = de_strdup(string);
+    int i = 0;
+    for (i = 0; i < strlen(s); i++) {
+        if (s[i] == ',')
+            s[i] = ' ';
+    }
+    return s;
+}

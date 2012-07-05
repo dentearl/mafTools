@@ -168,9 +168,6 @@ int aPair_cmpFunction(APair *p1, APair *p2) {
         } else if (p1->pos1 > p2->pos1) {
             i = 1;
         } else {
-            i = 0;
-        }
-        if (i == 0) {
             i = strcmpnull(p1->seq2, p2->seq2);
             if (i == 0) {
                 if (p1->pos2 < p2->pos2) {
@@ -287,10 +284,14 @@ void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c) {
 bool* getLegitRows(char **names, uint32_t numSeqs, stHash *legitSequences) {
     bool *legitRows = (bool *) st_malloc(sizeof(bool) * numSeqs);
     for (uint32_t i = 0; i < numSeqs; ++i) {
-        if (stHash_search(legitSequences, names[i]) != NULL) {
-            legitRows[i] = true;
+        if (legitSequences != NULL) {
+            if (stHash_search(legitSequences, names[i]) != NULL) {
+                legitRows[i] = true;
+            } else {
+                legitRows[i] = false;
+            }
         } else {
-            legitRows[i] = false;
+            legitRows[i] = true;
         }
     }
     return legitRows;
