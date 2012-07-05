@@ -35,7 +35,7 @@ const char *g_version = "version 0.1 July 2012";
 
 void usage(void) {
     fprintf(stderr, "mafPairCounter, %s\n\n", g_version);
-    fprintf(stderr, "usage: $ mafPairCounter --maf=FILE\n\n");
+    fprintf(stderr, "Usage: $ mafPairCounter --maf=FILE\n\n");
     fprintf(stderr, "Options:\n");
     usageMessage("maf", "The location of the MAF file. "
                  "The number of pairs contained in the file will be counted and "
