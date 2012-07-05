@@ -152,7 +152,13 @@ void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
 }
 void usage(void) {
     fprintf(stderr, "mafComparator, %s\n\n", g_version);
-    fprintf(stderr, "usage: $ mafComparator --maf1=FILE1 --maf2=FILE2 --out=OUT.xml [options]\n\n");
+    fprintf(stderr, "Usage: $ mafComparator --maf1=FILE1 --maf2=FILE2 --out=OUT.xml [options]\n\n");
+    fprintf(stderr, "This program takes two MAF files and compares them to one another.\n"
+            "Specifically, for each ordered pair of sequences in the first MAF it \n"
+            "samples a predefined number of sample homology tests (see below), then \n"
+            "reads the second MAF checking to see which, if any, of the sampled pairs, \n"
+            "is present. The comparison is then reversed and repeated. Statistics are\n"
+            "then reported in an XML formatted file. \n\n");
     fprintf(stderr, "  Options:\n");
     usageMessage("maf1", "The location of the first MAF file. "
                  "If comparing true to predicted "

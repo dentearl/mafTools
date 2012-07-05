@@ -7,12 +7,15 @@ February 2011 -- July 2012
 [Dent Earl](https://github.com/dentearl/), [Benedict Paten](https://github.com/benedictpaten/)
 
 ## Description
-This program takes two [MAF](http://genome.ucsc.edu/FAQ/FAQformat#format5) files and for each ordered pair of sequences 
-in the MAF it calculates a predefined number of sample homology tests 
-(see below), then reports the statistics in an XML formatted file.
-It is suitable for running over very large alignments (those with many positions), 
-because it does not attempt to hold everything in memory but instead 
-takes a sampling approach.
+This program takes two [MAF](http://genome.ucsc.edu/FAQ/FAQformat#format5) files and compares them to one another.
+Specifically, for each ordered pair of sequences in the first MAF it 
+samples a predefined number of sample homology tests (see below), then 
+reads the second MAF checking to see which, if any, of the sampled pairs, 
+is present. The comparison is then reversed and repeated. Statistics are
+then reported in an XML formatted file. MafComparator is suitable for 
+running over very large alignments (those with many positions), because 
+it does not attempt to hold everything in memory but instead takes a 
+sampling approach.
 
 For two sets of pairwise alignments, **A** and **B**, a homology test is 
 defined as follows. Pick a pair of aligned positions in **A**, called a 
