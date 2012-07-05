@@ -36,6 +36,10 @@ const char *g_version = "version 0.1 July 2012";
 void usage(void) {
     fprintf(stderr, "mafPairCounter, %s\n\n", g_version);
     fprintf(stderr, "Usage: $ mafPairCounter --maf=FILE\n\n");
+    fprintf(stderr, "This program is used to count the number of pairs of aligned positions\n"
+            "that are contained in a maf file. Can be run to determine all possible pairs, or\n"
+            "a subset as defined either by using the --sequences option or by the intersection\n"
+            "of the sequences present in --maf and present in --maf2.\n\n");
     fprintf(stderr, "Options:\n");
     usageMessage('h', "help", "Print this help screen.");
     usageMessage('\0', "maf", "The location of the MAF file. "
