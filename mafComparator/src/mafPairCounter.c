@@ -37,18 +37,18 @@ void usage(void) {
     fprintf(stderr, "mafPairCounter, %s\n\n", g_version);
     fprintf(stderr, "Usage: $ mafPairCounter --maf=FILE\n\n");
     fprintf(stderr, "Options:\n");
-    usageMessage("maf", "The location of the MAF file. "
+    usageMessage('\0', "maf", "The location of the MAF file. "
                  "The number of pairs contained in the file will be counted and "
                  "reported in stdout.");
-    usageMessage("sequences", "Comma separated list of sequences allowed to be in pairs. " 
+    usageMessage('\0', "sequences", "Comma separated list of sequences allowed to be in pairs. " 
                  "To allow all sequences, either specify *every* sequence or don't invoke "
                  "this option. Leaving --sequences off results in all sequences being used.");
-    usageMessage("maf2", "IF Specificied, this is the  location of the second MAF file. "
+    usageMessage('\0', "maf2", "IF Specificied, this is the  location of the second MAF file. "
                  "Using this option causes --sequences option to be ignored. Sequences will "
                  "be discovered by intersection of sequences present in both maf files, pairs "
                  "reported will be from the --maf option.");
-    usageMessage("version", "Print current version number.");
-    usageMessage("help", "Print this help screen.");
+    usageMessage('v', "version", "Print current version number.");
+    usageMessage('h', "help", "Print this help screen.");
 }
 void version(void) {
     fprintf(stderr, "mafPairCounter, %s\n", g_version);

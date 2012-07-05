@@ -140,26 +140,27 @@ int minint(int a, int b) {
         return b;
     }
 }
-void usageMessage(const char *name, const char *description) {
+void usageMessage(char shortopt, const char *name, const char *description) {
     // pretty print a usage() message a la:
-    //     --option : blah blah blah, explanation blah blah.
-
-
-
-    //    //    // fix this, no : should be 25 char, if option name too long put in a \n
-
-
+    //     -o, --option     blah blah blah, explanation blah blah.
+    //     --option2        blah blah blah, explanation blah blah.
+    // can accept a third argument, a CHAR for the short option name.
     int lineLength = 70;
     int indent = 2;
+    int shortlen = 0;
     int length = strlen(name);
     int linePos = length + indent + 5;
     int strPos = 0;
     for (int i = 0; i < indent; ++i) {
         fprintf(stderr, " ");
     }
+    if (shortopt != '\0') {
+        fprintf(stderr, "-%c, ", shortopt);
+        shortlen = 4;
+    }
     fprintf(stderr, "--%s", name);
-    if (indent + length + 2 < 25) {
-        for (int i = indent + length + 2; i < 25; ++i) {
+    if (indent + length + 2 + shortlen < 25) {
+        for (int i = indent + length + 2 + shortlen; i < 25; ++i) {
             fprintf(stderr, " ");
         }
     } else {

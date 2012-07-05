@@ -160,23 +160,23 @@ void usage(void) {
             "is present. The comparison is then reversed and repeated. Statistics are\n"
             "then reported in an XML formatted file. \n\n");
     fprintf(stderr, "Options:\n");
-    usageMessage("maf1", "The location of the first MAF file. "
+    usageMessage('\0', "maf1", "The location of the first MAF file. "
                  "If comparing true to predicted "
                  "alignments, this is the truth.");
-    usageMessage("maf2", "The location of the second MAF file. "
+    usageMessage('\0', "maf2", "The location of the second MAF file. "
                  "If comparing true to predicted "
                  "alignments, this is the prediction.");
-    usageMessage("out", "The output XML formatted results file.");
-    usageMessage("samples", "The ideal number of sample homology tests to perform for the "
+    usageMessage('\0', "out", "The output XML formatted results file.");
+    usageMessage('\0', "samples", "The ideal number of sample homology tests to perform for the "
                  "two comparisons (i.e. file1 -> file and file2 -> file1). This "
                  "number is an ideal because pairs are sampled and thus the "
                  "actual number may be slightly higher or slightly lower than "
                  "this value. If this value is equal to or greater than the "
                  "total number of pairs in a file, then all pairs will be "
                  "tested. [default 1000000]");
-    usageMessage("bedFiles", "The location of bed file(s) used to filter the "
+    usageMessage('\0', "bedFiles", "The location of bed file(s) used to filter the "
                  "pairwise comparisons, separated by commas.");
-    usageMessage("near", "The number of bases in either sequence to allow a match "
+    usageMessage('\0', "near", "The number of bases in either sequence to allow a match "
                  "to slip by. I.e. --near=n (where _n_ is a non-negative integer) "
                  "will consider a homology test for a given pair (S1:_x_, S2:_y_) "
                  "where S1 and S2 are sequences and _x_ and _y_ are positions in "
@@ -184,15 +184,15 @@ void usage(void) {
                  "there is a pair within the other alignment (S1:_w_, S2:_z_) where "
                  "EITHER (_w_ is equal to _x_ and _y_ - _n_ <= _z_ <= _y_ + _n_) "
                  "OR (_x_ - _n_ <= _w_ <= _x_ + _n_ and _y_ is equal to _z_).");
-    usageMessage("logLevel", "Set the log level. [off, critical, info, debug] "
+    usageMessage('\0', "logLevel", "Set the log level. [off, critical, info, debug] "
                  "in ascending order.");
-    usageMessage("printFailed", "Print tab-delimited details about failed "
+    usageMessage('\0', "printFailed", "Print tab-delimited details about failed "
                  "tests to stderr.");
-    usageMessage("seed", "an integer used to seed the random number generator "
+    usageMessage('\0', "seed", "an integer used to seed the random number generator "
                  "used to perform sampling. If omitted a seed is pseudorandomly "
                  "generated. The seed value is always stored in the output xml.");
-    usageMessage("version", "Print current version number.");
-    usageMessage("help", "Print this help screen.");
+    usageMessage('v', "version", "Print current version number.");
+    usageMessage('h', "help", "Print this help screen.");
 }
 void version(void) {
     fprintf(stderr, "mafComparator, %s\n", g_version);

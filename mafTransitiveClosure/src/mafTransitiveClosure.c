@@ -111,10 +111,10 @@ void usage(void) {
             "Useful for when you have pairwise alignments and you wish to turn them into\n"
             "something more resembling a multiple alignment."
             "\n\n");
-    fprintf(stderr, "Options: \n"
-            "  -h, --help     show this help message and exit.\n"
-            "  -m, --maf      path to maf file.\n"
-            "  -v, --verbose  turns on verbose output.\n");
+    fprintf(stderr, "Options: \n");
+    usageMessage('m', "maf", "path to the maf file.");
+    usageMessage('h', "help", "show this message and exit.");
+    usageMessage('v', "verbose", "turns on verbose output..");
     exit(EXIT_FAILURE);
 }
 uint32_t hashMafTcSeq(const mafTcSeq_t *mtcs) {
