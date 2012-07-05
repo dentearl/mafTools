@@ -49,11 +49,11 @@ void usage(void) {
             "the maf in the order they appear in the input, followed by the sorted blocks.\n"
             "If a block has multiple instances of the target sequence, the largest starting\n"
             "position is used for that block.\n\n");
-    fprintf(stderr, "Options: \n"
-            "  -h, --help     show this help message and exit.\n"
-            "  -m, --maf      maf file.\n"
-            "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
-            "  -v, --verbose  turns on verbose output.\n");
+    fprintf(stderr, "Options: \n");
+    usageMessage('h', "help", "show this help message and exit.");
+    usageMessage('m', "maf", "path to the maf file.");
+    usageMessage('s', "seq", "sequence name, e.g. `hg18.chr2'\n");
+    usageMessage('v', "verbose", "turns on verbose output..");
     exit(EXIT_FAILURE);
 }
 void parseOptions(int argc, char **argv, char *filename, char *seqName) {

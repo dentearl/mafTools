@@ -112,8 +112,8 @@ void usage(void) {
             "something more resembling a multiple alignment."
             "\n\n");
     fprintf(stderr, "Options: \n");
-    usageMessage('m', "maf", "path to the maf file.");
     usageMessage('h', "help", "show this message and exit.");
+    usageMessage('m', "maf", "path to the maf file.");
     usageMessage('v', "verbose", "turns on verbose output..");
     exit(EXIT_FAILURE);
 }

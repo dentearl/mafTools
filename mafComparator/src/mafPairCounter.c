@@ -37,6 +37,7 @@ void usage(void) {
     fprintf(stderr, "mafPairCounter, %s\n\n", g_version);
     fprintf(stderr, "Usage: $ mafPairCounter --maf=FILE\n\n");
     fprintf(stderr, "Options:\n");
+    usageMessage('h', "help", "Print this help screen.");
     usageMessage('\0', "maf", "The location of the MAF file. "
                  "The number of pairs contained in the file will be counted and "
                  "reported in stdout.");
@@ -48,7 +49,6 @@ void usage(void) {
                  "be discovered by intersection of sequences present in both maf files, pairs "
                  "reported will be from the --maf option.");
     usageMessage('v', "version", "Print current version number.");
-    usageMessage('h', "help", "Print this help screen.");
 }
 void version(void) {
     fprintf(stderr, "mafPairCounter, %s\n", g_version);

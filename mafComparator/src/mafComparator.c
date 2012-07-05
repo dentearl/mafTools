@@ -160,6 +160,7 @@ void usage(void) {
             "is present. The comparison is then reversed and repeated. Statistics are\n"
             "then reported in an XML formatted file. \n\n");
     fprintf(stderr, "Options:\n");
+    usageMessage('h', "help", "Print this help screen.");
     usageMessage('\0', "maf1", "The location of the first MAF file. "
                  "If comparing true to predicted "
                  "alignments, this is the truth.");
@@ -192,7 +193,6 @@ void usage(void) {
                  "used to perform sampling. If omitted a seed is pseudorandomly "
                  "generated. The seed value is always stored in the output xml.");
     usageMessage('v', "version", "Print current version number.");
-    usageMessage('h', "help", "Print this help screen.");
 }
 void version(void) {
     fprintf(stderr, "mafComparator, %s\n", g_version);

@@ -127,13 +127,13 @@ void usage(void) {
             "mafBlockExtractor is a program that will look through a maf file for a\n"
             "particular sequence name and region. If a match is found then the block\n"
             "containing the querry will be printed to standard out.\n\n");
-    fprintf(stderr, "Options: \n"
-            "  -h, --help     show this help message and exit.\n"
-            "  -m, --maf      path to maf file to process\n"
-            "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
-            "  --start        start of region, inclusive, 0 based.\n"
-            "  --stop         end of region, inclusive, 0 based.\n"
-            "  -v, --verbose  turns on verbose output.\n");
+    fprintf(stderr, "Options: \n");
+    usageMessage('h', "help", "show this help message and exit.");
+    usageMessage('m', "maf", "path to maf file.");
+    usageMessage('s', "seq", "sequence name, e.g. `hg18.chr2'.");
+    usageMessage('\0', "start", "start of region, inclusive, 0 based.");
+    usageMessage('\0', "stop", "end of region, inclusive, 0 based.");
+    usageMessage('v', "verbose", "turns on verbose output.");
     exit(EXIT_FAILURE);
 }
 bool checkRegion(uint32_t start, uint32_t stop, uint32_t str, 
