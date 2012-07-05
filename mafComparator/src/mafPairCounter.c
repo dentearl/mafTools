@@ -41,7 +41,7 @@ void usage(void) {
             "a subset as defined either by using the --sequences option or by the intersection\n"
             "of the sequences present in --maf and present in --maf2.\n\n");
     fprintf(stderr, "Options:\n");
-    usageMessage('h', "help", "Print this help screen.");
+    usageMessage('h', "help", "Show this help message and exit.");
     usageMessage('\0', "maf", "The location of the MAF file. "
                  "The number of pairs contained in the file will be counted and "
                  "reported in stdout.");
