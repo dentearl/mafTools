@@ -169,7 +169,7 @@ void usageMessage(char shortopt, const char *name, const char *description) {
             fprintf(stderr, " ");
         }
     }
-    while (strPos < strlen(description)) {
+    while (strPos < (int)strlen(description)) {
         fprintf(stderr, "%c", description[strPos++]);
         ++linePos;
         if (linePos >= lineLength) {
@@ -192,7 +192,7 @@ char* stringCommasToSpaces(const char *string) {
      */
     char *s = de_strdup(string);
     int i = 0;
-    for (i = 0; i < strlen(s); i++) {
+    for (i = 0; i < (int)strlen(s); i++) {
         if (s[i] == ',')
             s[i] = ' ';
     }

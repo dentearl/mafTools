@@ -25,8 +25,11 @@ cflags_ultraDbg = -Wall -Werror --pedantic -g -fno-inline -DBEN_DEBUG -BEN_ULTRA
 #Profile flags
 cflags_prof = -Wall -Werror --pedantic -pg -O3 -g -lm
 
+sonLibPath = ../../sonLib/lib
+
 #Flags to use
-cflags = ${cflags_opt} 
+cflags = ${cflags_opt} -I ${sonLibPath} -I ../include -I ../external
+testFlags = -O0 -g -Wall -Werror --pedantic -lm -I ${sonLibPath} -I ../include -I ../external
 #cflags = ${cflags_dbg}
 
 # location of Tokyo cabinet

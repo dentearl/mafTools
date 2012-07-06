@@ -67,7 +67,6 @@ struct mafBlock {
     uint32_t numberOfSequences;
     struct mafBlock *next;
 };
-
 static bool maf_isBlankLine(char *s) {
     // return true if line is only whitespaces
     size_t n = strlen(s);
@@ -94,7 +93,7 @@ mafLine_t* maf_newMafLine(void) {
     mafLine_t *ml = (mafLine_t *) de_malloc(sizeof(*ml));
     ml->line = NULL;
     ml->lineNumber = 0;
-    ml->type = 0;
+    ml->type = '\0';
     ml->species = NULL;
     ml->start = 0;
     ml->length = 0;

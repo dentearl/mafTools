@@ -53,7 +53,7 @@ void usage(void) {
     usageMessage('h', "help", "show this help message and exit.");
     usageMessage('m', "maf", "path to the maf file.");
     usageMessage('s', "seq", "sequence name, e.g. `hg18.chr2'\n");
-    usageMessage('v', "verbose", "turns on verbose output..");
+    usageMessage('v', "verbose", "turns on verbose output.");
     exit(EXIT_FAILURE);
 }
 void parseOptions(int argc, char **argv, char *filename, char *seqName) {
@@ -199,5 +199,5 @@ int main(int argc, char **argv) {
     maf_destroyMfa(mfa);
     maf_destroyMafBlockList(mb);
     
-    return EXIT_SUCCESS;
+    return(EXIT_SUCCESS);
 }
