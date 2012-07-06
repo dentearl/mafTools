@@ -244,7 +244,7 @@ void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i) {
     /* A proof by picture:
              c
              0 1 2 3 4
-            _________
+            __________
        r 0 | - 0 1 2 3
          1 |   - 4 5 6
          2 |     - 7 8
