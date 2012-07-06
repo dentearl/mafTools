@@ -242,13 +242,14 @@ int32_t encodeTopoMatIdx(int32_t top1, int32_t top2) {
 void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i) {
     // r = row, c = column, n = number of sequences
     /* A proof by picture:
-           c
-           0 1 2 3 4
-       r 0 - 0 1 2 3
-         1   - 4 5 6
-         2     - 7 8
-         3       - 9
-         4         -
+             c
+             0 1 2 3 4
+            _________
+       r 0 | - 0 1 2 3
+         1 |   - 4 5 6
+         2 |     - 7 8
+         3 |       - 9
+         4 |         -
 
        so (3, 4) can expand row by row:
        = (n - 1) + (n - 2) + (n - 3) + c - r - 1
@@ -260,6 +261,7 @@ void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i) {
        = 9
        so (1, 3) yeilds 5 by 4 + 2 - 1, the 4 comes from 5 - sum_{i=1}^{r} i = r(r+1)/2
        and the 2 comes from c - r.
+       Essentially, this function is the inverse of arrayIndexToPairIndices().
      */
     assert(n > 0);
     *i = (r * n - (r * (r + 1) / 2) + c - r - 1);
@@ -267,7 +269,7 @@ void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i) {
 void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c) { 
     // i is the index, n is the length of one side of the square (i.e. the number
     // of sequences),  r and c are pointers to record the row and column (respectively) 
-    // of the index.
+    // of the index. Essentially, this function is the inverse of  pairIndicesToArrayIndex().
     assert(n > 0);
     if (n == 1) {
         *r = 0;
