@@ -41,11 +41,11 @@ const int kMaxStringLength = 2048;
 const int kMaxMessageLength = 1024;
 const int kMaxSeqName = 1 << 9;
 
-void* de_malloc(int32_t n) {
+void* de_malloc(size_t n) {
     void *i;
     i = malloc(n);
     if (i == NULL) {
-        fprintf(stderr, "(de_) malloc failed on a request for %" PRIi32 " bytes\n", n);
+        fprintf(stderr, "(de_) malloc failed on a request for %zu bytes\n", n);
         exit(EXIT_FAILURE);
     }
     return i;
