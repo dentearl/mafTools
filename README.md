@@ -27,6 +27,7 @@ With the exception of the python dependencies, when a component is missing a dep
 * **mafBlockSorter** A program to sort all of the blocks in a MAF based on the (absolute) start position of one of the sequences. Blocks without the sequence are placed at the start of the output in their original order.
 * **mafComparator** A program to compare two maf files by sampling. Useful when testing predicted alignments against known true alignments.
 * **mafCoveragePickles** A set of programs to assess the pairwise coverage between sequences and to extract the indel distribution of a set of sequences contained in the maf.
+* **mafStats** A set of programs to read a maf file and report back summary statistics about the file contents.
 * **mafTransitiveClosure** A program to perform the transitive closure on an alignment. That is it checks every column of the alignment and looks for situations where a position A is aligned to B in one part of a file and B is aligned to C in another part of the file. The transitive closure of this relationship would be a single column with A, B and C all present. Useful for when you have pairwise alignments and you wish to turn them into something more resembling a multiple alignment.
 * **mafValidator** A program to assess whether or not a given maf file's formatting is valid. 
 
