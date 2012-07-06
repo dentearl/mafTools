@@ -43,7 +43,7 @@ void aPair_fillOut(APair *aPair, char *seq1, char *seq2, uint32_t pos1, uint32_t
     }
 }
 APair* aPair_init(void) {
-    APair *aPair = st_malloc(sizeof(APair));
+    APair *aPair = st_malloc(sizeof(*aPair));
     aPair->seq1 = NULL;
     aPair->seq2 = NULL;
     aPair->pos1 = 0;
@@ -265,8 +265,9 @@ void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i) {
     *i = (r * n - (r * (r + 1) / 2) + c - r - 1);
 }
 void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c) { 
-    // i is the index, n is the length of one side of the square, 
-    // r and c are pointers to record the row and colunm of the index.
+    // i is the index, n is the length of one side of the square (i.e. the number
+    // of sequences),  r and c are pointers to record the row and column (respectively) 
+    // of the index.
     assert(n > 0);
     if (n == 1) {
         *r = 0;
@@ -282,7 +283,7 @@ void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c) {
     assert((*c) < n);
 }
 bool* getLegitRows(char **names, uint32_t numSeqs, stHash *legitSequences) {
-    bool *legitRows = (bool *) st_malloc(sizeof(bool) * numSeqs);
+    bool *legitRows = (bool *) st_malloc(sizeof(*legitRows) * numSeqs);
     for (uint32_t i = 0; i < numSeqs; ++i) {
         if (legitSequences != NULL) {
             if (stHash_search(legitSequences, names[i]) != NULL) {
@@ -345,7 +346,7 @@ uint64_t chooseTwo(uint32_t n) {
 }
 uint64_t* buildChooseTwoArray(void) {
     // pre-calculate a bunch of smaller sizes
-    uint64_t *cta = (uint64_t *) st_malloc(sizeof(int64_t) * 101);
+    uint64_t *cta = (uint64_t *) st_malloc(sizeof(*cta) * 101);
     for (uint32_t i = 0; i < 101; ++i) {
         cta[i] = chooseTwo(i);
     }
