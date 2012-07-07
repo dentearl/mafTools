@@ -24,11 +24,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
 */
+
 #include <math.h>
 #include "sonLib.h"
 #include "common.h"
 #include "comparatorAPI.h"
 #include "comparatorRandom.h"
+
+const unsigned kChooseTwoCacheLength = 101;
 
 void aPair_fillOut(APair *aPair, char *seq1, char *seq2, uint32_t pos1, uint32_t pos2) {
     int i = strcmp(seq1, seq2);
@@ -310,7 +313,7 @@ uint64_t countPairsInColumn(char **mat, uint32_t c, uint32_t numSeqs,
             ++possiblePartners;
         }
     }
-    if (possiblePartners < 101) {
+    if (possiblePartners < kChooseTwoCacheLength) {
         return chooseTwoArray[possiblePartners];
     } else {
         return chooseTwo(possiblePartners);
@@ -348,8 +351,8 @@ uint64_t chooseTwo(uint64_t n) {
 }
 uint64_t* buildChooseTwoArray(void) {
     // pre-calculate a bunch of smaller sizes
-    uint64_t *cta = (uint64_t *) st_malloc(sizeof(*cta) * 101);
-    for (uint64_t i = 0; i < 101; ++i) {
+    uint64_t *cta = (uint64_t *) st_malloc(sizeof(*cta) * kChooseTwoCacheLength);
+    for (uint64_t i = 0; i < kChooseTwoCacheLength; ++i) {
         cta[i] = chooseTwo(i);
     }
     return cta;
@@ -405,7 +408,7 @@ void samplePairsFromColumn(double acceptProbability,
     // pointers to mafLine_t's and columnPositions is an array that contains the current position
     // of the sequence
     uint64_t numPairs;
-    if (numSeqs < 101) {
+    if (numSeqs < kChooseTwoCacheLength) {
         numPairs = chooseTwoArray[numSeqs];
     } else {
         numPairs = chooseTwo(numSeqs);
