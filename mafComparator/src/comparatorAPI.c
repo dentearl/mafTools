@@ -301,7 +301,7 @@ bool* getLegitRows(char **names, uint32_t numSeqs, stHash *legitSequences) {
 }
 uint64_t countPairsInColumn(char **mat, uint32_t c, uint32_t numSeqs, 
                             bool *legitRows, uint64_t *chooseTwoArray) {
-    uint32_t possiblePartners = 0;
+    uint64_t possiblePartners = 0;
     for (uint32_t r = 0; r < numSeqs; ++r) {
         if (!legitRows[r]) {
             continue;
@@ -339,17 +339,17 @@ uint64_t walkBlockCountingPairs(mafBlock_t *mb, stHash *legitSequences, uint64_t
     free(legitRows);
     return count;
 }
-uint64_t chooseTwo(uint32_t n) {
+uint64_t chooseTwo(uint64_t n) {
     if ((n == 0) || (n == 1)) {
         return 0;
     } else {
-        return ((n * (n - 1)) >> 1);
+        return ((n * (n - 1)) / 2);
     }
 }
 uint64_t* buildChooseTwoArray(void) {
     // pre-calculate a bunch of smaller sizes
     uint64_t *cta = (uint64_t *) st_malloc(sizeof(*cta) * 101);
-    for (uint32_t i = 0; i < 101; ++i) {
+    for (uint64_t i = 0; i < 101; ++i) {
         cta[i] = chooseTwo(i);
     }
     return cta;
@@ -404,7 +404,7 @@ void samplePairsFromColumn(double acceptProbability,
     // numSeqs is the number of sequences in either array, columnMlArray is an array that contains
     // pointers to mafLine_t's and columnPositions is an array that contains the current position
     // of the sequence
-    uint32_t numPairs;
+    uint64_t numPairs;
     if (numSeqs < 101) {
         numPairs = chooseTwoArray[numSeqs];
     } else {
@@ -428,7 +428,7 @@ void samplePairsFromColumn(double acceptProbability,
 void samplePairsFromColumnBruteForce(double acceptProbability, stSortedSet *pairs, 
                                      uint64_t *chooseTwoArray,
                                      char **nameArray, uint32_t *positions, uint32_t numSeqs, 
-                                     uint32_t numPairs) {
+                                     uint64_t numPairs) {
     uint64_t p1, p2;
     for (uint64_t i = 0; i < numPairs; ++i) {
         if (st_random() <= acceptProbability) {
@@ -444,7 +444,7 @@ void samplePairsFromColumnBruteForce(double acceptProbability, stSortedSet *pair
 void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs, 
                                    uint64_t *chooseTwoArray,
                                    char **nameArray, uint32_t *positions, uint32_t numSeqs, 
-                                   uint32_t numPairs) {
+                                   uint64_t numPairs) {
     uint64_t n = rbinom(numPairs, acceptProbability);
     if (n == 0) {
         return;
@@ -463,7 +463,7 @@ void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs,
     while (i < m) {
         *tmp = st_randomInt(0, numPairs);
         if (stHash_search(hash, tmp) == NULL) {
-            stHash_insert(hash, copyInt32(tmp), copyInt32(tmp));
+            stHash_insert(hash, copyInt32(tmp), stString_copy(""));
             ++i;
         }
     }
@@ -500,7 +500,7 @@ void samplePairsFromColumnNaive(char **mat, uint32_t c, bool *legitRows, double 
                                 stSortedSet *pairs, 
                                 uint64_t *chooseTwoArray, 
                                 char **nameArray, uint32_t *positions, uint32_t numSeqs,
-                                uint32_t numPairs) {
+                                uint64_t numPairs) {
     // mat is the matrix of characters representing the alignment, c is the current column,
     // legtRows is a boolean array with true for a legit sequence, acceptProbability is the per
     // base accept probability, pairs is where we store pairs, numRows is the number of total sequences
@@ -1015,7 +1015,7 @@ void enumerateHomologyResults(stSortedSet *pairs, stSortedSet *resultPairs, stHa
     stSortedSet_destructIterator(iterator);
 }
 stSortedSet* compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint32_t numberOfSamples,
-                            uint32_t *numberOfPairs,
+                            uint64_t *numberOfPairs,
                             stHash *legitSequences, stHash *intervalsHash, 
                             uint32_t near) {
     // count the number of pairs in mafFileA

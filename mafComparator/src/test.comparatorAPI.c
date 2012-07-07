@@ -371,6 +371,7 @@ static void test_chooseTwoValues_0(CuTest *testCase) {
     CuAssertTrue(testCase, chooseTwo(64) == 2016);
     CuAssertTrue(testCase, chooseTwo(100) == 4950);
     CuAssertTrue(testCase, chooseTwo(1000) == 499500);
+    CuAssertTrue(testCase, chooseTwo(4623824) == 10689871879576);
     uint64_t *cta = buildChooseTwoArray();
     for (uint32_t i = 0; i < 101; ++i) {
         CuAssertTrue(testCase, chooseTwo(i) == cta[i]);

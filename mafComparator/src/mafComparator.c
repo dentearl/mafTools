@@ -349,14 +349,14 @@ int main(int argc, char **argv) {
         fprintf(stderr, "# Sampling from %s, comparing to %s\n", mafFile1, mafFile2);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    uint32_t numPairs1 = 0;
+    uint64_t numPairs1 = 0;
     stSortedSet *results_12 = compareMAFs_AB(mafFile1, mafFile2, sampleNumber, &numPairs1, seqNames, 
                                              intervalsHash, near);
     if (g_isVerboseFailures) {
         fprintf(stderr, "# Sampling from %s, comparing to %s\n", mafFile2, mafFile1);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    uint32_t numPairs2 = 0;
+    uint64_t numPairs2 = 0;
     stSortedSet *results_21 = compareMAFs_AB(mafFile2, mafFile1, sampleNumber, &numPairs2, seqNames, 
                                              intervalsHash, near);
     fileHandle = de_fopen(outputFile, "w");
@@ -370,8 +370,8 @@ int main(int argc, char **argv) {
     }
     fprintf(fileHandle, "<alignmentComparisons sampleNumber=\"%" PRIu32 "\" "
             "near=\"%" PRIu32 "\" seed=\"%" PRIu32 "\" maf1=\"%s\" maf2=\"%s\" "
-            "numberOfPairsInMaf1=\"%" PRIu32 "\" "
-            "numberOfPairsInMaf2=\"%" PRIu32 "\"%s>\n",
+            "numberOfPairsInMaf1=\"%" PRIu64 "\" "
+            "numberOfPairsInMaf2=\"%" PRIu64 "\"%s>\n",
             sampleNumber, near, randomSeed, mafFile1, mafFile2, numPairs1, numPairs2, bedString);
         
     reportResults(results_12, mafFile1, mafFile2, fileHandle, near, seqNames, bedFiles);
