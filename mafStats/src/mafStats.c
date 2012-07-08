@@ -38,27 +38,28 @@ const char *kVersion = "v0.1 July 2012";
 
 typedef struct stats {
     char *filename;
-    uint32_t numLines;
-    uint32_t numHeaderLines;
-    uint32_t numSeqLines;
-    uint32_t numBlocks;
-    uint32_t numELines;
-    uint32_t numILines;
-    uint32_t numQLines;
-    uint32_t numCommentLines;
-    uint32_t numGapCharacters;
-    uint32_t numSeqCharacters;
-    uint32_t sumSeqField;
-    uint32_t maxSeqField;
-    uint32_t sumNumSpeciesInBlock;
-    uint32_t maxNumSpeciesInBlock;
-    uint32_t sumBlockArea;
-    uint32_t maxBlockArea;
-    stHash *seqHash; // keyed with names, valued with uint32_t count of bases present
+    uint64_t numLines;
+    uint64_t numHeaderLines;
+    uint64_t numSeqLines;
+    uint64_t numBlocks;
+    uint64_t numELines;
+    uint64_t numILines;
+    uint64_t numQLines;
+    uint64_t numCommentLines;
+    uint64_t numGapCharacters;
+    uint64_t numSeqCharacters;
+    uint64_t numColumns;
+    uint64_t sumSeqField;
+    uint64_t maxSeqField;
+    uint64_t sumNumSpeciesInBlock;
+    uint64_t maxNumSpeciesInBlock;
+    uint64_t sumBlockArea;
+    uint64_t maxBlockArea;
+    stHash *seqHash; // keyed with names, valued with uint64_t count of bases present
 } stats_t;
 typedef struct seq {
     char *name;
-    uint32_t count;
+    uint64_t count;
 } seq_t;
 void usage(void) {
     fprintf(stderr, "mafStats, %s.\n", kVersion);
@@ -137,6 +138,7 @@ stats_t* stats_create(char *filename) {
     stats->numCommentLines = 0;
     stats->numGapCharacters = 0;
     stats->numSeqCharacters = 0;
+    stats->numColumns = 0;
     stats->sumSeqField = 0;
     stats->maxSeqField = 0;
     stats->sumNumSpeciesInBlock = 0;
@@ -165,8 +167,8 @@ void processBlock(mafBlock_t *mb, stats_t *stats) {
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     char t = '\0';
     char *name = NULL;
-    uint32_t *v = NULL;
-    uint32_t blockSeqFieldLength = 0;
+    uint64_t *v = NULL;
+    uint64_t blockSeqFieldLength = 0;
     t = maf_mafLine_getType(ml);
     if (t == '#') {
         ++(stats->numCommentLines);
@@ -178,7 +180,8 @@ void processBlock(mafBlock_t *mb, stats_t *stats) {
         if (t == 's') {
             ++(stats->numSeqLines);
             if (blockSeqFieldLength == 0) {
-                blockSeqFieldLength = strlen(maf_mafLine_getSequence(ml));
+                blockSeqFieldLength = (uint64_t) strlen(maf_mafLine_getSequence(ml));
+                stats->numColumns += blockSeqFieldLength;
                 if (stats->maxSeqField < blockSeqFieldLength) {
                     stats->maxSeqField = blockSeqFieldLength;
                 }
@@ -186,7 +189,7 @@ void processBlock(mafBlock_t *mb, stats_t *stats) {
             name = maf_mafLine_getSpecies(ml);
             stats->sumSeqField += maf_mafLine_getLength(ml);
             if (stHash_search(stats->seqHash, name) == NULL) {
-                v = (uint32_t *) st_malloc(sizeof(*v));
+                v = (uint64_t *) st_malloc(sizeof(*v));
                 *v = maf_mafLine_getLength(ml);
                 stHash_insert(stats->seqHash, stString_copy(name), v);
             } else {
@@ -269,19 +272,19 @@ void reportHash(stHash *hash) {
     stHashIterator *hit = stHash_getIterator(hash);
     char *key = NULL;
     int32_t i = 0;
-    uint32_t total = 0;
+    uint64_t total = 0;
     while ((key = stHash_getNext(hit)) != NULL) {
         order[i] = (seq_t*) st_malloc(sizeof(seq_t));
         order[i]->name = key;
-        order[i]->count = *(uint32_t*)(stHash_search(hash, key));
+        order[i]->count = *(uint64_t*)(stHash_search(hash, key));
         total += order[i++]->count;
     }
     qsort(order, n, sizeof(seq_t*), cmp_seq);
     for (i = 0; i < n; ++i) {
-        printf("%25s: %12" PRIu32 " (%6.2f%%)\n", order[i]->name, order[i]->count, 
+        printf("%25s: %12" PRIu64 " (%6.2f%%)\n", order[i]->name, order[i]->count, 
                100.0 * order[i]->count / total);
     }
-    printf("%25s: %12" PRIu32 " (100.00%%)\n", "total", total);
+    printf("%25s: %12" PRIu64 " (100.00%%)\n", "total", total);
 }
 void reportStats(stats_t *stats) {
     struct stat fileStat;
@@ -291,27 +294,29 @@ void reportStats(stats_t *stats) {
     char *filesizeString;
     readFilesize(&fileStat, &filesizeString);
     printf("File size:     %10s\n", filesizeString);
-    printf("Lines:         %10" PRIu32 "\n", stats->numLines);
-    printf("Header lines:  %10" PRIu32 "\n", stats->numHeaderLines);
-    printf("s lines:       %10" PRIu32 "\n", stats->numSeqLines);
-    printf("e lines:       %10" PRIu32 "\n", stats->numELines);
-    printf("i lines:       %10" PRIu32 "\n", stats->numILines);
-    printf("q lines:       %10" PRIu32 "\n", stats->numQLines);
-    printf("Blank lines:   %10" PRIu32 "\n", stats->numLines - stats->numSeqLines - 
+    printf("Lines:         %10" PRIu64 "\n", stats->numLines);
+    printf("Header lines:  %10" PRIu64 "\n", stats->numHeaderLines);
+    printf("s lines:       %10" PRIu64 "\n", stats->numSeqLines);
+    printf("e lines:       %10" PRIu64 "\n", stats->numELines);
+    printf("i lines:       %10" PRIu64 "\n", stats->numILines);
+    printf("q lines:       %10" PRIu64 "\n", stats->numQLines);
+    printf("Blank lines:   %10" PRIu64 "\n", stats->numLines - stats->numSeqLines - 
            stats->numELines - stats->numILines - stats->numQLines - 
            stats->numHeaderLines - stats->numCommentLines);
-    printf("Comment lines: %10" PRIu32 "\n", stats->numCommentLines);
-    printf("Sequence chars: %12" PRIu32 " (%6.2f%%)\n", stats->numSeqCharacters, 
+    printf("Comment lines: %10" PRIu64 "\n", stats->numCommentLines);
+    printf("Sequence chars: %12" PRIu64 " (%6.2f%%)\n", stats->numSeqCharacters, 
            100.0 * (double) stats->numSeqCharacters / (stats->numSeqCharacters + stats->numGapCharacters));
-    printf("Gap chars:      %12" PRIu32 " (%6.2f%%)\n", stats->numGapCharacters,
+    printf("Gap chars:      %12" PRIu64 " (%6.2f%%)\n", stats->numGapCharacters,
            100.0 * (double) stats->numGapCharacters / (stats->numSeqCharacters + stats->numGapCharacters));
-    printf("Blocks:                 %10" PRIu32 "\n", stats->numBlocks);
+    printf("Columns:        %12" PRIu64 "\n", stats->numColumns);
+    printf("Blocks:                 %10" PRIu64 "\n", stats->numBlocks);
     printf("Ave block area:         %10.2f\n", (double) stats->sumBlockArea / stats->numBlocks);
-    printf("Max block area:         %10" PRIu32 "\n", stats->maxBlockArea);
+    printf("Max block area:         %10" PRIu64 "\n", stats->maxBlockArea);
+    printf("Total block area:       %10" PRIu64 "\n", stats->sumBlockArea);
     printf("Ave seq field length:   %10.2f\n", (double) stats->sumSeqField / stats->numSeqLines);
-    printf("Max seq field length:   %10" PRIu32 "\n", stats->maxSeqField);
+    printf("Max seq field length:   %10" PRIu64 "\n", stats->maxSeqField);
     printf("Ave seq count in block: %10.2f\n", (double) stats->sumNumSpeciesInBlock / stats->numBlocks);
-    printf("Max seq count in block: %10" PRIu32 "\n", stats->maxNumSpeciesInBlock);
+    printf("Max seq count in block: %10" PRIu64 "\n", stats->maxNumSpeciesInBlock);
     printf("%" PRIi32 " unique sequences, ordered by # bases present:\n", stHash_size(stats->seqHash));
     reportHash(stats->seqHash);
     printf("\n");
