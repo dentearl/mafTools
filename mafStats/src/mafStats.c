@@ -293,30 +293,30 @@ void reportStats(stats_t *stats) {
     printf("------------------------------\n");
     char *filesizeString;
     readFilesize(&fileStat, &filesizeString);
-    printf("File size:     %10s\n", filesizeString);
-    printf("Lines:         %10" PRIu64 "\n", stats->numLines);
-    printf("Header lines:  %10" PRIu64 "\n", stats->numHeaderLines);
-    printf("s lines:       %10" PRIu64 "\n", stats->numSeqLines);
-    printf("e lines:       %10" PRIu64 "\n", stats->numELines);
-    printf("i lines:       %10" PRIu64 "\n", stats->numILines);
-    printf("q lines:       %10" PRIu64 "\n", stats->numQLines);
-    printf("Blank lines:   %10" PRIu64 "\n", stats->numLines - stats->numSeqLines - 
+    printf("File size:              %10s\n", filesizeString);
+    printf("Lines:                  %10" PRIu64 "\n", stats->numLines);
+    printf("Header lines:           %10" PRIu64 "\n", stats->numHeaderLines);
+    printf("s lines:                %10" PRIu64 "\n", stats->numSeqLines);
+    printf("e lines:                %10" PRIu64 "\n", stats->numELines);
+    printf("i lines:                %10" PRIu64 "\n", stats->numILines);
+    printf("q lines:                %10" PRIu64 "\n", stats->numQLines);
+    printf("Blank lines:            %10" PRIu64 "\n", stats->numLines - stats->numSeqLines - 
            stats->numELines - stats->numILines - stats->numQLines - 
            stats->numHeaderLines - stats->numCommentLines);
-    printf("Comment lines: %10" PRIu64 "\n", stats->numCommentLines);
-    printf("Sequence chars: %12" PRIu64 " (%6.2f%%)\n", stats->numSeqCharacters, 
+    printf("Comment lines:          %10" PRIu64 "\n\n", stats->numCommentLines);
+    printf("Sequence chars:         %10" PRIu64 " (%6.2f%%)\n", stats->numSeqCharacters, 
            100.0 * (double) stats->numSeqCharacters / (stats->numSeqCharacters + stats->numGapCharacters));
-    printf("Gap chars:      %12" PRIu64 " (%6.2f%%)\n", stats->numGapCharacters,
+    printf("Gap chars:              %10" PRIu64 " (%6.2f%%)\n", stats->numGapCharacters,
            100.0 * (double) stats->numGapCharacters / (stats->numSeqCharacters + stats->numGapCharacters));
-    printf("Columns:        %12" PRIu64 "\n", stats->numColumns);
+    printf("Columns:                %10" PRIu64 "\n\n", stats->numColumns);
     printf("Blocks:                 %10" PRIu64 "\n", stats->numBlocks);
     printf("Ave block area:         %10.2f\n", (double) stats->sumBlockArea / stats->numBlocks);
     printf("Max block area:         %10" PRIu64 "\n", stats->maxBlockArea);
     printf("Total block area:       %10" PRIu64 "\n", stats->sumBlockArea);
+    printf("Ave block degree:       %10.2f\n", (double) stats->sumNumSpeciesInBlock / stats->numBlocks);
+    printf("Max block degree:       %10" PRIu64 "\n", stats->maxNumSpeciesInBlock);
     printf("Ave seq field length:   %10.2f\n", (double) stats->sumSeqField / stats->numSeqLines);
-    printf("Max seq field length:   %10" PRIu64 "\n", stats->maxSeqField);
-    printf("Ave seq count in block: %10.2f\n", (double) stats->sumNumSpeciesInBlock / stats->numBlocks);
-    printf("Max seq count in block: %10" PRIu64 "\n", stats->maxNumSpeciesInBlock);
+    printf("Max seq field length:   %10" PRIu64 "\n\n", stats->maxSeqField);
     printf("%" PRIi32 " unique sequences, ordered by # bases present:\n", stHash_size(stats->seqHash));
     reportHash(stats->seqHash);
     printf("\n");
