@@ -93,6 +93,17 @@ static void test_rbinom_one_3(CuTest *testCase) {
         CuAssertTrue(testCase, a == n);
     }
 }
+static void test_rbinom_one_4(CuTest *testCase) {
+    // large n*p means using the btpe algorithm
+    uint64_t a;
+    uint64_t N = 100000;
+    uint64_t n = INT32_MAX;
+    n *= 2;
+    for (uint64_t i = 0; i < N; ++i) {
+        a = rbinom(n, 1.0);
+        CuAssertTrue(testCase, a == n);
+    }
+}
 static void test_rbinom_ranges_0(CuTest *testCase) {
     // ranges for small n*p
     uint64_t N = 1000000;
@@ -145,6 +156,31 @@ static void test_rbinom_ranges_2(CuTest *testCase) {
     qsort(array, N, sizeof(uint64_t), cmpu64);
     CuAssertTrue(testCase, array[0] == 0);
     CuAssertTrue(testCase, array[N - 1] == n);
+    free(array);
+}
+static void test_rbinom_ranges_3(CuTest *testCase) {
+    // ranges for large n*p
+    uint64_t N = 1000000;
+    uint64_t n = INT32_MAX;
+    n *= 3;
+    uint64_t *array = (uint64_t*) st_malloc(sizeof(*array) * N);
+    for (uint64_t i = 0; i < N; ++i) {
+        array[i] = rbinom(n, 0.01);
+        CuAssertTrue(testCase, array[i] <= n);
+    }
+    free(array);
+}
+static void test_rbinom_ranges_4(CuTest *testCase) {
+    // ranges for large n*p
+    uint64_t N = 1000000;
+    uint64_t n = INT32_MAX;
+    uint64_t m = n * 2.5; // we must be careful of overflowing constant expressions here
+    n *=  3;
+    uint64_t *array = (uint64_t*) st_malloc(sizeof(*array) * N);
+    for (uint64_t i = 0; i < N; ++i) {
+        array[i] = rbinom(n, 0.99);
+        CuAssertTrue(testCase, array[i] > m);
+    }
     free(array);
 }
 static double runningAverage(double m, uint64_t x, uint64_t i) {
@@ -391,9 +427,12 @@ CuSuite* comparatorRandom_TestSuite(void) {
     SUITE_ADD_TEST(suite, test_rbinom_one_1);
     SUITE_ADD_TEST(suite, test_rbinom_one_2);
     SUITE_ADD_TEST(suite, test_rbinom_one_3);
+    SUITE_ADD_TEST(suite, test_rbinom_one_4);
     SUITE_ADD_TEST(suite, test_rbinom_ranges_0);
     SUITE_ADD_TEST(suite, test_rbinom_ranges_1);
     SUITE_ADD_TEST(suite, test_rbinom_ranges_2);
+    SUITE_ADD_TEST(suite, test_rbinom_ranges_3);
+    SUITE_ADD_TEST(suite, test_rbinom_ranges_4);
     SUITE_ADD_TEST(suite, test_rbinom_clt_0);
     SUITE_ADD_TEST(suite, test_rbinom_clt_1);
     SUITE_ADD_TEST(suite, test_rbinom_distribution_0);

@@ -383,8 +383,6 @@ static void checkPair(CuTest *testCase, stSortedSetIterator *sit, const char *a,
     APair *p = NULL;
     p = stSortedSet_getNext(sit);
     CuAssertTrue(testCase, p != NULL);
-    // printf("a %s b %s i %"PRIu32"\n", a, b, i);
-    // printf("s1 %s p1 %"PRIu32" s2 %s p2 %"PRIu32"\n", p->seq1, p->pos1, p->seq2, p->pos2);
     CuAssertTrue(testCase, strcmp(p->seq1, a) == 0);
     CuAssertTrue(testCase, strcmp(p->seq2, b) == 0);
     CuAssertTrue(testCase, p->pos1 == i);
