@@ -125,10 +125,10 @@ void usage(void) {
             "removed. Sequence similarity is computed as a bit score in comparison to the \n"
             "IUPAC-enabled consensus. Ties are resolved by picking the sequence that appears \n"
             "earliest in the file. \n\n");
-    fprintf(stderr, "Options: \n"
-            "  -h, --help     show this help message and exit.\n"
-            "  -m, --maf      path to maf file.\n"
-            "  -v, --verbose  turns on verbose output.\n");
+    fprintf(stderr, "Options: \n");
+    usageMessage('h', "help", "show this help message and exit.");
+    usageMessage('m', "maf", "path to maf file.");
+    usageMessage('v', "verbose", "turns on verbose output.");
     exit(EXIT_FAILURE);
 }
 scoredMafLine_t* newScoredMafLine(void) {

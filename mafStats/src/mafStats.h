@@ -22,25 +22,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
-#ifndef COMMON_H_
-#define COMMON_H_
+#ifndef _MAFSTATS_H_
+#define _MAFSTATS_H_
+
 #include <stdio.h>
-#include <stdint.h>
+#include <stdlib.h>
 
-int g_verbose_flag;
-int g_debug_flag;
-const int kMaxStringLength;
-const int kMaxMessageLength;
-const int kMaxSeqName;
-
-void de_verbose(char const *fmt, ...);
-void de_debug(char const *fmt, ...);
-void* de_malloc(size_t n);
-int32_t de_getline(char **s, int32_t *n, FILE *f);
-FILE* de_fopen(const char *s, char const *mode);
-char* de_strdup(const char *s);
-void failBadFormat(void);
-void usageMessage(char shortopt, const char *name, const char *description);
-char* stringCommasToSpaces(const char *string);
-
-#endif // COMMON_H_
+#endif // _MAFSTATS_H_

@@ -153,7 +153,7 @@ static uint64_t rbinom_smallCdf(const uint64_t n, const double p) {
     return x;
 }
 static btpeCalc_t* emptyBtpeCalc(void) {
-    btpeCalc_t *b = (btpeCalc_t*) st_malloc(sizeof(btpeCalc_t));
+    btpeCalc_t *b = (btpeCalc_t*) st_malloc(sizeof(*b));
     b->nsave = 0;
     b->psave = -1.0;
     return b;

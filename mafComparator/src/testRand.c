@@ -22,12 +22,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
 */
-
 #include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "CuTest.h"
 #include "comparatorAPI.h"
 #include "comparatorRandom.h"
-#include "test.comparatorAPI.h"
 
 int main(int argc, char **argv) {
     if (argc == 5) {

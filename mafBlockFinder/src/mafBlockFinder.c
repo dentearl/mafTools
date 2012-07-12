@@ -51,13 +51,13 @@ void usage(void) {
             "particular sequence name and location. If a match is found the line\n"
             "number and first few fields are returned. If no match is found\n"
             "nothing is returned.\n\n");
-    fprintf(stderr, "Options: \n"
-            "  -h, --help     show this help message and exit.\n"
-            "  -m, --maf      path to maf file.\n"
-            "  -s, --seq      sequence name.chr e.g. `hg18.chr2.'\n"
-            "  -p, --pos      position along the chromosome you are searching for.\n"
-            "                 Must be a positive number.\n"
-            "  -v, --verbose  turns on verbose output.\n");
+    fprintf(stderr, "Options: \n");
+    usageMessage('h', "help", "show this help message and exit.");
+    usageMessage('m', "maf", "path to maf file.");
+    usageMessage('s', "seq", "sequence name, e.g. `hg18.chr2'.");
+    usageMessage('p', "pos", "position along the chromosome you are searching for. "
+                 "Must be a positive number.");
+    usageMessage('v', "help", "turns on verbose output.");
     exit(EXIT_FAILURE);
 }
 void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t *position) {

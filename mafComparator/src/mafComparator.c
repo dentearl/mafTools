@@ -41,7 +41,7 @@
 #include "comparatorAPI.h"
 #include "common.h"
 
-const char *g_version = "version 0.5 June 2012";
+const char *g_version = "version 0.6 July 2012";
 bool g_isVerboseFailures = false;
 
 /*
@@ -90,7 +90,7 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
         if (bytesRead > 0) {
             int32_t start, stop;
             char *cA3 = stString_copy(cA2);
-            int32_t i = sscanf(cA2, "%s %i %i", cA3, &start, &stop);
+            int32_t i = sscanf(cA2, "%s %" PRIi32 " %" PRIi32 "", cA3, &start, &stop);
             assert(i == 3);
             stSortedSet *intervals = stHash_search(intervalsHash, cA3);
             if (intervals == NULL) {
@@ -105,7 +105,8 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
             if (k != NULL) {
                 if (stIntTuple_getPosition(k, 1) > start) {
                     st_errAbort(
-                            "Found an overlapping interval in the bed file: %s %i %i overlaps %s %i %i",
+                            "Found an overlapping interval in the bed file: %s %" PRIi32 " "
+                            "%" PRIi32 " overlaps %s %" PRIi32 " %" PRIi32 "",
                             cA3, start, stop, cA2,
                             stIntTuple_getPosition(k, 0),
                             stIntTuple_getPosition(k, 1));
@@ -115,14 +116,15 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
             if (k != NULL) {
                 if (stIntTuple_getPosition(k, 1) < stop) {
                     st_errAbort(
-                            "Found an overlapping interval in the bed file: %s %i %i overlaps %s %i %i",
+                            "Found an overlapping interval in the bed file: %s %" PRIi32 " "
+                            "%" PRIi32 " overlaps %s %" PRIi32 " %" PRIi32 "",
                             cA3, start, stop, cA2,
                             stIntTuple_getPosition(k, 0),
                             stIntTuple_getPosition(k, 1));
                 }
             }
             assert(stSortedSet_search(intervals, j) == NULL);
-            st_logDebug("Adding in an interval: %s %i %i\n", cA3, start, stop);
+            st_logDebug("Adding in an interval: %s %" PRIi32 " %" PRIi32 "\n", cA3, start, stop);
             stSortedSet_insert(intervals, j);
             free(cA3);
         }
@@ -131,17 +133,6 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
     free(cA2);
     fclose(fileHandle);
     st_logDebug("Finished parsing the bed file: %s\n", filepath);
-}
-char* stringCommasToSpaces(const char *string) {
-    /* swap all commas, ',', for spaces ' '.
-     */
-    char *s = stString_copy(string);
-    int i = 0;
-    for (i = 0; i < strlen(s); i++) {
-        if (s[i] == ',')
-            s[i] = ' ';
-    }
-    return s;
 }
 void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
     /*
@@ -159,45 +150,56 @@ void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
     free(spaceSepFiles);
     st_logDebug("Done parsing bed files\n");
 }
-
 void usage(void) {
-    fprintf(stderr, "mafComparator, %s\n", g_version);
-    fprintf(stderr,
-            "--maf1 : The location of the first MAF file. "
-            "If comparing true to predicted "
-            "alignments, this is the truth.\n");
-    fprintf(stderr, "--maf2 : The location of the second MAF file. "
-            "If comparing true to predicted "
-            "alignments, this is the prediction.\n");
-    fprintf(stderr,
-            "--out : The output XML formatted results file.\n");
-    fprintf(stderr,
-            "--samples : The number of sample homology tests to perform "
-            "(total) [default 1000000].\n");
-    fprintf(stderr,
-            "--bedFiles : The location of bed file(s) used to filter the "
-            "pairwise comparisons, separated by commas.\n");
-    fprintf(stderr,
-            "--near : The number of bases in either sequence to allow a "
-            "match to slip by.\n");
-    fprintf(stderr,
-            "--logLevel : Set the log level. [off, critical, info, debug] "
-            "in ascending order.\n");
-    fprintf(stderr,
-            "--printFailures : Print tab-delimited details about failed "
-            "tests to stderr.\n");
-    fprintf(stderr,
-            "--seed : an integer used to seed the random number generator "
-            "used to perform sampling. If omitted a seed is pseudorandomly "
-            "generated.\n");
-    fprintf(stderr, "-v --version : Print current version number\n");
-    fprintf(stderr, "-h --help : Print this help screen\n");
+    fprintf(stderr, "mafComparator, %s\n\n", g_version);
+    fprintf(stderr, "Usage: $ mafComparator --maf1=FILE1 --maf2=FILE2 --out=OUT.xml [options]\n\n");
+    fprintf(stderr, "This program takes two MAF files and compares them to one another.\n"
+            "Specifically, for each ordered pair of sequences in the first MAF it \n"
+            "samples a predefined number of sample homology tests (see below), then \n"
+            "reads the second MAF checking to see which, if any, of the sampled pairs, \n"
+            "is present. The comparison is then reversed and repeated. Statistics are\n"
+            "then reported in an XML formatted file. \n\n");
+    fprintf(stderr, "Options:\n");
+    usageMessage('h', "help", "Print this help screen.");
+    usageMessage('\0', "maf1", "The location of the first MAF file. "
+                 "If comparing true to predicted "
+                 "alignments, this is the truth.");
+    usageMessage('\0', "maf2", "The location of the second MAF file. "
+                 "If comparing true to predicted "
+                 "alignments, this is the prediction.");
+    usageMessage('\0', "out", "The output XML formatted results file.");
+    usageMessage('\0', "samples", "The ideal number of sample homology tests to perform for the "
+                 "two comparisons (i.e. file1 -> file and file2 -> file1). This "
+                 "number is an ideal because pairs are sampled and thus the "
+                 "actual number may be slightly higher or slightly lower than "
+                 "this value. If this value is equal to or greater than the "
+                 "total number of pairs in a file, then all pairs will be "
+                 "tested. [default 1000000]");
+    usageMessage('\0', "bedFiles", "The location of bed file(s) used to filter the "
+                 "pairwise comparisons, separated by commas.");
+    usageMessage('\0', "near", "The number of bases in either sequence to allow a match "
+                 "to slip by. I.e. --near=n (where _n_ is a non-negative integer) "
+                 "will consider a homology test for a given pair (S1:_x_, S2:_y_) "
+                 "where S1 and S2 are sequences and _x_ and _y_ are positions in "
+                 "the respective sequences, to be a true homology test so long as "
+                 "there is a pair within the other alignment (S1:_w_, S2:_z_) where "
+                 "EITHER (_w_ is equal to _x_ and _y_ - _n_ <= _z_ <= _y_ + _n_) "
+                 "OR (_x_ - _n_ <= _w_ <= _x_ + _n_ and _y_ is equal to _z_).");
+    usageMessage('\0', "logLevel", "Set the log level. [off, critical, info, debug] "
+                 "in ascending order.");
+    usageMessage('\0', "printFailed", "Print tab-delimited details about failed "
+                 "tests to stderr.");
+    usageMessage('\0', "seed", "an integer used to seed the random number generator "
+                 "used to perform sampling. If omitted a seed is pseudorandomly "
+                 "generated. The seed value is always stored in the output xml.");
+    usageMessage('v', "version", "Print current version number.");
 }
 void version(void) {
     fprintf(stderr, "mafComparator, %s\n", g_version);
 }
-
-int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **outputFile, char **bedFiles, uint32_t *sampleNumber, uint32_t *randomSeed, uint32_t *near, char **logLevelString) {
+int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **outputFile, 
+              char **bedFiles, uint32_t *sampleNumber, uint32_t *randomSeed, uint32_t *near, 
+              char **logLevelString) {
     static const char *optString = "a:b:c:d:e:p:v:h:f:g:s:";
     static const struct option longOpts[] = {
         {"logLevel", required_argument, 0, 'a'},
@@ -267,7 +269,7 @@ int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **ou
             break;
         case 'h':
             usage();
-            return 0;
+            exit(EXIT_SUCCESS);
         case 'f':
             *bedFiles = stString_copy(optarg);
             break;
@@ -277,7 +279,7 @@ int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **ou
             break;
         default:
             usage();
-            return 1;
+            exit(EXIT_SUCCESS);
         }
         key = getopt_long(argc, argv, optString, longOpts, &longIndex);
     }
@@ -314,20 +316,14 @@ int main(int argc, char **argv) {
     uint32_t sampleNumber = 1000000; // by default do a million samples per pair.
     uint32_t randomSeed = (time(NULL) << 16) | (getpid() & 65535); // Likely to be unique
     uint32_t near = 0;
-    ///////////////////////////////////////////////////////////////////////////
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
-    ///////////////////////////////////////////////////////////////////////////
     parseArgs(argc, argv, &mafFile1, &mafFile2, &outputFile, &bedFiles, &sampleNumber, 
               &randomSeed, &near, &logLevelString);
-    //////////////////////////////////////////////
     // Set up logging
-    //////////////////////////////////////////////
     st_setLogLevelFromString(logLevelString);
     st_logDebug("Seeding the random number generator with the value %lo\n", randomSeed);
     st_randomSeed(randomSeed);
-    ///////////////////////////////////////////////////////////////////////////
     // (0) Check the inputs.
-    ///////////////////////////////////////////////////////////////////////////
     //Parse the bed file hashes
     if(bedFiles != NULL) {
         parseBedFiles(bedFiles, intervalsHash);
@@ -335,60 +331,54 @@ int main(int argc, char **argv) {
     else {
         st_logDebug("No bed files specified\n");
     }
-    //////////////////////////////////////////////
     //Log (some of) the inputs
-    //////////////////////////////////////////////
     st_logInfo("MAF file 1 name : %s\n", mafFile1);
     st_logInfo("MAF file 2 name : %s\n", mafFile2);
     st_logInfo("Output stats file : %s\n", outputFile);
-    st_logInfo("Bed files parsed : %i\n", stHash_size(intervalsHash));
+    st_logInfo("Bed files parsed : %" PRIi32 "\n", stHash_size(intervalsHash));
     st_logInfo("Number of samples %" PRIu32 "\n", sampleNumber);
     // note that random seed has already been logged.
-    //////////////////////////////////////////////
     // Create sequence name hashtable from the first MAF file.
-    //////////////////////////////////////////////
     stHash *seqNames1 = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
     populateNames(mafFile1, seqNames1);
     stHash *seqNames2 = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
     populateNames(mafFile2, seqNames2);
     stHash *seqNames = stHash_getIntersection(seqNames1, seqNames2);
-    //////////////////////////////////////////////
     // Do comparisons.
-    //////////////////////////////////////////////
     if (g_isVerboseFailures) {
-        fprintf(stderr, "# Comparing %s to %s\n", mafFile1, mafFile2);
+        fprintf(stderr, "# Sampling from %s, comparing to %s\n", mafFile1, mafFile2);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    stSortedSet *results_12 = compareMAFs_AB(mafFile1, mafFile2, sampleNumber, seqNames, 
-                                                  intervalsHash, near);
+    uint64_t numPairs1 = 0;
+    stSortedSet *results_12 = compareMAFs_AB(mafFile1, mafFile2, sampleNumber, &numPairs1, seqNames, 
+                                             intervalsHash, near);
     if (g_isVerboseFailures) {
-        fprintf(stderr, "# Comparing %s to %s\n", mafFile2, mafFile1);
+        fprintf(stderr, "# Sampling from %s, comparing to %s\n", mafFile2, mafFile1);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    stSortedSet *results_21 = compareMAFs_AB(mafFile2, mafFile1, sampleNumber, seqNames, 
-                                                  intervalsHash, near);
+    uint64_t numPairs2 = 0;
+    stSortedSet *results_21 = compareMAFs_AB(mafFile2, mafFile1, sampleNumber, &numPairs2, seqNames, 
+                                             intervalsHash, near);
     fileHandle = de_fopen(outputFile, "w");
-    //////////////////////////////////////////////
     // Report results.
-    //////////////////////////////////////////////
     writeXMLHeader(fileHandle);
-    if (bedFiles == NULL) {
-        fprintf(fileHandle, "<alignmentComparisons sampleNumber=\"%i\" "
-                "near=\"%i\" seed=\"%u\">\n",
-                sampleNumber, near, randomSeed);
+    char bedString[kMaxStringLength];
+    if (bedFiles != NULL) {
+        sprintf(bedString, " bedFiles=\"%s\"", bedFiles);
     } else {
-        fprintf(fileHandle,
-                "<alignmentComparisons sampleNumber=\"%i\" near=\"%i\" seed=\"%u\" "
-                "bedFiles=\"%s\">\n",
-                sampleNumber, near, randomSeed, bedFiles);
+        bedString[0] = '\0';
     }
+    fprintf(fileHandle, "<alignmentComparisons sampleNumber=\"%" PRIu32 "\" "
+            "near=\"%" PRIu32 "\" seed=\"%" PRIu32 "\" maf1=\"%s\" maf2=\"%s\" "
+            "numberOfPairsInMaf1=\"%" PRIu64 "\" "
+            "numberOfPairsInMaf2=\"%" PRIu64 "\"%s>\n",
+            sampleNumber, near, randomSeed, mafFile1, mafFile2, numPairs1, numPairs2, bedString);
+        
     reportResults(results_12, mafFile1, mafFile2, fileHandle, near, seqNames, bedFiles);
     reportResults(results_21, mafFile2, mafFile1, fileHandle, near, seqNames, bedFiles);
     fprintf(fileHandle, "</alignmentComparisons>\n");
     fclose(fileHandle);
-    ///////////////////////////////////////////////////////////////////////////
     // Clean up.
-    ///////////////////////////////////////////////////////////////////////////
     stSortedSet_destruct(results_12);
     stSortedSet_destruct(results_21);
     free(mafFile1);
@@ -400,6 +390,5 @@ int main(int argc, char **argv) {
     stHash_destruct(seqNames1);
     stHash_destruct(seqNames2);
     stHash_destruct(intervalsHash);
-    
-    return EXIT_SUCCESS;
+    return(EXIT_SUCCESS);
 }

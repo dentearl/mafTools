@@ -22,7 +22,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
+
 #include <assert.h>
+#include <inttypes.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <errno.h>
@@ -43,7 +45,7 @@ void* de_malloc(size_t n) {
     void *i;
     i = malloc(n);
     if (i == NULL) {
-        fprintf(stderr, "malloc failed on a request for %zu bytes\n", n);
+        fprintf(stderr, "(de_) malloc failed on a request for %zu bytes\n", n);
         exit(EXIT_FAILURE);
     }
     return i;
@@ -132,4 +134,69 @@ void de_debug(char const *fmt, ...) {
 void failBadFormat(void) {
     fprintf(stderr, "The maf sequence lines are incorrectly formatted, exiting\n");
     exit(EXIT_FAILURE);
+}
+int minint(int a, int b) {
+    if (a < b) {
+        return a;
+    } else {
+        return b;
+    }
+}
+void usageMessage(char shortopt, const char *name, const char *description) {
+    // pretty print a usage() message a la:
+    //     -o, --option     blah blah blah, explanation blah blah.
+    //     --option2        blah blah blah, explanation blah blah.
+    // can accept a third argument, a CHAR for the short option name.
+    int lineLength = 70;
+    int indent = 2;
+    int shortlen = 0;
+    int length = strlen(name);
+    int linePos = length + indent + 5;
+    int strPos = 0;
+    for (int i = 0; i < indent; ++i) {
+        fprintf(stderr, " ");
+    }
+    if (shortopt != '\0') {
+        fprintf(stderr, "-%c, ", shortopt);
+        shortlen = 4;
+    }
+    fprintf(stderr, "--%s", name);
+    if (indent + length + 2 + shortlen < 25) {
+        for (int i = indent + length + 2 + shortlen; i < 25; ++i) {
+            fprintf(stderr, " ");
+        }
+    } else {
+        fprintf(stderr, "\n");
+        for (int i = 0; i < 25; ++i) {
+            fprintf(stderr, " ");
+        }
+    }
+    while (strPos < (int)strlen(description)) {
+        fprintf(stderr, "%c", description[strPos++]);
+        ++linePos;
+        if (linePos >= lineLength) {
+            if (description[strPos] == ' ') {
+                linePos = 0;
+                fprintf(stderr, "\n");
+                for (int i = 0; i < 25; ++i) {
+                    fprintf(stderr, " ");
+                }
+                while (description[strPos] != '\0' && description[strPos] == ' ') {
+                    ++strPos;
+                }
+            }
+        }
+    }
+    fprintf(stderr, "\n");
+}
+char* stringCommasToSpaces(const char *string) {
+    /* swap all commas, ',', for spaces ' '.
+     */
+    char *s = de_strdup(string);
+    int i = 0;
+    for (i = 0; i < (int)strlen(s); i++) {
+        if (s[i] == ',')
+            s[i] = ' ';
+    }
+    return s;
 }

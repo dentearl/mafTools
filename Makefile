@@ -14,9 +14,11 @@ ifeq (0, $(shell python -c 'import scipy;' >> /dev/null 2>&1 && echo $$?))
 ifeq ($(wildcard ../sonLib/Makefile),)
 	Comparator = 
 	TransitiveClosure = 
+	Stats = 
 $(warning Because dependency ../sonLib is missing mafComparator and mafTransitiveClosure will not be built / tested / cleaned. See README.md for information about dependencies.)
 else
 	Comparator = mafComparator
+	Stats = mafStats
 ifeq ($(wildcard ../sonLib/lib/stPinchesAndCacti.a),)
 	TransitiveClosure = 
 $(warning Because dependency ../pinchesAndCacti is missing mafTransitiveClosure will not be built / tested / cleaned. See README.md for information about dependencies.)
@@ -34,21 +36,21 @@ else
 $(warning Because dependency python: numpy is missing mafCoveragePickles will not be built / tested / cleaned. See README.md for information about dependencies.)
 endif
 ##############################
-dependentModules= ${Comparator} ${TransitiveClosure} ${CoveragePickles}
+dependentModules= ${Comparator} ${TransitiveClosure} ${CoveragePickles} ${Stats}
 
 modules = include ${dependentModules} mafValidator mafBlockFinder mafBlockExtractor mafBlockSorter mafBlockDuplicateFilter mafBlockFilter
 
 .PHONY: all %.all clean %.clean test %.test
 
-python :
-	@echo ${python_version_full}
-	@echo ${python_version_major}
-	@echo ${python_version_minor}
-
 all: ${modules:%=%.all}
 
 %.all:
 	cd $* && make all
+
+# python :
+# 	@echo ${python_version_full}
+# 	@echo ${python_version_major}
+# 	@echo ${python_version_minor}
 
 clean: ${modules:%=%.clean}
 

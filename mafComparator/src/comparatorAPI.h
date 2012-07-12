@@ -71,11 +71,12 @@ bool g_isVerboseFailures;
 
 void populateNames(const char *mAFFile, stHash *hash);
 stSortedSet* compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint32_t numberOfSamples, 
-                                 stHash *legitimateSequences, stHash *intervalsHash, 
-                                 uint32_t near);
+                            uint64_t *numberOfPairsInFile, stHash *legitimateSequences, 
+                            stHash *intervalsHash, uint32_t near);
 void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...);
 void reportResults(stSortedSet *results_AB, const char *mAFFileA, const char *mAFFileB, 
-                   FILE *fileHandle, uint32_t near, stHash *legitimateSequences, const char *bedFiles);
+                   FILE *fileHandle, uint32_t near, stHash *legitimateSequences, 
+                   const char *bedFiles);
 APair* aPair_init(void);
 APair* aPair_construct(const char *seq1, const char *seq2, uint32_t pos1, uint32_t pos2);
 APair* aPair_copyConstruct(APair *pair);
@@ -83,28 +84,27 @@ void aPair_destruct(APair *pair);
 void writeXMLHeader( FILE *fileHandle );
 bool* getLegitRows(char **names, uint32_t numSeqs, stHash *legitPairs);
 uint64_t walkBlockCountingPairs(mafBlock_t *mb, stHash *legitPairs, uint64_t *chooseTwoArray);
-uint64_t chooseTwo(uint32_t n);
+uint64_t chooseTwo(uint64_t n);
 uint64_t* buildChooseTwoArray(void);
 uint64_t countPairsInMaf(const char *filename, stHash *legitPairs);
 void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i);
 void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c);
 stHash* stHash_getIntersection(stHash *seqNames1, stHash *seqNames2);
-void samplePairsFromColumn(char ** mat, uint32_t c, double acceptProbability, 
-                           stSortedSet *pairs, 
-                           uint32_t numPairs, uint64_t *chooseTwoArray,
-                           mafLine_t **columnMlArray, uint32_t *columnPositions);
+void samplePairsFromColumn(double acceptProbability, stSortedSet *pairs, 
+                           uint32_t numSeqs, uint64_t *chooseTwoArray,
+                           char **nameArray, uint32_t *columnPositions);
 void samplePairsFromColumnBruteForce(double acceptProbability, stSortedSet *pairs, 
                                      uint64_t *chooseTwoArray,
-                                     mafLine_t **mlArray, uint32_t *positions, uint32_t numSeqs, 
-                                     uint32_t numPairs);
+                                     char **nameArray, uint32_t *positions, uint32_t numSeqs, 
+                                     uint64_t numPairs);
 void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs, 
                                    uint64_t *chooseTwoArray,
-                                   mafLine_t **mlArray, uint32_t *positions, uint32_t numSeqs, 
-                                   uint32_t numPairs);
+                                   char **nameArray, uint32_t *positions, uint32_t numSeqs, 
+                                   uint64_t numPairs);
 void samplePairsFromColumnNaive(char **mat, uint32_t c, bool *legitRows, double acceptProbability, 
                                 stSortedSet *pairs, uint64_t *chooseTwoArray, 
-                                mafLine_t **mlArray, uint32_t *positions, uint32_t numSeqs, 
-                                uint32_t numPairs);
+                                char **nameArray, uint32_t *positions, uint32_t numSeqs, 
+                                uint64_t numPairs);
 uint32_t countLegitPositions(char **mat, uint32_t c, uint32_t numRows);
 mafLine_t** cullMlArrayByColumn(char **mat, uint32_t c, mafLine_t **mlArray, bool *legitRows, uint32_t numRows, uint32_t numLegitGaplessPositions);
 uint32_t* cullPositionsByColumn(char **mat, uint32_t c, uint32_t *positions, bool *legitRows, uint32_t numRows, uint32_t numLegitGaplessPositions);
