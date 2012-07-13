@@ -371,16 +371,33 @@ uint64_t countPairsInMaf(const char *filename, stHash *legitSequences) {
     maf_destroyMfa(mfa);
     return counter;
 }
-static int int32EqualKey(const void *key1, const void *key2) {
-    return *((int32_t *) key1) == *((int32_t*) key2);
+/* static int int32EqualKey(const void *key1, const void *key2) { */
+/*     return *((int32_t *) key1) == *((int32_t*) key2); */
+/* } */
+/* int32_t* int32Copy(int32_t *i) { */
+/*     int32_t *j = st_malloc(sizeof(*j)); */
+/*     *j = *i; */
+/*     return j; */
+/* } */
+/* static uint32_t int32Key(const void *k) { */
+/*     return *((int32_t*)k); */
+/* } */
+static uint32_t uint64Key(const void *k) {
+    uint64_t p = *(uint64_t*)k;
+    if (p > INT32_MAX) {
+        while (p > INT32_MAX) {
+            p -= INT32_MAX;
+        }
+    }
+    return p;
 }
-static uint32_t int32Key(const void *k) {
-    return *((int32_t*)k);
-}
-int32_t* copyInt32(int32_t *i) {
-    int32_t *j = st_malloc(sizeof(*j));
+uint64_t* uint64Copy(uint64_t *i) {
+    uint64_t *j = st_malloc(sizeof(*j));
     *j = *i;
     return j;
+}
+static int uint64EqualKey(const void *key1, const void *key2) {
+    return *((uint64_t *) key1) == *((uint64_t*) key2);
 }
 void printmlarray(mafLine_t **mlArray, uint32_t n) {
     for (uint32_t i = 0; i < n; ++i) {
@@ -452,28 +469,65 @@ void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs,
     if (n == 0) {
         return;
     }
-    stHash *hash = stHash_construct3(int32Key, int32EqualKey, free, free);
-    int32_t *tmp = st_malloc(sizeof(*tmp));
-    uint64_t m = 0;
+    stHash *hash = stHash_construct3(uint64Key, uint64EqualKey, free, NULL);
+    uint64_t *randPair = st_malloc(sizeof(*randPair));
+    uint64_t *copy = NULL;
+    uint64_t numPairsToSample = 0;
+    int offset = 0; // used when numPairs > INT32_MAX, offset is the number of times to multiply by INT32_MAX
+    (void) offset;
     if (((double) n > numPairs / 2.0) && (numPairs > n)) {
         // sample (numSeqs - n) many pairs
-        m = numPairs - n;
+        numPairsToSample = numPairs - n;
     } else {
         // sample n many pairs
-        m = n;
+        numPairsToSample = n;
     }
-    uint32_t i = 0;
-    while (i < m) {
-        *tmp = st_randomInt(0, numPairs);
-        if (stHash_search(hash, tmp) == NULL) {
-            stHash_insert(hash, copyInt32(tmp), stString_copy(""));
-            ++i;
+    uint64_t i = 0;
+    if (numPairs > UINT64_MAX) {
+        // panic!
+        fprintf(stderr, "Error in samplePairsFromColumnAnalytic(), numPairs (%" PRIu64 
+                ") > UINT64_MAX (%" PRIu64 "), this will cause st_randomInt64() to fail.\n", numPairs, UINT64_MAX);
+        exit(EXIT_FAILURE);
+    } else if (numPairs > INT64_MAX) {
+        // will have to sample from a shifted range using st_randomInt64()
+        int64_t imin = INT64_MAX - numPairs; // shift range
+        assert(imin < 0);
+        int64_t randi;
+        while (i < numPairsToSample) {
+            randi = st_randomInt64(imin, INT64_MAX); // sample from shifted range
+            assert((randi - imin) >= 0);
+            *randPair = randi - imin; // shift range back
+            if (stHash_search(hash, randPair) == NULL) {
+                copy = uint64Copy(randPair);
+                stHash_insert(hash, copy, copy);
+                ++i;
+            }
+        }
+    } else if (numPairs > INT32_MAX){
+        // sample straight away using st_randomInt64()
+        while (i < numPairsToSample) {
+            *randPair = st_randomInt64(0, numPairs);
+            if (stHash_search(hash, randPair) == NULL) {
+                copy = uint64Copy(randPair);
+                stHash_insert(hash, copy, copy);
+                ++i;
+            }
+        }
+    } else {
+        // sample straight away using st_randomInt()
+        while (i < numPairsToSample) {
+            *randPair = st_randomInt(0, numPairs);
+            if (stHash_search(hash, randPair) == NULL) {
+                copy = uint64Copy(randPair);
+                stHash_insert(hash, copy, copy);
+                ++i;
+            }
         }
     }
     stHashIterator *hit = stHash_getIterator(hash);
     int32_t *key = NULL;
     uint64_t p1, p2;
-    if (m == n) {
+    if (numPairsToSample == n) {
         // items in hash *have* been sampled
         while ((key = stHash_getNext(hit)) != NULL) {
             // use nameArray
@@ -485,8 +539,8 @@ void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs,
     } else {
         // items in hash *have not* been sampled
         for (uint64_t i = 0; i < numPairs; ++i) {
-            *tmp = i;
-            if (stHash_search(hash, tmp) == NULL) {
+            *randPair = i;
+            if (stHash_search(hash, randPair) == NULL) {
                 arrayIndexToPairIndices(i, numSeqs, &p1, &p2);
                 APair *aPair = aPair_construct(nameArray[p1], nameArray[p2],
                                                positions[p1], positions[p2]);
@@ -497,7 +551,7 @@ void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs,
     // clean up
     stHash_destructIterator(hit);
     stHash_destruct(hash);
-    free(tmp);
+    free(randPair);
 }
 void samplePairsFromColumnNaive(char **mat, uint32_t c, bool *legitRows, double acceptProbability, 
                                 stSortedSet *pairs, 
