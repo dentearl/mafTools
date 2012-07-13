@@ -100,7 +100,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 ''', 70, [9]),
             # the overlap is 9 bases long, 62-70
             ]
-g_nonOverlappingBlocks = [('''a score=23262.b0     
+g_nonOverlappingBlocks = [('''a score=23262.0     
 s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s baboon         116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
@@ -144,7 +144,8 @@ def foundLines(lineList, text, g_header):
     for line in f:
         line = line.strip()
         data = line.split(':')
-        if int(data[0]) - n not in lineList:
+        l = data[0].split(',')[1].split()[1]
+        if int(l) - n not in lineList:
             f.close()
             return False
     f.close()

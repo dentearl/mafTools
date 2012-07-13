@@ -22,6 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
+
 #include <assert.h>
 #include <errno.h> // file existence via ENOENT
 #include <getopt.h>
@@ -229,7 +230,8 @@ void checkBlock(mafBlock_t *mb, char *fullname, uint32_t pos) {
         }
         if (insideLine(ml, pos)) {
             vignette = extractVignette(ml, pos);
-            printf("%u: s %s %" PRIu32 " %" PRIu32 " %c %" PRIu32 " %s\n", maf_mafLine_getLineNumber(ml), fullname, 
+            printf("block %" PRIu32 ", line %" PRIu32 ": s %s %" PRIu32 " %" PRIu32 " %c %" PRIu32 
+                   " %s\n", maf_mafBlock_getLineNumber(mb), maf_mafLine_getLineNumber(ml), fullname, 
                    maf_mafLine_getStart(ml), maf_mafLine_getLength(ml), maf_mafLine_getStrand(ml), 
                    maf_mafLine_getSourceLength(ml), vignette);
             free(vignette);
