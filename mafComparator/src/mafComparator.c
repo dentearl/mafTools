@@ -339,11 +339,11 @@ int main(int argc, char **argv) {
     st_logInfo("Number of samples %" PRIu32 "\n", sampleNumber);
     // note that random seed has already been logged.
     // Create sequence name hashtable from the first MAF file.
-    stHash *seqNames1 = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
+    stSet *seqNames1 = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
     populateNames(mafFile1, seqNames1);
-    stHash *seqNames2 = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
+    stSet *seqNames2 = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
     populateNames(mafFile2, seqNames2);
-    stHash *seqNames = stHash_getIntersection(seqNames1, seqNames2);
+    stSet *seqNames = stSet_getIntersection(seqNames1, seqNames2);
     // Do comparisons.
     if (g_isVerboseFailures) {
         fprintf(stderr, "# Sampling from %s, comparing to %s\n", mafFile1, mafFile2);
@@ -386,9 +386,9 @@ int main(int argc, char **argv) {
     free(bedFiles);
     free(outputFile);
     free(logLevelString);
-    stHash_destruct(seqNames);
-    stHash_destruct(seqNames1);
-    stHash_destruct(seqNames2);
+    stSet_destruct(seqNames);
+    stSet_destruct(seqNames1);
+    stSet_destruct(seqNames2);
     stHash_destruct(intervalsHash);
     return(EXIT_SUCCESS);
 }

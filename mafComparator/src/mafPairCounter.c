@@ -115,46 +115,46 @@ int parseArgs(int argc, char **argv, char **maf, char **maf2, char **seqList) {
     }
     return optind;
 }
-stHash* buildHash(char *listOfLegitSequences) {
+stSet* buildSet(char *listOfLegitSequences) {
     char *spaceSepFiles = stringCommasToSpaces(listOfLegitSequences);
     char *currentLocation = spaceSepFiles;
     char *currentWord;
-    stHash *legitSeqsHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
+    stSet *legitSeqsSet = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
     while ((currentWord = stString_getNextWord(&currentLocation)) != NULL) {
-        stHash_insert(legitSeqsHash, stString_copy(currentWord), stString_copy(""));
+        stSet_insert(legitSeqsSet, stString_copy(currentWord));
         free(currentWord);
     }
     free(spaceSepFiles);
-    return legitSeqsHash;
+    return legitSeqsSet;
 }
 int main(int argc, char **argv) {
     char *maf = NULL;
     char *maf2 = NULL;
     char *listOfLegitSequences = NULL;
-    stHash *legitSeqsHash = NULL;
-    stHash *maf1Hash = NULL;
-    stHash *maf2Hash = NULL;
+    stSet *legitSeqsSet = NULL;
+    stSet *maf1SeqSet = NULL;
+    stSet *maf2SeqSet = NULL;
     parseArgs(argc, argv, &maf, &maf2, &listOfLegitSequences);
     if (listOfLegitSequences != NULL) {
-        legitSeqsHash = buildHash(listOfLegitSequences);
+        legitSeqsSet = buildSet(listOfLegitSequences);
     }
     if (maf2 != NULL) {
         // build legitHash by intersection
-        maf1Hash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
-        maf2Hash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
-        populateNames(maf, maf1Hash);
-        populateNames(maf2, maf2Hash);
-        legitSeqsHash = stHash_getIntersection(maf1Hash, maf2Hash);
+        maf1SeqSet = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
+        maf2SeqSet = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
+        populateNames(maf, maf1SeqSet);
+        populateNames(maf2, maf2SeqSet);
+        legitSeqsSet = stSet_getIntersection(maf1SeqSet, maf2SeqSet);
     }
-    uint64_t numberOfPairs = countPairsInMaf(maf, legitSeqsHash);
+    uint64_t numberOfPairs = countPairsInMaf(maf, legitSeqsSet);
     printf("%"PRIu64"\n", numberOfPairs);
     // clean up
-    if (legitSeqsHash != NULL) {
-        stHash_destruct(legitSeqsHash);
+    if (legitSeqsSet != NULL) {
+        stSet_destruct(legitSeqsSet);
     }
-    if (maf1Hash != NULL) {
-        stHash_destruct(maf1Hash);
-        stHash_destruct(maf2Hash);
+    if (maf1SeqSet != NULL) {
+        stSet_destruct(maf1SeqSet);
+        stSet_destruct(maf2SeqSet);
     }
     free(maf);
     free(maf2);
