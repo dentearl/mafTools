@@ -38,7 +38,7 @@
 #include "sharedMaf.h"
 
 void usage(void);
-void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *isInclude);
+void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *isInclude, int64_t *blockDegLT, int64_t *blockDegGT);
 void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start, 
                  uint32_t length, uint32_t sourceLength, char strand);
 
@@ -60,11 +60,11 @@ void usage(void) {
     usageMessage('v', "verbose", "turns on verbose output.");
     exit(EXIT_FAILURE);
 }
-void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *isInclude) {
+void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *isInclude, int64_t *blockDegGt, int64_t *blockDegLt) {
     extern int g_debug_flag;
     extern int g_verbose_flag;
     int c;
-    bool setMName = false, setName = false;
+    bool setMafName = false, setNames = false, setBlockLimits = false;
     while (1) {
         static struct option long_options[] = {
             {"debug", no_argument, &g_debug_flag, 1},
@@ -73,10 +73,12 @@ void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *i
             {"maf",  required_argument, 0, 'm'},
             {"include",  required_argument, 0, 'i'},
             {"exclude",  required_argument, 0, 'e'},
+            {"noDegreeGT", required_argument, 0, 'g'},
+            {"noDegreeLT", required_argument, 0, 'l'},
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        c = getopt_long(argc, argv, "m:i:e:v:h",
+        c = getopt_long(argc, argv, "m:i:e:g:l:v:h",
                         long_options, &option_index);
         if (c == -1) {
             break;
@@ -85,18 +87,26 @@ void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *i
         case 0:
             break;
         case 'm':
-            setMName = true;
+            setMafName = true;
             sscanf(optarg, "%s", filename);
             break;
         case 'i':
-            setName = true;
+            setNames = true;
             *isInclude = true;
             sscanf(optarg, "%s", nameList);
             break;
         case 'e':
-            setName = true;
+            setNames = true;
             *isInclude = false;
             sscanf(optarg, "%s", nameList);
+            break;
+        case 'g':
+            setNames = true;
+            sscanf(optarg, "%" PRIi64, blockDegGt);
+            break;
+        case 'l':
+            setNames = true;
+            sscanf(optarg, "%" PRIi64, blockDegLt);
             break;
         case 'v':
             g_verbose_flag++;
@@ -109,8 +119,12 @@ void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *i
             abort();
         }
     }
-    if (!(setMName && setName)) {
-        fprintf(stderr, "specify --maf and [--include or --exclude]\n");
+    if (!setMafName) {
+        fprintf(stderr, "specify --maf\n");
+        usage();
+    }
+    if ((setNames && setBlockLimits) || !(setNames || setBlockLimits)) {
+        fprintf(stderr, "specify *one* from [--include or --exclude] or [--noDegreeGT or --noDegreeLT]\n");
         usage();
     }
     // Check there's nothing left over on the command line 
@@ -142,61 +156,95 @@ void reportBlock(mafBlock_t *mb, char **names, unsigned n, bool isInclude) {
             ml = maf_mafLine_getNext(ml);
             continue;
         }
-        if (isInclude) {
-            if (nameOnList(maf_mafLine_getSpecies(ml), names, n)) {
-                printf("%s\n", maf_mafLine_getLine(ml));
-                ml = maf_mafLine_getNext(ml);
-                continue;
+        if (n > 0) {
+            if (isInclude) {
+                if (nameOnList(maf_mafLine_getSpecies(ml), names, n)) {
+                    printf("%s\n", maf_mafLine_getLine(ml));
+                    ml = maf_mafLine_getNext(ml);
+                    continue;
+                }
+            } else {
+                if (!nameOnList(maf_mafLine_getSpecies(ml), names, n)) {
+                    printf("%s\n", maf_mafLine_getLine(ml));
+                    ml = maf_mafLine_getNext(ml);
+                    continue;
+                }
             }
         } else {
-            if (!nameOnList(maf_mafLine_getSpecies(ml), names, n)) {
-                printf("%s\n", maf_mafLine_getLine(ml));
-                ml = maf_mafLine_getNext(ml);
-                continue;
-            }
+            // report entire block, this came from one of the blockDegree options
+            printf("%s\n", maf_mafLine_getLine(ml));
         }
         ml = maf_mafLine_getNext(ml);
     }
     printf("\n");
 }
-void checkBlock(mafBlock_t *mb, char **names, unsigned n, bool isInclude) {
+void checkBlock(mafBlock_t *mb, char **names, unsigned n, bool isInclude, int64_t excludeBlockDegreeGT,
+                 int64_t excludeBlockDegreeLT) {
     // walk through the maf lines and see if this block should be reported
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     while (ml != NULL) {
         if (maf_mafLine_getType(ml) != 's') {
             ml = maf_mafLine_getNext(ml);
-            ml = maf_mafLine_getNext(ml);
             continue;
         }
-        if (isInclude) {
-            if (nameOnList(maf_mafLine_getSpecies(ml), names, n)) {
-                reportBlock(mb, names, n, isInclude);
-                return;
+        if (n > 0) {
+            // filtering on names
+            if (isInclude) {
+                if (nameOnList(maf_mafLine_getSpecies(ml), names, n)) {
+                    reportBlock(mb, names, n, isInclude);
+                    return;
+                }
+            } else {
+                if (!nameOnList(maf_mafLine_getSpecies(ml), names, n)) {
+                    reportBlock(mb, names, n, isInclude);
+                    return;
+                }
             }
         } else {
-            if (!nameOnList(maf_mafLine_getSpecies(ml), names, n)) {
-                reportBlock(mb, names, n, isInclude);
-                return;
+            // filtering on block degrees
+            uint32_t m = maf_mafBlock_getNumberOfSequences(mb);
+            if (excludeBlockDegreeGT != -1 && excludeBlockDegreeLT != -1) {
+                if (m >= excludeBlockDegreeLT && m <= excludeBlockDegreeGT) {
+                    reportBlock(mb, names, n, isInclude);
+                    return;
+                }
+            } else if (excludeBlockDegreeGT != -1) {
+                if (m <= excludeBlockDegreeGT) {
+                    reportBlock(mb, names, n, isInclude);
+                    return;
+                }
+            } else {
+                if (m >= excludeBlockDegreeLT) {
+                    reportBlock(mb, names, n, isInclude);
+                    return;
+                }
             }
         }
         ml = maf_mafLine_getNext(ml);
     }
 }
-void filterInput(mafFileApi_t *mfa, char **names, unsigned n, bool isInclude) {
+void filterInput(mafFileApi_t *mfa, char **names, unsigned n,
+                 bool isInclude, int64_t excludeBlockDegreeGT,
+                 int64_t excludeBlockDegreeLT) {
     mafBlock_t *thisBlock = NULL;
     bool headBlock = true;
     while ((thisBlock = maf_readBlock(mfa)) != NULL) {
         if (headBlock) {
             reportBlock(thisBlock, names, n, isInclude);
             headBlock = false;
+            maf_destroyMafBlockList(thisBlock);
             continue;
         }
-        checkBlock(thisBlock, names, n, isInclude);
+        checkBlock(thisBlock, names, n, isInclude, excludeBlockDegreeGT, excludeBlockDegreeLT);
         maf_destroyMafBlockList(thisBlock);
     }
 }
 unsigned countNames(char *s) {
-    unsigned i, n = 1;
+    unsigned i, n;
+    if (strlen(s) == 0) {
+        return 0;
+    }
+    n = 1;
     for (i = 0; i < strlen(s); ++i) {
         if (s[i] == ',') {
             ++n;
@@ -206,6 +254,9 @@ unsigned countNames(char *s) {
 }
 char** extractNames(char *nameList, unsigned n) {
     // n is the number of names in the name list
+    if (n == 0) {
+        return NULL;
+    }
     char **mat = (char**) de_malloc(sizeof(char*) * n);
     unsigned index = 0;
     char *tkn = NULL;
@@ -234,13 +285,16 @@ int main(int argc, char **argv) {
     (void) (reportNames);
     char filename[kMaxStringLength];
     char nameList[kMaxStringLength];
+    nameList[0] = '\0';
+    int64_t excludeBlockDegreeGT = -1;
+    int64_t excludeBlockDegreeLT = -1;
     bool isInclude = true; // if 0 then we are in exclude mode. 1 is include mode.
-    parseOptions(argc, argv,  filename, nameList, &isInclude);
+    parseOptions(argc, argv,  filename, nameList, &isInclude, &excludeBlockDegreeGT, &excludeBlockDegreeLT);
     unsigned n = countNames(nameList);
     char **names = extractNames(nameList, n);
     mafFileApi_t *mfa = maf_newMfa(filename, "r");
     
-    filterInput(mfa, names, n, isInclude);
+    filterInput(mfa, names, n, isInclude, excludeBlockDegreeGT, excludeBlockDegreeLT);
     
     maf_destroyMfa(mfa);
     destroyNameList(names, n);

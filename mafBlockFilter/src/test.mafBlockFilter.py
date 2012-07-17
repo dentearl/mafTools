@@ -303,6 +303,93 @@ s name4.chr&         50 10 +       100 ATGTATG---CCG
 '''),
             # the overlap is 9 bases long, 62-70
             ]
+g_knownDegreeLT = [('''a score=0
+# test0
+s target.chr0         0 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon         249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+s name.chr1           0 10 +       100 ATGT---ATGCCG
+s name2.chr1         50 10 +       100 ATGT---ATGCCG
+s name3.chr9         50 10 +       100 ATGTA---TGCCG
+s name4.chr&         50 10 +       100 ATG---TATGCCG
+s name5 50 10 + 100 ATGTATGCCG
+
+a score=0
+# test0
+s target.chr0         0 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s name5 50 10 + 100 ATGTATGCCG
+
+a score=0
+# test0
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon         249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+s name5 50 10 + 100 ATGTATGCCG
+
+''',
+                    '''a score=0
+# test0
+s target.chr0         0 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon         249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+s name.chr1           0 10 +       100 ATGT---ATGCCG
+s name2.chr1         50 10 +       100 ATGT---ATGCCG
+s name3.chr9         50 10 +       100 ATGTA---TGCCG
+s name4.chr&         50 10 +       100 ATG---TATGCCG
+s name5 50 10 + 100 ATGTATGCCG
+
+a score=0
+# test0
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon         249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+s name5 50 10 + 100 ATGTATGCCG
+
+'''),]
+
+g_knownDegreeGT = [('''a score=0
+# test0
+s target.chr0         0 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon         249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+s name.chr1           0 10 +       100 ATGT---ATGCCG
+s name2.chr1         50 10 +       100 ATGT---ATGCCG
+s name3.chr9         50 10 +       100 ATGTA---TGCCG
+s name4.chr&         50 10 +       100 ATG---TATGCCG
+s name5 50 10 + 100 ATGTATGCCG
+
+a score=0
+# test0
+s target.chr0         0 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s name5 50 10 + 100 ATGTATGCCG
+
+a score=0
+# test0
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon         249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+s name5 50 10 + 100 ATGTATGCCG
+
+''',
+                    '''a score=0
+# test0
+s target.chr0         0 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s name5 50 10 + 100 ATGTATGCCG
+
+a score=0
+# test0
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon         249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+s name5 50 10 + 100 ATGTATGCCG
+
+'''),]
 
 def mafIsFiltered(filename, expected, header):
     f = open(filename)
@@ -366,6 +453,46 @@ class FilterTest(unittest.TestCase):
             self.assertTrue(filtered)
             if filtered:
                 mtt.removeDir(tmpDir)
+    def testFilterDegreeLT(self):
+        """ mafBlockFilter should report blocks that match the filter settings for --noDegreeLT.
+        """
+        global g_header
+        mtt.makeTempDirParent()
+        for i in xrange(0, len(g_knownDegreeLT)):
+            tmpDir = os.path.abspath(mtt.makeTempDir('filterDegreeLT'))
+            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+                                                 g_knownDegreeLT[i][0], g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = []
+            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFilter')))
+            cmd += ['--maf', testMafPath, '--noDegreeLT=4']
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            filtered = mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), g_knownDegreeLT[i][1], g_header)
+            self.assertTrue(filtered)
+            if filtered:
+                mtt.removeDir(tmpDir)
+    def testFilterDegreeGT(self):
+        """ mafBlockFilter should report blocks that match the filter settings for --noDegreeGT.
+        """
+        global g_header
+        mtt.makeTempDirParent()
+        for i in xrange(0, len(g_knownDegreeGT)):
+            tmpDir = os.path.abspath(mtt.makeTempDir('filterDegreeGT'))
+            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+                                                 g_knownDegreeGT[i][0], g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = []
+            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFilter')))
+            cmd += ['--maf', testMafPath, '--noDegreeGT=4']
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            filtered = mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), g_knownDegreeGT[i][1], g_header)
+            self.assertTrue(filtered)
+            if filtered:
+                mtt.removeDir(tmpDir)
     def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
@@ -385,10 +512,8 @@ class FilterTest(unittest.TestCase):
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
-            filtered = mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), g_knownIncludes[i][1], g_header)
-            self.assertTrue(filtered)
-            if filtered:
-                mtt.removeDir(tmpDir)
+            self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+            mtt.removeDir(tmpDir)
     def testMemory2(self):
         """ If valgrind is installed on the system, check for memory related errors (2).
         """
@@ -408,10 +533,51 @@ class FilterTest(unittest.TestCase):
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
-            filtered = mafIsFiltered(os.path.join(tmpDir, 'filtered.maf'), g_knownExcludes[i][1], g_header)
-            self.assertTrue(filtered)
-            if filtered:
-                mtt.removeDir(tmpDir)
-
+            self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+            mtt.removeDir(tmpDir)
+    def testMemory3(self):
+        """ If valgrind is installed on the system, check for memory related errors (2).
+        """
+        mtt.makeTempDirParent()
+        valgrind = mtt.which('valgrind')
+        if valgrind is None:
+            return
+        global g_header
+        mtt.makeTempDirParent()
+        for i in xrange(0, len(g_knownDegreeLT)):
+            tmpDir = os.path.abspath(mtt.makeTempDir('memory3'))
+            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+                                                 g_knownDegreeLT[i][0], g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = mtt.genericValgrind(tmpDir)
+            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFilter')))
+            cmd += ['--maf', testMafPath, '--noDegreeLT=4']
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+            mtt.removeDir(tmpDir)
+    def testMemory4(self):
+        """ If valgrind is installed on the system, check for memory related errors (2).
+        """
+        mtt.makeTempDirParent()
+        valgrind = mtt.which('valgrind')
+        if valgrind is None:
+            return
+        global g_header
+        mtt.makeTempDirParent()
+        for i in xrange(0, len(g_knownDegreeGT)):
+            tmpDir = os.path.abspath(mtt.makeTempDir('memory4'))
+            testMafPath, g_header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+                                                 g_knownDegreeGT[i][0], g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = mtt.genericValgrind(tmpDir)
+            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFilter')))
+            cmd += ['--maf', testMafPath, '--noDegreeGT=4']
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+            mtt.removeDir(tmpDir)
 if __name__ == '__main__':
     unittest.main()
