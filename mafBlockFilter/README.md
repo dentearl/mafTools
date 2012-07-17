@@ -22,6 +22,8 @@ mafBlockFilter is a program that will look through a maf file block by block and
 * <code>-m, --maf</code>   path to maf file.
 * <code>-i, --include</code>   comma separated list of sequence names to include
 * <code>-e, --exclude</code>   comma separated list of sequence names to exclude
+* <code>-g, --noDegreeGT</code>       filter out all blocks with degree greater than this value.
+* <code>-l, --noDegreeLT</code>       filter out all blocks with degree less than this value.
 * <code>-v, --verbose</code>   turns on verbose output.
 
 ## Example

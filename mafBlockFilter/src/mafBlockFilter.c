@@ -57,6 +57,8 @@ void usage(void) {
     usageMessage('m', "maf", "path to maf file.");
     usageMessage('i', "include", "comma separated list of sequence names to include.");
     usageMessage('e', "exclude", "comma separated list of sequence names to exclude.");
+    usageMessage('g', "noDegreeGT", "filter out all blocks with degree greater than this value.");
+    usageMessage('l', "noDegreeLT", "filter out all blocks with degree less than this value.");
     usageMessage('v', "verbose", "turns on verbose output.");
     exit(EXIT_FAILURE);
 }
