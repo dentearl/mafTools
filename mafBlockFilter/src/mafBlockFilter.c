@@ -49,14 +49,14 @@ void usage(void) {
             "maf file block by block and excise out sequence lines\n"
             "that match criteria established by the user on the\n"
             "command line. For example one can filter out all\n"
-            "sequence lines that start with 'hg18' using --exclude\n"
+            "sequence lines that start with 'hg18' using --excludeSeq\n"
             "or filter for sequence lines starting with only 'hg19',\n"
-            "'mm9' and 'rn4' using --include.\n\n");
+            "'mm9' and 'rn4' using --includeSeq.\n\n");
     fprintf(stderr, "Options: \n");
     usageMessage('h', "help", "show this help message and exit.");
     usageMessage('m', "maf", "path to maf file.");
-    usageMessage('i', "include", "comma separated list of sequence names to include.");
-    usageMessage('e', "exclude", "comma separated list of sequence names to exclude.");
+    usageMessage('i', "includeSeq", "comma separated list of sequence names to include.");
+    usageMessage('e', "excludeSeq", "comma separated list of sequence names to exclude.");
     usageMessage('g', "noDegreeGT", "filter out all blocks with degree greater than this value.");
     usageMessage('l', "noDegreeLT", "filter out all blocks with degree less than this value.");
     usageMessage('v', "verbose", "turns on verbose output.");
@@ -73,8 +73,8 @@ void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *i
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
             {"maf",  required_argument, 0, 'm'},
-            {"include",  required_argument, 0, 'i'},
-            {"exclude",  required_argument, 0, 'e'},
+            {"includeSeq",  required_argument, 0, 'i'},
+            {"excludeSeq",  required_argument, 0, 'e'},
             {"noDegreeGT", required_argument, 0, 'g'},
             {"noDegreeLT", required_argument, 0, 'l'},
             {0, 0, 0, 0}
@@ -126,7 +126,7 @@ void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *i
         usage();
     }
     if ((setNames && setBlockLimits) || !(setNames || setBlockLimits)) {
-        fprintf(stderr, "specify *one* from [--include or --exclude] or [--noDegreeGT or --noDegreeLT]\n");
+        fprintf(stderr, "specify *one* from [--includeSeq or --excludeSeq] or [--noDegreeGT or --noDegreeLT]\n");
         usage();
     }
     // Check there's nothing left over on the command line 

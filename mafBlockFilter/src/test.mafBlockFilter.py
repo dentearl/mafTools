@@ -414,7 +414,7 @@ def mafIsFiltered(filename, expected, header):
 
 class FilterTest(unittest.TestCase):
     def testFilterIncludes(self):
-        """ mafBlockFilter should report blocks that match the filter settings for --include.
+        """ mafBlockFilter should report blocks that match the filter settings for --includeSeq.
         """
         global g_header
         mtt.makeTempDirParent()
@@ -425,7 +425,7 @@ class FilterTest(unittest.TestCase):
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = []
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFilter')))
-            cmd += ['--maf', testMafPath, '--include', '%s' % g_sequenceList]
+            cmd += ['--maf', testMafPath, '--includeSeq', '%s' % g_sequenceList]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
@@ -434,7 +434,7 @@ class FilterTest(unittest.TestCase):
             if filtered:
                 mtt.removeDir(tmpDir)
     def testFilterExcludes(self):
-        """ mafBlockFilter should report blocks that match the filter settings for --exclude.
+        """ mafBlockFilter should report blocks that match the filter settings for --excludeSeq.
         """
         global g_header
         mtt.makeTempDirParent()
@@ -445,7 +445,7 @@ class FilterTest(unittest.TestCase):
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = []
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFilter')))
-            cmd += ['--maf', testMafPath, '--exclude', '%s' % g_sequenceList]
+            cmd += ['--maf', testMafPath, '--excludeSeq', '%s' % g_sequenceList]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
@@ -508,7 +508,7 @@ class FilterTest(unittest.TestCase):
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = mtt.genericValgrind(tmpDir)
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFilter')))
-            cmd += ['--maf', testMafPath, '--include', '%s' % g_sequenceList]
+            cmd += ['--maf', testMafPath, '--includeSeq', '%s' % g_sequenceList]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
@@ -529,7 +529,7 @@ class FilterTest(unittest.TestCase):
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = mtt.genericValgrind(tmpDir)
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockFilter')))
-            cmd += ['--maf', testMafPath, '--exclude', '%s' % g_sequenceList]
+            cmd += ['--maf', testMafPath, '--excludeSeq', '%s' % g_sequenceList]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'filtered.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
