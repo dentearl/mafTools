@@ -116,7 +116,7 @@ static void test_pairCounting_0(CuTest *testCase) {
     uint64_t *chooseTwoArray = buildChooseTwoArray();
     uint64_t expected, observed;
     uint32_t lineNumber, numSeqs, numLines;
-    stHash *legitPairs = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
+    stSet *legitPairs = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
     mafLine_t *ml = NULL;
     mafBlock_t *mb = NULL;
     numSeqs = 4;
@@ -128,10 +128,10 @@ static void test_pairCounting_0(CuTest *testCase) {
     input[2] = stString_copy("s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca");
     input[3] = stString_copy("s baboon         249182 13 +   4622798 gcagctgaaaaca");
     input[4] = stString_copy("s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA");
-    stHash_insert(legitPairs, stString_copy("hg16.chr7"), stString_copy(""));
-    stHash_insert(legitPairs, stString_copy("panTro1.chr6"), stString_copy(""));
-    stHash_insert(legitPairs, stString_copy("baboon"), stString_copy(""));
-    stHash_insert(legitPairs, stString_copy("mm4.chr6"), stString_copy(""));
+    stSet_insert(legitPairs, stString_copy("hg16.chr7"));
+    stSet_insert(legitPairs, stString_copy("panTro1.chr6"));
+    stSet_insert(legitPairs, stString_copy("baboon"));
+    stSet_insert(legitPairs, stString_copy("mm4.chr6"));
     mb = maf_newMafBlock();
     lineNumber = 3;
     maf_mafBlock_setLineNumber(mb, lineNumber);
@@ -152,11 +152,11 @@ static void test_pairCounting_0(CuTest *testCase) {
     }
     free(input);
     maf_destroyMafBlockList(mb);
-    stHash_destruct(legitPairs);
+    stSet_destruct(legitPairs);
 
     // new test
     expected = chooseTwo(3) * 13;
-    legitPairs = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
+    legitPairs = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
     numSeqs = 4;
     numLines = 5;
     input = (char**) st_malloc(sizeof(*input) * numLines);
@@ -165,9 +165,9 @@ static void test_pairCounting_0(CuTest *testCase) {
     input[2] = stString_copy("s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca");
     input[3] = stString_copy("s baboon         249182 13 +   4622798 gcagctgaaaaca");
     input[4] = stString_copy("s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA");
-    stHash_insert(legitPairs, stString_copy("hg16.chr7"), stString_copy(""));
-    stHash_insert(legitPairs, stString_copy("panTro1.chr6"), stString_copy(""));
-    stHash_insert(legitPairs, stString_copy("mm4.chr6"), stString_copy(""));
+    stSet_insert(legitPairs, stString_copy("hg16.chr7"));
+    stSet_insert(legitPairs, stString_copy("panTro1.chr6"));
+    stSet_insert(legitPairs, stString_copy("mm4.chr6"));
     mb = maf_newMafBlock();
     lineNumber = 3;
     maf_mafBlock_setLineNumber(mb, lineNumber);
@@ -188,10 +188,10 @@ static void test_pairCounting_0(CuTest *testCase) {
     }
     free(input);
     maf_destroyMafBlockList(mb);
-    stHash_destruct(legitPairs);
+    stSet_destruct(legitPairs);
     // new test
     expected = chooseTwo(3) + chooseTwo(4) * 37;
-    legitPairs = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
+    legitPairs = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
     numSeqs = 5;
     numLines = 6;
     input = (char**) st_malloc(sizeof(*input) * numLines);
@@ -201,10 +201,10 @@ static void test_pairCounting_0(CuTest *testCase) {
     input[3] = stString_copy("s baboon         116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG");
     input[4] = stString_copy("s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG");
     input[5] = stString_copy("s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG");
-    stHash_insert(legitPairs, stString_copy("hg18.chr7"), stString_copy(""));
-    stHash_insert(legitPairs, stString_copy("panTro1.chr6"), stString_copy(""));
-    stHash_insert(legitPairs, stString_copy("baboon"), stString_copy(""));
-    stHash_insert(legitPairs, stString_copy("rn3.chr4"), stString_copy(""));
+    stSet_insert(legitPairs, stString_copy("hg18.chr7"));
+    stSet_insert(legitPairs, stString_copy("panTro1.chr6"));
+    stSet_insert(legitPairs, stString_copy("baboon"));
+    stSet_insert(legitPairs, stString_copy("rn3.chr4"));
     mb = maf_newMafBlock();
     lineNumber = 3;
     maf_mafBlock_setLineNumber(mb, lineNumber);
@@ -226,7 +226,7 @@ static void test_pairCounting_0(CuTest *testCase) {
     free(input);
     free(chooseTwoArray);
     maf_destroyMafBlockList(mb);
-    stHash_destruct(legitPairs);
+    stSet_destruct(legitPairs);
 }
 static char** createRandomColumn(uint32_t n, uint32_t colLength, double gapProb) {
     char **mat = (char**) st_malloc(sizeof(*mat) * n);

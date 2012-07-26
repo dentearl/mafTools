@@ -26,6 +26,6 @@ mafBlockFinder is a program that will look through a maf file for a particular s
 
 ## Example
     $ ./mafBlockFinder --maf example.maf --seq apple.chr20 --pos 500
-    4: s apple.chr20 0 795 + 73767698 ...AATTG ->G<- ACCCG...
+    block 3, line 4: s apple.chr20 0 795 + 73767698 ...AATTG ->G<- ACCCG...
     
-We see from this example that position 500 of apple.chr20 is located at line 4 of example.maf and that the base at this position is G flanked by AATTG on the left and ACCCG on the right.
+We see from this example that position 500 of apple.chr20 is located at line 4 of example.maf, is part of a block that starts at line 3,  and that the base at this position is G flanked by AATTG on the left and ACCCG on the right.

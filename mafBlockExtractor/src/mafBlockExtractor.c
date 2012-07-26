@@ -136,26 +136,26 @@ void usage(void) {
     usageMessage('v', "verbose", "turns on verbose output.");
     exit(EXIT_FAILURE);
 }
-bool checkRegion(uint32_t start, uint32_t stop, uint32_t str, 
-                 uint32_t lng, uint32_t src, char strand) {
+bool checkRegion(uint32_t targetStart, uint32_t targetStop, uint32_t lineStart, 
+                 uint32_t length, uint32_t sourceLength, char strand) {
     // check to see if pos is in this block
-    static unsigned long absStart, absEnd;
+    uint32_t absStart, absEnd;
     if (strand == '-') {
-        absStart = src - (str + lng);
-        absEnd = lng - str - 1;
+        absStart = sourceLength - (lineStart + length);
+        absEnd = sourceLength - 1 - lineStart;
     } else {
-        absStart = str;
-        absEnd = str + lng - 1;
+        absStart = lineStart;
+        absEnd = lineStart + length - 1;
     }
-    if (absEnd < start)
+    if (absEnd < targetStart)
         return false;
-    if (stop < absStart)
+    if (targetStop < absStart)
         return false;
-    if ((absStart <= start) && (start <= absEnd))
+    if ((absStart <= targetStart) && (targetStart <= absEnd))
         return true;
-    if ((absStart <= stop) && (stop <= absEnd))
+    if ((absStart <= targetStop) && (targetStop <= absEnd))
         return true;
-    if ((start <= absStart) && (absEnd <= stop))
+    if ((targetStart <= absStart) && (absEnd <= targetStop))
         return true;
     return false;
 }

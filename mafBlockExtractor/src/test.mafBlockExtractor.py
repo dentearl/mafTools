@@ -108,6 +108,14 @@ s baboon         249182 13 +   4622798 gcagctgaaaaca
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 ''',
+                          '''a degree=4
+s simChimp.chrA     15393341 348 + 53121445 ATATTGAGGAGCAGGATGGGTATAGAGGCCCTGACCCATTAATGTGTAAGCACTAGGCAGCTGGGAGATACCCCAGAGGGCGGGGTCACTGAATTCACTGGCCCACCACTGTAAATACATTCTAACCAGTGGGTTTAGGGCTCTGTGCATTAGAACCACTCTGAAGAAGTGTAACACACCACCTAGTGAGCTGCCGGGCCGCCAGCAACTTCTTTTTCCCACATGACCCATGCAAGCCCGTGATTTCTCCCTGGTACATGATATTTGGGATTCCAGGGACCTAATGGAGCATGCTATTCCTGTGTTAGTTATCACTTCGAAGGGGGTGCAAGAGTGTAAGTAATGGGT
+s simGorilla.chrA   15595743 348 + 53120926 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACCCATTAATGTGTAAGCACTAGGCAGCTGGGAGATACTCCAGAGGGAGGGGTCACTGAATTCACTGGCCCACCACTGTAAATACATTCTAACCAGTGGGTTTAGGGCTCGGTGCATTAGAACCACCCTGAAGAAGTGTAACGCACCACCTAGTGAGCTGCCGGGCCGCCAGCAACTTCTTTTTCCCACATGACCCATGCATGCCCGTGATTTCTCCCTGGTACATGGTTTTTGGGATTCCAGGGACCTAATGGAGCATACTATTCCTGTGTTAGTTATCACTTCGAAGGGGGTGCGAGAGTGTAAGTAATGGGT
+s simHuman.chrA     36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACCTATTAATGTGTAAGCACTAGGCAGCTGGGCGATACCCCAGAGGGAGGGGTCACTGAATTCACTGGCCCACCACTGTAAATACATTCTAACCAGTGGGTTTAGGGCTCTGTGCATTAGAACCACCCTGAAGAAGAGTAACGCACCACCTAGTGAGCTGCCGGGCCGCCAGCAAGTTCTTTTTCCCACATGACCCATGCAAGCCCGTGATTTCTCCCTGGTACATGATATTTGGGATTCCAGGGACCTAATGGAGCATGCTATTCCTGTGTTAGTTATCACTTCGAAGGGGGTGCAAGAGTGTAAGTAATGGGT
+s simOrang.chrE       126390 348 + 37692687 ATTTTGAGGAGCAGGATGGGTATAGAAGCCCTGACCCATTAATGTGTGAGCTCTAGGCAGCTTGGAGATACTGCAGAGGGAGGGGTCACTGAATTCACTGGCCCACCACTGTAAATACATACTAACCGGTGGGTTTAGGGCTCTGTGCATTAGAACCACCCTGAGGAAGTGTAACGCACCACCTAGTGAGCTGCCGGGCCACCAGCAACTTCTTTTTCCCACATGACCCATGCAAGCCCGTGATTTCTCCCTGGTACATGATCTTTGGGATTCCAGGGACCTAATGGCGGATGCTATTCCTGTGTTAGTTATCACTTCGAAGGGGGCGCAAGAGTGTAAGTAATGGGT
+s target.chr0     36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACCTATTAATGTGTAAGCACTAGGCAGCTGGGCGATACCCCAGAGGGAGGGGTCACTGAATTCACTGGCCCACCACTGTAAATACATTCTAACCAGTGGGTTTAGGGCTCTGTGCATTAGAACCACCCTGAAGAAGAGTAACGCACCACCTAGTGAGCTGCCGGGCCGCCAGCAAGTTCTTTTTCCCACATGACCCATGCAAGCCCGTGATTTCTCCCTGGTACATGATATTTGGGATTCCAGGGACCTAATGGAGCATGCTATTCCTGTGTTAGTTATCACTTCGAAGGGGGTGCAAGAGTGTAAGTAATGGGT
+
+'''
     ]
 
 def mafIsExtracted(maf):
@@ -158,12 +166,12 @@ class ExtractionTest(unittest.TestCase):
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsExtracted(os.path.join(tmpDir, 'extracted.maf')))
             mtt.removeDir(tmpDir)
-    def testNonExtraction(self):
+    def testNonExtraction0(self):
         """ mafBlockExtractor should not extract blocks when they do not match.
         """
         mtt.makeTempDirParent()
         for i in xrange(0, 10):
-            tmpDir = os.path.abspath(mtt.makeTempDir())
+            tmpDir = os.path.abspath(mtt.makeTempDir('nonExtraction_0'))
             random.shuffle(g_nonOverlappingBlocks)
             testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    ''.join(g_nonOverlappingBlocks), g_headers)
@@ -177,8 +185,33 @@ class ExtractionTest(unittest.TestCase):
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.fileIsEmpty(os.path.join(tmpDir, 'extracted.maf')))
             mtt.removeDir(tmpDir)
-    def testMemory1(self):
-        """ If valgrind is installed on the system, check for memory related errors (1).
+    def testNonExtraction1(self):
+        """ mafBlockExtractor should not extract blocks when they do not match.
+        """
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('nonExtraction_1'))
+        block = '''a degree=4
+s simChimp.chrA     15393341 348 + 53121445 ATATTGAGGAGCAGGATGGGTATAGAGGCCCTGACCCATTAATGTGTAAGCACTAGGCAGCTGGGAGATACCCCAGAGGGCGGGGTCACTGAATTCACTGGCCCACCACTGTAAATACATTCTAACCAGTGGGTTTAGGGCTCTGTGCATTAGAACCACTCTGAAGAAGTGTAACACACCACCTAGTGAGCTGCCGGGCCGCCAGCAACTTCTTTTTCCCACATGACCCATGCAAGCCCGTGATTTCTCCCTGGTACATGATATTTGGGATTCCAGGGACCTAATGGAGCATGCTATTCCTGTGTTAGTTATCACTTCGAAGGGGGTGCAAGAGTGTAAGTAATGGGT
+s simGorilla.chrA   15595743 348 + 53120926 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACCCATTAATGTGTAAGCACTAGGCAGCTGGGAGATACTCCAGAGGGAGGGGTCACTGAATTCACTGGCCCACCACTGTAAATACATTCTAACCAGTGGGTTTAGGGCTCGGTGCATTAGAACCACCCTGAAGAAGTGTAACGCACCACCTAGTGAGCTGCCGGGCCGCCAGCAACTTCTTTTTCCCACATGACCCATGCATGCCCGTGATTTCTCCCTGGTACATGGTTTTTGGGATTCCAGGGACCTAATGGAGCATACTATTCCTGTGTTAGTTATCACTTCGAAGGGGGTGCGAGAGTGTAAGTAATGGGT
+s simHuman.chrA     36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACCTATTAATGTGTAAGCACTAGGCAGCTGGGCGATACCCCAGAGGGAGGGGTCACTGAATTCACTGGCCCACCACTGTAAATACATTCTAACCAGTGGGTTTAGGGCTCTGTGCATTAGAACCACCCTGAAGAAGAGTAACGCACCACCTAGTGAGCTGCCGGGCCGCCAGCAAGTTCTTTTTCCCACATGACCCATGCAAGCCCGTGATTTCTCCCTGGTACATGATATTTGGGATTCCAGGGACCTAATGGAGCATGCTATTCCTGTGTTAGTTATCACTTCGAAGGGGGTGCAAGAGTGTAAGTAATGGGT
+s simOrang.chrE       126390 348 + 37692687 ATTTTGAGGAGCAGGATGGGTATAGAAGCCCTGACCCATTAATGTGTGAGCTCTAGGCAGCTTGGAGATACTGCAGAGGGAGGGGTCACTGAATTCACTGGCCCACCACTGTAAATACATACTAACCGGTGGGTTTAGGGCTCTGTGCATTAGAACCACCCTGAGGAAGTGTAACGCACCACCTAGTGAGCTGCCGGGCCACCAGCAACTTCTTTTTCCCACATGACCCATGCAAGCCCGTGATTTCTCCCTGGTACATGATCTTTGGGATTCCAGGGACCTAATGGCGGATGCTATTCCTGTGTTAGTTATCACTTCGAAGGGGGCGCAAGAGTGTAAGTAATGGGT
+s target.chr0       36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACCTATTAATGTGTAAGCACTAGGCAGCTGGGCGATACCCCAGAGGGAGGGGTCACTGAATTCACTGGCCCACCACTGTAAATACATTCTAACCAGTGGGTTTAGGGCTCTGTGCATTAGAACCACCCTGAAGAAGAGTAACGCACCACCTAGTGAGCTGCCGGGCCGCCAGCAAGTTCTTTTTCCCACATGACCCATGCAAGCCCGTGATTTCTCCCTGGTACATGATATTTGGGATTCCAGGGACCTAATGGAGCATGCTATTCCTGTGTTAGTTATCACTTCGAAGGGGGTGCAAGAGTGTAAGTAATGGGT
+
+'''
+        testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+                               block, g_headers)
+        parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor'))]
+        cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+                '--seq', 'simHuman.chrA', '--start', '%d' % 29953315, 
+                '--stop', '%d' % 29953315]
+        outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
+        mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
+        mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+        self.assertTrue(mtt.fileIsEmpty(os.path.join(tmpDir, 'extracted.maf')))
+        mtt.removeDir(tmpDir)
+    def testMemory0(self):
+        """ If valgrind is installed on the system, check for memory related errors (0).
         """
         mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
@@ -186,7 +219,7 @@ class ExtractionTest(unittest.TestCase):
             return
         for i in xrange(0, 10):
             shuffledBlocks = []
-            tmpDir = os.path.abspath(mtt.makeTempDir())
+            tmpDir = os.path.abspath(mtt.makeTempDir('memory_0'))
             order = [1] * len(g_overlappingBlocks) + [0] * len(g_nonOverlappingBlocks)
             random.shuffle(order)
             random.shuffle(g_overlappingBlocks)
@@ -212,15 +245,15 @@ class ExtractionTest(unittest.TestCase):
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)
-    def testMemory2(self):
-        """ If valgrind is installed on the system, check for memory related errors (2).
+    def testMemory1(self):
+        """ If valgrind is installed on the system, check for memory related errors (1).
         """
         mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
         for i in xrange(0, 10):
-            tmpDir = os.path.abspath(mtt.makeTempDir())
+            tmpDir = os.path.abspath(mtt.makeTempDir('memory_1'))
             random.shuffle(g_nonOverlappingBlocks)
             testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    ''.join(g_nonOverlappingBlocks), g_headers)
