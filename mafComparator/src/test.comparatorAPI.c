@@ -52,7 +52,9 @@ static void printMat(uint64_t **mat, uint64_t n) {
 static void test_mappingMatrixToArray_0(CuTest *testCase) {
     uint64_t **mat = NULL;
     uint64_t index, result;
-    for (uint64_t n = 2; n < 11; ++n) {
+    uint64_t n;
+    for (uint64_t p = 2; p < 14; ++p) {
+        n = 2 << p;
         // build out mat
         mat = (uint64_t **) st_malloc(sizeof(*mat) * n);
         for (uint64_t r = 0; r < n; ++r) {
@@ -60,7 +62,7 @@ static void test_mappingMatrixToArray_0(CuTest *testCase) {
         }
         index = 0;
         for (uint64_t r = 0; r < n; ++r) {
-            for (uint64_t c = r + 1; c < n; ++c) {
+            for  (uint64_t c = r + 1; c < n; ++c) {
                 mat[r][c] = index++;
             }
         }
@@ -83,7 +85,7 @@ static void test_mappingArrayToMatrix_0(CuTest *testCase) {
     uint64_t **mat = NULL;
     uint64_t index, resultRow, resultCol;
     uint64_t n;
-    for (uint64_t p = 0; p < 12; ++p) {
+    for (uint64_t p = 0; p < 14; ++p) {
         n = 2 << p;
         // build out mat
         mat = (uint64_t **) st_malloc(sizeof(*mat) * n);

@@ -259,6 +259,7 @@ void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i) {
        = 3 * n - (1 + 2 + 3) + c - r - 1
        = r * n - (sum_{i=1}^{r} i) + c - r - 1
        = r * n - (r (r + 1) / 2) + c - r - 1 
+       = r * (n - 1) - (r (r + 1) / 2) + c - 1 
        = 3 * 5 - (3 * 4 / 2) + 4 - 3 - 1
        = 15 - 6 + 4 - 3 - 1
        = 9
@@ -266,15 +267,55 @@ void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i) {
        and the 2 comes from c - r.
        Essentially, this function is the inverse of arrayIndexToPairIndices().
      */
-    assert(n > 0);
-    *i = (r * n - (r * (r + 1) / 2) + c - r - 1);
+    assert(n > 1);
+    if (n == 2) {
+        *i = 0;
+        return;
+    }
+    *i = (r * (n - 1) - (r * (r + 1) / 2) + c - 1);
 }
 void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c) { 
     // i is the index, n is the length of one side of the square (i.e. the number
     // of sequences),  r and c are pointers to record the row and column (respectively) 
     // of the index. Essentially, this function is the inverse of  pairIndicesToArrayIndex().
-    assert(n > 0);
-    if (n == 1) {
+    /*
+                   c
+             0 1 2 3 4
+            __________
+       r 0 | - 0 1 2 3
+         1 |   - 4 5 6
+         2 |     - 7 8
+         3 |       - 9
+         4 |         -
+
+      Our solution for finding the row is based on the fact that by counting from
+      lower rows to upper rows the number of elements is 1 + 2 + 3 + 4... with the 
+      general form sum_{j=1}^{m} j, which simplifies to m*(m-1)/2.
+      We find the row, r, first by way of x, where
+      x is the number of positions greater than i
+      x = n * (n - 1) / 2 - i - 1
+      the term n*(n-1)/2 is the total number of elements, the -1 transforms 
+      from 1 based to 0 based coordinates.
+      Now we wish to find the largest k such that k(k-1)/2 <= x
+      k * (k - 1) / 2 <= x
+            k * (k-1) <= 2 * x
+    (k - 1/2)^2 - 1/4 <= 2x
+          (k - 1/2)^2 <= 2x + 1/4
+    2^2 * (k - 1/2)^2 <= 8 * x + 1
+        2 * (k - 1/2) <= sqrt(8 * x + 1)
+                2 * k <= sqrt(8 * x + 1) + 1
+                    k <= (sqrt(8 * x + 1) + 1) / 2
+                    we seek the largest k, 
+                    k = floor((sqrt(8 * x + 1) + 1) / 2)
+      from here we find r as the difference from the number of rows and k, with a 1 to 0 transform
+      r = n - k - 1
+      Finally we find the column index, c, given i, n and r.
+      c = i + 1 - (r * (n - 1) - r * (r + 1) / 2)
+      where the +1 term shifts the column index from 0 to 1 (see picture above, c can never be 0).
+      the term (r * (n - 1) - r * (r + 1) / 2) provides the column offset as a function of the row.
+     */
+    assert(n > 1);
+    if (n == 2) {
         *r = 0;
         *c = 1;
         return;
@@ -283,10 +324,10 @@ void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c) {
         fprintf(stderr, "Bad ju-ju, i:%" PRIu64 ", n:%" PRIu64", ((n*(n-1))/2:%" PRIu64 "\n", i, n, ((n*(n-1))/2));
     }
     assert(i < ((n * (n - 1)) / 2));
-    uint64_t x = (n * (n - 1)) / 2 - 1 - i;
-    uint64_t k = floor((sqrt(8 * x + 1) - 1) / 2);
-    *r = n - 2 - k;
-    *c = i - ((*r) * n - ((*r) * ((*r) + 1)) / 2 - (*r) -1);
+    uint64_t x = (n * (n - 1)) / 2 - i - 1;
+    uint64_t k = floor((sqrt(8 * x + 1) + 1) / 2);
+    *r = n - k - 1;
+    *c = i - ((*r) * (n - 1) - ((*r) * ((*r) + 1)) / 2) + 1;
     assert((*r) < n);
     assert((*c) < n);
 }
