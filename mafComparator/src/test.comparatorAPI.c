@@ -50,68 +50,62 @@ static void printMat(uint64_t **mat, uint64_t n) {
     printf("\n");
 }
 static void test_mappingMatrixToArray_0(CuTest *testCase) {
-    uint64_t **mat = NULL;
     uint64_t index, result;
     uint64_t n;
-    for (uint64_t p = 2; p < 14; ++p) {
+    for (uint64_t p = 0; p < 14; ++p) {
         n = 2 << p;
-        // build out mat
-        mat = (uint64_t **) st_malloc(sizeof(*mat) * n);
-        for (uint64_t r = 0; r < n; ++r) {
-            mat[r] = st_malloc(sizeof(uint64_t *) * n);
-        }
         index = 0;
-        for (uint64_t r = 0; r < n; ++r) {
-            for  (uint64_t c = r + 1; c < n; ++c) {
-                mat[r][c] = index++;
-            }
-        }
-        // printMat(mat, n);
-        // test
         for (uint64_t r = 0; r < n - 1; ++r) {
             for (uint64_t c = r + 1; c < n; ++c) {
                 pairIndicesToArrayIndex(r, c, n, &result);
-                CuAssertTrue(testCase, mat[r][c] == result);
+                CuAssertTrue(testCase, index == result);
+                ++index;
             }
         }
-        // clean up
-        for (uint64_t r = 0; r < n; ++r) {
-            free(mat[r]);
-        }
-        free(mat);
     }
 }
 static void test_mappingArrayToMatrix_0(CuTest *testCase) {
-    uint64_t **mat = NULL;
     uint64_t index, resultRow, resultCol;
     uint64_t n;
     for (uint64_t p = 0; p < 14; ++p) {
         n = 2 << p;
-        // build out mat
-        mat = (uint64_t **) st_malloc(sizeof(*mat) * n);
-        for (uint64_t r = 0; r < n; ++r) {
-            mat[r] = st_malloc(sizeof(uint64_t *) * n);
-        }
         index = 0;
-        for (uint64_t r = 0; r < n; ++r) {
-            for (uint64_t c = r + 1; c < n; ++c) {
-                mat[r][c] = index++;
-            }
-        }
-        // printMat(mat, n);
-        // test
         for (uint64_t r = 0; r < n - 1; ++r) {
             for (uint64_t c = r + 1; c < n; ++c) {
-                arrayIndexToPairIndices(mat[r][c], n, &resultRow, &resultCol);
+                arrayIndexToPairIndices(index, n, &resultRow, &resultCol);
                 CuAssertTrue(testCase, r == resultRow);
                 CuAssertTrue(testCase, c == resultCol);
+                ++index;
             }
         }
-        // clean up
-        for (uint64_t r = 0; r < n; ++r) {
-            free(mat[r]);
+    }
+}
+static void test_mappingRoundTrip_0(CuTest *testCase) {
+    uint64_t i, r, c;
+    uint64_t resultIndex, resultRow, resultCol;
+    uint64_t n;
+    for (uint64_t p = 0; p < 14; ++p) {
+        n = 2 << p;
+        // stuff the correct values into the matrix
+        uint64_t iItr = 0;
+        for (uint64_t rItr = 0; rItr < n; ++rItr) {
+            for (uint64_t cItr = rItr + 1; cItr < n; ++cItr) {
+                r = rItr;
+                c = cItr;
+                i = iItr;
+                arrayIndexToPairIndices(i, n, &resultRow, &resultCol);
+                pairIndicesToArrayIndex(r, c, n, &resultIndex);
+                CuAssertTrue(testCase, i == resultIndex);
+                CuAssertTrue(testCase, r == resultRow);
+                CuAssertTrue(testCase, c == resultCol);
+                arrayIndexToPairIndices(resultIndex, n, &r, &c);
+                pairIndicesToArrayIndex(resultRow, resultCol, n, &i);
+                CuAssertTrue(testCase, i == resultIndex);
+                CuAssertTrue(testCase, r == resultRow);
+                CuAssertTrue(testCase, c == resultCol);
+                iItr++;
+            }
         }
-        free(mat);
     }
 }
 static void test_pairCounting_0(CuTest *testCase) {
@@ -255,10 +249,6 @@ static bool* createRandomLegitRow(uint32_t n, double alpha) {
         }
     }
     return legitRow;
-}
-static double runningAverage(double m, double x, uint32_t i) {
-    m += (x - m) / (i + 1);
-    return m;
 }
 static char* randomName(uint32_t n) {
     char *s = (char*) st_malloc(sizeof(*s) * (n + 9));
@@ -476,7 +466,6 @@ static void test_pairSortComparison_0(CuTest *testCase) {
 }
 CuSuite* comparatorAPI_TestSuite(void) {
     (void) (printMat);
-    (void) (runningAverage);
     (void) (test_columnSampling_timing_0);
     (void) (test_mappingMatrixToArray_0);
     (void) (test_mappingArrayToMatrix_0);
@@ -486,6 +475,7 @@ CuSuite* comparatorAPI_TestSuite(void) {
     CuSuite* suite = CuSuiteNew();
     SUITE_ADD_TEST(suite, test_mappingMatrixToArray_0);
     SUITE_ADD_TEST(suite, test_mappingArrayToMatrix_0);
+    SUITE_ADD_TEST(suite, test_mappingRoundTrip_0);
     SUITE_ADD_TEST(suite, test_pairCounting_0);
     SUITE_ADD_TEST(suite, test_chooseTwoValues_0);
     SUITE_ADD_TEST(suite, test_pairSortComparison_0);
