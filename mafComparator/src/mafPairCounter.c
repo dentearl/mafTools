@@ -48,7 +48,7 @@ void usage(void) {
     usageMessage('\0', "sequences", "Comma separated list of sequences allowed to be in pairs. " 
                  "To allow all sequences, either specify *every* sequence or don't invoke "
                  "this option. Leaving --sequences off results in all sequences being used.");
-    usageMessage('\0', "maf2", "IF Specificied, this is the  location of the second MAF file. "
+    usageMessage('\0', "maf2", "IF specificied, this is the  location of the second MAF file. "
                  "Using this option causes --sequences option to be ignored. Sequences will "
                  "be discovered by intersection of sequences present in both maf files, pairs "
                  "reported will be from the --maf option.");
@@ -134,6 +134,7 @@ int main(int argc, char **argv) {
     stSet *legitSeqsSet = NULL;
     stSet *maf1SeqSet = NULL;
     stSet *maf2SeqSet = NULL;
+    stHash *sequenceLengthHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
     parseArgs(argc, argv, &maf, &maf2, &listOfLegitSequences);
     if (listOfLegitSequences != NULL) {
         legitSeqsSet = buildSet(listOfLegitSequences);
@@ -142,8 +143,8 @@ int main(int argc, char **argv) {
         // build legitHash by intersection
         maf1SeqSet = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
         maf2SeqSet = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
-        populateNames(maf, maf1SeqSet);
-        populateNames(maf2, maf2SeqSet);
+        populateNames(maf, maf1SeqSet, sequenceLengthHash);
+        populateNames(maf2, maf2SeqSet, sequenceLengthHash);
         legitSeqsSet = stSet_getIntersection(maf1SeqSet, maf2SeqSet);
     }
     uint64_t numberOfPairs = countPairsInMaf(maf, legitSeqsSet);
@@ -159,5 +160,6 @@ int main(int argc, char **argv) {
     free(maf);
     free(maf2);
     free(listOfLegitSequences);
+    stHash_destruct(sequenceLengthHash);
     return(EXIT_SUCCESS);
 }
