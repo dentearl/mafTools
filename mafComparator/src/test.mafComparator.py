@@ -653,7 +653,6 @@ class WigglePairsTest(unittest.TestCase):
             passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
             self.assertTrue(passed)
         mtt.removeDir(tmpDir)
-        
 
 class KnownValuesTest(unittest.TestCase):
     # knownValues contains quad-tuples,
