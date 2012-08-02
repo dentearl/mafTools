@@ -96,7 +96,8 @@ bool g_isVerboseFailures;
 void populateNames(const char *mAFFile, stSet *set, stHash *seqLengthHash);
 stSortedSet* compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint32_t numberOfSamples, 
                             uint64_t *numberOfPairsInFile, stSet *legitimateSequences, 
-                            stHash *intervalsHash, uint32_t near);
+                            stHash *intervalsHash, uint32_t near, stHash *wigHash, bool isAtoB, 
+                            uint64_t binLen);
 void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...);
 void reportResults(stSortedSet *results_AB, const char *mAFFileA, const char *mAFFileB, 
                    FILE *fileHandle, uint32_t near, stSet *legitimateSequences, 
@@ -117,25 +118,25 @@ uint64_t* buildChooseTwoArray(void);
 uint64_t countPairsInMaf(const char *filename, stSet *legitPairs);
 void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i);
 void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c);
-void samplePairsFromColumn(double acceptProbability, stSortedSet *pairs, 
+void samplePairsFromColumn(double acceptProbability, stSortedSet *sampledPairs, 
                            uint32_t numSeqs, uint64_t *chooseTwoArray,
                            char **nameArray, uint32_t *columnPositions);
-void samplePairsFromColumnBruteForce(double acceptProbability, stSortedSet *pairs, 
+void samplePairsFromColumnBruteForce(double acceptProbability, stSortedSet *sampledPairs, 
                                      uint64_t *chooseTwoArray,
                                      char **nameArray, uint32_t *positions, uint32_t numSeqs, 
                                      uint64_t numPairs);
-void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs, 
+void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *sampledPairs, 
                                    uint64_t *chooseTwoArray,
                                    char **nameArray, uint32_t *positions, uint32_t numSeqs, 
                                    uint64_t numPairs);
 void samplePairsFromColumnNaive(char **mat, uint32_t c, bool *legitRows, double acceptProbability, 
-                                stSortedSet *pairs, uint64_t *chooseTwoArray, 
+                                stSortedSet *sampledPairs, uint64_t *chooseTwoArray, 
                                 char **nameArray, uint32_t *positions, uint32_t numSeqs, 
                                 uint64_t numPairs);
 uint32_t countLegitPositions(char **mat, uint32_t c, uint32_t numRows);
 mafLine_t** cullMlArrayByColumn(char **mat, uint32_t c, mafLine_t **mlArray, bool *legitRows, uint32_t numRows, uint32_t numLegitGaplessPositions);
 uint32_t* cullPositionsByColumn(char **mat, uint32_t c, uint32_t *positions, bool *legitRows, uint32_t numRows, uint32_t numLegitGaplessPositions);
-void walkBlockSamplingPairs(mafBlock_t *mb, stSortedSet *pairs, double acceptProbability, stSet *legitSequences, uint64_t *chooseTwoArray);
+void walkBlockSamplingPairs(mafBlock_t *mb, stSortedSet *sampledPairs, double acceptProbability, stSet *legitSequences, uint64_t *chooseTwoArray);
 int aPair_cmpFunction(APair *aPair1, APair *aPair2);
 uint32_t sumBoolArray(bool *legitRows, uint32_t numSeqs);
 mafLine_t** createMafLineArray(mafBlock_t *mb, uint32_t numLegit, bool *legitRows);
@@ -145,10 +146,5 @@ unsigned countCommas(char *s);
 bool patternMatches(char *a, char *b);
 void buildWigglePairHash(stHash *sequenceLengthHash, stList *wigglePairPatternList, 
                          stHash *wigglePairHash, uint64_t wiggleBinLength);
-void parseResultForWiggles(stSortedSet *results, stHash *wigglePairHash, bool isAtoB, 
-                           uint64_t wiggleBinLength);
-void parseResultsForWiggles(stSortedSet *results_12, stSortedSet *results_21, stHash *wigglePairHash, 
-                            uint64_t wiggleBinLength);
 void reportResultsForWiggles(stHash *wigglePairHash, FILE *fileHandle);
-void printarrays(stHash *wigglePairHash);
 #endif /* _COMPARATOR_API_H_ */

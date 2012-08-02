@@ -1,6 +1,6 @@
 # mafComparator
 
-February 2011 -- July 2012
+February 2011 -- August 2012
 
 ## Authors
 

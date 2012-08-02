@@ -371,6 +371,130 @@ s D 0 10 + 20 ATGTACGTAC
 
 ''', 5, 60, 0),
                        ]
+knownValuesWiggles = [('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ACGTACGTAC
+''', 
+                       '''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ACGTACGTAC
+''', 
+                       'A', 'B', 2,
+                       [{'reference':'A',
+                         'partner':'B',
+                         'referenceLength':'20',
+                         'numberOfBins':'10',
+                         'binLength':'2',
+                         'presentAtoB':'2,2,2,2,2,0,0,0,0,0',
+                         'presentBtoA':'2,2,2,2,2,0,0,0,0,0',
+                         'absentAtoB':'0,0,0,0,0,0,0,0,0,0',
+                         'absentBtoA':'0,0,0,0,0,0,0,0,0,0',
+                         },
+                        ]),
+                      # test 1
+                      ('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ACGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+''', 
+                       '''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ACGTACGTAC
+s C 0 10 + 20 ACGTACGTAC
+''', 
+                       'A', 'B', 2,
+                       [{'reference':'A',
+                         'partner':'B',
+                         'referenceLength':'20',
+                         'numberOfBins':'10',
+                         'binLength':'2',
+                         'presentAtoB':'2,2,2,2,2,0,0,0,0,0',
+                         'presentBtoA':'2,2,2,2,2,0,0,0,0,0',
+                         'absentAtoB':'0,0,0,0,0,0,0,0,0,0',
+                         'absentBtoA':'0,0,0,0,0,0,0,0,0,0',
+                         },
+                        ]),
+                      # test 2
+                      ('''a score=0
+s A.chr0 0 10 + 20 ACGTACGTAC
+s B      0 10 + 20 ACGTACGTAC
+''', 
+                       '''a score=0
+s A.chr0 0 10 + 20 ACGTACGTAC
+s B      0 10 + 20 ACGTACGTAC
+''', 
+                       'A*', 'B', 2,
+                       [{'reference':'A.chr0',
+                         'partner':'B',
+                         'referenceLength':'20',
+                         'numberOfBins':'10',
+                         'binLength':'2',
+                         'presentAtoB':'2,2,2,2,2,0,0,0,0,0',
+                         'presentBtoA':'2,2,2,2,2,0,0,0,0,0',
+                         'absentAtoB':'0,0,0,0,0,0,0,0,0,0',
+                         'absentBtoA':'0,0,0,0,0,0,0,0,0,0',
+                         },
+                        ]),
+                      # test 3
+                      ('''a score=0
+s A.chr0 0 10 + 20 ACGTACGTAC
+s B      0 10 + 20 ACGTACGTAC
+
+s A.chr1 0 10 + 20 ACGTACGTAC
+s B      0 10 + 20 ACGTACGTAC
+''', 
+                       '''a score=0
+s A.chr0 0 10 + 20 ACGTACGTAC
+s B      0 10 + 20 ACGTACGTAC
+
+s A.chr1 0 10 + 20 ACGTACGTAC
+s B      0 10 + 20 ACGTACGTAC
+''', 
+                       'A*', 'B', 2,
+                       [{'reference':'A.chr0',
+                         'partner':'B',
+                         'referenceLength':'20',
+                         'numberOfBins':'10',
+                         'binLength':'2',
+                         'presentAtoB':'2,2,2,2,2,0,0,0,0,0',
+                         'presentBtoA':'2,2,2,2,2,0,0,0,0,0',
+                         'absentAtoB':'0,0,0,0,0,0,0,0,0,0',
+                         'absentBtoA':'0,0,0,0,0,0,0,0,0,0',
+                         },
+                        {'reference':'A.chr1',
+                         'partner':'B',
+                         'referenceLength':'20',
+                         'numberOfBins':'10',
+                         'binLength':'2',
+                         'presentAtoB':'2,2,2,2,2,0,0,0,0,0',
+                         'presentBtoA':'2,2,2,2,2,0,0,0,0,0',
+                         'absentAtoB':'0,0,0,0,0,0,0,0,0,0',
+                         'absentBtoA':'0,0,0,0,0,0,0,0,0,0',
+                         },
+                        ]),
+                      # test 4
+                      ('''a score=0
+s A 0 10 + 20 ACGTACGTAC
+s B 0 10 + 20 ACGTACGTAC
+''', 
+                       '''a score=0
+s A 3 10 + 20 ACGTACGTAC
+s B 3 10 + 20 ACGTACGTAC
+''', 
+                       'A', 'B', 2,
+                       [{'reference':'A',
+                         'partner':'B',
+                         'referenceLength':'20',
+                         'numberOfBins':'10',
+                         'binLength':'2',
+                         'presentAtoB':'0,1,2,2,2,0,0,0,0,0',
+                         'presentBtoA':'0,1,2,2,2,0,0,0,0,0',
+                         'absentAtoB' :'2,1,0,0,0,0,0,0,0,0',
+                         'absentBtoA' :'0,0,0,0,0,2,1,0,0,0',
+                         },
+                        ]),
+                      ]
+
 def xmlBedRegionPassed(filename, totalTrue, totalTrueInInterval):
     tree = ET.parse(filename)
     homTests = tree.findall('homologyTests')
@@ -388,7 +512,6 @@ def getAggregateResult(filename, name):
     homTests = tree.findall('homologyTests')
     return int(homTests[0].find('aggregateResults').find('all').attrib[name])
 def validXml(filename):
-    print filename
     try:
         tree = ET.parse(filename)
     except xml.parsers.expat.ExpatError:
@@ -396,6 +519,25 @@ def validXml(filename):
     except ET.ParseError:
         return False
     return True
+def validWiggleOutput(xml, valuesDictList):
+    tree = ET.parse(xml)
+    wiggles = tree.find('wigglePairs').findall('wigglePair')
+    valid = True
+    for wig in wiggles:
+        matchFound = False
+        for valuesDict in valuesDictList:
+            if (valuesDict['reference'] == wig.attrib['reference'] and
+                valuesDict['partner'] == wig.attrib['partner'] and
+                valuesDict['referenceLength'] == wig.attrib['referenceLength'] and
+                valuesDict['numberOfBins'] == wig.attrib['numberOfBins'] and
+                valuesDict['binLength'] == wig.attrib['binLength'] and
+                valuesDict['presentAtoB'] == wig.find('presentMaf1ToMaf2').text and
+                valuesDict['presentBtoA'] == wig.find('presentMaf2ToMaf1').text and
+                valuesDict['absentAtoB'] == wig.find('absentMaf1ToMaf2').text and
+                valuesDict['absentBtoA'] == wig.find('absentMaf2ToMaf1').text):
+                matchFound = True
+        valid = valid and matchFound
+    return valid
 class XmlOutputValidation(unittest.TestCase):
     def test_validXmlOutput_(self):
         """ xml output file should be valid xml.
@@ -458,6 +600,61 @@ class XmlOutputValidation(unittest.TestCase):
         self.assertTrue(passed)
         mtt.removeDir(tmpDir)
 
+class WigglePairsTest(unittest.TestCase):
+    def test_wigglePairs(self):
+        """ --wigglePairs options should produce expected and known output for given inputs
+        """
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('wigglePairs'))
+        for maf1, maf2, ref, partner, binlen, valuesDictList in knownValuesWiggles:
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                   '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+                   '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                   '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
+                   '--samples=1000', '--logLevel=critical',
+                   '--wigglePairs=%s,%s' % (ref, partner),
+                   '--wiggleBinLength=%d' % binlen,
+                   ]
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
+            passed = validWiggleOutput(os.path.abspath(os.path.join(tmpDir, 'output.xml')), valuesDictList)
+            self.assertTrue(passed)
+        mtt.removeDir(tmpDir)
+    def test_memoryTest_4(self):
+        """ --wigglePairs options should be memory clean
+        """
+        valgrind = mtt.which('valgrind')
+        if valgrind is None:
+            return
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('memory_4'))
+        for maf1, maf2, ref, partner, binlen, valuesDictList in knownValuesWiggles:
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = mtt.genericValgrind(tmpDir)
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                    '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+                    '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                    '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
+                    '--samples=1000', '--logLevel=critical',
+                    '--wigglePairs=%s,%s' % (ref, partner),
+                    '--wiggleBinLength=%d' % binlen,
+                    ]
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
+            passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
+            self.assertTrue(passed)
+        mtt.removeDir(tmpDir)
+        
+
 class KnownValuesTest(unittest.TestCase):
     # knownValues contains quad-tuples,
     # maf1, maf2, totalTrue (comparing maf1 as fileA to maf2), 
@@ -488,8 +685,8 @@ class KnownValuesTest(unittest.TestCase):
             if not (passedTT and passedTF):
                 print 'knownValues Test failed on test %d' % i
             self.assertTrue(passedTT and passedTF)
-        # mtt.removeDir(tmpDir)
-    def dtest_memory_2(self):
+        mtt.removeDir(tmpDir)
+    def test_memory_2(self):
         """ mafComparator should be memory clean for known values
         """
         valgrind = mtt.which('valgrind')
@@ -520,7 +717,7 @@ class BedParsingTest(unittest.TestCase):
     # knownValues contains quad-tuples,
     # maf1, maf2, bed, threshold
     # test 1 - 0 % bed coverage
-    def dtest_bedParsing(self):
+    def test_bedParsing(self):
         """ mafComparator should parse a bed file and use the intervals for testing
         """
         mtt.makeTempDirParent()
@@ -547,7 +744,7 @@ class BedParsingTest(unittest.TestCase):
                                         totalTrue, totalTrueInInterval)
             self.assertTrue(passed)
         mtt.removeDir(tmpDir)
-    def dtest_memory_0(self):
+    def test_memory_0(self):
         """ mafComparator should be memory clean for bed parsing examples
         """
         valgrind = mtt.which('valgrind')
@@ -578,7 +775,7 @@ class BedParsingTest(unittest.TestCase):
             self.assertTrue(passed)
         mtt.removeDir(tmpDir)
 class randomSeedTests(unittest.TestCase):
-    def dtest_seedTesting(self):
+    def test_seedTesting(self):
         """ mafComparator should have replicable runs via the --seed command
         """
         mtt.makeTempDirParent()
@@ -614,7 +811,7 @@ class randomSeedTests(unittest.TestCase):
                     self.assertEqual(homTests[1].find('aggregateResults').find('all').attrib[elm],
                                      origHomTests[1].find('aggregateResults').find('all').attrib[elm])
         mtt.removeDir(tmpDir)
-    def dtest_memory_1(self):
+    def test_memory_1(self):
         """ mafComparator should be memory clean for seed testing examples
         """
         valgrind = mtt.which('valgrind')
@@ -643,7 +840,7 @@ class randomSeedTests(unittest.TestCase):
                 self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
         mtt.removeDir(tmpDir)
 class NearTests(unittest.TestCase):
-    def dtest_nearSimple(self):
+    def test_nearSimple(self):
         """ mafComparator should return correct results for hand-calculable problems that use the --near=0 option
         """
         mtt.makeTempDirParent()
@@ -669,7 +866,7 @@ class NearTests(unittest.TestCase):
             passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
             self.assertTrue(passedTT and passedTF)
         mtt.removeDir(tmpDir)
-    def dtest_near(self):
+    def test_near(self):
         """ mafComparator should return correct results for hand-calculable problems that use the --near option
         """
         mtt.makeTempDirParent()
@@ -695,7 +892,7 @@ class NearTests(unittest.TestCase):
             passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
             self.assertTrue(passedTT and passedTF)
         mtt.removeDir(tmpDir)
-    def dtest_memory_3(self):
+    def test_memory_3(self):
         """ mafComparator should be memory clean for known values using --near option
         """
         valgrind = mtt.which('valgrind')

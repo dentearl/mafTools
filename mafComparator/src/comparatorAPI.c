@@ -34,35 +34,6 @@
 
 const unsigned kChooseTwoCacheLength = 101;
 
-void printfourarrays(WiggleContainer *wc) {
-    printf("presentAtoB:[");
-    for (uint64_t i = 0; i < wc->numBins; ++i) {
-        printf("%"PRIu64"%s", wc->presentAtoB[i], (i == wc->numBins - 1) ? "]\n" : ",");
-    }
-    printf("presentBtoA:[");
-    for (uint64_t i = 0; i < wc->numBins; ++i) {
-        printf("%"PRIu64"%s", wc->presentBtoA[i], (i == wc->numBins - 1) ? "]\n" : ",");
-    }
-    printf("absentAtoB:[");
-    for (uint64_t i = 0; i < wc->numBins; ++i) {
-        printf("%"PRIu64"%s", wc->absentAtoB[i], (i == wc->numBins - 1) ? "]\n" : ",");
-    }
-    printf("absentBtoA:[");
-    for (uint64_t i = 0; i < wc->numBins; ++i) {
-        printf("%"PRIu64"%s", wc->absentBtoA[i], (i == wc->numBins - 1) ? "]\n" : ",");
-    }
-    printf("\n");
-}
-void printarrays(stHash *wigglePairHash) {
-    stHashIterator *hit = stHash_getIterator(wigglePairHash);
-    char *key = NULL;
-    WiggleContainer *wc = NULL;
-    while ((key = stHash_getNext(hit)) != NULL) {
-        wc = stHash_search(wigglePairHash, key);
-        printfourarrays(wc);
-    }
-}
-
 void aPair_fillOut(APair *aPair, char *seq1, char *seq2, uint32_t pos1, uint32_t pos2) {
     int i = strcmp(seq1, seq2);
     if (i > 0 || (i == 0 && pos1 > pos2)) { 
@@ -106,8 +77,8 @@ APair* aPair_construct(const char *seq1, const char *seq2, uint32_t pos1, uint32
 APair* aPair_copyConstruct(APair *pair) {
     return aPair_construct(stString_copy(pair->seq1), stString_copy(pair->seq2), pair->pos1, pair->pos2);
 }
-ResultPair *resultPair_construct(const char *seq1, const char *seq2, uint32_t pos1, uint32_t pos2) {
-    APair *aPair = aPair_construct(seq1, seq2, pos1, pos2);
+ResultPair *resultPair_construct(const char *seq1, const char *seq2) {
+    APair *aPair = aPair_construct(seq1, seq2, 0, 0);
     ResultPair *resultPair = st_calloc(1, sizeof(ResultPair));
     resultPair->aPair = *aPair;
     free(aPair);
@@ -118,11 +89,9 @@ WiggleContainer* wiggleContainer_construct(char *ref, char *partner, uint64_t re
     WiggleContainer *wc = wiggleContainer_init();
     wc->ref = stString_copy(ref);
     wc->partner = stString_copy(partner);
-    printf("creating new wc for %s-%s\n", ref, partner);
     wc->refLength = refLength;
     wc->numBins = (uint64_t)ceil((double)refLength / wiggleBinLength);
     wc->binLength = wiggleBinLength;
-    printf("reflength: %"PRIu64" numbins: %"PRIu64" binLength: %"PRIu64"\n", wc->refLength, wc->numBins, wc->binLength);
     wc->presentAtoB = st_calloc(wc->numBins, sizeof(uint64_t));
     wc->presentBtoA = st_calloc(wc->numBins, sizeof(uint64_t));
     wc->absentAtoB = st_calloc(wc->numBins, sizeof(uint64_t));
@@ -295,6 +264,11 @@ int32_t* buildInt(int32_t n) {
 }
 int64_t* buildInt64(int64_t n) {
     int64_t *p = (int64_t*) st_malloc(sizeof(*p));
+    *p = n;
+    return p;
+}
+uint64_t* buildUInt64(uint64_t n) {
+    uint64_t *p = (uint64_t*) st_malloc(sizeof(*p));
     *p = n;
     return p;
 }
@@ -895,7 +869,7 @@ uint32_t findLowerBound(uint32_t pos, uint32_t near) {
         return pos - near;
     }
 }
-void recordNearPair(APair *thisPair, stSortedSet *sampledPairs, uint32_t near, stSortedSet *positivePairs) {
+void recordNearPair(APair *thisPair, stSortedSet *sampledPairs, uint32_t near, stSet *positivePairs) {
     /* given thisPair, if thisPair is in the table `sampledPairs' then record it in the positivePairs set.
      * if the `near' option is set, do this not only for thisPair but for all pairs within +- `near'.
      * if near = 0 this will just look at thisPair->pos1 and thisPair->pos2 and record those values.
@@ -910,7 +884,7 @@ void recordNearPair(APair *thisPair, stSortedSet *sampledPairs, uint32_t near, s
                 // printf("positivePair1: (%s %u, %s %u):(%s %u, %s %u)\n", 
                 //        thisPair->seq1, thisPair->pos1, thisPair->seq2, thisPair->pos2,
                 //        aPair->seq1, aPair->pos1, aPair->seq2, aPair->pos2);
-                stSortedSet_insert(positivePairs, aPair);
+                stSet_insert(positivePairs, aPair);
             }
         } 
     }
@@ -924,7 +898,7 @@ void recordNearPair(APair *thisPair, stSortedSet *sampledPairs, uint32_t near, s
                 // printf("positivePair2: (%s %u, %s %u):(%s %u, %s %u)\n", 
                 //        thisPair->seq1, thisPair->pos1, thisPair->seq2, thisPair->pos2,
                 //        aPair->seq1, aPair->pos1, aPair->seq2, aPair->pos2);
-                stSortedSet_insert(positivePairs, aPair);
+                stSet_insert(positivePairs, aPair);
             }
         }
     }
@@ -992,7 +966,7 @@ void printHash(stHash *hash) {
     stHash_destructIterator(hit);
 }
 void testHomologyOnColumn(char **mat, uint32_t c, uint32_t numSeqs, bool *legitRows, char **names, 
-                          stSortedSet *sampledPairs, stSortedSet *positivePairs, mafLine_t **mlArray, 
+                          stSortedSet *sampledPairs, stSet *positivePairs, mafLine_t **mlArray, 
                           uint32_t *allPositions, 
                           stHash *intervalsHash, uint32_t near) {
     /* For a given column, 
@@ -1070,7 +1044,7 @@ void printAllStrandInts(int *allStrandInts, mafBlock_t *mb) {
     }
     printf("]\n");
 }
-void walkBlockTestingHomology(mafBlock_t *mb, stSortedSet *sampledPairs, stSortedSet *positivePairs, 
+void walkBlockTestingHomology(mafBlock_t *mb, stSortedSet *sampledPairs, stSet *positivePairs, 
                               stSet *legitSequences, stHash *intervalsHash, uint32_t near) {
     uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
     if (numSeqs < 2) {
@@ -1103,7 +1077,7 @@ void walkBlockTestingHomology(mafBlock_t *mb, stSortedSet *sampledPairs, stSorte
     maf_mafBlock_destroySequenceMatrix(mat, numSeqs);
     free(legitRows);
 }
-void performHomologyTests(const char *filename, stSortedSet *sampledPairs, stSortedSet *positivePairs, 
+void performHomologyTests(const char *filename, stSortedSet *sampledPairs, stSet *positivePairs, 
                           stSet *legitSequences, stHash *intervalsHash, uint32_t near) {
     mafFileApi_t *mfa = maf_newMfa(filename, "r");
     mafBlock_t *mb = NULL;
@@ -1115,7 +1089,7 @@ void performHomologyTests(const char *filename, stSortedSet *sampledPairs, stSor
     maf_destroyMfa(mfa);
 }
 void homologyTests1(APair *thisPair, stHash *intervalsHash, stSortedSet *pairs, 
-                    stSortedSet *positivePairs, stSet *legitPairs, int32_t near) {
+                    stSet *positivePairs, stSet *legitPairs, int32_t near) {
     /*
      * If both members of *thisPair are in the intersection of maf1 and maf2,
      * and *thisPair is in the set *pairs then adds to the result pair a positive result.
@@ -1126,20 +1100,40 @@ void homologyTests1(APair *thisPair, stHash *intervalsHash, stSortedSet *pairs,
     } 
 }
 void enumerateHomologyResults(stSortedSet *sampledPairs, stSortedSet *resultPairs, stHash *intervalsHash,
-                              stSortedSet *positivePairs) {
+                              stSet *positivePairs, stHash *wigglePairHash, bool isAtoB, 
+                              uint64_t wiggleBinLength) {
     /*
-     * For every pair in 'sampledPairs', add 1 to the total number of homology tests for the sequence-pair.
+     * For every pair in 'sampledPairs', add 1 to the total number of homology tests for the sequence-pair
+     * (the ResultPair).
      */
     static stSortedSetIterator *sit;
     sit = stSortedSet_getIterator(sampledPairs);
-    APair *pair;
+    APair *pair = NULL;
     ResultPair *thisResultPair = NULL;
+    WiggleContainer *wc = NULL;
+    uint64_t *refPos = NULL;
+    char wigKey[kMaxStringLength];
+    wigKey[0] = '\0';
     while ((pair = stSortedSet_getNext(sit)) != NULL) {
         if ((thisResultPair = stSortedSet_search(resultPairs, pair)) == NULL) {
-            thisResultPair = resultPair_construct(pair->seq1, pair->seq2, pair->pos1, pair->pos2);
+            // the stSortedSet resultPairs is searched only based on sequence names.
+            thisResultPair = resultPair_construct(pair->seq1, pair->seq2);
             stSortedSet_insert(resultPairs, thisResultPair);
         }
-        bool foundPair = stSortedSet_search(positivePairs, pair) != NULL;
+        sprintf(wigKey, "%s-%s", pair->seq1, pair->seq2);
+        if ((wc = stHash_search(wigglePairHash, wigKey)) == NULL) {
+            // seq1 is not the ref
+            sprintf(wigKey, "%s-%s", pair->seq2, pair->seq1);
+            if ((wc = stHash_search(wigglePairHash, wigKey)) == NULL) {
+                // seq2 is also not the ref
+                wigKey[0] = '\0';
+            } else {
+                refPos = buildUInt64(pair->pos2);
+            }
+        } else {
+            refPos = buildUInt64(pair->pos1);
+        }
+        bool foundPair = stSet_search(positivePairs, pair) != NULL;
         if (inInterval(intervalsHash, pair->seq1, pair->pos1)) {
             if (inInterval(intervalsHash, pair->seq2, pair->pos2)) {
                 ++(thisResultPair->totalBoth);
@@ -1165,22 +1159,43 @@ void enumerateHomologyResults(stSortedSet *sampledPairs, stSortedSet *resultPair
                 }
             }
         }
+        
         ++(thisResultPair->total);
+        if (wc != NULL && refPos != NULL) {
+            if (isAtoB) {
+                ++(wc->absentAtoB[(int)floor(*refPos / wiggleBinLength)]);
+            } else {
+                ++(wc->absentBtoA[(int)floor(*refPos / wiggleBinLength)]);
+            }
+        }
         if (foundPair) {
             ++(thisResultPair->inAll);
+            if (wc != NULL && refPos != NULL) {
+                if (isAtoB) {
+                    --(wc->absentAtoB[(int)floor(*refPos / wiggleBinLength)]);
+                    ++(wc->presentAtoB[(int)floor(*refPos / wiggleBinLength)]);
+                } else {
+                    --(wc->absentBtoA[(int)floor(*refPos / wiggleBinLength)]);
+                    ++(wc->presentBtoA[(int)floor(*refPos / wiggleBinLength)]);
+                }
+            }
         } else {
            if (g_isVerboseFailures){
               fprintf(stderr, "sampled pair not present in comparison: (%s, %" PRIu32 "):(%s, %" PRIu32 ")\n", 
                       pair->seq1, pair->pos1, pair->seq2, pair->pos2);
            }
         }
+        if (refPos != NULL) {
+            free(refPos);
+            refPos = NULL;
+        }
     }
     stSortedSet_destructIterator(sit);
 }
-stSortedSet* compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint32_t numberOfSamples,
+stSortedSet *compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint32_t numberOfSamples,
                             uint64_t *numberOfPairs,
                             stSet *legitSequences, stHash *intervalsHash, 
-                            uint32_t near) {
+                            uint32_t near, stHash *wigglePairHash, bool isAtoB, uint64_t wiggleBinLength) {
     // count the number of pairs in mafFileA
     *numberOfPairs = countPairsInMaf(mafFileA, legitSequences);
     if (*numberOfPairs == 0) {
@@ -1191,22 +1206,23 @@ stSortedSet* compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint32_t
     // sample pairs from mafFileA
     samplePairsFromMaf(mafFileA, pairs, acceptProbability, legitSequences);
     // perform homology tests on mafFileB using sampled pairs from mafFileA
-    stSortedSet *positivePairs = stSortedSet_construct();
+    stSet *positivePairs = stSet_construct(); // comparison by pointer
     performHomologyTests(mafFileB, pairs, positivePairs, legitSequences, intervalsHash, near);
     stSortedSet *resultPairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction_seqsOnly, (void(*)(void *)) aPair_destruct);
-    enumerateHomologyResults(pairs, resultPairs, intervalsHash, positivePairs);
+    enumerateHomologyResults(pairs, resultPairs, intervalsHash, positivePairs, wigglePairHash, isAtoB,
+                             wiggleBinLength);
     // clean up
     stSortedSet_destruct(pairs);
-    stSortedSet_destruct(positivePairs);
+    stSet_destruct(positivePairs);
     return resultPairs;
 }
-ResultPair* aggregateResult(void *(*getNextPair)(void *, void *), stSortedSet *set, void *seqName, 
+ResultPair *aggregateResult(void *(*getNextPair)(void *, void *), stSortedSet *set, void *seqName, 
                             const char *name1, const char *name2) {
     /* loop through all ResultPairs available via the getNextPair() iterator and aggregate their
      * results into a single ResultPair, return this struct.
      */
     ResultPair *resultPair;
-    ResultPair *resultPair2 = resultPair_construct(name1, name2, 0, 0);
+    ResultPair *resultPair2 = resultPair_construct(name1, name2);
     stSortedSetIterator *iterator = stSortedSet_getIterator(set);
     while ((resultPair = getNextPair(iterator, seqName)) != NULL) {
         assert(resultPair->inAll == resultPair->inBoth + resultPair->inA + resultPair->inB + resultPair->inNeither);
@@ -1286,69 +1302,6 @@ void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...) {
     fprintf(fp, "%s", str);
     va_end(args);
 }
-void parseResultForWiggles(stSortedSet *results, stHash *wigglePairHash, bool isAtoB, 
-                            uint64_t wiggleBinLength) {
-    // walk the results and record the relevant ones in wigglePairHash.
-    // if not isAtoB then isBtoA
-    if (stHash_size(wigglePairHash) == 0) {
-        return;
-    }
-    stSortedSetIterator *sit = NULL;
-    sit = stSortedSet_getIterator(results);
-    ResultPair *rp = NULL;
-    char key[kMaxStringLength];
-    key[0] = '\0';
-    WiggleContainer *wc = NULL;
-    while ((rp = stSortedSet_getNext(sit)) != NULL) {
-        sprintf(key, "%s-%s", rp->aPair.seq1, rp->aPair.seq2);
-        if ((wc = stHash_search(wigglePairHash, key)) != NULL) {
-            // ref is seq1
-            assert(strcmp(wc->ref, rp->aPair.seq1) == 0);
-            assert(rp->total >= rp->inAll);
-            if (isAtoB) {
-                printf("a to b seq1\n");
-                printf("rp->aPair.pos1: %"PRIu32" wiggleBinLength:%"PRIu64" "
-                       "(rp->aPair.pos1 / wiggleBinLength):%"PRIu64"\n", rp->aPair.pos1, 
-                       wiggleBinLength, (rp->aPair.pos1 / wiggleBinLength));
-                printf("rp->total: %" PRIu32" rp->inAll: %" PRIu32 " rp->total - rp->inAll:%"PRIu32"\n",
-                       rp->total, rp->inAll, rp->total - rp->inAll);
-                wc->presentAtoB[(int)floor(rp->aPair.pos1 / wiggleBinLength)] += rp->inAll;
-                wc->absentAtoB[(int)floor(rp->aPair.pos1 / wiggleBinLength)] += rp->total - rp->inAll;
-            } else {
-                printf("b to a seq1\n");
-                printf("rp->aPair.pos1: %"PRIu32" wiggleBinLength:%"PRIu64" "
-                       "(rp->aPair.pos1 / wiggleBinLength):%"PRIu64"\n", rp->aPair.pos1, 
-                       wiggleBinLength, (rp->aPair.pos1 / wiggleBinLength));
-                printf("rp->total: %" PRIu32" rp->inAll: %" PRIu32 " rp->total - rp->inAll:%"PRIu32"\n",
-                       rp->total, rp->inAll, rp->total - rp->inAll);
-                wc->presentBtoA[(int)floor(rp->aPair.pos1 / wiggleBinLength)] += rp->inAll;
-                wc->absentBtoA[(int)floor(rp->aPair.pos1 / wiggleBinLength)] += rp->total - rp->inAll;
-            }
-        } else {
-            sprintf(key, "%s-%s", rp->aPair.seq2, rp->aPair.seq1);
-            if ((wc = stHash_search(wigglePairHash, key)) != NULL) {
-                // ref is seq2
-                assert(strcmp(wc->ref, rp->aPair.seq2) == 0);
-                if (isAtoB) {
-                    printf("a to b seq2\n");
-                    wc->presentAtoB[(int)floor(rp->aPair.pos2 / wiggleBinLength)] += rp->inAll;
-                    wc->absentAtoB[(int)floor(rp->aPair.pos2 / wiggleBinLength)] += rp->total - rp->inAll;
-                } else {
-                    printf("b to a seq2\n");
-                    wc->presentBtoA[(int)floor(rp->aPair.pos2 / wiggleBinLength)] += rp->inAll;
-                    wc->absentBtoA[(int)floor(rp->aPair.pos2 / wiggleBinLength)] += rp->total - rp->inAll;
-                }
-            }
-        }
-    }
-    stSortedSet_destructIterator(sit);
-}
-void parseResultsForWiggles(stSortedSet *results_12, stSortedSet *results_21, stHash *wigglePairHash, 
-                            uint64_t wiggleBinLength) {
-    parseResultForWiggles(results_12, wigglePairHash, true, wiggleBinLength);
-    parseResultForWiggles(results_21, wigglePairHash, false, wiggleBinLength);
-    printarrays(wigglePairHash);
-}
 void reportResultsForWigglesArrays(FILE *fileHandle, WiggleContainer *wc) {
     // present A to B
     findentprintf(fileHandle, 2, "<presentMaf1ToMaf2 description=\"Binned data, counts. "
@@ -1388,15 +1341,17 @@ void reportResultsForWiggles(stHash *wigglePairHash, FILE *fileHandle) {
     stHashIterator *hit = stHash_getIterator(wigglePairHash);
     WiggleContainer *wc = NULL;
     char *key = NULL;
+    findentprintf(fileHandle, 1, "<wigglePairs>\n");
     while ((key = stHash_getNext(hit)) != NULL) {
         wc = stHash_search(wigglePairHash, key);
-        findentprintf(fileHandle, 1, "<wigglePair reference=\"%s\" partner=\"%s\" "
+        findentprintf(fileHandle, 2, "<wigglePair reference=\"%s\" partner=\"%s\" "
                       "referenceLength=\"%" PRIu64 "\" numberOfBins=\"%" PRIu64 "\" "
                       "binLength=\"%" PRIu64 "\">\n",
                       wc->ref, wc->partner, wc->refLength, wc->numBins, wc->binLength);
         reportResultsForWigglesArrays(fileHandle, wc);
-        findentprintf(fileHandle, 1, "</wigglePair>\n");
+        findentprintf(fileHandle, 2, "</wigglePair>\n");
     }
+    findentprintf(fileHandle, 1, "</wigglePairs>\n");
     stHash_destructIterator(hit);
 }
 void reportResult(const char *tagName, double total, double totalTrue, FILE *fileHandle, unsigned tabLevel) {
