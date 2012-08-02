@@ -1,1 +1,3 @@
 tempTestFiles/*
+test/*
+src/buildVersion.*

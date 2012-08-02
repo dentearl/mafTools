@@ -40,8 +40,9 @@
 #include "sonLib.h"
 #include "comparatorAPI.h"
 #include "common.h"
+#include "buildVersion.h"
 
-const char *g_version = "version 0.6 July 2012";
+const char *g_version = "version 0.7 August 2012";
 bool g_isVerboseFailures = false;
 
 /*
@@ -193,7 +194,7 @@ void hashifercateList(stList *list, stHash *hash) {
     }
 }
 void usage(void) {
-    fprintf(stderr, "mafComparator, %s\n\n", g_version);
+    fprintf(stderr, "mafComparator, %s\n%s, %s, %s\n\n", g_version, build_date, build_git_branch, build_git_sha);
     fprintf(stderr, "Usage: $ mafComparator --maf1=FILE1 --maf2=FILE2 --out=OUT.xml [options]\n\n");
     fprintf(stderr, "This program takes two MAF files and compares them to one another.\n"
             "Specifically, for each ordered pair of sequences in the first MAF it \n"
@@ -455,8 +456,9 @@ int main(int argc, char **argv) {
     fprintf(fileHandle, "<alignmentComparisons sampleNumber=\"%" PRIu32 "\" "
             "near=\"%" PRIu32 "\" seed=\"%" PRIu32 "\" maf1=\"%s\" maf2=\"%s\" "
             "numberOfPairsInMaf1=\"%" PRIu64 "\" "
-            "numberOfPairsInMaf2=\"%" PRIu64 "\"%s%s>\n",
-            sampleNumber, near, randomSeed, mafFile1, mafFile2, numPairs1, numPairs2, bedString, wiggleString);
+            "numberOfPairsInMaf2=\"%" PRIu64 "\"%s%s version=\"%s\">\n",
+            sampleNumber, near, randomSeed, mafFile1, mafFile2, numPairs1, numPairs2, bedString, wiggleString,
+            g_version);
     reportResults(results_12, mafFile1, mafFile2, fileHandle, near, seqNamesSet, bedFiles);
     reportResults(results_21, mafFile2, mafFile1, fileHandle, near, seqNamesSet, bedFiles);
     reportResultsForWiggles(wigglePairHash, fileHandle);

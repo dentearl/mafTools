@@ -25,14 +25,16 @@
 
 include ../include.mk
 binPath = ../bin
-extraAPI = src/cString.c ../include/sharedMaf.o ../external/CuTest.a ../include/common.o src/comparatorRandom.o src/comparatorAPI.o ${sonLibPath}/sonLib.a 
-testAPI = src/cString.c test/sharedMaf.o ../external/CuTest.a test/common.o test/comparatorRandom.o test/comparatorAPI.o ${sonLibPath}/sonLib.a 
+extraAPI = src/cString.c ../include/sharedMaf.o ../external/CuTest.a ../include/common.o src/comparatorRandom.o src/comparatorAPI.o ${sonLibPath}/sonLib.a src/buildVersion.o
+testAPI = src/cString.c test/sharedMaf.o ../external/CuTest.a test/common.o test/comparatorRandom.o test/comparatorAPI.o ${sonLibPath}/sonLib.a test/buildVersion.o
 progs =  $(foreach f, mafComparator mafPairCounter, ${binPath}/$f)
 testObjects = test/test.comparatorAPI.o test/test.comparatorRandom.o
 
-.PHONY: all clean test
+.PHONY: all clean test buildVersion
 
-all: ${progs}
+all: buildVersion ${progs}
+buildVersion:
+	@python src/createVersionSources.py
 
 ${binPath}/%: src/%.c ${extraAPI} $(wildcard src/*.h)
 	@mkdir -p $(dir $@)
