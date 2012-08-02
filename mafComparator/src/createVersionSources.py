@@ -53,9 +53,9 @@ def writeHeader(location):
     f.write(g_BoilerPlate)
     f.write('#ifndef _BUILD_VERSION_H_\n')
     f.write('#define _BUILD_VERSION_H_\n')
-    f.write('extern const char build_date[];\n')
-    f.write('extern const char build_git_branch[];\n')
-    f.write('extern const char build_git_sha[];\n')
+    f.write('extern const char g_build_date[];\n')
+    f.write('extern const char g_build_git_branch[];\n')
+    f.write('extern const char g_build_git_sha[];\n')
     f.write('#endif // _BUILD_VERSION_H_\n')
     f.close()
 
@@ -63,9 +63,9 @@ def writeSource(location, buildDate, buildBranch, buildSha):
     f = open(os.path.join(location, 'buildVersion.c'), 'w')
     f.write(g_BoilerPlate)
     f.write('#include "buildVersion.h"\n\n')
-    f.write('const char build_date[] = "%s";\n' % buildDate)
-    f.write('const char build_git_branch[] = "%s";\n' % buildBranch)
-    f.write('const char build_git_sha[] = "%s";\n' % buildSha)
+    f.write('const char g_build_date[] = "%s";\n' % buildDate)
+    f.write('const char g_build_git_branch[] = "%s";\n' % buildBranch)
+    f.write('const char g_build_git_sha[] = "%s";\n' % buildSha)
     f.close()
 
 def main():
