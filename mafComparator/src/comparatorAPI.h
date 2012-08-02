@@ -40,10 +40,6 @@
 #include "sonLib.h"
 #include "sharedMaf.h"
 
-typedef struct _solo {
-    char *name;
-    uint32_t pos;
-} ASolo;
 typedef struct _pair {
     char *seq1;
     char *seq2;
@@ -67,9 +63,37 @@ typedef struct _resultPair {
     uint32_t totalB;
     uint32_t totalNeither;
 } ResultPair;
+typedef struct _aggregateResult {
+    char *seq1;
+    char *seq2;
+    uint32_t pos1;
+    uint32_t pos2;
+    uint32_t inAll;
+    uint32_t inBoth;
+    uint32_t inA;
+    uint32_t inB;
+    uint32_t inNeither;
+    uint32_t total;
+    uint32_t totalBoth;
+    uint32_t totalA;
+    uint32_t totalB;
+    uint32_t totalNeither;
+} AggregateResult;
+typedef struct _wiggleContainer {
+    // contains arrays of counts, used by the --wigglePair option
+    char *ref;
+    char *partner;
+    uint64_t refLength;
+    uint64_t numBins;
+    uint64_t binLength;
+    uint64_t *presentAtoB;
+    uint64_t *presentBtoA;
+    uint64_t *absentAtoB;
+    uint64_t *absentBtoA;
+} WiggleContainer;
 bool g_isVerboseFailures;
 
-void populateNames(const char *mAFFile, stSet *set);
+void populateNames(const char *mAFFile, stSet *set, stHash *seqLengthHash);
 stSortedSet* compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint32_t numberOfSamples, 
                             uint64_t *numberOfPairsInFile, stSet *legitimateSequences, 
                             stHash *intervalsHash, uint32_t near);
@@ -81,9 +105,13 @@ APair* aPair_init(void);
 APair* aPair_construct(const char *seq1, const char *seq2, uint32_t pos1, uint32_t pos2);
 APair* aPair_copyConstruct(APair *pair);
 void aPair_destruct(APair *pair);
+WiggleContainer* wiggleContainer_init(void);
+void wiggleContainer_destruct(WiggleContainer *wc);
 void writeXMLHeader( FILE *fileHandle );
 bool* getLegitRows(char **names, uint32_t numSeqs, stSet *legitPairs);
 uint64_t walkBlockCountingPairs(mafBlock_t *mb, stSet *legitPairs, uint64_t *chooseTwoArray);
+int32_t* buildInt(int32_t n);
+int64_t* buildInt64(int64_t n);
 uint64_t chooseTwo(uint64_t n);
 uint64_t* buildChooseTwoArray(void);
 uint64_t countPairsInMaf(const char *filename, stSet *legitPairs);
@@ -113,4 +141,14 @@ uint32_t sumBoolArray(bool *legitRows, uint32_t numSeqs);
 mafLine_t** createMafLineArray(mafBlock_t *mb, uint32_t numLegit, bool *legitRows);
 void updatePositions(char **mat, uint32_t c, uint32_t *positions, int *strandInts, uint32_t numSeqs);
 void printSortedSet(stSortedSet *pairs);
+unsigned countCommas(char *s);
+bool patternMatches(char *a, char *b);
+void buildWigglePairHash(stHash *sequenceLengthHash, stList *wigglePairPatternList, 
+                         stHash *wigglePairHash, uint64_t wiggleBinLength);
+void parseResultForWiggles(stSortedSet *results, stHash *wigglePairHash, bool isAtoB, 
+                           uint64_t wiggleBinLength);
+void parseResultsForWiggles(stSortedSet *results_12, stSortedSet *results_21, stHash *wigglePairHash, 
+                            uint64_t wiggleBinLength);
+void reportResultsForWiggles(stHash *wigglePairHash, FILE *fileHandle);
+void printarrays(stHash *wigglePairHash);
 #endif /* _COMPARATOR_API_H_ */

@@ -25,6 +25,7 @@
 # THE SOFTWARE.
 ##############################
 import xml.etree.ElementTree as ET
+import xml.parsers.expat
 import os
 import shutil
 import subprocess
@@ -233,182 +234,43 @@ s simMouse_chr6_simMouse.chr6 548643 13 - 636262 ACCACGGGGTATG
 
 ''', 13, 0), # test 13
                ]
-
-def xmlBedRegionPassed(filename, totalTrue, totalTrueInInterval):
-    tree = ET.parse(filename)
-    homTests = tree.findall('homologyTests')
-    if totalTrue != int(homTests[0].find('aggregateResults').find('all').attrib['totalTrue']):
-        return False
-    if totalTrueInInterval is None:
-        if homTests[0].find('aggregateResults').find('A') is not None:
-            return False
-    else:
-        if totalTrueInInterval != int(homTests[0].find('aggregateResults').find('A').attrib['totalTrue']):
-            return False
-    return True
-def getAggregateResult(filename, name):
-    tree = ET.parse(filename)
-    homTests = tree.findall('homologyTests')
-    return int(homTests[0].find('aggregateResults').find('all').attrib[name])
-
-class KnownValuesTest(unittest.TestCase):
-    # knownValues contains quad-tuples,
-    # maf1, maf2, totalTrue (comparing maf1 as fileA to maf2), 
-    # totalFalse (comparing maf1 as fileA to maf2)
-    
-    def test_knownValues(self):
-        """ mafComparator should return correct results for hand-calculable problems
-        """
-        mtt.makeTempDirParent()
-        tmpDir = os.path.abspath(mtt.makeTempDir('knownValues'))
-        i = -1
-        for maf1, maf2, totalTrue, totalFalse in knownValues:
-            i += 1
-            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
-                                    maf1, g_headers)
-            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
-                                    maf2, g_headers)
-            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
-                   '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
-                   '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
-                   '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
-                   '--samples=1000', '--logLevel=critical',
-                   ]
-            mtt.recordCommands([cmd], tmpDir)
-            mtt.runCommandsS([cmd], tmpDir)
-            passedTT = totalTrue == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalTrue')
-            passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
-            if not (passedTT and passedTF):
-                print 'knownValues Test failed on test %d' % i
-            self.assertTrue(passedTT and passedTF)
-        mtt.removeDir(tmpDir)
-    def test_memory_2(self):
-        """ mafComparator should be memory clean for known values
-        """
-        valgrind = mtt.which('valgrind')
-        if valgrind is None:
-            return
-        mtt.makeTempDirParent()        
-        tmpDir = os.path.abspath(mtt.makeTempDir('memory_2'))
-        for maf1, maf2, totalTrue, totalFalse in knownValues:
-            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
-                                    maf1, g_headers)
-            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
-                                    maf2, g_headers)
-            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = mtt.genericValgrind(tmpDir)
-            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
-                    '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
-                    '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
-                    '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
-                    '--samples=1000', '--logLevel=critical',
-                    ]
-            mtt.recordCommands([cmd], tmpDir)
-            mtt.runCommandsS([cmd], tmpDir)
-            passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
-            self.assertTrue(passed)
-        mtt.removeDir(tmpDir)
-
-class BedParsingTest(unittest.TestCase):
-    # knownValues contains quad-tuples,
-    # maf1, maf2, bed, threshold
-                   # test 1 - 0 % bed coverage
-    knownValues = [('a score=0\n'
-                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
-                    's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
-                    'a score=0\n'
-                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
-                    's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
-                    'test1.chr0\t30\t100\n',
-                    20, 0),
-                   # test 2 - no bed file
-                   ('a score=0\n'
-                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
-                    's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
-                    'a score=0\n'
-                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
-                    's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
-                    '',
-                    20, None),
-                   # test 3 - 50% bed coverage
-                   ('a score=0\n'
-                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
-                    's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
-                    'a score=0\n'
-                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
-                    's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
-                    'test1.chr0\t11\t100\n',
-                    20, 9),
-                   # test 3 - 100% bed coverage
-                   ('a score=0\n'
-                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
-                    's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
-                    'a score=0\n'
-                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
-                    's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
-                    'test1.chr0\t1\t100\n',
-                    20, 19),
-                   ]
-    def test_bedParsing(self):
-        """ mafComparator should parse a bed file and use the intervals for testing
-        """
-        mtt.makeTempDirParent()
-        tmpDir = os.path.abspath(mtt.makeTempDir('bedParsing'))
-        for maf1, maf2, bed, totalTrue, totalTrueInInterval in self.knownValues:
-            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
-                                    maf1, g_headers)
-            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
-                                    maf2, g_headers)
-            testBed = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'bed.bed')), 
-                                   bed, [''])
-            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
-                   '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
-                   '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
-                   '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
-                   '--samples=1000', '--logLevel=critical',
-                   ]
-            if bed != '':
-                cmd += ['--bedFiles', os.path.abspath(os.path.join(tmpDir, 'bed.bed'))]
-            mtt.recordCommands([cmd], tmpDir)
-            mtt.runCommandsS([cmd], tmpDir)
-            passed = xmlBedRegionPassed(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 
-                                        totalTrue, totalTrueInInterval)
-            self.assertTrue(passed)
-        mtt.removeDir(tmpDir)
-    def test_memory_0(self):
-        """ mafComparator should be memory clean for bed parsing examples
-        """
-        valgrind = mtt.which('valgrind')
-        if valgrind is None:
-            return
-        mtt.makeTempDirParent()
-        tmpDir = os.path.abspath(mtt.makeTempDir('memory_0'))
-        for maf1, maf2, bed, totalTrue, totalTrueInInterval in self.knownValues:
-            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
-                                    maf1, g_headers)
-            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
-                                    maf2, g_headers)
-            testBed = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'bed.bed')), 
-                                   bed, [''])
-            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = mtt.genericValgrind(tmpDir)
-            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
-                    '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
-                    '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
-                    '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
-                    '--samples=1000', '--logLevel=critical',
-                    ]
-            if bed != '':
-                cmd += ['--bedFiles', os.path.abspath(os.path.join(tmpDir, 'bed.bed'))]
-            mtt.recordCommands([cmd], tmpDir)
-            mtt.runCommandsS([cmd], tmpDir)
-            passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
-            self.assertTrue(passed)
-        mtt.removeDir(tmpDir)
-class randomSeedTests(unittest.TestCase):
-    knownValues = [('a score=0\n'
+knownValuesBed = [('a score=0\n'
+                   's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                   's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
+                   'a score=0\n'
+                   's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                   's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
+                   'test1.chr0\t30\t100\n',
+                   20, 0),
+                  # test 2 - no bed file
+                  ('a score=0\n'
+                   's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                   's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
+                   'a score=0\n'
+                   's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                   's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
+                   '',
+                   20, None),
+                  # test 3 - 50% bed coverage
+                  ('a score=0\n'
+                   's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                   's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
+                   'a score=0\n'
+                   's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                   's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
+                   'test1.chr0\t11\t100\n',
+                   20, 9),
+                  # test 3 - 100% bed coverage
+                  ('a score=0\n'
+                   's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                   's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
+                   'a score=0\n'
+                   's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
+                   's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
+                   'test1.chr0\t1\t100\n',
+                   20, 19),
+                  ]
+knownValuesSeed = [('a score=0\n'
                     's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
                     's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n',
                     'a score=0\n'
@@ -430,72 +292,7 @@ class randomSeedTests(unittest.TestCase):
                     's test2.chr0 40 60 + 100 ACGTACGTACGTACGTACGT\n',
                     ),
                    ]
-    def test_seedTesting(self):
-        """ mafComparator should have replicable runs via the --seed command
-        """
-        mtt.makeTempDirParent()
-        tmpDir = os.path.abspath(mtt.makeTempDir('seedTesting'))
-        parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        for maf1, maf2  in self.knownValues:
-            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
-                                    maf1, g_headers)
-            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
-                                    maf2, g_headers)
-            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
-                   '--mafFile1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
-                   '--mafFile2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
-                   '--outputFile', os.path.join(tmpDir, 'output.xml'),
-                   '--sampleNumber=10', '--logLevel=critical']
-            mtt.recordCommands([cmd], tmpDir)
-            mtt.runCommandsS([cmd], tmpDir)
-            tree = ET.parse(os.path.join(tmpDir, 'output.xml'))
-            ac = tree.getroot()
-            seed = int(ac.attrib['seed'])
-            cmd.append('--seed=%d' % seed)
-            origHomTests = tree.findall('homologyTests')
-            for i in xrange(0, 10):
-                mtt.recordCommands([cmd], tmpDir)
-                mtt.runCommandsS([cmd], tmpDir)
-                tree = ET.parse(os.path.join(tmpDir, 'output.xml'))
-                ac = tree.getroot()
-                homTests = tree.findall('homologyTests')
-                self.assertEqual(seed, int(ac.attrib['seed']))
-                for elm in ['totalTrue', 'totalFalse', 'average']:
-                    self.assertEqual(homTests[0].find('aggregateResults').find('all').attrib[elm],
-                                     origHomTests[0].find('aggregateResults').find('all').attrib[elm])
-                    self.assertEqual(homTests[1].find('aggregateResults').find('all').attrib[elm],
-                                     origHomTests[1].find('aggregateResults').find('all').attrib[elm])
-        mtt.removeDir(tmpDir)
-    def test_memory_1(self):
-        """ mafComparator should be memory clean for seed testing examples
-        """
-        valgrind = mtt.which('valgrind')
-        if valgrind is None:
-            return
-        mtt.makeTempDirParent()
-        tmpDir = os.path.abspath(mtt.makeTempDir('memory_1'))
-        parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        for maf1, maf2  in self.knownValues:
-            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
-                                    maf1, g_headers)
-            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
-                                    maf2, g_headers)
-            cmd = mtt.genericValgrind(tmpDir)
-            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
-                    '--mafFile1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
-                    '--mafFile2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
-                    '--outputFile', os.path.join(tmpDir, 'output.xml'),
-                    '--sampleNumber=10', '--logLevel=critical']
-            mtt.recordCommands([cmd], tmpDir)
-            mtt.runCommandsS([cmd], tmpDir)
-            self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-            for i in xrange(0, 4):
-                mtt.recordCommands([cmd], tmpDir)
-                mtt.runCommandsS([cmd], tmpDir)
-                self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-        mtt.removeDir(tmpDir)
-class NearTests(unittest.TestCase):
-    knownNearValues = [('''a score=0
+knownValuesNear = [('''a score=0
 s A 0 10 + 20 ACGTACGTAC
 s B 0 10 + 20 ATGTACGTAC
 s C 0 10 + 20 ACGTACGTAC
@@ -574,7 +371,279 @@ s D 0 10 + 20 ATGTACGTAC
 
 ''', 5, 60, 0),
                        ]
-    def test_nearSimple(self):
+def xmlBedRegionPassed(filename, totalTrue, totalTrueInInterval):
+    tree = ET.parse(filename)
+    homTests = tree.findall('homologyTests')
+    if totalTrue != int(homTests[0].find('aggregateResults').find('all').attrib['totalTrue']):
+        return False
+    if totalTrueInInterval is None:
+        if homTests[0].find('aggregateResults').find('A') is not None:
+            return False
+    else:
+        if totalTrueInInterval != int(homTests[0].find('aggregateResults').find('A').attrib['totalTrue']):
+            return False
+    return True
+def getAggregateResult(filename, name):
+    tree = ET.parse(filename)
+    homTests = tree.findall('homologyTests')
+    return int(homTests[0].find('aggregateResults').find('all').attrib[name])
+def validXml(filename):
+    print filename
+    try:
+        tree = ET.parse(filename)
+    except xml.parsers.expat.ExpatError:
+        return False
+    except ET.ParseError:
+        return False
+    return True
+class XmlOutputValidation(unittest.TestCase):
+    def test_validXmlOutput_(self):
+        """ xml output file should be valid xml.
+        """
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('validateXmlOutput'))
+        # test 1
+        maf1, maf2, totalTrue, totalFalse = knownValues[0]
+        testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                maf1, g_headers)
+        testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                maf2, g_headers)
+        parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+               '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+               '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+               '--out', os.path.abspath(os.path.join(tmpDir, 'outputVanilla.xml')),
+               '--samples=1000', '--logLevel=critical',
+               ]
+        mtt.recordCommands([cmd], tmpDir)
+        mtt.runCommandsS([cmd], tmpDir)
+        passed = validXml(os.path.abspath(os.path.join(tmpDir, 'outputVanilla.xml')))
+        self.assertTrue(passed)
+        self.assertFalse(validXml(os.path.abspath(os.path.join(tmpDir, 'maf1.maf'))))
+        # test 2
+        maf1, maf2, bed, totalTrue, totalTrueInInterval = knownValuesBed[2]
+        testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                maf1, g_headers)
+        testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                maf2, g_headers)
+        testBed = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'bed.bed')), 
+                               bed, [''])
+        parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+               '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+               '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+               '--out', os.path.abspath(os.path.join(tmpDir, 'outputBed.xml')),
+               '--samples=1000', '--logLevel=critical',
+               ]
+        cmd += ['--bedFiles', os.path.abspath(os.path.join(tmpDir, 'bed.bed'))]
+        mtt.recordCommands([cmd], tmpDir)
+        mtt.runCommandsS([cmd], tmpDir)
+        passed = validXml(os.path.abspath(os.path.join(tmpDir, 'outputBed.xml')))
+        # test 3
+        maf1, maf2, totalTrue, totalFalse = knownValues[0]
+        testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                maf1, g_headers)
+        testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                maf2, g_headers)
+        parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+               '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+               '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+               '--out', os.path.abspath(os.path.join(tmpDir, 'outputWiggles.xml')),
+               '--samples=1000', '--logLevel=critical', '--wigglePairs=A,B', 'wiggleBinLength=2'
+               ]
+        mtt.recordCommands([cmd], tmpDir)
+        mtt.runCommandsS([cmd], tmpDir)
+        passed = validXml(os.path.abspath(os.path.join(tmpDir, 'outputWiggles.xml')))
+        self.assertTrue(passed)
+        mtt.removeDir(tmpDir)
+
+class KnownValuesTest(unittest.TestCase):
+    # knownValues contains quad-tuples,
+    # maf1, maf2, totalTrue (comparing maf1 as fileA to maf2), 
+    # totalFalse (comparing maf1 as fileA to maf2)
+    def test_knownValues(self):
+        """ mafComparator should return correct results for hand-calculable problems
+        """
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('knownValues'))
+        i = -1
+        for maf1, maf2, totalTrue, totalFalse in knownValues:
+            i += 1
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                   '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+                   '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                   '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
+                   '--samples=1000', '--logLevel=critical',
+                   ]
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
+            passedTT = totalTrue == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalTrue')
+            passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
+            if not (passedTT and passedTF):
+                print 'knownValues Test failed on test %d' % i
+            self.assertTrue(passedTT and passedTF)
+        # mtt.removeDir(tmpDir)
+    def dtest_memory_2(self):
+        """ mafComparator should be memory clean for known values
+        """
+        valgrind = mtt.which('valgrind')
+        if valgrind is None:
+            return
+        mtt.makeTempDirParent()        
+        tmpDir = os.path.abspath(mtt.makeTempDir('memory_2'))
+        for maf1, maf2, totalTrue, totalFalse in knownValues:
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = mtt.genericValgrind(tmpDir)
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                    '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+                    '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                    '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
+                    '--samples=1000', '--logLevel=critical',
+                    ]
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
+            passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
+            self.assertTrue(passed)
+        mtt.removeDir(tmpDir)
+
+class BedParsingTest(unittest.TestCase):
+    # knownValues contains quad-tuples,
+    # maf1, maf2, bed, threshold
+    # test 1 - 0 % bed coverage
+    def dtest_bedParsing(self):
+        """ mafComparator should parse a bed file and use the intervals for testing
+        """
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('bedParsing'))
+        for maf1, maf2, bed, totalTrue, totalTrueInInterval in knownValuesBed:
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            testBed = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'bed.bed')), 
+                                   bed, [''])
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                   '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+                   '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                   '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
+                   '--samples=1000', '--logLevel=critical',
+                   ]
+            if bed != '':
+                cmd += ['--bedFiles', os.path.abspath(os.path.join(tmpDir, 'bed.bed'))]
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
+            passed = xmlBedRegionPassed(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 
+                                        totalTrue, totalTrueInInterval)
+            self.assertTrue(passed)
+        mtt.removeDir(tmpDir)
+    def dtest_memory_0(self):
+        """ mafComparator should be memory clean for bed parsing examples
+        """
+        valgrind = mtt.which('valgrind')
+        if valgrind is None:
+            return
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('memory_0'))
+        for maf1, maf2, bed, totalTrue, totalTrueInInterval in knownValuesBed:
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            testBed = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'bed.bed')), 
+                                   bed, [''])
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = mtt.genericValgrind(tmpDir)
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                    '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+                    '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                    '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
+                    '--samples=1000', '--logLevel=critical',
+                    ]
+            if bed != '':
+                cmd += ['--bedFiles', os.path.abspath(os.path.join(tmpDir, 'bed.bed'))]
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
+            passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
+            self.assertTrue(passed)
+        mtt.removeDir(tmpDir)
+class randomSeedTests(unittest.TestCase):
+    def dtest_seedTesting(self):
+        """ mafComparator should have replicable runs via the --seed command
+        """
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('seedTesting'))
+        parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        for maf1, maf2  in knownValuesSeed:
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                   '--mafFile1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                   '--mafFile2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                   '--outputFile', os.path.join(tmpDir, 'output.xml'),
+                   '--sampleNumber=10', '--logLevel=critical']
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
+            tree = ET.parse(os.path.join(tmpDir, 'output.xml'))
+            ac = tree.getroot()
+            seed = int(ac.attrib['seed'])
+            cmd.append('--seed=%d' % seed)
+            origHomTests = tree.findall('homologyTests')
+            for i in xrange(0, 10):
+                mtt.recordCommands([cmd], tmpDir)
+                mtt.runCommandsS([cmd], tmpDir)
+                tree = ET.parse(os.path.join(tmpDir, 'output.xml'))
+                ac = tree.getroot()
+                homTests = tree.findall('homologyTests')
+                self.assertEqual(seed, int(ac.attrib['seed']))
+                for elm in ['totalTrue', 'totalFalse', 'average']:
+                    self.assertEqual(homTests[0].find('aggregateResults').find('all').attrib[elm],
+                                     origHomTests[0].find('aggregateResults').find('all').attrib[elm])
+                    self.assertEqual(homTests[1].find('aggregateResults').find('all').attrib[elm],
+                                     origHomTests[1].find('aggregateResults').find('all').attrib[elm])
+        mtt.removeDir(tmpDir)
+    def dtest_memory_1(self):
+        """ mafComparator should be memory clean for seed testing examples
+        """
+        valgrind = mtt.which('valgrind')
+        if valgrind is None:
+            return
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('memory_1'))
+        parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        for maf1, maf2  in knownValuesSeed:
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            cmd = mtt.genericValgrind(tmpDir)
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                    '--mafFile1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                    '--mafFile2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                    '--outputFile', os.path.join(tmpDir, 'output.xml'),
+                    '--sampleNumber=10', '--logLevel=critical']
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
+            self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+            for i in xrange(0, 4):
+                mtt.recordCommands([cmd], tmpDir)
+                mtt.runCommandsS([cmd], tmpDir)
+                self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+        mtt.removeDir(tmpDir)
+class NearTests(unittest.TestCase):
+    def dtest_nearSimple(self):
         """ mafComparator should return correct results for hand-calculable problems that use the --near=0 option
         """
         mtt.makeTempDirParent()
@@ -600,13 +669,13 @@ s D 0 10 + 20 ATGTACGTAC
             passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
             self.assertTrue(passedTT and passedTF)
         mtt.removeDir(tmpDir)
-    def test_near(self):
+    def dtest_near(self):
         """ mafComparator should return correct results for hand-calculable problems that use the --near option
         """
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('near'))
         i = 0
-        for maf1, maf2, near, totalTrue, totalFalse in self.knownNearValues:
+        for maf1, maf2, near, totalTrue, totalFalse in knownValuesNear:
             i += 1
             testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
                                     maf1, g_headers)
@@ -626,7 +695,7 @@ s D 0 10 + 20 ATGTACGTAC
             passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
             self.assertTrue(passedTT and passedTF)
         mtt.removeDir(tmpDir)
-    def test_memory_3(self):
+    def dtest_memory_3(self):
         """ mafComparator should be memory clean for known values using --near option
         """
         valgrind = mtt.which('valgrind')
@@ -634,7 +703,7 @@ s D 0 10 + 20 ATGTACGTAC
             return
         mtt.makeTempDirParent()        
         tmpDir = os.path.abspath(mtt.makeTempDir('memory_3'))
-        for maf1, maf2, near, totalTrue, totalFalse in self.knownNearValues:
+        for maf1, maf2, near, totalTrue, totalFalse in knownValuesNear:
             testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
                                     maf1, g_headers)
             testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 

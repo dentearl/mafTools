@@ -150,6 +150,48 @@ void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
     free(spaceSepFiles);
     st_logDebug("Done parsing bed files\n");
 }
+void listifercatePairs(char *s, stList *list) {
+    // take a csv string and turn it into a list of strings.
+    if (s == NULL) {
+        return;
+    }
+    char *spaceSep = stringCommasToSpaces(s);
+    char *currentLocation = spaceSep;
+    char *currentWord;
+    while ((currentWord = stString_getNextWord(&currentLocation)) != NULL) {
+        stList_append(list, stString_copy(currentWord));
+        free(currentWord);
+        currentWord = stString_getNextWord(&currentLocation);
+        stList_append(list, stString_copy(currentWord));
+        free(currentWord);
+    }
+    free(spaceSep);
+}
+void hashifercateList(stList *list, stHash *hash) {
+    // given an stList containing strings that are ordered in pairs,
+    // build an stHash keyed on a concatenation of the pairs (hyphen
+    // separated) and valued with a NULL wiggleContainer struct ptr
+    if (list == NULL) {
+        return;
+    }
+    char *a = NULL;
+    char *b = NULL;
+    char *tmp = NULL;
+    WiggleContainer *wc = NULL;
+    for (int32_t i = 0; i < stList_length(list); i = i + 2) {
+        a = stString_copy(stList_get(list, i));
+        b = stString_copy(stList_get(list, i + 1));
+        tmp = (char *) st_malloc(kMaxStringLength);
+        sprintf(tmp, "%s-%s", a, b);
+        wc = wiggleContainer_init();
+        wc->ref = stString_copy(a);
+        wc->partner = stString_copy(b);
+        stHash_insert(hash, stString_copy(tmp), wc);
+        free(a);
+        free(b);
+        free(tmp);
+    }
+}
 void usage(void) {
     fprintf(stderr, "mafComparator, %s\n\n", g_version);
     fprintf(stderr, "Usage: $ mafComparator --maf1=FILE1 --maf2=FILE2 --out=OUT.xml [options]\n\n");
@@ -174,7 +216,14 @@ void usage(void) {
                  "actual number may be slightly higher or slightly lower than "
                  "this value. If this value is equal to or greater than the "
                  "total number of pairs in a file, then all pairs will be "
-                 "tested. [default 1000000]");
+                 "tested. [default: 1000000]");
+    usageMessage('\0', "wigglePairs", "The paired names of sequences (comma separated values) "
+                 "to create output that isolates event counts to specific regions of one "
+                 "genome (the first genome in the pair). The asterisk, *, can be used as "
+                 "wildcard character. i.e. hg19*,mm9* will match hg19.chr1 and "
+                 "mm9.chr1 etc etc resulting in all pairs between hg19* and mm9*.");
+    usageMessage('\0', "wiggleBinLength", "The length of the bins when the --wigglePairs option is "
+                 "invoked. [default: 100000]");
     usageMessage('\0', "bedFiles", "The location of bed file(s) used to filter the "
                  "pairwise comparisons, separated by commas.");
     usageMessage('\0', "near", "The number of bases in either sequence to allow a match "
@@ -199,7 +248,7 @@ void version(void) {
 }
 int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **outputFile, 
               char **bedFiles, uint32_t *sampleNumber, uint32_t *randomSeed, uint32_t *near, 
-              char **logLevelString) {
+              char **logLevelString, char **wigglePairs, uint64_t *wiggleBinLength) {
     static const char *optString = "a:b:c:d:e:p:v:h:f:g:s:";
     static const struct option longOpts[] = {
         {"logLevel", required_argument, 0, 'a'},
@@ -211,6 +260,8 @@ int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **ou
         {"out", required_argument, 0, 0},
         {"sampleNumber", required_argument, 0, 'e'},
         {"samples", required_argument, 0, 0},
+        {"wigglePairs", required_argument, 0, 0},
+        {"wiggleBinLength", required_argument, 0, 0},
         {"printFailed", no_argument, 0, 'p'},
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
@@ -238,6 +289,15 @@ int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **ou
             }
             if (strcmp("samples", longOpts[longIndex].name) == 0) {
                 i = sscanf(optarg, "%" PRIu32, sampleNumber);
+                assert(i == 1);
+                break;
+            }
+            if (strcmp("wigglePairs", longOpts[longIndex].name) == 0) {
+                *wigglePairs = stString_copy(optarg);
+                break;
+            }
+            if (strcmp("wiggleBinLength", longOpts[longIndex].name) == 0) {
+                i = sscanf(optarg, "%" PRIu64, wiggleBinLength);
                 assert(i == 1);
                 break;
             }
@@ -298,6 +358,12 @@ int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **ou
         fprintf(stderr, "\nError, specify --outputFile\n");
         exit(2);
     }
+    if (*wigglePairs != NULL) {
+        if (!countCommas(*wigglePairs) % 2) {
+            fprintf(stderr, "\nError, --wigglePairs must come in comma separated pairs.\n");
+            exit(2);
+        }
+    }
     FILE *fileHandle = de_fopen(*mafFile1, "r");
     fclose(fileHandle);
     fileHandle = de_fopen(*mafFile2, "r");
@@ -309,29 +375,34 @@ int main(int argc, char **argv) {
     char *mafFile1 = NULL;
     char *mafFile2 = NULL;
     char *outputFile = NULL;
+    char *bedFiles = NULL;
+    char *wigglePairs = NULL;
     FILE *fileHandle = NULL;
     stHash *intervalsHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free,
                                               (void(*)(void *)) stSortedSet_destruct);
-    char *bedFiles = NULL;
     uint32_t sampleNumber = 1000000; // by default do a million samples per pair.
     uint32_t randomSeed = (time(NULL) << 16) | (getpid() & 65535); // Likely to be unique
     uint32_t near = 0;
+    uint64_t wiggleBinLength = 100000;
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
     parseArgs(argc, argv, &mafFile1, &mafFile2, &outputFile, &bedFiles, &sampleNumber, 
-              &randomSeed, &near, &logLevelString);
+              &randomSeed, &near, &logLevelString, &wigglePairs, &wiggleBinLength);
+    stList *wigglePairPatternList = stList_construct3(0, free);
+    listifercatePairs(wigglePairs, wigglePairPatternList);
+    stHash *sequenceLengthHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
     // Set up logging
     st_setLogLevelFromString(logLevelString);
     st_logDebug("Seeding the random number generator with the value %lo\n", randomSeed);
     st_randomSeed(randomSeed);
     // (0) Check the inputs.
-    //Parse the bed file hashes
+    // Parse the bed file hashes
     if(bedFiles != NULL) {
         parseBedFiles(bedFiles, intervalsHash);
-    }
-    else {
+    } else {
         st_logDebug("No bed files specified\n");
     }
-    //Log (some of) the inputs
+    // hashifercateList(wigglePairList, wigglePairHash);
+    // Log (some of) the inputs
     st_logInfo("MAF file 1 name : %s\n", mafFile1);
     st_logInfo("MAF file 2 name : %s\n", mafFile2);
     st_logInfo("Output stats file : %s\n", outputFile);
@@ -340,10 +411,14 @@ int main(int argc, char **argv) {
     // note that random seed has already been logged.
     // Create sequence name hashtable from the first MAF file.
     stSet *seqNames1 = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
-    populateNames(mafFile1, seqNames1);
     stSet *seqNames2 = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
-    populateNames(mafFile2, seqNames2);
+    populateNames(mafFile1, seqNames1, sequenceLengthHash);
+    populateNames(mafFile2, seqNames2, sequenceLengthHash);
     stSet *seqNames = stSet_getIntersection(seqNames1, seqNames2);
+    // build final wiggle things
+    stHash *wigglePairHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, 
+                                               free, (void(*)(void *))wiggleContainer_destruct);
+    buildWigglePairHash(sequenceLengthHash, wigglePairPatternList, wigglePairHash, wiggleBinLength);
     // Do comparisons.
     if (g_isVerboseFailures) {
         fprintf(stderr, "# Sampling from %s, comparing to %s\n", mafFile1, mafFile2);
@@ -359,23 +434,31 @@ int main(int argc, char **argv) {
     uint64_t numPairs2 = 0;
     stSortedSet *results_21 = compareMAFs_AB(mafFile2, mafFile1, sampleNumber, &numPairs2, seqNames, 
                                              intervalsHash, near);
+    parseResultsForWiggles(results_12, results_21, wigglePairHash, wiggleBinLength);
     fileHandle = de_fopen(outputFile, "w");
     // Report results.
     writeXMLHeader(fileHandle);
-    char bedString[kMaxStringLength];
+    char bedString[kMaxStringLength];    
     if (bedFiles != NULL) {
         sprintf(bedString, " bedFiles=\"%s\"", bedFiles);
     } else {
         bedString[0] = '\0';
     }
+    char wiggleString[kMaxStringLength];
+    if (wigglePairs != NULL) {
+        sprintf(wiggleString, " wigglePairs=\"%s\" wiggleBinLength=\"%" PRIu64 "\"", 
+                wigglePairs, wiggleBinLength);
+    } else {
+        wiggleString[0] = '\0';
+    }
     fprintf(fileHandle, "<alignmentComparisons sampleNumber=\"%" PRIu32 "\" "
             "near=\"%" PRIu32 "\" seed=\"%" PRIu32 "\" maf1=\"%s\" maf2=\"%s\" "
             "numberOfPairsInMaf1=\"%" PRIu64 "\" "
-            "numberOfPairsInMaf2=\"%" PRIu64 "\"%s>\n",
-            sampleNumber, near, randomSeed, mafFile1, mafFile2, numPairs1, numPairs2, bedString);
-        
+            "numberOfPairsInMaf2=\"%" PRIu64 "\"%s%s>\n",
+            sampleNumber, near, randomSeed, mafFile1, mafFile2, numPairs1, numPairs2, bedString, wiggleString);
     reportResults(results_12, mafFile1, mafFile2, fileHandle, near, seqNames, bedFiles);
     reportResults(results_21, mafFile2, mafFile1, fileHandle, near, seqNames, bedFiles);
+    reportResultsForWiggles(wigglePairHash, fileHandle);
     fprintf(fileHandle, "</alignmentComparisons>\n");
     fclose(fileHandle);
     // Clean up.
@@ -384,11 +467,15 @@ int main(int argc, char **argv) {
     free(mafFile1);
     free(mafFile2);
     free(bedFiles);
+    free(wigglePairs);
     free(outputFile);
     free(logLevelString);
     stSet_destruct(seqNames);
     stSet_destruct(seqNames1);
     stSet_destruct(seqNames2);
     stHash_destruct(intervalsHash);
+    stHash_destruct(wigglePairHash);
+    stHash_destruct(sequenceLengthHash);
+    stList_destruct(wigglePairPatternList);
     return(EXIT_SUCCESS);
 }
