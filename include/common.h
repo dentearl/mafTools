@@ -41,6 +41,6 @@ FILE* de_fopen(const char *s, char const *mode);
 char* de_strdup(const char *s);
 void failBadFormat(void);
 void usageMessage(char shortopt, const char *name, const char *description);
-char* stringCommasToSpaces(const char *string);
+char* stringReplace(const char *string, const char a, const char b);
 
 #endif // COMMON_H_

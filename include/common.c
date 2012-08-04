@@ -189,14 +189,14 @@ void usageMessage(char shortopt, const char *name, const char *description) {
     }
     fprintf(stderr, "\n");
 }
-char* stringCommasToSpaces(const char *string) {
-    /* swap all commas, ',', for spaces ' '.
+char* stringReplace(const char *string, const char a, const char b) {
+    /* swap all chars equal to a, for b.
      */
     char *s = de_strdup(string);
     int i = 0;
     for (i = 0; i < (int)strlen(s); i++) {
-        if (s[i] == ',')
-            s[i] = ' ';
+        if (s[i] == a)
+            s[i] = b;
     }
     return s;
 }
