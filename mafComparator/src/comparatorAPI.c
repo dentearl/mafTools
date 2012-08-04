@@ -67,6 +67,24 @@ WiggleContainer* wiggleContainer_init(void) {
     wc->absentBtoA = NULL;
     return wc;
 }
+Options* options_construct(void) {
+    Options *o = (Options*) st_malloc(sizeof(*o));
+    o->logLevelString = NULL;
+    o->mafFile1 = NULL;
+    o->mafFile2 = NULL;
+    o->outputFile = NULL;
+    o->bedFiles = NULL;
+    o->wigglePairs = NULL;
+    o->numPairsString = NULL;
+    o->legitSequences = NULL;
+    o->numberOfSamples = 1000000; // by default do a million samples per pair.
+    o->randomSeed = (time(NULL) << 16) | (getpid() & 65535); // Likely to be unique
+    o->near = 0;
+    o->numPairs1 = 0;
+    o->numPairs2 = 0;
+    o->wiggleBinLength = 100000; // by default have 100,000 length bins
+    return o;
+}
 APair* aPair_construct(const char *seq1, const char *seq2, uint32_t pos1, uint32_t pos2) {
     APair *aPair = aPair_init();
     aPair_fillOut(aPair, (char *) seq1, (char *) seq2, pos1, pos2);
@@ -112,6 +130,21 @@ APosition* aPosition_construct(const char *name, uint32_t pos) {
     APosition *aPosition = st_malloc(sizeof(*aPosition));
     aPosition_fillOut(aPosition, (char *) name, pos);
     return aPosition;
+}
+void options_destruct(Options *o) {
+    if (o == NULL) {
+        return;
+    }
+    free(o->logLevelString);
+    free(o->mafFile1);
+    free(o->mafFile2);
+    free(o->outputFile);
+    free(o->bedFiles);
+    free(o->wigglePairs);
+    free(o->legitSequences);
+    free(o->numPairsString);
+    free(o);
+    o = NULL;
 }
 void aPair_destruct(APair *pair) {
     if (pair == NULL) {
@@ -1192,25 +1225,27 @@ void enumerateHomologyResults(stSortedSet *sampledPairs, stSortedSet *resultPair
     }
     stSortedSet_destructIterator(sit);
 }
-stSortedSet *compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint32_t numberOfSamples,
-                            uint64_t *numberOfPairs,
-                            stSet *legitSequences, stHash *intervalsHash, 
-                            uint32_t near, stHash *wigglePairHash, bool isAtoB, uint64_t wiggleBinLength) {
+stSortedSet *compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint64_t *numberOfPairs,
+                            stSet *legitSequences, stHash *intervalsHash, stHash *wigglePairHash, 
+                            bool isAtoB, Options *options) {
     // count the number of pairs in mafFileA
-    *numberOfPairs = countPairsInMaf(mafFileA, legitSequences);
+    if (*numberOfPairs == 0) {
+        // can be manually set via the command line
+        *numberOfPairs = countPairsInMaf(mafFileA, legitSequences);
+    }
     if (*numberOfPairs == 0) {
         return stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction_seqsOnly, (void(*)(void *)) aPair_destruct);
     }
-    double acceptProbability = ((double) numberOfSamples) / (double) *numberOfPairs;
+    double acceptProbability = ((double) options->numberOfSamples) / (double) *numberOfPairs;
     stSortedSet *pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction, (void(*)(void *)) aPair_destruct);
     // sample pairs from mafFileA
     samplePairsFromMaf(mafFileA, pairs, acceptProbability, legitSequences);
     // perform homology tests on mafFileB using sampled pairs from mafFileA
     stSet *positivePairs = stSet_construct(); // comparison by pointer
-    performHomologyTests(mafFileB, pairs, positivePairs, legitSequences, intervalsHash, near);
+    performHomologyTests(mafFileB, pairs, positivePairs, legitSequences, intervalsHash, options->near);
     stSortedSet *resultPairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction_seqsOnly, (void(*)(void *)) aPair_destruct);
     enumerateHomologyResults(pairs, resultPairs, intervalsHash, positivePairs, wigglePairHash, isAtoB,
-                             wiggleBinLength);
+                             options->wiggleBinLength);
     // clean up
     stSortedSet_destruct(pairs);
     stSet_destruct(positivePairs);
@@ -1509,5 +1544,55 @@ void buildWigglePairHash(stHash *sequenceLengthHash, stList *wigglePairPatternLi
             }
         }
         stHash_destructIterator(hit1);
+    }
+}
+void buildSeqNamesSet(Options *options, stSet *seqNamesSet, stHash *sequenceLengthHash) {
+    uint64_t length = 0;
+    if (options->legitSequences == NULL) {
+        // read the input maf files and construct the set and hash from them
+        stSet *seqNamesSet1 = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
+        stSet *seqNamesSet2 = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
+        populateNames(options->mafFile1, seqNamesSet1, sequenceLengthHash);
+        populateNames(options->mafFile2, seqNamesSet2, sequenceLengthHash);
+        stSet *seqNamesSetTmp = stSet_getIntersection(seqNamesSet1, seqNamesSet2);
+        stSetIterator *sit = stSet_getIterator(seqNamesSetTmp);
+        char *key = NULL;
+        while ((key = stSet_getNext(sit)) != NULL) {
+            // the intersection does not make copies and seqNamesSet1 and 2 need to be free'd
+            stSet_insert(seqNamesSet, stString_copy(key));
+        }
+        stSet_destructIterator(sit);
+        stSet_destruct(seqNamesSet1);
+        stSet_destruct(seqNamesSet2);
+        stSet_destruct(seqNamesSetTmp);
+    } else {
+        // trust the command line input from the user, and use those to build the set and hash
+        char *spaceSep = stringReplace(options->legitSequences, ',', ' ');
+        char *currentLocation = spaceSep;
+        char *currentWord = NULL;
+        while ((currentWord = stString_getNextWord(&currentLocation)) != NULL) {
+            // separate out the sequence:length pairs by comma
+            char *colonSep = stringReplace(currentWord, ':', ' ');
+            char *currentLocation2 = colonSep;
+            char *currentWord2 = NULL;
+            int i = 0;
+            char *seqName = NULL;
+            while ((currentWord2 = stString_getNextWord(&currentLocation2)) != NULL) {
+                // separate out the sequence string from the length value
+                if (i % 2) {
+                    // odd, sequence length
+                    int j = sscanf(currentWord2, "%" PRIu64, &length);
+                    assert(j == 1);
+                    stHash_insert(sequenceLengthHash, stString_copy(seqName), buildInt64(length));
+                    free(seqName);
+                    seqName = NULL;
+                } else {
+                    // even, sequence string
+                    assert(seqName == NULL);
+                    seqName = stString_copy(currentWord2);
+                    stSet_insert(seqNamesSet, seqName);
+                }
+            }
+        }
     }
 }

@@ -116,7 +116,7 @@ int parseArgs(int argc, char **argv, char **maf, char **maf2, char **seqList) {
     return optind;
 }
 stSet* buildSet(char *listOfLegitSequences) {
-    char *spaceSepFiles = stringCommasToSpaces(listOfLegitSequences);
+    char *spaceSepFiles = stringReplace(listOfLegitSequences, ',', ' ');
     char *currentLocation = spaceSepFiles;
     char *currentWord;
     stSet *legitSeqsSet = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);

@@ -789,7 +789,7 @@ class randomSeedTests(unittest.TestCase):
                    '--mafFile1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
                    '--mafFile2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
                    '--outputFile', os.path.join(tmpDir, 'output.xml'),
-                   '--sampleNumber=10', '--logLevel=critical']
+                   '--samples=10', '--logLevel=critical']
             mtt.recordCommands([cmd], tmpDir)
             mtt.runCommandsS([cmd], tmpDir)
             tree = ET.parse(os.path.join(tmpDir, 'output.xml'))
@@ -826,10 +826,10 @@ class randomSeedTests(unittest.TestCase):
                                     maf2, g_headers)
             cmd = mtt.genericValgrind(tmpDir)
             cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
-                    '--mafFile1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
-                    '--mafFile2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
-                    '--outputFile', os.path.join(tmpDir, 'output.xml'),
-                    '--sampleNumber=10', '--logLevel=critical']
+                    '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                    '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                    '--out', os.path.join(tmpDir, 'output.xml'),
+                    '--samples=10', '--logLevel=critical']
             mtt.recordCommands([cmd], tmpDir)
             mtt.runCommandsS([cmd], tmpDir)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))

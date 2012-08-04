@@ -36,21 +36,44 @@
 #include <string.h>
 #include <time.h>
 #include <getopt.h>
+#include <unistd.h> // getpid
 #include "bioioC.h"
 #include "sonLib.h"
 #include "sharedMaf.h"
 
+typedef struct _options {
+    // used to hold all the command line options
+    char *logLevelString;
+    char *mafFile1;
+    char *mafFile2;
+    char *outputFile;
+    char *bedFiles;
+    char *wigglePairs;
+    char *legitSequences; // the intersection of sequence names between inputs
+    char *numPairsString;
+    uint32_t numberOfSamples;
+    uint32_t randomSeed;
+    uint32_t near;
+    uint64_t numPairs1;
+    uint64_t numPairs2;
+    uint64_t wiggleBinLength;
+} Options;
 typedef struct _pair {
+    // used for sampling pairs of aligned positions
     char *seq1;
     char *seq2;
     uint32_t pos1;
     uint32_t pos2;
 } APair;
 typedef struct _position {
+    // used in homology testing on columns
     char *name;
     uint32_t pos;
 } APosition;
 typedef struct _resultPair {
+    // result pairs are used to store the disposition of sampled
+    // pairs at the sequence name level (i.e. they have no position,
+    // they are amalgams of all positions in a given comparison)
     APair aPair;
     uint32_t inAll;
     uint32_t inBoth;
@@ -63,22 +86,6 @@ typedef struct _resultPair {
     uint32_t totalB;
     uint32_t totalNeither;
 } ResultPair;
-typedef struct _aggregateResult {
-    char *seq1;
-    char *seq2;
-    uint32_t pos1;
-    uint32_t pos2;
-    uint32_t inAll;
-    uint32_t inBoth;
-    uint32_t inA;
-    uint32_t inB;
-    uint32_t inNeither;
-    uint32_t total;
-    uint32_t totalBoth;
-    uint32_t totalA;
-    uint32_t totalB;
-    uint32_t totalNeither;
-} AggregateResult;
 typedef struct _wiggleContainer {
     // contains arrays of counts, used by the --wigglePair option
     char *ref;
@@ -93,11 +100,12 @@ typedef struct _wiggleContainer {
 } WiggleContainer;
 bool g_isVerboseFailures;
 
+Options* options_construct(void);
+void options_destruct(Options* o);
 void populateNames(const char *mAFFile, stSet *set, stHash *seqLengthHash);
-stSortedSet* compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint32_t numberOfSamples, 
-                            uint64_t *numberOfPairsInFile, stSet *legitimateSequences, 
-                            stHash *intervalsHash, uint32_t near, stHash *wigHash, bool isAtoB, 
-                            uint64_t binLen);
+stSortedSet* compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint64_t *numberOfPairsInFile, 
+                            stSet *legitimateSequences, stHash *intervalsHash, stHash *wigHash, bool isAtoB, 
+                            Options *options);
 void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...);
 void reportResults(stSortedSet *results_AB, const char *mAFFileA, const char *mAFFileB, 
                    FILE *fileHandle, uint32_t near, stSet *legitimateSequences, 
@@ -147,4 +155,5 @@ bool patternMatches(char *a, char *b);
 void buildWigglePairHash(stHash *sequenceLengthHash, stList *wigglePairPatternList, 
                          stHash *wigglePairHash, uint64_t wiggleBinLength);
 void reportResultsForWiggles(stHash *wigglePairHash, FILE *fileHandle);
+void buildSeqNamesSet(Options *options, stSet *seqNamesSet, stHash *sequenceLengthHash);
 #endif /* _COMPARATOR_API_H_ */

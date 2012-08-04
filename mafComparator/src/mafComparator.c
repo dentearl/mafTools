@@ -141,7 +141,7 @@ void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
      * and passes each bed file to parseBedFile().
      */
     st_logDebug("Starting to parse bed files\n");
-    char *spaceSepFiles = stringCommasToSpaces(commaSepFiles);
+    char *spaceSepFiles = stringReplace(commaSepFiles, ',', ' ');
     char *currentLocation = spaceSepFiles;
     char *currentWord;
     while ((currentWord = stString_getNextWord(&currentLocation)) != NULL) {
@@ -156,9 +156,9 @@ void listifercatePairs(char *s, stList *list) {
     if (s == NULL) {
         return;
     }
-    char *spaceSep = stringCommasToSpaces(s);
+    char *spaceSep = stringReplace(s, ',', ' ');
     char *currentLocation = spaceSep;
-    char *currentWord;
+    char *currentWord = NULL;
     while ((currentWord = stString_getNextWord(&currentLocation)) != NULL) {
         stList_append(list, stString_copy(currentWord));
         free(currentWord);
@@ -250,9 +250,7 @@ void version(void) {
     fprintf(stderr, "mafComparator, %s\nbuild: %s, %s, %s\n", g_version, g_build_date, 
             g_build_git_branch, g_build_git_sha);
 }
-int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **outputFile, 
-              char **bedFiles, uint32_t *sampleNumber, uint32_t *randomSeed, uint32_t *near, 
-              char **logLevelString, char **wigglePairs, uint64_t *wiggleBinLength) {
+int parseArgs(int argc, char **argv, Options* options) {
     static const char *optString = "a:b:c:d:e:p:v:h:f:g:s:";
     static const struct option longOpts[] = {
         {"logLevel", required_argument, 0, 'a'},
@@ -262,9 +260,11 @@ int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **ou
         {"maf2", required_argument, 0, 0},
         {"outputFile", required_argument, 0, 'd'},
         {"out", required_argument, 0, 0},
-        {"sampleNumber", required_argument, 0, 'e'},
         {"samples", required_argument, 0, 0},
+        {"sampleNumber", required_argument, 0, '0'},
         {"wigglePairs", required_argument, 0, 0},
+        {"numberOfPairs", required_argument, 0, 0},
+        {"legitSequences", required_argument, 0, 0},
         {"wiggleBinLength", required_argument, 0, 0},
         {"printFailed", no_argument, 0, 'p'},
         {"version", no_argument, 0, 'v'},
@@ -280,42 +280,50 @@ int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **ou
         switch (key) {
         case 0:
             if (strcmp("maf1", longOpts[longIndex].name) == 0) {
-                *mafFile1 = stString_copy(optarg);
+                options->mafFile1 = stString_copy(optarg);
                 break;
             }
             if (strcmp("maf2", longOpts[longIndex].name) == 0) {
-                *mafFile2 = stString_copy(optarg);
+                options->mafFile2 = stString_copy(optarg);
                 break;
             }
             if (strcmp("out", longOpts[longIndex].name) == 0) {
-                *outputFile = stString_copy(optarg);
+                options->outputFile = stString_copy(optarg);
+                break;
+            }
+            if (strcmp("legitSequences", longOpts[longIndex].name) == 0) {
+                options->legitSequences = stString_copy(optarg);
                 break;
             }
             if (strcmp("samples", longOpts[longIndex].name) == 0) {
-                i = sscanf(optarg, "%" PRIu32, sampleNumber);
+                i = sscanf(optarg, "%" PRIu32, &(options->numberOfSamples));
                 assert(i == 1);
                 break;
             }
             if (strcmp("wigglePairs", longOpts[longIndex].name) == 0) {
-                *wigglePairs = stString_copy(optarg);
+                options->wigglePairs = stString_copy(optarg);
                 break;
             }
             if (strcmp("wiggleBinLength", longOpts[longIndex].name) == 0) {
-                i = sscanf(optarg, "%" PRIu64, wiggleBinLength);
+                i = sscanf(optarg, "%" PRIu64, &(options->wiggleBinLength));
                 assert(i == 1);
                 break;
             }
+            if (strcmp("numberOfPairs", longOpts[longIndex].name) == 0) {
+                options->numPairsString = stString_copy(optarg);
+                break;
+            }
         case 'a':
-            *logLevelString = stString_copy(optarg);
+            options->logLevelString = stString_copy(optarg);
             break;
         case 'b':
-            *mafFile1 = stString_copy(optarg);
+            options->mafFile1 = stString_copy(optarg);
             break;
         case 'c':
-            *mafFile2 = stString_copy(optarg);
+            options->mafFile2 = stString_copy(optarg);
             break;
         case 'd':
-            *outputFile = stString_copy(optarg);
+            options->outputFile = stString_copy(optarg);
             break;
         case 'v':
             version();
@@ -324,21 +332,21 @@ int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **ou
             g_isVerboseFailures = true;
             break;
         case 'e':
-            i = sscanf(optarg, "%" PRIu32, sampleNumber);
+            i = sscanf(optarg, "%" PRIu32, &(options->numberOfSamples));
             assert(i == 1);
             break;
         case 's':
-            i = sscanf(optarg, "%" PRIu32, randomSeed);
+            i = sscanf(optarg, "%" PRIu32, &(options->randomSeed));
             assert(i == 1);
             break;
         case 'h':
             usage();
             exit(EXIT_SUCCESS);
         case 'f':
-            *bedFiles = stString_copy(optarg);
+            options->bedFiles = stString_copy(optarg);
             break;
         case 'g':
-            i = sscanf(optarg, "%" PRIu32, near);
+            i = sscanf(optarg, "%" PRIu32, &(options->near));
             assert(i == 1);
             break;
         default:
@@ -347,138 +355,141 @@ int parseArgs(int argc, char **argv, char **mafFile1, char **mafFile2, char **ou
         }
         key = getopt_long(argc, argv, optString, longOpts, &longIndex);
     }
-    if (*mafFile1 == NULL) {
+    if (options->mafFile1 == NULL) {
         usage();
         fprintf(stderr, "\nError, specify --mafFile1\n");
         exit(2);
     }
-    if (*mafFile2 == NULL) {
+    if (options->mafFile2 == NULL) {
         usage();
         fprintf(stderr, "\nError, specify --mafFile2\n");
         exit(2);
     }
-    if (*outputFile == NULL) {
+    if (options->outputFile == NULL) {
         usage();
         fprintf(stderr, "\nError, specify --outputFile\n");
         exit(2);
     }
-    if (*wigglePairs != NULL) {
-        if (!countCommas(*wigglePairs) % 2) {
+    if (options->wigglePairs != NULL) {
+        if (!countCommas(options->wigglePairs) % 2) {
             fprintf(stderr, "\nError, --wigglePairs must come in comma separated pairs.\n");
             exit(2);
         }
     }
-    FILE *fileHandle = de_fopen(*mafFile1, "r");
+    if (options->numPairsString != NULL) {
+        if (countCommas(options->numPairsString) != 1) {
+            fprintf(stderr, "\nError, --numberOfPairs must contain two values separated by a comma.\n");
+            exit(2);
+        }
+        stList *numbers = stList_construct3(0, free);
+        listifercatePairs(options->numPairsString, numbers);
+        if (stList_length(numbers) != 2) {
+            fprintf(stderr, "\nError, --numberOfPairs must contain two values separated by a comma.\n");
+            exit(2);
+        }
+        i = sscanf(stList_get(numbers, 0), "%" PRIu64, &(options->numPairs1));
+        assert(i == 1);
+        i = sscanf(stList_get(numbers, 1), "%" PRIu64, &(options->numPairs2));
+        assert(i == 1);
+        stList_destruct(numbers);
+    }
+    FILE *fileHandle = de_fopen(options->mafFile1, "r");
     fclose(fileHandle);
-    fileHandle = de_fopen(*mafFile2, "r");
+    fileHandle = de_fopen(options->mafFile2, "r");
     fclose(fileHandle);
     return optind;
 }
 int main(int argc, char **argv) {
-    char *logLevelString = NULL;
-    char *mafFile1 = NULL;
-    char *mafFile2 = NULL;
-    char *outputFile = NULL;
-    char *bedFiles = NULL;
-    char *wigglePairs = NULL;
+    Options *options = options_construct();
     FILE *fileHandle = NULL;
     stHash *intervalsHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free,
                                               (void(*)(void *)) stSortedSet_destruct);
-    uint32_t sampleNumber = 1000000; // by default do a million samples per pair.
-    uint32_t randomSeed = (time(NULL) << 16) | (getpid() & 65535); // Likely to be unique
-    uint32_t near = 0;
-    uint64_t wiggleBinLength = 100000;
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
-    parseArgs(argc, argv, &mafFile1, &mafFile2, &outputFile, &bedFiles, &sampleNumber, 
-              &randomSeed, &near, &logLevelString, &wigglePairs, &wiggleBinLength);
+    parseArgs(argc, argv, options);
     stList *wigglePairPatternList = stList_construct3(0, free);
-    listifercatePairs(wigglePairs, wigglePairPatternList);
-    stHash *sequenceLengthHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
+    listifercatePairs(options->wigglePairs, wigglePairPatternList);
     // Set up logging
-    st_setLogLevelFromString(logLevelString);
-    st_logDebug("Seeding the random number generator with the value %lo\n", randomSeed);
-    st_randomSeed(randomSeed);
+    st_setLogLevelFromString(options->logLevelString);
+    st_logDebug("Seeding the random number generator with the value %lo\n", options->randomSeed);
+    st_randomSeed(options->randomSeed);
     // (0) Check the inputs.
     // Parse the bed file hashes
-    if(bedFiles != NULL) {
-        parseBedFiles(bedFiles, intervalsHash);
+    if(options->bedFiles != NULL) {
+        parseBedFiles(options->bedFiles, intervalsHash);
     } else {
         st_logDebug("No bed files specified\n");
     }
     // hashifercateList(wigglePairList, wigglePairHash);
     // Log (some of) the inputs
-    st_logInfo("MAF file 1 name : %s\n", mafFile1);
-    st_logInfo("MAF file 2 name : %s\n", mafFile2);
-    st_logInfo("Output stats file : %s\n", outputFile);
+    st_logInfo("MAF file 1 name : %s\n", options->mafFile1);
+    st_logInfo("MAF file 2 name : %s\n", options->mafFile2);
+    st_logInfo("Output stats file : %s\n", options->outputFile);
     st_logInfo("Bed files parsed : %" PRIi32 "\n", stHash_size(intervalsHash));
-    st_logInfo("Number of samples %" PRIu32 "\n", sampleNumber);
+    st_logInfo("Number of samples %" PRIu32 "\n", options->numberOfSamples);
     // note that random seed has already been logged.
     // Create sequence name hashtable from the first MAF file.
-    stSet *seqNamesSet1 = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
-    stSet *seqNamesSet2 = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
-    populateNames(mafFile1, seqNamesSet1, sequenceLengthHash);
-    populateNames(mafFile2, seqNamesSet2, sequenceLengthHash);
-    stSet *seqNamesSet = stSet_getIntersection(seqNamesSet1, seqNamesSet2);
+    stHash *sequenceLengthHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
+    stSet *seqNamesSet = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
+    buildSeqNamesSet(options, seqNamesSet, sequenceLengthHash);
+    //stSet *seqNamesSet1 = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
+    //stSet *seqNamesSet2 = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
+    //populateNames(options->mafFile1, seqNamesSet1, sequenceLengthHash);
+    //populateNames(options->mafFile2, seqNamesSet2, sequenceLengthHash);
+    //stSet *seqNamesSet = stSet_getIntersection(seqNamesSet1, seqNamesSet2);
+    
     // build final wiggle things
     stHash *wigglePairHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, 
                                                free, (void(*)(void *))wiggleContainer_destruct);
-    buildWigglePairHash(sequenceLengthHash, wigglePairPatternList, wigglePairHash, wiggleBinLength);
+    buildWigglePairHash(sequenceLengthHash, wigglePairPatternList, wigglePairHash, options->wiggleBinLength);
     // Do comparisons.
     if (g_isVerboseFailures) {
-        fprintf(stderr, "# Sampling from %s, comparing to %s\n", mafFile1, mafFile2);
+        fprintf(stderr, "# Sampling from %s, comparing to %s\n", options->mafFile1, options->mafFile2);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    uint64_t numPairs1 = 0;
-    stSortedSet *results_12 = compareMAFs_AB(mafFile1, mafFile2, sampleNumber, &numPairs1, seqNamesSet, 
-                                             intervalsHash, near, wigglePairHash, true, wiggleBinLength);
+    stSortedSet *results_12 = compareMAFs_AB(options->mafFile1, options->mafFile2, &(options->numPairs1), 
+                                             seqNamesSet, intervalsHash, wigglePairHash, true, options);
     if (g_isVerboseFailures) {
-        fprintf(stderr, "# Sampling from %s, comparing to %s\n", mafFile2, mafFile1);
+        fprintf(stderr, "# Sampling from %s, comparing to %s\n", options->mafFile2, options->mafFile1);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    uint64_t numPairs2 = 0;
-    stSortedSet *results_21 = compareMAFs_AB(mafFile2, mafFile1, sampleNumber, &numPairs2, seqNamesSet, 
-                                             intervalsHash, near, wigglePairHash, false, wiggleBinLength);
-    // parseResultsForWiggles(results_12, results_21, wigglePairHash, wiggleBinLength);
-    fileHandle = de_fopen(outputFile, "w");
+    stSortedSet *results_21 = compareMAFs_AB(options->mafFile2, options->mafFile1, &(options->numPairs2), 
+                                             seqNamesSet, intervalsHash, wigglePairHash, false, options);
+    fileHandle = de_fopen(options->outputFile, "w");
     // Report results.
     writeXMLHeader(fileHandle);
     char bedString[kMaxStringLength];    
-    if (bedFiles != NULL) {
-        sprintf(bedString, " bedFiles=\"%s\"", bedFiles);
+    if (options->bedFiles != NULL) {
+        sprintf(bedString, " bedFiles=\"%s\"", options->bedFiles);
     } else {
         bedString[0] = '\0';
     }
     char wiggleString[kMaxStringLength];
-    if (wigglePairs != NULL) {
+    if (options->wigglePairs != NULL) {
         sprintf(wiggleString, " wigglePairs=\"%s\" wiggleBinLength=\"%" PRIu64 "\"", 
-                wigglePairs, wiggleBinLength);
+                options->wigglePairs, options->wiggleBinLength);
     } else {
         wiggleString[0] = '\0';
     }
-    fprintf(fileHandle, "<alignmentComparisons sampleNumber=\"%" PRIu32 "\" "
+    fprintf(fileHandle, "<alignmentComparisons numberOfSamples=\"%" PRIu32 "\" "
             "near=\"%" PRIu32 "\" seed=\"%" PRIu32 "\" maf1=\"%s\" maf2=\"%s\" "
             "numberOfPairsInMaf1=\"%" PRIu64 "\" "
             "numberOfPairsInMaf2=\"%" PRIu64 "\"%s%s version=\"%s\" "
             "buildDate=\"%s\" buildBranch=\"%s\" buildCommit=\"%s\">\n",
-            sampleNumber, near, randomSeed, mafFile1, mafFile2, numPairs1, numPairs2, bedString, wiggleString,
+            options->numberOfSamples, options->near, options->randomSeed, options->mafFile1, options->mafFile2, 
+            options->numPairs1, options->numPairs2, bedString, wiggleString,
             g_version, g_build_date, g_build_git_branch, g_build_git_sha);
-    reportResults(results_12, mafFile1, mafFile2, fileHandle, near, seqNamesSet, bedFiles);
-    reportResults(results_21, mafFile2, mafFile1, fileHandle, near, seqNamesSet, bedFiles);
+    reportResults(results_12, options->mafFile1, options->mafFile2, fileHandle, options->near, 
+                  seqNamesSet, options->bedFiles);
+    reportResults(results_21, options->mafFile2, options->mafFile1, fileHandle, options->near, 
+                  seqNamesSet, options->bedFiles);
     reportResultsForWiggles(wigglePairHash, fileHandle);
     fprintf(fileHandle, "</alignmentComparisons>\n");
     fclose(fileHandle);
     // Clean up.
     stSortedSet_destruct(results_12);
     stSortedSet_destruct(results_21);
-    free(mafFile1);
-    free(mafFile2);
-    free(bedFiles);
-    free(wigglePairs);
-    free(outputFile);
-    free(logLevelString);
+    options_destruct(options);
     stSet_destruct(seqNamesSet);
-    stSet_destruct(seqNamesSet1);
-    stSet_destruct(seqNamesSet2);
     stHash_destruct(intervalsHash);
     stHash_destruct(wigglePairHash);
     stHash_destruct(sequenceLengthHash);
