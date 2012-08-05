@@ -261,7 +261,7 @@ int parseArgs(int argc, char **argv, Options* options) {
         {"outputFile", required_argument, 0, 'd'},
         {"out", required_argument, 0, 0},
         {"samples", required_argument, 0, 0},
-        {"sampleNumber", required_argument, 0, '0'},
+        {"sampleNumber", required_argument, 0, 0},
         {"wigglePairs", required_argument, 0, 0},
         {"numberOfPairs", required_argument, 0, 0},
         {"legitSequences", required_argument, 0, 0},
@@ -296,6 +296,11 @@ int parseArgs(int argc, char **argv, Options* options) {
                 break;
             }
             if (strcmp("samples", longOpts[longIndex].name) == 0) {
+                i = sscanf(optarg, "%" PRIu32, &(options->numberOfSamples));
+                assert(i == 1);
+                break;
+            }
+            if (strcmp("sampleNumber", longOpts[longIndex].name) == 0) {
                 i = sscanf(optarg, "%" PRIu32, &(options->numberOfSamples));
                 assert(i == 1);
                 break;
@@ -341,6 +346,7 @@ int parseArgs(int argc, char **argv, Options* options) {
             break;
         case 'h':
             usage();
+            fprintf(stderr, "\nHelp printed.\n");
             exit(EXIT_SUCCESS);
         case 'f':
             options->bedFiles = stString_copy(optarg);
@@ -351,6 +357,7 @@ int parseArgs(int argc, char **argv, Options* options) {
             break;
         default:
             usage();
+            fprintf(stderr, "\nDefault message. key=%c optarg:%s\n", key, optarg);
             exit(EXIT_SUCCESS);
         }
         key = getopt_long(argc, argv, optString, longOpts, &longIndex);
