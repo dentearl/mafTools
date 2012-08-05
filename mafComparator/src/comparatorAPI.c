@@ -1575,10 +1575,11 @@ void buildSeqNamesSet(Options *options, stSet *seqNamesSet, stHash *sequenceLeng
             char *colonSep = stringReplace(currentWord, ':', ' ');
             char *currentLocation2 = colonSep;
             char *currentWord2 = NULL;
-            int i = 0;
+            int i = -1;
             char *seqName = NULL;
             while ((currentWord2 = stString_getNextWord(&currentLocation2)) != NULL) {
                 // separate out the sequence string from the length value
+                ++i;
                 if (i % 2) {
                     // odd, sequence length
                     int j = sscanf(currentWord2, "%" PRIu64, &length);
@@ -1590,9 +1591,13 @@ void buildSeqNamesSet(Options *options, stSet *seqNamesSet, stHash *sequenceLeng
                     // even, sequence string
                     assert(seqName == NULL);
                     seqName = stString_copy(currentWord2);
-                    stSet_insert(seqNamesSet, seqName);
+                    stSet_insert(seqNamesSet, stString_copy(seqName));
                 }
+                free(currentWord2);
             }
+            free(colonSep);
+            free(currentWord);
         }
+        free(spaceSep);
     }
 }

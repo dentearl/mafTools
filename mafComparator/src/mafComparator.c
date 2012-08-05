@@ -357,17 +357,17 @@ int parseArgs(int argc, char **argv, Options* options) {
     }
     if (options->mafFile1 == NULL) {
         usage();
-        fprintf(stderr, "\nError, specify --mafFile1\n");
+        fprintf(stderr, "\nError, specify --maf1\n");
         exit(2);
     }
     if (options->mafFile2 == NULL) {
         usage();
-        fprintf(stderr, "\nError, specify --mafFile2\n");
+        fprintf(stderr, "\nError, specify --maf2\n");
         exit(2);
     }
     if (options->outputFile == NULL) {
         usage();
-        fprintf(stderr, "\nError, specify --outputFile\n");
+        fprintf(stderr, "\nError, specify --out\n");
         exit(2);
     }
     if (options->wigglePairs != NULL) {
