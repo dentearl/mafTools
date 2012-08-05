@@ -796,7 +796,9 @@ uint32_t* cullPositionsByColumn(char **mat, uint32_t c, uint32_t *positions, boo
     }
     return colPositions;
 }
-void validateMafBlockSourceLengths(mafBlock_t *mb, stHash *sequenceLengthHash) {
+void validateMafBlockSourceLengths(const char *filename, mafBlock_t *mb, stHash *sequenceLengthHash) {
+    // make sure that the information contained in the maf matches the information
+    // contained in the sequenceLengthHash data.
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     while (ml != NULL) {
         if (maf_mafLine_getType(ml) == 's') {
@@ -804,8 +806,9 @@ void validateMafBlockSourceLengths(mafBlock_t *mb, stHash *sequenceLengthHash) {
             if (len != NULL) {
                 if ((uint64_t)maf_mafLine_getSourceLength(ml) != *len) {
                     fprintf(stderr, "Error, conflicting source length information for sequence in maf. "
-                            "%s source length was first %" PRIu64 " but on line %" PRIu32 " is %" PRIu64 ".\n",
-                            maf_mafLine_getSpecies(ml), *len, maf_mafLine_getLineNumber(ml), 
+                            "%s source length was first %" PRIu64 " but on line %" PRIu32 " of %s the value "
+                            "is %" PRIu64 ".\n",
+                            maf_mafLine_getSpecies(ml), *len, maf_mafLine_getLineNumber(ml), filename, 
                             (uint64_t)maf_mafLine_getSourceLength(ml));
                     exit(EXIT_FAILURE);
                 }
@@ -814,15 +817,15 @@ void validateMafBlockSourceLengths(mafBlock_t *mb, stHash *sequenceLengthHash) {
         ml = maf_mafLine_getNext(ml);
     }
 }
-void walkBlockSamplingPairs(mafBlock_t *mb, stSortedSet *sampledPairs, double acceptProbability, 
-                            stSet *legitSequences,
+void walkBlockSamplingPairs(const char *filename, mafBlock_t *mb, stSortedSet *sampledPairs, 
+                            double acceptProbability, stSet *legitSequences,
                             uint64_t *chooseTwoArray, uint64_t *numPairs, stHash *sequenceLengthHash) {
     uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
     uint32_t numLegitGaplessPositions; // number of legit gapless sequences in the given column
     if (numSeqs < 2) {
         return;
     }
-    validateMafBlockSourceLengths(mb, sequenceLengthHash);    
+    validateMafBlockSourceLengths(filename, mb, sequenceLengthHash);    
     
     uint32_t seqFieldLength = maf_mafBlock_longestSequenceField(mb);
     char **names = maf_mafBlock_getSpeciesArray(mb);
@@ -872,7 +875,7 @@ void samplePairsFromMaf(const char *filename, stSortedSet *pairs, double acceptP
     mafBlock_t *mb = NULL;
     uint64_t *chooseTwoArray = buildChooseTwoArray();
     while ((mb = maf_readBlock(mfa)) != NULL) {
-        walkBlockSamplingPairs(mb, pairs, acceptProbability, legitSequences, chooseTwoArray, 
+        walkBlockSamplingPairs(filename, mb, pairs, acceptProbability, legitSequences, chooseTwoArray, 
                                numPairs, sequenceLengthHash);
         maf_destroyMafBlockList(mb);
     }
