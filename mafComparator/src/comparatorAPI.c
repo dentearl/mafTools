@@ -796,14 +796,34 @@ uint32_t* cullPositionsByColumn(char **mat, uint32_t c, uint32_t *positions, boo
     }
     return colPositions;
 }
-void walkBlockSamplingPairs(mafBlock_t *mb, stSortedSet *pairs,
-                            double acceptProbability, stSet *legitSequences, 
-                            uint64_t *chooseTwoArray) {
+void validateMafBlockSourceLengths(mafBlock_t *mb, stHash *sequenceLengthHash) {
+    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
+    while (ml != NULL) {
+        if (maf_mafLine_getType(ml) == 's') {
+            uint64_t *len = (uint64_t*)stHash_search(sequenceLengthHash, maf_mafLine_getSpecies(ml));
+            if (len != NULL) {
+                if ((uint64_t)maf_mafLine_getSourceLength(ml) != *len) {
+                    fprintf(stderr, "Error, conflicting source length information for sequence in maf. "
+                            "%s source length was first %" PRIu64 " but on line %" PRIu32 " is %" PRIu64 ".\n",
+                            maf_mafLine_getSpecies(ml), *len, maf_mafLine_getLineNumber(ml), 
+                            (uint64_t)maf_mafLine_getSourceLength(ml));
+                    exit(EXIT_FAILURE);
+                }
+            }
+        }
+        ml = maf_mafLine_getNext(ml);
+    }
+}
+void walkBlockSamplingPairs(mafBlock_t *mb, stSortedSet *sampledPairs, double acceptProbability, 
+                            stSet *legitSequences,
+                            uint64_t *chooseTwoArray, uint64_t *numPairs, stHash *sequenceLengthHash) {
     uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
     uint32_t numLegitGaplessPositions; // number of legit gapless sequences in the given column
     if (numSeqs < 2) {
         return;
     }
+    validateMafBlockSourceLengths(mb, sequenceLengthHash);    
+    
     uint32_t seqFieldLength = maf_mafBlock_longestSequenceField(mb);
     char **names = maf_mafBlock_getSpeciesArray(mb);
     char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
@@ -825,9 +845,15 @@ void walkBlockSamplingPairs(mafBlock_t *mb, stSortedSet *pairs,
                                                                        numSeqs, numLegitGaplessPositions);
         gaplessPositions = cullPositionsByColumn(mat, c, allPositions, legitRows, 
                                                  numSeqs, numLegitGaplessPositions);
-        samplePairsFromColumn(acceptProbability, pairs, numLegitGaplessPositions, chooseTwoArray,
+        samplePairsFromColumn(acceptProbability, sampledPairs, numLegitGaplessPositions, chooseTwoArray,
                               gaplessNameArray, gaplessPositions);
         updatePositions(mat, c, allPositions, allStrandInts, numSeqs);
+        // double check:
+        if (numLegitGaplessPositions < kChooseTwoCacheLength) {
+            *numPairs += chooseTwoArray[numLegitGaplessPositions];
+        } else {
+            *numPairs += chooseTwo(numLegitGaplessPositions);
+        }
     }
     // clean up
     free(mlArray);
@@ -840,13 +866,14 @@ void walkBlockSamplingPairs(mafBlock_t *mb, stSortedSet *pairs,
     maf_mafBlock_destroySequenceMatrix(mat, numSeqs);
     free(legitRows);
 }
-void samplePairsFromMaf(const char *filename, stSortedSet *pairs,
-                        double acceptProbability, stSet *legitSequences) {
+void samplePairsFromMaf(const char *filename, stSortedSet *pairs, double acceptProbability, 
+                        stSet *legitSequences, uint64_t *numPairs, stHash *sequenceLengthHash) {
     mafFileApi_t *mfa = maf_newMfa(filename, "r");
     mafBlock_t *mb = NULL;
     uint64_t *chooseTwoArray = buildChooseTwoArray();
     while ((mb = maf_readBlock(mfa)) != NULL) {
-        walkBlockSamplingPairs(mb, pairs, acceptProbability, legitSequences, chooseTwoArray);
+        walkBlockSamplingPairs(mb, pairs, acceptProbability, legitSequences, chooseTwoArray, 
+                               numPairs, sequenceLengthHash);
         maf_destroyMafBlockList(mb);
     }
     // clean up
@@ -1227,7 +1254,7 @@ void enumerateHomologyResults(stSortedSet *sampledPairs, stSortedSet *resultPair
 }
 stSortedSet *compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint64_t *numberOfPairs,
                             stSet *legitSequences, stHash *intervalsHash, stHash *wigglePairHash, 
-                            bool isAtoB, Options *options) {
+                            bool isAtoB, Options *options, stHash *sequenceLengthHash) {
     // count the number of pairs in mafFileA
     if (*numberOfPairs == 0) {
         // can be manually set via the command line
@@ -1239,7 +1266,14 @@ stSortedSet *compareMAFs_AB(const char *mafFileA, const char *mafFileB, uint64_t
     double acceptProbability = ((double) options->numberOfSamples) / (double) *numberOfPairs;
     stSortedSet *pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction, (void(*)(void *)) aPair_destruct);
     // sample pairs from mafFileA
-    samplePairsFromMaf(mafFileA, pairs, acceptProbability, legitSequences);
+    uint64_t verifiedNumberOfPairs = 0;
+    samplePairsFromMaf(mafFileA, pairs, acceptProbability, legitSequences, &verifiedNumberOfPairs, 
+                       sequenceLengthHash);
+    if (verifiedNumberOfPairs != *numberOfPairs) {
+        fprintf(stderr, "Error, differing numberOfPairs values, %"PRIu64" != %"PRIu64"\n", 
+                verifiedNumberOfPairs, *numberOfPairs);
+        exit(EXIT_FAILURE);
+    }
     // perform homology tests on mafFileB using sampled pairs from mafFileA
     stSet *positivePairs = stSet_construct(); // comparison by pointer
     performHomologyTests(mafFileB, pairs, positivePairs, legitSequences, intervalsHash, options->near);

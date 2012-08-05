@@ -357,7 +357,7 @@ int parseArgs(int argc, char **argv, Options* options) {
             break;
         default:
             usage();
-            fprintf(stderr, "\nDefault message. key=%c optarg:%s\n", key, optarg);
+            fprintf(stderr, "\nError, default message. key=%c optarg:%s\n", key, optarg);
             exit(EXIT_SUCCESS);
         }
         key = getopt_long(argc, argv, optString, longOpts, &longIndex);
@@ -454,13 +454,15 @@ int main(int argc, char **argv) {
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
     stSortedSet *results_12 = compareMAFs_AB(options->mafFile1, options->mafFile2, &(options->numPairs1), 
-                                             seqNamesSet, intervalsHash, wigglePairHash, true, options);
+                                             seqNamesSet, intervalsHash, wigglePairHash, true, options,
+                                             sequenceLengthHash);
     if (g_isVerboseFailures) {
         fprintf(stderr, "# Sampling from %s, comparing to %s\n", options->mafFile2, options->mafFile1);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
     stSortedSet *results_21 = compareMAFs_AB(options->mafFile2, options->mafFile1, &(options->numPairs2), 
-                                             seqNamesSet, intervalsHash, wigglePairHash, false, options);
+                                             seqNamesSet, intervalsHash, wigglePairHash, false, options,
+                                             sequenceLengthHash);
     fileHandle = de_fopen(options->outputFile, "w");
     // Report results.
     writeXMLHeader(fileHandle);

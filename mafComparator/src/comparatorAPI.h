@@ -105,7 +105,7 @@ void options_destruct(Options* o);
 void populateNames(const char *mAFFile, stSet *set, stHash *seqLengthHash);
 stSortedSet* compareMAFs_AB(const char *mAFFileA, const char *mAFFileB, uint64_t *numberOfPairsInFile, 
                             stSet *legitimateSequences, stHash *intervalsHash, stHash *wigHash, bool isAtoB, 
-                            Options *options);
+                            Options *options, stHash *sequenceLengthHash);
 void findentprintf(FILE *fp, unsigned indent, char const *fmt, ...);
 void reportResults(stSortedSet *results_AB, const char *mAFFileA, const char *mAFFileB, 
                    FILE *fileHandle, uint32_t near, stSet *legitimateSequences, 
@@ -144,7 +144,7 @@ void samplePairsFromColumnNaive(char **mat, uint32_t c, bool *legitRows, double 
 uint32_t countLegitPositions(char **mat, uint32_t c, uint32_t numRows);
 mafLine_t** cullMlArrayByColumn(char **mat, uint32_t c, mafLine_t **mlArray, bool *legitRows, uint32_t numRows, uint32_t numLegitGaplessPositions);
 uint32_t* cullPositionsByColumn(char **mat, uint32_t c, uint32_t *positions, bool *legitRows, uint32_t numRows, uint32_t numLegitGaplessPositions);
-void walkBlockSamplingPairs(mafBlock_t *mb, stSortedSet *sampledPairs, double acceptProbability, stSet *legitSequences, uint64_t *chooseTwoArray);
+void walkBlockSamplingPairs(mafBlock_t *mb, stSortedSet *sampledPairs, double acceptProbability, stSet *legitSequences, uint64_t *chooseTwoArray, uint64_t *numPairs, stHash *sequenceLengthHash);
 int aPair_cmpFunction(APair *aPair1, APair *aPair2);
 uint32_t sumBoolArray(bool *legitRows, uint32_t numSeqs);
 mafLine_t** createMafLineArray(mafBlock_t *mb, uint32_t numLegit, bool *legitRows);
