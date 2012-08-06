@@ -219,16 +219,6 @@ void usage(void) {
                  "this value. If this value is equal to or greater than the "
                  "total number of pairs in a file, then all pairs will be "
                  "tested. [default: 1000000]");
-    usageMessage('\0', "wigglePairs", "The paired names of sequences (comma separated values) "
-                 "to create output that isolates event counts to specific regions of one "
-                 "genome (the first genome in the pair). The asterisk, *, can be used as "
-                 "wildcard character. i.e. hg19*,mm9* will match hg19.chr1 and "
-                 "mm9.chr1 etc etc resulting in all pairs between hg19* and mm9*. This feature "
-                 "ignores any intervals described with the --bedFiles option.");
-    usageMessage('\0', "wiggleBinLength", "The length of the bins when the --wigglePairs option is "
-                 "invoked. [default: 100000]");
-    usageMessage('\0', "bedFiles", "The location of bed file(s) used to filter the "
-                 "pairwise comparisons, separated by commas.");
     usageMessage('\0', "near", "The number of bases in either sequence to allow a match "
                  "to slip by. I.e. --near=n (where _n_ is a non-negative integer) "
                  "will consider a homology test for a given pair (S1:_x_, S2:_y_) "
@@ -237,6 +227,30 @@ void usage(void) {
                  "there is a pair within the other alignment (S1:_w_, S2:_z_) where "
                  "EITHER (_w_ is equal to _x_ and _y_ - _n_ <= _z_ <= _y_ + _n_) "
                  "OR (_x_ - _n_ <= _w_ <= _x_ + _n_ and _y_ is equal to _z_).");
+    usageMessage('\0', "bedFiles", "The location of bed file(s) used to filter the "
+                 "pairwise comparisons, separated by commas.");
+    usageMessage('\0', "wigglePairs", "The paired names of sequences (comma separated values) "
+                 "to create output that isolates event counts to specific regions of one "
+                 "genome (the first genome in the pair). The asterisk, *, can be used as "
+                 "wildcard character. i.e. hg19*,mm9* will match hg19.chr1 and "
+                 "mm9.chr1 etc etc resulting in all pairs between hg19* and mm9*. This feature "
+                 "ignores any intervals described with the --bedFiles option.");
+    usageMessage('\0', "wiggleBinLength", "The length of the bins when the --wigglePairs option is "
+                 "invoked. [default: 100000]");
+    usageMessage('\0', "numberOfPairs", "A pair of comma separated positive integers representing "
+                 "the total number of pairs in maf1 and maf2 (in that order). These numbers are double "
+                 "checked by mafComparator as it runs, a discrpency will cause an error. If these values "
+                 "are known prior to the analysis (either because the analysis has been run before or by "
+                 "use of the mafPairCounter program) this option provides about a 15% speedup. Example: "
+                 "--numberOfPairs 2847390129,228470192212");
+    usageMessage('\0', "legitSequences", "A list of comma separated key value pairs, which themselves "
+                 "are colon (:) separated. Each pair is a sequence name and source length. These values "
+                 "are normally determined by reading all sequences and source lengths from maf1 and then "
+                 "again from maf2 and then finding the intersection of the two sets. The source lengths "
+                 "are verified by mafComparator is it runs and discrepncies will cause errors. If this "
+                 "option is invoked it can result in a speedup of about 15%. Example: --legitSequences "
+                 "apple.chr1:100,apple.chr2:102,pineapple.chr1:2010 ...");
+
     usageMessage('\0', "logLevel", "Set the log level. [off, critical, info, debug] "
                  "in ascending order.");
     usageMessage('\0', "printFailed", "Print tab-delimited details about failed "
