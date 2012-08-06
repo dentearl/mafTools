@@ -58,7 +58,7 @@ def removeDir(dirpath):
     """
     if os.path.exists(dirpath):
         shutil.rmtree(dirpath)
-def runCommandsS(cmds, localTempDir, inPipes=[], outPipes=[]):
+def runCommandsS(cmds, localTempDir, inPipes=[], outPipes=[], errPipes=[]):
     """ 
     runCommandsS uses the subprocess module
     to issue serial processes from the cmds list.
@@ -67,6 +67,8 @@ def runCommandsS(cmds, localTempDir, inPipes=[], outPipes=[]):
         inPipes = [None] * len(cmds)
     if not len(outPipes):
         outPipes = [None] * len(cmds)
+    if not len(errPipes):
+        errPipes = [None] * len(cmds)
     for i, c in enumerate(cmds, 0):
         if inPipes[i] is None:
             sin = None
@@ -76,8 +78,12 @@ def runCommandsS(cmds, localTempDir, inPipes=[], outPipes=[]):
             sout = None
         else:
             sout = subprocess.PIPE
-        p = subprocess.Popen(c, cwd=localTempDir, stdin=sin, stdout=sout)
-            
+        if errPipes[i] is None:
+            serr = None
+        else:
+            serr = subprocess.PIPE
+        p = subprocess.Popen(c, cwd=localTempDir, stdin=sin, stdout=sout, stderr=serr)
+        
         if inPipes[i] is None:
             sin = None
         else:
