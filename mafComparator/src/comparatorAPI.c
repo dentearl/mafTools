@@ -96,10 +96,9 @@ APair* aPair_copyConstruct(APair *pair) {
     return aPair_construct(stString_copy(pair->seq1), stString_copy(pair->seq2), pair->pos1, pair->pos2);
 }
 ResultPair *resultPair_construct(const char *seq1, const char *seq2) {
-    APair *aPair = aPair_construct(seq1, seq2, 0, 0);
     ResultPair *resultPair = st_calloc(1, sizeof(ResultPair));
-    resultPair->aPair = *aPair;
-    free(aPair);
+    resultPair->seq1 = stString_copy(seq1);
+    resultPair->seq2 = stString_copy(seq2);
     return resultPair;
 }
 WiggleContainer* wiggleContainer_construct(char *ref, char *partner, uint64_t refLength, 
@@ -171,8 +170,8 @@ void resultPair_destruct(ResultPair *rp) {
     if (rp == NULL) {
         return;
     }
-    free(rp->aPair.seq1);
-    free(rp->aPair.seq2);
+    free(rp->seq1);
+    free(rp->seq2);
     free(rp);
     rp = NULL;
 }
@@ -1321,7 +1320,7 @@ ResultPair *aggregateResult(void *(*getNextPair)(void *, void *), stSortedSet *s
 void* addReferencesAndDups_getDups(void *iterator, void *seqName) {
     ResultPair *resultPair;
     while ((resultPair = stSortedSet_getNext(iterator)) != NULL) {
-        if (strcmp(resultPair->aPair.seq1, resultPair->aPair.seq2) == 0) {
+        if (strcmp(resultPair->seq1, resultPair->seq2) == 0) {
             break;
         }
     }
@@ -1330,7 +1329,7 @@ void* addReferencesAndDups_getDups(void *iterator, void *seqName) {
 void* addReferencesAndDups_getReferences(void *iterator, void *seqName) {
     ResultPair *resultPair;
     while ((resultPair = stSortedSet_getNext(iterator)) != NULL) {
-        if (strcmp(resultPair->aPair.seq1, seqName) == 0 || strcmp(resultPair->aPair.seq2, seqName) == 0) {
+        if (strcmp(resultPair->seq1, seqName) == 0 || strcmp(resultPair->seq2, seqName) == 0) {
             break;
         }
     }
@@ -1457,7 +1456,7 @@ void reportResults(stSortedSet *results_AB, const char *mafFileA, const char *ma
     iterator = stSortedSet_getIterator(results_AB);
     while ((resultPair = stSortedSet_getPrevious(iterator)) != NULL) {
         findentprintf(fileHandle, tabLevel++, "<homologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n",
-                      resultPair->aPair.seq1, resultPair->aPair.seq2);
+                      resultPair->seq1, resultPair->seq2);
         findentprintf(fileHandle, tabLevel++, "<aggregateResults>\n");
         reportResult("all", resultPair->total, resultPair->inAll, fileHandle, tabLevel);
         if (bedFiles != NULL){
@@ -1470,7 +1469,7 @@ void reportResults(stSortedSet *results_AB, const char *mafFileA, const char *ma
         findentprintf(fileHandle, --tabLevel, "</aggregateResults>\n");
         findentprintf(fileHandle, tabLevel++, "<singleHomologyTests>\n");
         findentprintf(fileHandle, tabLevel++, "<singleHomologyTest sequenceA=\"%s\" sequenceB=\"%s\">\n", 
-                      resultPair->aPair.seq1, resultPair->aPair.seq2);
+                      resultPair->seq1, resultPair->seq2);
         findentprintf(fileHandle, tabLevel++, "<aggregateResults>\n");
         reportResult("all", resultPair->total, resultPair->inAll, fileHandle, tabLevel);
         if (bedFiles != NULL){

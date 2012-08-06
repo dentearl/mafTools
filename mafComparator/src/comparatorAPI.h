@@ -74,7 +74,8 @@ typedef struct _resultPair {
     // result pairs are used to store the disposition of sampled
     // pairs at the sequence name level (i.e. they have no position,
     // they are amalgams of all positions in a given comparison)
-    APair aPair;
+    char *seq1;
+    char *seq2;
     uint32_t inAll;
     uint32_t inBoth;
     uint32_t inA;
