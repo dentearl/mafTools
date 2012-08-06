@@ -240,6 +240,20 @@ knownValuesLegit = ['A:20,B:20', 'A:20,B:20', 'A:10,B:10', 'A:10,B:10', 'A:20,B:
                     'Anc3.0:607219,simMouse_chr6_simMouse.chr6:636262', 
                     'Anc3.0:607219,simMouse_chr6_simMouse.chr6:636262'
                     ]
+knownValuesLegitFail = ['A:20,B:21', 'A:21,B:20', 'A:10,B:11', 'A:11,B:10', 'A:20,B:21',
+                        'A:21,B:20', 'A:20,B:20,C:20,D:21', 'A:20,B:20,C:20,D:21', 'A:20,B:20,C:21,D:20', 
+                        'A:20,B:21,C:20,D:20', 'A:21,B:20,C:20,D:20', 'A:20,B:20,C:20,D:21', 
+                        'Anc3.0:607219,simMouse_chr6_simMouse.chr6:636263', 
+                        'Anc3.0:607218,simMouse_chr6_simMouse.chr6:636262'
+                        ]
+knownValuesNumberOfPairs = ['10,10', '10,10', '10,10', '5,5', '10,10',
+                            '10,10', '60,60', '60,60', '45,60', '60,45',
+                            '60,60', '60,60', '13,13', '13,13'
+                            ]
+knownValuesNumberOfPairsFail = ['100,10', '100,10', '10,100', '5,50', '100,10',
+                                '100,10', '60,600', '600,60', '450,60', '60,450',
+                                '60,600', '600,60', '130,13', '13,130'
+                                ]
 knownValuesBed = [('a score=0\n'
                    's test1.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n'
                    's test2.chr0 0 20 + 100 ACGTACGTACGTACGTACGT\n\n',
@@ -684,7 +698,40 @@ class LegitSequencesTest(unittest.TestCase):
                     ]
             mtt.recordCommands([cmd], tmpDir)
             mtt.runCommandsS([cmd], tmpDir)
-            passed = True
+            passedTT = totalTrue == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalTrue')
+            passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
+            if not (passedTT and passedTF):
+                print 'knownValues Test failed on test %d' % i
+            self.assertTrue(passedTT and passedTF)
+        mtt.removeDir(tmpDir)
+    def test_legitSequencesFail(self):
+        """ --legitSequences options should fail when sequence length numbers differ from input files
+        """
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('legitSequencesFail'))
+        i = -1
+        for maf1, maf2, totalTrue, totalFalse in knownValues:
+            i += 1
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = []
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                    '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+                    '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                    '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
+                    '--samples=1000', '--logLevel=critical',
+                    '--legitSequences=%s' % knownValuesLegitFail[i],
+                    ]
+            mtt.recordCommands([cmd], tmpDir)
+            passed = False
+            try:
+                # we supress the normal stderr output here for the sake of sparing users confusion
+                mtt.runCommandsS([cmd], tmpDir, errPipes=[subprocess.PIPE])
+            except RuntimeError:
+                passed = True
             self.assertTrue(passed)
         mtt.removeDir(tmpDir)
     def test_memoryTest_5(self):
@@ -714,6 +761,94 @@ class LegitSequencesTest(unittest.TestCase):
             passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
             self.assertTrue(passed)
         mtt.removeDir(tmpDir)
+
+class NumberOfPairsTest(unittest.TestCase):
+    def test_numberOfPairs(self):
+        """ --numberOfPairs options should produce expected and known output for given inputs
+        """
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('numberOfPairs'))
+        i = -1
+        for maf1, maf2, totalTrue, totalFalse in knownValues:
+            i += 1
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = []
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                    '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+                    '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                    '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
+                    '--samples=1000', '--logLevel=critical',
+                    '--numberOfPairs=%s' % knownValuesNumberOfPairs[i],
+                    ]
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
+            passedTT = totalTrue == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalTrue')
+            passedTF = totalFalse == getAggregateResult(os.path.abspath(os.path.join(tmpDir, 'output.xml')), 'totalFalse')
+            if not (passedTT and passedTF):
+                print 'knownValues Test failed on test %d' % i
+            self.assertTrue(passedTT and passedTF)
+        mtt.removeDir(tmpDir)
+    def test_numberOfPairsFail(self):
+        """ --numberOfPairs options should fail for bad input values
+        """
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('numberOfPairsFail'))
+        i = -1
+        for maf1, maf2, totalTrue, totalFalse in knownValues:
+            i += 1
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = []
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                    '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+                    '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                    '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
+                    '--samples=1000', '--logLevel=critical',
+                    '--numberOfPairs=%s' % knownValuesNumberOfPairsFail[i],
+                    ]
+            mtt.recordCommands([cmd], tmpDir)
+            passed = False
+            try:
+                mtt.runCommandsS([cmd], tmpDir, errPipes=[subprocess.PIPE])
+            except RuntimeError:
+                passed = True
+            self.assertTrue(passed)
+        mtt.removeDir(tmpDir)
+    def test_memoryTest_6(self):
+        valgrind = mtt.which('valgrind')
+        if valgrind is None:
+            return
+        mtt.makeTempDirParent()
+        tmpDir = os.path.abspath(mtt.makeTempDir('memory_6'))
+        i = -1
+        for maf1, maf2, totalTrue, totalFalse in knownValues:
+            i += 1
+            testMaf1 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf1.maf')), 
+                                    maf1, g_headers)
+            testMaf2 = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'maf2.maf')), 
+                                    maf2, g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = mtt.genericValgrind(tmpDir)
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafComparator')),
+                    '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
+                    '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
+                    '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
+                    '--samples=1000', '--logLevel=critical',
+                    '--numberOfPairs=%s' % knownValuesNumberOfPairs[i],
+                    ]
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
+            passed = mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml'))
+            self.assertTrue(passed)
+        mtt.removeDir(tmpDir)
+
 class KnownValuesTest(unittest.TestCase):
     # knownValues contains quad-tuples,
     # maf1, maf2, totalTrue (comparing maf1 as fileA to maf2), 
@@ -980,8 +1115,10 @@ class NearTests(unittest.TestCase):
         mtt.removeDir(tmpDir)
         
 class CuTestTests(unittest.TestCase):
-    # disabled due to excessive amout of time this takes to run
-    def dtest_CuTestTests(self):
+    ##################################################
+    # DISABLED DUE to excessive amout of time this takes to run
+    ##################################################
+    def gtest_CuTestTests(self):
         """ Yo dawg, I heard you liked unit tests so I put some unit tests in your unit test so now you can unit test when you unit test.
         """
         mtt.makeTempDirParent()
