@@ -1531,17 +1531,18 @@ void writeXMLHeader(FILE *fileHandle){
     fprintf(fileHandle, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n");
     return;
 }
-unsigned countCommas(char *s) {
-    unsigned c = 0;
+unsigned countChars(char *s, char c) {
+    unsigned v = 0;
     if (s == 0) {
-        return c;
+        return v;
     }
-    for (unsigned i = 0; i < strlen(s); ++i) {
-        if (s[i] == ',') {
-            ++c;
+    unsigned l = strlen(s);
+    for (unsigned i = 0; i < l; ++i) {
+        if (s[i] == c) {
+            ++v;
         }
     }
-    return c;
+    return v;
 }
 bool patternMatches(char *a, char *b) {
     // special matching function, recognizes * as a wildcard character if at the end

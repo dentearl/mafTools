@@ -151,7 +151,7 @@ uint32_t sumBoolArray(bool *legitRows, uint32_t numSeqs);
 mafLine_t** createMafLineArray(mafBlock_t *mb, uint32_t numLegit, bool *legitRows);
 void updatePositions(char **mat, uint32_t c, uint32_t *positions, int *strandInts, uint32_t numSeqs);
 void printSortedSet(stSortedSet *pairs);
-unsigned countCommas(char *s);
+unsigned countChars(char *s, char c);
 bool patternMatches(char *a, char *b);
 void buildWigglePairHash(stHash *sequenceLengthHash, stList *wigglePairPatternList, 
                          stHash *wigglePairHash, uint64_t wiggleBinLength);

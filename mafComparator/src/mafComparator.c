@@ -168,6 +168,28 @@ void listifercatePairs(char *s, stList *list) {
     }
     free(spaceSep);
 }
+void listifercateKeyValuePairs(char *s, stList *list) {
+    // take a csv string and turn it into a list of strings.
+    if (s == NULL) {
+        return;
+    }
+    char *spaceSep = stringReplace(s, ',', ' ');
+    char *currentLocation = spaceSep;
+    char *currentWord = NULL;
+    while ((currentWord = stString_getNextWord(&currentLocation)) != NULL) {
+        // separate out the sequence1:sequence2 pairs by comma
+        char *colonSep = stringReplace(currentWord, ':', ' ');
+        char *currentLocation2 = colonSep;
+        char *currentWord2 = NULL;
+        while ((currentWord2 = stString_getNextWord(&currentLocation2)) != NULL) {
+            stList_append(list, stString_copy(currentWord2));
+            free(currentWord2);
+        }
+        free(colonSep);
+        free(currentWord);
+    }
+    free(spaceSep);
+}
 void hashifercateList(stList *list, stHash *hash) {
     // given an stList containing strings that are ordered in pairs,
     // build an stHash keyed on a concatenation of the pairs (hyphen
@@ -229,10 +251,11 @@ void usage(void) {
                  "OR (_x_ - _n_ <= _w_ <= _x_ + _n_ and _y_ is equal to _z_).");
     usageMessage('\0', "bedFiles", "The location of bed file(s) used to filter the "
                  "pairwise comparisons, separated by commas.");
-    usageMessage('\0', "wigglePairs", "The paired names of sequences (comma separated values) "
+    usageMessage('\0', "wigglePairs", "The key-value paired names of sequences (comma separated pairs, "
+                 "colon separeted key values) "
                  "to create output that isolates event counts to specific regions of one "
                  "genome (the first genome in the pair). The asterisk, *, can be used as "
-                 "wildcard character. i.e. hg19*,mm9* will match hg19.chr1 and "
+                 "wildcard character. i.e. hg19*:mm9* will match hg19.chr1 and "
                  "mm9.chr1 etc etc resulting in all pairs between hg19* and mm9*. This feature "
                  "ignores any intervals described with the --bedFiles option.");
     usageMessage('\0', "wiggleBinLength", "The length of the bins when the --wigglePairs option is "
@@ -392,13 +415,13 @@ int parseArgs(int argc, char **argv, Options* options) {
         exit(2);
     }
     if (options->wigglePairs != NULL) {
-        if (!countCommas(options->wigglePairs) % 2) {
+        if (!countChars(options->wigglePairs, ':') % 2) {
             fprintf(stderr, "\nError, --wigglePairs must come in comma separated pairs.\n");
             exit(2);
         }
     }
     if (options->numPairsString != NULL) {
-        if (countCommas(options->numPairsString) != 1) {
+        if (countChars(options->numPairsString, ',') != 1) {
             fprintf(stderr, "\nError, --numberOfPairs must contain two values separated by a comma.\n");
             exit(2);
         }
@@ -428,7 +451,7 @@ int main(int argc, char **argv) {
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
     parseArgs(argc, argv, options);
     stList *wigglePairPatternList = stList_construct3(0, free);
-    listifercatePairs(options->wigglePairs, wigglePairPatternList);
+    listifercateKeyValuePairs(options->wigglePairs, wigglePairPatternList);
     // Set up logging
     st_setLogLevelFromString(options->logLevelString);
     st_logDebug("Seeding the random number generator with the value %lo\n", options->randomSeed);
@@ -452,12 +475,6 @@ int main(int argc, char **argv) {
     stHash *sequenceLengthHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
     stSet *seqNamesSet = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
     buildSeqNamesSet(options, seqNamesSet, sequenceLengthHash);
-    //stSet *seqNamesSet1 = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
-    //stSet *seqNamesSet2 = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
-    //populateNames(options->mafFile1, seqNamesSet1, sequenceLengthHash);
-    //populateNames(options->mafFile2, seqNamesSet2, sequenceLengthHash);
-    //stSet *seqNamesSet = stSet_getIntersection(seqNamesSet1, seqNamesSet2);
-    
     // build final wiggle things
     stHash *wigglePairHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, 
                                                free, (void(*)(void *))wiggleContainer_destruct);

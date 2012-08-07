@@ -612,7 +612,7 @@ class XmlOutputValidation(unittest.TestCase):
                '--maf1', os.path.abspath(os.path.join(tmpDir, 'maf1.maf')),
                '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
                '--out', os.path.abspath(os.path.join(tmpDir, 'outputWiggles.xml')),
-               '--samples=1000', '--logLevel=critical', '--wigglePairs=A,B', 'wiggleBinLength=2'
+               '--samples=1000', '--logLevel=critical', '--wigglePairs=A:B', 'wiggleBinLength=2'
                ]
         mtt.recordCommands([cmd], tmpDir)
         mtt.runCommandsS([cmd], tmpDir)
@@ -637,7 +637,7 @@ class WigglePairsTest(unittest.TestCase):
                    '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
                    '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
                    '--samples=1000', '--logLevel=critical',
-                   '--wigglePairs=%s,%s' % (ref, partner),
+                   '--wigglePairs=%s:%s' % (ref, partner),
                    '--wiggleBinLength=%d' % binlen,
                    ]
             mtt.recordCommands([cmd], tmpDir)
@@ -665,7 +665,7 @@ class WigglePairsTest(unittest.TestCase):
                     '--maf2', os.path.abspath(os.path.join(tmpDir, 'maf2.maf')),
                     '--out', os.path.abspath(os.path.join(tmpDir, 'output.xml')),
                     '--samples=1000', '--logLevel=critical',
-                    '--wigglePairs=%s,%s' % (ref, partner),
+                    '--wigglePairs=%s:%s' % (ref, partner),
                     '--wiggleBinLength=%d' % binlen,
                     ]
             mtt.recordCommands([cmd], tmpDir)
