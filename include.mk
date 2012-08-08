@@ -13,7 +13,7 @@ else
 # -Wno-unused-result
 endif
 
-# subset of JPL suggested flags (removed: -Wtraditional -Wcast-qual -Wconversion
+# subset of JPL suggested flags (removed: -Wtraditional -Wcast-qual -Wconversion)
 jpl_flags = -Wshadow -Wpointer-arith -Wstrict-prototypes -Wmissing-prototypes 
 
 #Release compiler flags
