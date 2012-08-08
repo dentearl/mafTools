@@ -36,31 +36,6 @@
 
 const char *kVersion = "v0.1 July 2012";
 
-typedef struct stats {
-    char *filename;
-    uint64_t numLines;
-    uint64_t numHeaderLines;
-    uint64_t numSeqLines;
-    uint64_t numBlocks;
-    uint64_t numELines;
-    uint64_t numILines;
-    uint64_t numQLines;
-    uint64_t numCommentLines;
-    uint64_t numGapCharacters;
-    uint64_t numSeqCharacters;
-    uint64_t numColumns;
-    uint64_t sumSeqField;
-    uint64_t maxSeqField;
-    uint64_t sumNumSpeciesInBlock;
-    uint64_t maxNumSpeciesInBlock;
-    uint64_t sumBlockArea;
-    uint64_t maxBlockArea;
-    stHash *seqHash; // keyed with names, valued with uint64_t count of bases present
-} stats_t;
-typedef struct seq {
-    char *name;
-    uint64_t count;
-} seq_t;
 void usage(void) {
     fprintf(stderr, "mafStats, %s.\n", kVersion);
     fprintf(stderr, "Usage:  --maf [maf file] [options]\n\n"

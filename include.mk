@@ -13,11 +13,14 @@ else
 # -Wno-unused-result
 endif
 
+# subset of JPL suggested flags (removed: -Wtraditional -Wcast-qual -Wconversion
+jpl_flags = -Wshadow -Wpointer-arith -Wstrict-prototypes -Wmissing-prototypes 
+
 #Release compiler flags
-cflags_opt = -O3 -g -Wall -Werror --pedantic -funroll-loops -lm
+cflags_opt = -O3 -g -Wall -Werror --pedantic -funroll-loops ${jpl_flags} -lm
 
 #Debug flags (slow)
-cflags_dbg = -Wall -Werror --pedantic -g -fno-inline -DBEN_DEBUG -lm
+cflags_dbg = -Wall -Werror --pedantic -g -fno-inline -DBEN_DEBUG ${jpl_flags} -lm
 
 #Ultra Debug flags (really slow)
 cflags_ultraDbg = -Wall -Werror --pedantic -g -fno-inline -DBEN_DEBUG -BEN_ULTRA_DEBUG -lm
