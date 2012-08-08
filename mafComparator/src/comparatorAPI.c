@@ -304,24 +304,6 @@ uint64_t* buildUInt64(uint64_t n) {
     *p = n;
     return p;
 }
-struct stringSortIdx {
-    char *name;
-    int32_t index;
-};
-int stringSortIdx_cmp(const void *a, const void *b) {
-    struct stringSortIdx *ia = (struct stringSortIdx *) a;
-    struct stringSortIdx *ib = (struct stringSortIdx *) b;
-    return strcmp(ia->name, ib->name);
-}
-int32_t encodeTopoMatIdx(int32_t top1, int32_t top2) {
-    int32_t tmp;
-    if (top1 > top2) {
-        tmp = top1;
-        top1 = top2;
-        top2 = tmp;
-    }
-    return 4 * top1 + top2 - ((top1 + 1) * top1 / 2);
-}
 void pairIndicesToArrayIndex(uint64_t r, uint64_t c, uint64_t n, uint64_t *i) {
     // r = row, c = column, n = number of sequences
     /* A proof by picture:
@@ -650,7 +632,7 @@ void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs,
         }
     } else {
         // items in set *have not* been sampled
-        for (uint64_t i = 0; i < numPairs; ++i) {
+        for (i = 0; i < numPairs; ++i) {
             *randPair = i;
             if (stSet_search(set, randPair) == NULL) {
                 arrayIndexToPairIndices(i, numSeqs, &p1, &p2);
@@ -1029,8 +1011,7 @@ void printHash(stHash *hash) {
 }
 void testHomologyOnColumn(char **mat, uint32_t c, uint32_t numSeqs, bool *legitRows, char **names, 
                           stSortedSet *sampledPairs, stSet *positivePairs, mafLine_t **mlArray, 
-                          uint32_t *allPositions, 
-                          stHash *intervalsHash, uint32_t near) {
+                          uint32_t *allPositions, stHash *intervalsHash, uint32_t near) {
     /* For a given column, 
        1) hash all the positions in the column
        2) For each position in the hash:

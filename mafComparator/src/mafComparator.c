@@ -70,6 +70,31 @@ bool g_isVerboseFailures = false;
  * in A.
  */
 
+void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash);
+void parseBedFile(const char *filepath, stHash *intervalsHash);
+void listifercatePairs(char *s, stList *list);
+void listifercateKeyValuePairs(char *s, stList *list);
+void hashifercateList(stList *list, stHash *hash);
+void usage(void);
+void version(void);
+int parseArgs(int argc, char **argv, Options* options);
+
+void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
+    /*
+     * takes input from the command line, swaps spaces, ' ', for commas
+     * and passes each bed file to parseBedFile().
+     */
+    st_logDebug("Starting to parse bed files\n");
+    char *spaceSepFiles = stringReplace(commaSepFiles, ',', ' ');
+    char *currentLocation = spaceSepFiles;
+    char *currentWord;
+    while ((currentWord = stString_getNextWord(&currentLocation)) != NULL) {
+        parseBedFile(currentWord, bedFileHash);
+        free(currentWord);
+    }
+    free(spaceSepFiles);
+    st_logDebug("Done parsing bed files\n");
+}
 void parseBedFile(const char *filepath, stHash *intervalsHash) {
     /* 
      * takes a filepath and the intervalsHash, opens and reads the file,
@@ -134,22 +159,6 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
     free(cA2);
     fclose(fileHandle);
     st_logDebug("Finished parsing the bed file: %s\n", filepath);
-}
-void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
-    /*
-     * takes input from the command line, swaps spaces, ' ', for commas
-     * and passes each bed file to parseBedFile().
-     */
-    st_logDebug("Starting to parse bed files\n");
-    char *spaceSepFiles = stringReplace(commaSepFiles, ',', ' ');
-    char *currentLocation = spaceSepFiles;
-    char *currentWord;
-    while ((currentWord = stString_getNextWord(&currentLocation)) != NULL) {
-        parseBedFile(currentWord, bedFileHash);
-        free(currentWord);
-    }
-    free(spaceSepFiles);
-    st_logDebug("Done parsing bed files\n");
 }
 void listifercatePairs(char *s, stList *list) {
     // take a csv string and turn it into a list of strings.

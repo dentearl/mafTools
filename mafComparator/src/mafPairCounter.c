@@ -26,12 +26,16 @@
 */
 
 #include <getopt.h>
-
 #include "sonLib.h"
 #include "common.h"
 #include "comparatorAPI.h"
 
 const char *g_version = "version 0.1 July 2012";
+
+void usage(void);
+void version(void);
+int parseArgs(int argc, char **argv, char **maf, char **maf2, char **seqList);
+stSet* buildSet(char *listOfLegitSequences);
 
 void usage(void) {
     fprintf(stderr, "mafPairCounter, %s\n\n", g_version);

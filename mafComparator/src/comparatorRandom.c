@@ -143,7 +143,7 @@ static uint64_t rbinom_smallCdf(const uint64_t n, const double p) {
     q = 1.0 - p;
     s = p / q;
     a = (n + 1.0) * s;
-    r = pow(q, n);
+    r = pow(q, (double) n);
     u = st_random();
     while(u > r) {
         u -= r;
@@ -269,7 +269,7 @@ static void rbinom_btpe_acceptRejectTest_5_0(btpeCalc_t *b) {
     /* step 5.0
        Acceptance / Rejection comparison. Test for appropriate method of evaluating f(y).
      */
-    b->k = (int64_t) fabs(b->y - b->m);
+    b->k = (int64_t) fabs((double) (b->y - b->m));
     if ((b->k > 20) && (b->k < ((b->n * b->r * b->q) / 2.0 - 1.0))) {
         b->nextStep = acceptRejectSqueeze;
     } else {
