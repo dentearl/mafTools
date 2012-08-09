@@ -39,7 +39,7 @@ const char *kVersion = "v0.1 July 2012";
 void usage(void) {
     fprintf(stderr, "mafStats, %s.\n", kVersion);
     fprintf(stderr, "Usage:  --maf [maf file] [options]\n\n"
-            "description goes here.\n\n");
+            "A program to read MAF file and report back statistics about the contents.\n\n");
     fprintf(stderr, "Options: \n");
     usageMessage('h', "help", "show this help message and exit.");
     usageMessage('m', "maf", "path to the maf file.");
