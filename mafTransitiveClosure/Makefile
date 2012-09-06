@@ -28,6 +28,10 @@ test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags}
 	mv $@.tmp $@
+test/%.o: src/%.c src/%.h 
+	mkdir -p $(dir $@)
+	${cxx} -c $< -o $@.tmp ${testFlags}
+	mv $@.tmp $@
 
 clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/ 
