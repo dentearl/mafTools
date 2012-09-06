@@ -125,15 +125,47 @@ def mafIsExtracted(maf):
         b = mtt.extractBlockStr(f, lastLine)
         lastLine = None
         if b not in g_overlappingBlocks:
-            print 'dang'
+            print 'dang, block'
             print b
-            print '!='
+            print 'is not in set of expected output'
             print g_overlappingBlocks
             f.close()
             return False
     f.close()
     return True
-    
+def mafIsHardExtracted(outblocks, maf):
+    blockSet = set()
+    for b in outblocks:
+        blockSet.add(b.hashify())
+    f = open(maf)
+    lastLine = mtt.processHeader(f)
+    r = mtt.extractBlockStr(f, lastLine)
+    observedBlocks = set()
+    while r is not None:
+        b = rawBlockToObj(r)
+        if b is not None:
+            if b.hashify() not in blockSet:
+                print 'dang, hashed output contains'
+                print b.hashify()
+                print 'not in hashed expected output'
+                print blockSet
+                f.close()
+                return False
+            else:
+                observedBlocks.add(b.hashify())
+        r = mtt.extractBlockStr(f)
+    for b in blockSet:
+        if b not in observedBlocks:
+            print 'dang, expected hashed output block'
+            print b
+            print 'not observed in hashed output blocks'
+            for block in observedBlocks:
+                print block
+            f.close()
+            return False
+    f.close()        
+    return True
+
 class ExtractionTest(unittest.TestCase):
     def testExtraction(self):
         """ mafBlockExtractor should output blocks that meet the criteria for extraction. That is they contain the target sequence and have at least one base in the target range.
@@ -160,7 +192,9 @@ class ExtractionTest(unittest.TestCase):
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor'))]
             cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
-                    '--stop', '%d' % g_targetRange[1]]
+                    '--stop', '%d' % g_targetRange[1],
+                    '--soft'
+                    ]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
@@ -179,7 +213,9 @@ class ExtractionTest(unittest.TestCase):
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor'))]
             cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
-                    '--stop', '%d' % g_targetRange[1]]
+                    '--stop', '%d' % g_targetRange[1],
+                    '--soft'
+                    ]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
@@ -204,13 +240,14 @@ s target.chr0       36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACC
         cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor'))]
         cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                 '--seq', 'simHuman.chrA', '--start', '%d' % 29953315, 
-                '--stop', '%d' % 29953315]
+                '--stop', '%d' % 29953315,
+                '--soft']
         outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
         mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
         mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
         self.assertTrue(mtt.fileIsEmpty(os.path.join(tmpDir, 'extracted.maf')))
         mtt.removeDir(tmpDir)
-    def testMemory0(self):
+    def dtestMemory0(self):
         """ If valgrind is installed on the system, check for memory related errors (0).
         """
         mtt.makeTempDirParent()
@@ -239,13 +276,14 @@ s target.chr0       36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACC
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor')))
             cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
-                    '--stop', '%d' % g_targetRange[1]]
+                    '--stop', '%d' % g_targetRange[1],
+                    '--soft']
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)
-    def testMemory1(self):
+    def dtestMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
         mtt.makeTempDirParent()
@@ -262,12 +300,248 @@ s target.chr0       36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACC
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor')))
             cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
-                    '--stop', '%d' % g_targetRange[1]]
+                    '--stop', '%d' % g_targetRange[1],
+                    '--soft']
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)
+class MafBlock:
+    def __init__(self, aLine=None, mafLineList=None):
+        self.aLine = aLine
+        if mafLineList is None:
+            self.mafLines = []
+        else:
+            self.mafLines = mafLineList
+    def __str__(self):
+        v = '%s\n' % self.aLine
+        for ml in self.mafLines:
+            v += '%s\n' % str(ml)
+        v += '\n'
+        return v
+    def hashify(self):
+        return self.__str__().replace(' ', '').replace('\n', '')
+def hashStr(s):
+    return s.replace(' ', '').replace('\n', '')
+class MafLine:
+    def __init__(self, name, start, length, strand, sourceLength, sequence):
+        self.name = name
+        self.start = start
+        self.length = length
+        self.strand = strand
+        self.sourceLength = sourceLength
+        self.sequence = sequence
+    def __str__(self):
+        return ('s %-15s %3d %3d %s %12d %s' 
+                % (self.name, self.start, self.length, self.strand, self.sourceLength, self.sequence))
+def rawBlockToObj(block):
+    block = block.split('\n')
+    assert(block[0].startswith('a'))
+    b = MafBlock(block[0])
+    for line in block[1:]:
+        line = line.strip()
+        if line == '':
+            continue
+        d = line.split()
+        b.mafLines.append(MafLine(d[1], int(d[2]), int(d[3]), d[4], int(d[5]), d[6]))
+    return b
+class HardTrimTest(unittest.TestCase):
+    testSet = [ # test0
+        ([MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '+', 158545518, 'gcagctgaaaaca'),
+                                 MafLine('name.chr1', 0, 10, '+', 100, 'ATGT---ATGCCG'),
+                                 MafLine('name2.chr1', 0, 10, '+', 100, 'ATGT---ATGCCG'),
+                                 ])],
+         'target.chr0',
+         0,
+         100,
+         [MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '+', 158545518, 'gcagctgaaaaca'),
+                                 MafLine('name.chr1', 0, 10, '+', 100, 'ATGT---ATGCCG'),
+                                 MafLine('name2.chr1', 0, 10, '+', 100, 'ATGT---ATGCCG'),
+                                 ])],
+         ),
+        # test1
+        ([MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '+', 158545518, 'gcagctgaaaaca'),
+                                 MafLine('name.chr1', 0, 10, '+', 100, 'ATGT---ATGCCG'),
+                                 MafLine('name2.chr1', 0, 10, '+', 100, 'ATGT---ATGCCG'),
+                                 ])],
+         'target.chr0',
+         2,
+         20,
+         [MafBlock('a score=0', [MafLine('target.chr0', 2, 11, '+', 158545518, 'agctgaaaaca'),
+                                 MafLine('name.chr1', 2, 8, '+', 100, 'GT---ATGCCG'),
+                                 MafLine('name2.chr1', 2, 8, '+', 100, 'GT---ATGCCG'),
+                                 ])],
+         ),
+        # test2
+        ([MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '+', 158545518, 'gcagctgaaaaca'),
+                                 MafLine('name.chr1', 0, 10, '+', 100, 'ATGT---ATGCCG'),
+                                 MafLine('name2.chr1', 0, 10, '+', 100, 'ATGT---ATGCCG'),
+                                 ])],
+         'target.chr0',
+         0,
+         10,
+         [MafBlock('a score=0', [MafLine('target.chr0', 0, 11, '+', 158545518, 'gcagctgaaaa'),
+                                 MafLine('name.chr1', 0, 8, '+', 100, 'ATGT---ATGC'),
+                                 MafLine('name2.chr1', 0, 8, '+', 100, 'ATGT---ATGC'),
+                                 ])],
+         ),
+        # test3
+        ([MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '+', 158545518, 'gcagctgaaaaca'),
+                                 MafLine('name.chr1', 0, 10, '+', 100, 'ATGT---ATGCCG'),
+                                 MafLine('name2.chr1', 0, 10, '+', 100, 'ATGT---ATGCCG'),
+                                 ])],
+         'target.chr0',
+         2,
+         10,
+         [MafBlock('a score=0', [MafLine('target.chr0', 2, 9, '+', 158545518, 'agctgaaaa'),
+                                 MafLine('name.chr1', 2, 6, '+', 100, 'GT---ATGC'),
+                                 MafLine('name2.chr1', 2, 6, '+', 100, 'GT---ATGC'),
+                                 ])],
+         ),
+        # test4
+        ([MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '+', 158545518, 'gcagctgaa---aaca'),
+                                 MafLine('name.chr1', 0, 13, '+', 100,         'ATGT---ATGTAGCCG'),
+                                 MafLine('name2.chr1', 0, 13, '+', 100,        'ATGT---ATGTAGCCG'),
+                                 ])],
+         'target.chr0',
+         2,
+         10,
+         [MafBlock('a score=0', [MafLine('target.chr0', 2, 7, '+', 158545518, 'agctgaa'),
+                                 MafLine('name.chr1', 2, 4, '+', 100,         'GT---AT'),
+                                 MafLine('name2.chr1', 2, 4, '+', 100,        'GT---AT'),
+                                 ]),
+          MafBlock('a score=0', [MafLine('target.chr0', 9, 2, '+', 158545518, 'aa'),
+                                 MafLine('name.chr1', 9, 2, '+', 100,         'GC'),
+                                 MafLine('name2.chr1', 9, 2, '+', 100,        'GC'),
+                                 ]),
+          ],
+         ),
+        # test5
+        ([MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '+', 158545518, 'gc-agc--tg-a-a---aaca'),
+                                 MafLine('name.chr1', 0, 16, '+', 100,         'ATTGT-----AAGTGTAGCCG'),
+                                 MafLine('name2.chr1', 0, 16, '+', 100,        'ATTGT-----AAGTGTAGCCG'),
+                                 MafLine('name3.chr2', 0, 21, '+', 100,        'ATTGTAGTTTAAGTGTAGCCG'),
+                                 ])],
+         'target.chr0',
+         2,
+         10,
+         [MafBlock('a score=0', [MafLine('target.chr0', 2, 3, '+', 158545518, 'agc'),
+                                 MafLine('name.chr1', 3, 2, '+', 100,         'GT-'),
+                                 MafLine('name2.chr1', 3, 2, '+', 100,        'GT-'),
+                                 MafLine('name3.chr2', 3, 3, '+', 100,        'GTA'),
+                                 ]),
+          MafBlock('a score=0', [MafLine('target.chr0', 5, 2, '+', 158545518, 'tg'),
+                                 MafLine('name3.chr2', 8, 2, '+', 100,        'TT'),
+                                 ]),
+          MafBlock('a score=0', [MafLine('target.chr0', 7, 1, '+', 158545518, 'a'),
+                                 MafLine('name.chr1', 6, 1, '+', 100,         'A'),
+                                 MafLine('name2.chr1', 6, 1, '+', 100,        'A'),
+                                 MafLine('name3.chr2', 11, 1, '+', 100,       'A'),
+                                 ]),
+          MafBlock('a score=0', [MafLine('target.chr0', 8, 1, '+', 158545518, 'a'),
+                                 MafLine('name.chr1', 8, 1, '+', 100,         'T'),
+                                 MafLine('name2.chr1', 8, 1, '+', 100,        'T'),
+                                 MafLine('name3.chr2', 13, 1, '+', 100,       'T'),
+                                 ]),
+          MafBlock('a score=0', [MafLine('target.chr0', 9, 2, '+', 158545518, 'aa'),
+                                 MafLine('name.chr1', 12, 2, '+', 100,        'GC'),
+                                 MafLine('name2.chr1', 12, 2, '+', 100,       'GC'),
+                                 MafLine('name3.chr2', 17, 2, '+', 100,       'GC'),
+                                 ]),
+          ],
+         ),
+        # test6
+        ([MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '-', 20, 'gcagctgaaaaca'),
+                                 MafLine('name.chr1', 0, 10, '+', 100,  'ATTGT---AAGTG'),
+                                 MafLine('name2.chr1', 0, 10, '+', 100, 'ATTGT---AAGTG'),
+                                 MafLine('name3.chr2', 0, 9, '+', 100,  'ATTGT----AGTG'),
+                                 ]),
+          ],
+         'target.chr0',
+         0,
+         19,
+         [MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '-', 20, 'gcagctgaaaaca'),
+                                 MafLine('name.chr1', 0, 10, '+', 100,  'ATTGT---AAGTG'),
+                                 MafLine('name2.chr1', 0, 10, '+', 100, 'ATTGT---AAGTG'),
+                                 MafLine('name3.chr2', 0, 9, '+', 100,  'ATTGT----AGTG'),
+                                 ]),
+          ],
+         ),
+        # test7
+        ([MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '-', 20, 'gcagctgaaaaca'),
+                                 MafLine('name.chr1', 0, 10, '+', 100,  'ATTGT---AAGTG'),
+                                 MafLine('name2.chr1', 0, 10, '+', 100, 'ATTGT---AAGTG'),
+                                 MafLine('name3.chr2', 0, 9, '+', 100,  'ATTGT----AGTG'),
+                                 ]),
+          ],
+         'target.chr0',
+         6,
+         19,
+         [MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '-', 20, 'gcagctgaaaaca'),
+                                 MafLine('name.chr1', 0, 10, '+', 100,  'ATTGT---AAGTG'),
+                                 MafLine('name2.chr1', 0, 10, '+', 100, 'ATTGT---AAGTG'),
+                                 MafLine('name3.chr2', 0, 9, '+', 100,  'ATTGT----AGTG'),
+                                 ]),
+          ],
+         ),
+        # test8
+        ([MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '-', 20, 'gcagctgaaaaca'),
+                                 MafLine('name.chr1', 0, 10, '+', 100,  'ATTGT---AAGTG'),
+                                 MafLine('name2.chr1', 0, 10, '+', 100, 'ATTGT---AAGTG'),
+                                 MafLine('name3.chr2', 0, 9, '+', 100,  'ATTGT----AGTG'),
+                                 ]),
+          ],
+         'target.chr0',
+         8,
+         16,
+         [MafBlock('a score=0', [MafLine('target.chr0', 3, 9, '-', 20, 'gctgaaaac'),
+                                 MafLine('name.chr1', 3, 6, '+', 100,  'GT---AAGT'),
+                                 MafLine('name2.chr1', 3, 6, '+', 100, 'GT---AAGT'),
+                                 MafLine('name3.chr2', 3, 5, '+', 100, 'GT----AGT'),
+                                 ]),
+          ],
+         ),
+        ]
+    def testHardExtraction_0(self):
+        """ mafBlockExtractor should output trimmed blocks by default.
+        """
+        mtt.makeTempDirParent()
+        i = -1
+        for inblocks, seq, start, stop, outblocks in self.testSet:
+            i += 1
+            tmpDir = os.path.abspath(mtt.makeTempDir('hardextraction_0'))
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
+                                   ''.join(map(str, inblocks)), g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor'))]
+            cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
+                    '--seq', seq, '--start', '%d' % start, 
+                    '--stop', '%d' % stop,
+                    ]
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            self.assertTrue(mafIsHardExtracted(outblocks, os.path.join(tmpDir, 'extracted.maf')))
+            mtt.removeDir(tmpDir)
+
+class CuTestMemory(unittest.TestCase):
+    def test_CuTestMemory(self):
+        """ If valgrind is installed on the system, check for memory related errors in CuTests.
+        """
+        mtt.makeTempDirParent()
+        valgrind = mtt.which('valgrind')
+        if valgrind is None:
+            return
+        tmpDir = os.path.abspath(mtt.makeTempDir('memory_CuTest'))
+        parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cmd = mtt.genericValgrind(tmpDir)
+        cmd.append(os.path.abspath(os.path.join(parent, 'test', 'allTests')))
+        outpipes = [os.path.join('/dev', 'null')]
+        mtt.recordCommands([cmd], tmpDir)
+        mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+        self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
+        mtt.removeDir(tmpDir)
 
 if __name__ == '__main__':
     unittest.main()
