@@ -5,7 +5,7 @@ bin = ../bin
 PROGS = mafBlockFinder
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*)
 objects = ../include/common.o ../include/sharedMaf.o ../external/CuTest.a
-testObjects = ./test/common.o ./test/sharedMaf.o ../external/CuTest.a
+testObjects = test/common.o test/sharedMaf.o ../external/CuTest.a
 
 .PHONY: all clean test
 
@@ -18,7 +18,7 @@ ${bin}/mafBlockFinder: src/mafBlockFinder.c ${dependencies} ${objects}
 
 test/mafBlockFinder: src/mafBlockFinder.c ${dependencies} ${testObjects}
 	mkdir -p $(dir $@)
-	${cc} ${args} -g -O0 $< ${objects} -o $@.tmp
+	${cc} ${args} -g -O0 $< ${testObjects} -o $@.tmp
 	mv $@.tmp $@
 
 %.o: %.c %.h
@@ -27,6 +27,10 @@ test/mafBlockFinder: src/mafBlockFinder.c ${dependencies} ${testObjects}
 test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
 	${cc} -g -O0 -c ${args} $< -o $@.tmp
+	mv $@.tmp $@
+test/%.o: src/%.c src/%.h 
+	mkdir -p $(dir $@)
+	${cc} -c $< -o $@.tmp ${args} -g -O0
 	mv $@.tmp $@
 
 clean:

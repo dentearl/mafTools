@@ -1124,7 +1124,7 @@ class CuTestTests(unittest.TestCase):
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('CuTestAllTests'))
         cmd = mtt.genericValgrind(tmpDir)
-        cmd += [os.path.abspath(os.path.join(os.curdir, 'test/allTests'))]
+        cmd += [os.path.abspath(os.path.join(os.curdir, 'test', 'allTests'))]
         outpipes = [os.path.join('/dev', 'null')]
         mtt.recordCommands([cmd], tmpDir)
         mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)

@@ -108,120 +108,61 @@ static void test_mappingRoundTrip_0(CuTest *testCase) {
         }
     }
 }
-static void test_pairCounting_0(CuTest *testCase) {
+static void pairTest(CuTest *testCase, const char *block, uint64_t expected, stSet *legitPairs) {
     uint64_t *chooseTwoArray = buildChooseTwoArray();
-    uint64_t expected, observed;
-    uint32_t lineNumber, numSeqs, numLines;
+    uint64_t observed;
+    mafBlock_t *mb = maf_newMafBlockFromString(block, 3);
+    observed = walkBlockCountingPairs(mb, legitPairs, chooseTwoArray);
+    // printf("observed: %" PRIu64 " expected:%" PRIu64 "\n", observed, expected);
+    CuAssertTrue(testCase, observed == expected);
+    // clean up
+    maf_destroyMafBlockList(mb);
+}
+static void test_pairCounting_0(CuTest *testCase) {
+    // test0
     stSet *legitPairs = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
-    mafLine_t *ml = NULL;
-    mafBlock_t *mb = NULL;
-    numSeqs = 4;
-    numLines = 5;
-    expected = chooseTwo(4) * 13;
-    char **input = (char**) st_malloc(sizeof(*input) * numLines);
-    input[0] = stString_copy("a score=0.0");
-    input[1] = stString_copy("s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca");
-    input[2] = stString_copy("s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca");
-    input[3] = stString_copy("s baboon         249182 13 +   4622798 gcagctgaaaaca");
-    input[4] = stString_copy("s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA");
     stSet_insert(legitPairs, stString_copy("hg16.chr7"));
     stSet_insert(legitPairs, stString_copy("panTro1.chr6"));
     stSet_insert(legitPairs, stString_copy("baboon"));
     stSet_insert(legitPairs, stString_copy("mm4.chr6"));
-    mb = maf_newMafBlock();
-    lineNumber = 3;
-    maf_mafBlock_setLineNumber(mb, lineNumber);
-    maf_mafBlock_setNumberOfSequences(mb, numSeqs);
-    maf_mafBlock_setNumberOfLines(mb, numLines);
-    maf_mafBlock_setHeadLine(mb, maf_newMafLineFromString(input[0], lineNumber));
-    ml = maf_mafBlock_getHeadLine(mb);
-    for (uint32_t i = 0; i < maf_mafBlock_getNumberOfLines(mb); ++i, ++lineNumber) {
-        maf_mafLine_setNext(ml, maf_newMafLineFromString(input[i], lineNumber));
-        ml = maf_mafLine_getNext(ml);
-        maf_mafBlock_setTailLine(mb, ml);
-    }
-    observed = walkBlockCountingPairs(mb, legitPairs, chooseTwoArray);
-    CuAssertTrue(testCase, observed == expected);
-    // clean up
-    for (unsigned i = 0; i < numLines; ++i) { 
-        free(input[i]);
-    }
-    free(input);
-    maf_destroyMafBlockList(mb);
+    pairTest(testCase, 
+             "a score=0.0\n"
+             "s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca\n"
+             "s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca\n"
+             "s baboon         249182 13 +   4622798 gcagctgaaaaca\n"
+             "s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA\n",
+             chooseTwo(4) * 13,
+             legitPairs);
     stSet_destruct(legitPairs);
-
-    // new test
-    expected = chooseTwo(3) * 13;
+    // test1
     legitPairs = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
-    numSeqs = 4;
-    numLines = 5;
-    input = (char**) st_malloc(sizeof(*input) * numLines);
-    input[0] = stString_copy("a score=0.0");
-    input[1] = stString_copy("s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca");
-    input[2] = stString_copy("s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca");
-    input[3] = stString_copy("s baboon         249182 13 +   4622798 gcagctgaaaaca");
-    input[4] = stString_copy("s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA");
     stSet_insert(legitPairs, stString_copy("hg16.chr7"));
     stSet_insert(legitPairs, stString_copy("panTro1.chr6"));
     stSet_insert(legitPairs, stString_copy("mm4.chr6"));
-    mb = maf_newMafBlock();
-    lineNumber = 3;
-    maf_mafBlock_setLineNumber(mb, lineNumber);
-    maf_mafBlock_setNumberOfSequences(mb, numSeqs);
-    maf_mafBlock_setNumberOfLines(mb, numLines);
-    maf_mafBlock_setHeadLine(mb, maf_newMafLineFromString(input[0], lineNumber));
-    ml = maf_mafBlock_getHeadLine(mb);
-    for (uint32_t i = 0; i < maf_mafBlock_getNumberOfLines(mb); ++i, ++lineNumber) {
-        maf_mafLine_setNext(ml, maf_newMafLineFromString(input[i], lineNumber));
-        ml = maf_mafLine_getNext(ml);
-        maf_mafBlock_setTailLine(mb, ml);
-    }
-    observed = walkBlockCountingPairs(mb, legitPairs, chooseTwoArray);
-    CuAssertTrue(testCase, observed == expected);
-    // clean up
-    for (unsigned i = 0; i < numLines; ++i) { 
-        free(input[i]);
-    }
-    free(input);
-    maf_destroyMafBlockList(mb);
+    pairTest(testCase, 
+             "a score=0.0\n"
+             "s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca\n"
+             "s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca\n"
+             "s baboon         249182 13 +   4622798 gcagctgaaaaca\n"
+             "s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA\n",
+             chooseTwo(3) * 13,
+             legitPairs);
     stSet_destruct(legitPairs);
-    // new test
-    expected = chooseTwo(3) + chooseTwo(4) * 37;
+    // test2
     legitPairs = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
-    numSeqs = 5;
-    numLines = 6;
-    input = (char**) st_malloc(sizeof(*input) * numLines);
-    input[0] = stString_copy("a score=23262.0   ");
-    input[1] = stString_copy("s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG");
-    input[2] = stString_copy("s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG");
-    input[3] = stString_copy("s baboon         116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG");
-    input[4] = stString_copy("s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG");
-    input[5] = stString_copy("s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG");
     stSet_insert(legitPairs, stString_copy("hg18.chr7"));
     stSet_insert(legitPairs, stString_copy("panTro1.chr6"));
     stSet_insert(legitPairs, stString_copy("baboon"));
     stSet_insert(legitPairs, stString_copy("rn3.chr4"));
-    mb = maf_newMafBlock();
-    lineNumber = 3;
-    maf_mafBlock_setLineNumber(mb, lineNumber);
-    maf_mafBlock_setNumberOfSequences(mb, numSeqs);
-    maf_mafBlock_setNumberOfLines(mb, numLines);
-    maf_mafBlock_setHeadLine(mb, maf_newMafLineFromString(input[0], lineNumber));
-    ml = maf_mafBlock_getHeadLine(mb);
-    for (uint32_t i = 0; i < maf_mafBlock_getNumberOfLines(mb); ++i, ++lineNumber) {
-        maf_mafLine_setNext(ml, maf_newMafLineFromString(input[i], lineNumber));
-        ml = maf_mafLine_getNext(ml);
-        maf_mafBlock_setTailLine(mb, ml);
-    }
-    observed = walkBlockCountingPairs(mb, legitPairs, chooseTwoArray);
-    CuAssertTrue(testCase, observed == expected);
-    // clean up
-    for (unsigned i = 0; i < numLines; ++i) { 
-        free(input[i]);
-    }
-    free(input);
-    free(chooseTwoArray);
-    maf_destroyMafBlockList(mb);
+    pairTest(testCase, 
+             "a score=23262.0\n"
+             "s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG\n"
+             "s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG\n"
+             "s baboon         116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG\n"
+             "s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG\n"
+             "s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG\n",
+             chooseTwo(3) + chooseTwo(4) * 37,
+             legitPairs);
     stSet_destruct(legitPairs);
 }
 static char** createRandomColumn(uint32_t n, uint32_t colLength, double gapProb) {
@@ -465,13 +406,17 @@ static void test_pairSortComparison_0(CuTest *testCase) {
     
 }
 CuSuite* comparatorAPI_TestSuite(void) {
-    (void) (printMat);
-    (void) (test_columnSampling_timing_0);
-    (void) (test_mappingMatrixToArray_0);
-    (void) (test_mappingArrayToMatrix_0);
-    (void) (test_pairCounting_0);
-    (void) (test_chooseTwoValues_0);
-    (void) (test_columnSampling_timing_0);
+    // listing the tests as void allows us to quickly comment out certain tests
+    // when trying to isolate bugs highlighted by one particular test
+    (void) printMat;
+    (void) test_columnSampling_timing_0;
+    (void) test_mappingMatrixToArray_0;
+    (void) test_mappingArrayToMatrix_0;
+    (void) test_pairCounting_0;
+    (void) test_chooseTwoValues_0;
+    (void) test_columnSampling_timing_0;
+    (void) test_mappingRoundTrip_0;
+    (void) test_pairSortComparison_0;
     CuSuite* suite = CuSuiteNew();
     SUITE_ADD_TEST(suite, test_mappingMatrixToArray_0);
     SUITE_ADD_TEST(suite, test_mappingArrayToMatrix_0);
@@ -479,6 +424,5 @@ CuSuite* comparatorAPI_TestSuite(void) {
     SUITE_ADD_TEST(suite, test_pairCounting_0);
     SUITE_ADD_TEST(suite, test_chooseTwoValues_0);
     SUITE_ADD_TEST(suite, test_pairSortComparison_0);
-    // SUITE_ADD_TEST(suite, test_columnSampling_timing_0);
     return suite;
 }

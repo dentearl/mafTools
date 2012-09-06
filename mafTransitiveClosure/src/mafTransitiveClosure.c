@@ -801,7 +801,7 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
     if (numSeqs < 1) 
         return;
-    uint32_t seqFieldLength = maf_mafBlock_longestSequenceField(mb);
+    uint32_t seqFieldLength = maf_mafBlock_getSequenceFieldLength(mb);
     char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
     int **vizMat = NULL;
     if (g_debug_flag) {

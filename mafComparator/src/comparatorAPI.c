@@ -432,7 +432,7 @@ uint64_t walkBlockCountingPairs(mafBlock_t *mb, stSet *legitSequences, uint64_t 
     if (numSeqs < 1) {
         return 0;
     }
-    uint32_t seqFieldLength = maf_mafBlock_longestSequenceField(mb);
+    uint32_t seqFieldLength = maf_mafBlock_getSequenceFieldLength(mb);
     char **names = maf_mafBlock_getSpeciesArray(mb);
     char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
     bool *legitRows = getLegitRows(names, numSeqs, legitSequences);
@@ -808,7 +808,7 @@ void walkBlockSamplingPairs(const char *filename, mafBlock_t *mb, stSortedSet *s
     }
     validateMafBlockSourceLengths(filename, mb, sequenceLengthHash);    
     
-    uint32_t seqFieldLength = maf_mafBlock_longestSequenceField(mb);
+    uint32_t seqFieldLength = maf_mafBlock_getSequenceFieldLength(mb);
     char **names = maf_mafBlock_getSpeciesArray(mb);
     char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
     bool *legitRows = getLegitRows(names, numSeqs, legitSequences);
@@ -1093,7 +1093,7 @@ void walkBlockTestingHomology(mafBlock_t *mb, stSortedSet *sampledPairs, stSet *
     if (numSeqs < 2) {
         return;
     }
-    uint32_t seqFieldLength = maf_mafBlock_longestSequenceField(mb);
+    uint32_t seqFieldLength = maf_mafBlock_getSequenceFieldLength(mb);
     char **names = maf_mafBlock_getSpeciesArray(mb);
     char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
     bool *legitRows = getLegitRows(names, numSeqs, legitSequences);

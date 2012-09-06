@@ -39,8 +39,11 @@ void* de_malloc(size_t n);
 int32_t de_getline(char **s, int32_t *n, FILE *f);
 FILE* de_fopen(const char *s, char const *mode);
 char* de_strdup(const char *s);
+char* de_strndup(const char *s, size_t n);
 void failBadFormat(void);
 void usageMessage(char shortopt, const char *name, const char *description);
 char* stringReplace(const char *string, const char a, const char b);
+int minint(int a, int b);
+char* de_strtok(char **s, char t);
 
 #endif // COMMON_H_

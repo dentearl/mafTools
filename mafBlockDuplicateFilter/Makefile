@@ -18,7 +18,7 @@ ${bin}/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies} ${
 
 test/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies} ${testObjects}
 	mkdir -p $(dir $@)
-	${cc} ${args} -g -O0 $< ${objects} -o $@.tmp 
+	${cc} ${args} -g -O0 $< ${testObjects} -o $@.tmp 
 	mv $@.tmp $@
 
 %.o: %.c %.h

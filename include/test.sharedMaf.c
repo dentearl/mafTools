@@ -23,6 +23,7 @@
  * THE SOFTWARE. 
  */
 #include <assert.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -430,6 +431,122 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
     maf_destroyMfa(mfaWrite);
     free(input);
 }
+static bool mafLinesAreEqual(mafLine_t* ml1, mafLine_t *ml2) {
+    if ((ml1 == NULL) || (ml2 == NULL)) {
+        if ((ml1 == NULL) && (ml2 == NULL)) {
+            return true;
+        } else {
+            fprintf(stderr, "one is null, ml1:%p ml2:%p\n", (void*) ml1, (void*) ml2);
+            return false;
+        }
+    }
+    if (maf_mafLine_getLineNumber(ml1) != maf_mafLine_getLineNumber(ml2)) {
+        fprintf(stderr, "mafLines differ in lineNumber\n");
+        return false;
+    }
+    if (maf_mafLine_getType(ml1) != maf_mafLine_getType(ml2)) {
+        fprintf(stderr, "mafLines differ in type\n");
+        return false;
+    }
+    if (maf_mafLine_getStart(ml1) != maf_mafLine_getStart(ml2)) {
+        fprintf(stderr, "mafLines differ in start\n");
+        return false;
+    }
+    if (maf_mafLine_getLength(ml1) != maf_mafLine_getLength(ml2)) {
+        fprintf(stderr, "mafLines differ in length\n");
+        return false;
+    }
+    if (maf_mafLine_getStrand(ml1) != maf_mafLine_getStrand(ml2)) {
+        fprintf(stderr, "mafLines differ in strand\n");
+        return false;
+    }
+    if (maf_mafLine_getSourceLength(ml1) != maf_mafLine_getSourceLength(ml2)) {
+        fprintf(stderr, "mafLines differ in source Length\n");
+        return false;
+    }
+    if ((maf_mafLine_getSpecies(ml1) != NULL) && maf_mafLine_getSpecies(ml2) != NULL) {
+        if (strcmp(maf_mafLine_getSpecies(ml1), maf_mafLine_getSpecies(ml2)) != 0) {
+            fprintf(stderr, "mafLines differ in species name: ml1: [%s] ml2: [%s]\n",
+                    maf_mafLine_getSpecies(ml1), maf_mafLine_getSpecies(ml2));
+            return false;
+        }
+    } else {
+        if (maf_mafLine_getSpecies(ml1) != maf_mafLine_getSpecies(ml2)) {
+            // if true, one is NULL the other is not
+            return false;
+        }
+    }
+    if ((maf_mafLine_getSequence(ml1) != NULL) && maf_mafLine_getSequence(ml2) != NULL) {
+        if (strcmp(maf_mafLine_getSequence(ml1), maf_mafLine_getSequence(ml2)) != 0) {
+            fprintf(stderr, "mafLines differ in sequence:\n  ml1: [%s]\n  ml2: [%s]\n",
+                    maf_mafLine_getSequence(ml1), maf_mafLine_getSequence(ml2));
+            return false;
+        }
+    } else {
+        if (maf_mafLine_getSequence(ml1) != maf_mafLine_getSequence(ml2)) {
+            // if true, one is NULL the other is not
+            fprintf(stderr, "ml1 seq:%p ml2 seq:%p\n", 
+                    (void*) maf_mafLine_getSequence(ml1), 
+                    (void*) maf_mafLine_getSequence(ml2));
+            return false;
+        }
+    }
+    return true;
+}
+static bool mafBlocksAreEqual(mafBlock_t *mb1, mafBlock_t *mb2) {
+    if (maf_mafBlock_getLineNumber(mb1) != maf_mafBlock_getLineNumber(mb2)) {
+        fprintf(stderr, "mafBlocks differ in lineNumber, %" PRIu32 " vs %" PRIu32 "\n", 
+                maf_mafBlock_getLineNumber(mb1), maf_mafBlock_getLineNumber(mb2));
+        return false;
+    }
+    if (maf_mafBlock_getNumberOfLines(mb1) != maf_mafBlock_getNumberOfLines(mb2)) {
+        fprintf(stderr, "mafBlocks differ in number of lines, %"PRIu32" vs %"PRIu32"\n",
+                maf_mafBlock_getNumberOfLines(mb1), maf_mafBlock_getNumberOfLines(mb2));
+        return false;
+    }
+    if (maf_mafBlock_getNumberOfSequences(mb1) != maf_mafBlock_getNumberOfSequences(mb2)) {
+        fprintf(stderr, "mafBlocks differ in number of sequences\n");
+        return false;
+    }
+    mafLine_t *ml1, *ml2;
+    ml1 = maf_mafBlock_getHeadLine(mb1);
+    ml2 = maf_mafBlock_getHeadLine(mb2);
+    while (ml1 != NULL) {
+        if (! mafLinesAreEqual(ml1, ml2)) {
+            fprintf(stderr, "mafLines differ\n");
+            return false;
+        }
+        ml1 = maf_mafLine_getNext(ml1);
+        ml2 = maf_mafLine_getNext(ml2);
+    }
+    return true;
+}
+static void test_newMafBlockFromString_0(CuTest *testCase) {
+    mafBlock_t *ib = maf_newMafBlock();
+    mafLine_t * ml = maf_newMafLineFromString("a score=0", 3);
+    maf_mafBlock_setHeadLine(ib, ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s target.chr0 0 13 + 158545518 gcagctgaaaaca", 4));
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s name.chr1 0 10 + 100 ATGT---ATGCCG", 5));
+    ml = maf_mafLine_getNext(ml);
+    maf_mafLine_setNext(ml, maf_newMafLineFromString("s name2.chr1 0 10 + 100 ATGT---ATGCCG", 6));
+    maf_mafBlock_setTailLine(ib, maf_mafLine_getNext(ml));
+    maf_mafBlock_setLineNumber(ib, 7);
+    maf_mafBlock_setNumberOfLines(ib, 4);
+    maf_mafBlock_setNumberOfSequences(ib, 3);
+    
+    // CuAssertTrue(testCase, true);
+    
+    mafBlock_t *ib2 = maf_newMafBlockFromString("a score=0\n"
+                                                "s target.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+                                                "s name.chr1 0 10 + 100 ATGT---ATGCCG\n"
+                                                "s name2.chr1 0 10 + 100 ATGT---ATGCCG\n"
+                                                , 3);
+    CuAssertTrue(testCase, mafBlocksAreEqual(ib, ib2));
+    
+    maf_destroyMafBlockList(ib);
+    maf_destroyMafBlockList(ib2);
+}
 CuSuite* mafShared_TestSuite(void) {
     CuSuite* suite = CuSuiteNew();
     SUITE_ADD_TEST(suite, test_newMafLineFromString);
@@ -437,5 +554,6 @@ CuSuite* mafShared_TestSuite(void) {
     SUITE_ADD_TEST(suite, test_readBlock2);
     SUITE_ADD_TEST(suite, test_lineNumbers);
     SUITE_ADD_TEST(suite, test_readWriteMaf);
+    SUITE_ADD_TEST(suite, test_newMafBlockFromString_0);
     return suite;
 }

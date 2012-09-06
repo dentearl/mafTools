@@ -18,7 +18,7 @@ ${bin}/mafBlockFilter: src/mafBlockFilter.c ${dependencies} ${objects}
 
 test/mafBlockFilter: src/mafBlockFilter.c ${dependencies} ${testObjects}
 	mkdir -p $(dir $@)
-	${cc} ${args} -g -O0 $< ${objects} -o $@.tmp 
+	${cc} ${args} -g -O0 $< ${testObjects} -o $@.tmp 
 	mv $@.tmp $@
 
 %.o: %.c %.h

@@ -92,6 +92,12 @@ char* de_strdup(const char *s) {
     strcpy(copy, s);
     return copy;
 }
+char* de_strndup(const char *s, size_t n) {
+    char *copy = de_malloc(n + 1);
+    strncpy(copy, s, n);
+    copy[n] = '\0';
+    return copy;
+}
 static void de_message(char const *type, char const *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -199,4 +205,24 @@ char* stringReplace(const char *string, const char a, const char b) {
             s[i] = b;
     }
     return s;
+}
+char* de_strtok(char **s, char t) {
+    // takes a string and returns a COPY that excludes all content that comes
+    // BEFORE the token. Meant to be iterated. Destructive to input.
+    if (*s == NULL) {
+        return NULL;
+    }
+    if ((**s) == t) {
+        (*s)++;
+    }
+    char *start = *s;
+    while (**s != '\0' && (**s) != t) {
+        (*s)++;
+    }
+    if ((*s) - start > 0) {
+        char *result = memcpy(de_malloc(((*s) - start + 1) * sizeof(char)), start, ((*s) - start) * sizeof(char));
+        result[(*s) - start] = '\0';
+        return result;
+    }
+    return NULL;
 }
