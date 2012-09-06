@@ -54,8 +54,9 @@ typedef struct seq {
     uint64_t count;
 } seq_t;
 
+void version(void);
 void usage(void);
-void parseArgs(int argc, char **argv, char **filename);
+void parseOptions(int argc, char **argv, char **filename);
 stats_t* stats_create(char *filename);
 void stats_destroy(stats_t *stats);
 void countCharacters(char *seq, stats_t *stats);

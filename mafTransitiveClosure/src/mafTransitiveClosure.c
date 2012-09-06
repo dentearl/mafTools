@@ -36,10 +36,14 @@
 #include "stPinchGraphs.h"
 #include "mafTransitiveClosure.h"
 #include "test.mafTransitiveClosure.h"
+#include "buildVersion.h"
 
 const uint32_t kPinchThreshold = 50000000;
-const char *kVersion = "v0.1 June 2012";
+const char *g_version = "v0.1 June 2012";
 bool g_isSort = false;
+
+void version(void);
+void usage(void);
 
 void parseOptions(int argc, char **argv, char *filename) {
     int c;
@@ -49,6 +53,7 @@ void parseOptions(int argc, char **argv, char *filename) {
             {"debug", no_argument, 0, 'd'},
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
+            {"version", no_argument, 0, 0},
             {"test", no_argument, 0, 't'},
             {"maf",  required_argument, 0, 'm'},
             {"sort", no_argument, 0, 's'},
@@ -60,6 +65,10 @@ void parseOptions(int argc, char **argv, char *filename) {
             break;
         switch (c) {
         case 0:
+            if (strcmp("version", long_options[option_index].name) == 0) {
+                version();
+                exit(EXIT_SUCCESS);
+            }
             break;
         case 'm':
             setMName = 1;
@@ -102,7 +111,12 @@ void parseOptions(int argc, char **argv, char *filename) {
         usage();
     }
 }
+void version(void) {
+    fprintf(stderr, "mafTransitiveClosure, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+            g_build_git_branch, g_build_git_sha);
+}
 void usage(void) {
+    version();
     fprintf(stderr, "Usage: mafTransitiveClosure --maf mafFile.maf > transitivelyClosed.maf \n\n"
             "mafTransitiveClosure is a program to perform the transitive closure on\n"
             "an alignment. That is it checks every column of the alignment and looks\n"
@@ -943,7 +957,8 @@ void reportTransitiveClosure(stPinchThreadSet *threadSet, stHash *hash, stHash *
     char *seq = NULL;
     char strand = '\0';
     printf("##maf version=1\n");
-    printf("# mafTransitiveClosure %s\n\n", kVersion);
+    printf("# mafTransitiveClosure %s, build: %s, %s, %s\n\n", g_version, g_build_date, 
+           g_build_git_branch, g_build_git_sha);
     uint32_t maxNameLength, maxStartLength, maxLengthLength, maxSourceLengthLength;
     int64_t xformedStart;
     int64_t *intKey = NULL;

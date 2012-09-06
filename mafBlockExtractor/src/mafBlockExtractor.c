@@ -32,8 +32,16 @@
 #include "sharedMaf.h"
 #include "mafBlockExtractor.h"
 #include "mafBlockExtractorAPI.h"
+#include "buildVersion.h"
 
+const char *g_version = "version 0.2 September 2012";
+
+void version(void) {
+    fprintf(stderr, "mafBlockExtractor, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+            g_build_git_branch, g_build_git_sha);
+}
 void usage(void) {
+    version();
     fprintf(stderr, "Usage: mafBlockExtractor --maf [maf file] --seq [sequence name (and possibly chr)] "
             "--start [start of region, inclusive, 0 based] --stop [end of region, inclusive] "
             "[options]\n\n"
@@ -58,10 +66,11 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t
     bool setSName = false, setStart = false, setStop = false, setMName = false;
     int32_t value = 0;
     while (1) {
-        static struct option long_options[] = {
+        static struct option longOptions[] = {
             {"debug", no_argument, 0, 'd'},
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
+            {"version", no_argument, 0, 0},
             {"maf", required_argument, 0, 'm'},
             {"seq", required_argument, 0, 's'},
             {"start", required_argument, 0, 0},
@@ -69,14 +78,14 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t
             {"soft", no_argument, 0, 0},
             {0, 0, 0, 0}
         };
-        int option_index = 0;
+        int longIndex = 0;
         c = getopt_long(argc, argv, "m:s:h:v:d",
-                        long_options, &option_index);
+                        longOptions, &longIndex);
         if (c == -1)
             break;
         switch (c) {
         case 0:
-            if (strcmp("start", long_options[option_index].name) == 0) {
+            if (strcmp("start", longOptions[longIndex].name) == 0) {
                 value = strtoll(optarg, NULL, 10);
                 if (value < 0) {
                     fprintf(stderr, "Error, --start %d must be nonnegative.\n", value);
@@ -84,7 +93,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t
                 }
                 *start = value;
                 setStart = true;
-            } else if (strcmp("stop", long_options[option_index].name) == 0) {
+            } else if (strcmp("stop", longOptions[longIndex].name) == 0) {
                 value = strtoll(optarg, NULL, 10);
                 if (value < 0) {
                     fprintf(stderr, "Error, --stop %d must be nonnegative.\n", value);
@@ -92,8 +101,11 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t
                 }
                 *stop = value;
                 setStop = true;
-            } else if (strcmp("soft", long_options[option_index].name) == 0) {
+            } else if (strcmp("soft", longOptions[longIndex].name) == 0) {
                 *isSoft = true;
+            } else if (strcmp("version", longOptions[longIndex].name) == 0) {
+                version();
+                exit(EXIT_SUCCESS);
             }
             break;
         case 'm':

@@ -42,7 +42,7 @@
 #include "common.h"
 #include "buildVersion.h"
 
-const char *g_version = "version 0.7 August 2012";
+const char *g_version = "version 0.8 September 2012";
 bool g_isVerboseFailures = false;
 
 /*
@@ -77,7 +77,7 @@ void listifercateKeyValuePairs(char *s, stList *list);
 void hashifercateList(stList *list, stHash *hash);
 void usage(void);
 void version(void);
-int parseArgs(int argc, char **argv, Options* options);
+int parseOptions(int argc, char **argv, Options* options);
 
 void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
     /*
@@ -224,9 +224,12 @@ void hashifercateList(stList *list, stHash *hash) {
         free(tmp);
     }
 }
-void usage(void) {
-    fprintf(stderr, "mafComparator, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+void version(void) {
+    fprintf(stderr, "mafComparator, %s\nbuild: %s, %s, %s\n", g_version, g_build_date, 
             g_build_git_branch, g_build_git_sha);
+}
+void usage(void) {
+    version();
     fprintf(stderr, "Usage: $ mafComparator --maf1=FILE1 --maf2=FILE2 --out=OUT.xml [options]\n\n");
     fprintf(stderr, "This program takes two MAF files and compares them to one another.\n"
             "Specifically, for each ordered pair of sequences in the first MAF it \n"
@@ -292,13 +295,9 @@ void usage(void) {
                  "generated. The seed value is always stored in the output xml.");
     usageMessage('v', "version", "Print current version number.");
 }
-void version(void) {
-    fprintf(stderr, "mafComparator, %s\nbuild: %s, %s, %s\n", g_version, g_build_date, 
-            g_build_git_branch, g_build_git_sha);
-}
-int parseArgs(int argc, char **argv, Options* options) {
+int parseOptions(int argc, char **argv, Options* options) {
     static const char *optString = "a:b:c:d:e:p:v:h:f:g:s:";
-    static const struct option longOpts[] = {
+    static const struct option longOptions[] = {
         {"logLevel", required_argument, 0, 'a'},
         {"mafFile1", required_argument, 0, 'b'},
         {"maf1", required_argument, 0, 0},
@@ -321,46 +320,46 @@ int parseArgs(int argc, char **argv, Options* options) {
         {0, 0, 0, 0 }};
     int longIndex = 0;
     size_t i;
-    int key = getopt_long(argc, argv, optString, longOpts, &longIndex);
+    int key = getopt_long(argc, argv, optString, longOptions, &longIndex);
     while (key != -1) {
         switch (key) {
         case 0:
-            if (strcmp("maf1", longOpts[longIndex].name) == 0) {
+            if (strcmp("maf1", longOptions[longIndex].name) == 0) {
                 options->mafFile1 = stString_copy(optarg);
                 break;
             }
-            if (strcmp("maf2", longOpts[longIndex].name) == 0) {
+            if (strcmp("maf2", longOptions[longIndex].name) == 0) {
                 options->mafFile2 = stString_copy(optarg);
                 break;
             }
-            if (strcmp("out", longOpts[longIndex].name) == 0) {
+            if (strcmp("out", longOptions[longIndex].name) == 0) {
                 options->outputFile = stString_copy(optarg);
                 break;
             }
-            if (strcmp("legitSequences", longOpts[longIndex].name) == 0) {
+            if (strcmp("legitSequences", longOptions[longIndex].name) == 0) {
                 options->legitSequences = stString_copy(optarg);
                 break;
             }
-            if (strcmp("samples", longOpts[longIndex].name) == 0) {
+            if (strcmp("samples", longOptions[longIndex].name) == 0) {
                 i = sscanf(optarg, "%" PRIu32, &(options->numberOfSamples));
                 assert(i == 1);
                 break;
             }
-            if (strcmp("sampleNumber", longOpts[longIndex].name) == 0) {
+            if (strcmp("sampleNumber", longOptions[longIndex].name) == 0) {
                 i = sscanf(optarg, "%" PRIu32, &(options->numberOfSamples));
                 assert(i == 1);
                 break;
             }
-            if (strcmp("wigglePairs", longOpts[longIndex].name) == 0) {
+            if (strcmp("wigglePairs", longOptions[longIndex].name) == 0) {
                 options->wigglePairs = stString_copy(optarg);
                 break;
             }
-            if (strcmp("wiggleBinLength", longOpts[longIndex].name) == 0) {
+            if (strcmp("wiggleBinLength", longOptions[longIndex].name) == 0) {
                 i = sscanf(optarg, "%" PRIu64, &(options->wiggleBinLength));
                 assert(i == 1);
                 break;
             }
-            if (strcmp("numberOfPairs", longOpts[longIndex].name) == 0) {
+            if (strcmp("numberOfPairs", longOptions[longIndex].name) == 0) {
                 options->numPairsString = stString_copy(optarg);
                 break;
             }
@@ -406,7 +405,7 @@ int parseArgs(int argc, char **argv, Options* options) {
             fprintf(stderr, "\nError, default message. key=%c optarg:%s\n", key, optarg);
             exit(EXIT_SUCCESS);
         }
-        key = getopt_long(argc, argv, optString, longOpts, &longIndex);
+        key = getopt_long(argc, argv, optString, longOptions, &longIndex);
     }
     if (options->mafFile1 == NULL) {
         usage();
@@ -458,7 +457,7 @@ int main(int argc, char **argv) {
     stHash *intervalsHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free,
                                               (void(*)(void *)) stSortedSet_destruct);
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
-    parseArgs(argc, argv, options);
+    parseOptions(argc, argv, options);
     stList *wigglePairPatternList = stList_construct3(0, free);
     listifercateKeyValuePairs(options->wigglePairs, wigglePairPatternList);
     // Set up logging

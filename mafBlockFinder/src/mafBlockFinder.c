@@ -37,14 +37,23 @@
 #include <unistd.h>
 #include "common.h"
 #include "sharedMaf.h"
+#include "buildVersion.h"
 
+const char *g_version = "version 0.1 September 2012";
+
+void version(void);
 void usage(void);
 void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t *position);
 void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start, 
                  uint32_t length, uint32_t sourceLength, char strand);
 void searchInput(mafFileApi_t *mfa, char *fullname, unsigned long pos);
 
+void version(void) {
+    fprintf(stderr, "mafBlockDuplicateFilter, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+            g_build_git_branch, g_build_git_sha);
+}
 void usage(void) {
+    version();
     fprintf(stderr, "Usage: mafBlockFinder --maf [path to maf] "
             "--seq [sequence name (and possibly chr)] "
             "--pos [position to search for, zero based coords] [options]\n\n"
@@ -72,6 +81,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t
             {"debug", no_argument, &g_debug_flag, 1},
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
+            {"version", no_argument, 0, 0},
             {"maf",  required_argument, 0, 'm'},
             {"seq",  required_argument, 0, 's'},
             {"sequence",  required_argument, 0, 's'},
@@ -87,6 +97,10 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t
         }
         switch (c) {
         case 0:
+            if (strcmp("version", long_options[option_index].name) == 0) {
+                version();
+                exit(EXIT_SUCCESS);
+            }
             break;
         case 'm':
             setMName = 1;

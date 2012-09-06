@@ -4,13 +4,15 @@ args = -Wall -Wextra -std=c99 -pedantic -I ../external -I ../include
 bin = ../bin
 PROGS = mafBlockExtractor
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*) src/mafBlockExtractor.h
-API = ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/mafBlockExtractorAPI.o
-testAPI = test/sharedMaf.o ../external/CuTest.a test/common.o test/mafBlockExtractorAPI.o
+API = ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/mafBlockExtractorAPI.o src/buildVersion.o
+testAPI = test/sharedMaf.o ../external/CuTest.a test/common.o test/mafBlockExtractorAPI.o test/buildVersion.o
 testObjects := test/test.mafBlockExtractor.o
 
-.PHONY: all clean test
+.PHONY: all clean test buildVersion
 
-all: $(foreach f,${PROGS}, ${bin}/$f)
+all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
+buildVersion:
+	@python ../include/createVersionSources.py
 
 ${bin}/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies} ${API}
 	mkdir -p $(dir $@)

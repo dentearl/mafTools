@@ -3,12 +3,14 @@ SHELL:=/bin/bash
 bin = ../bin
 PROGS = mafTransitiveClosure
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*) $(wildcard ${sonLibPath}/*) ${sonLibPath}/sonLib.a ${sonLibPath}/stPinchesAndCacti.a src/allTests.c
-objects := ../include/common.o ../include/sharedMaf.o ${sonLibPath}/sonLib.a ../external/CuTest.a ${sonLibPath}/stPinchesAndCacti.a src/test.mafTransitiveClosure.o
-testObjects := test/sharedMaf.o test/common.o ${sonLibPath}/sonLib.a ../external/CuTest.a ${sonLibPath}/stPinchesAndCacti.a src/test.mafTransitiveClosure.o
+objects := ../include/common.o ../include/sharedMaf.o ${sonLibPath}/sonLib.a ../external/CuTest.a ${sonLibPath}/stPinchesAndCacti.a src/test.mafTransitiveClosure.o src/buildVersion.o
+testObjects := test/sharedMaf.o test/common.o ${sonLibPath}/sonLib.a ../external/CuTest.a ${sonLibPath}/stPinchesAndCacti.a src/test.mafTransitiveClosure.o test/buildVersion.o
 
-.PHONY: all clean test
+.PHONY: all clean test buildVersion
 
-all: $(foreach f,${PROGS}, ${bin}/$f)
+all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
+buildVersion:
+	@python ../include/createVersionSources.py
 
 ${bin}/mafTransitiveClosure: src/mafTransitiveClosure.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)

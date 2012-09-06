@@ -31,6 +31,9 @@
 #include <string.h>
 #include "common.h"
 #include "sharedMaf.h"
+#include "buildVersion.h"
+
+const char *g_version = "version 0.1 September 2012";
 
 typedef struct scoredMafLine {
     // augmented data structure
@@ -47,6 +50,7 @@ typedef struct duplicate {
 } duplicate_t;
 
 void usage(void);
+void version(void);
 void processBody(mafFileApi_t *mfa);
 void checkBlock(mafBlock_t *block);
 // void destroyBlock(mafLine_t *m);
@@ -63,20 +67,25 @@ void parseOptions(int argc, char **argv, char *filename) {
     int c;
     int setMName = 0;
     while (1) {
-        static struct option long_options[] = {
+        static struct option longOptions[] = {
             {"debug", no_argument, 0, 'd'},
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
+            {"version", no_argument, 0, 0},
             {"maf",  required_argument, 0, 'm'},            
             {0, 0, 0, 0}
         };
-        int option_index = 0;
+        int longIndex = 0;
         c = getopt_long(argc, argv, "d:m:h:v",
-                        long_options, &option_index);
+                        longOptions, &longIndex);
         if (c == -1)
             break;
         switch (c) {
         case 0:
+            if (strcmp("version", longOptions[longIndex].name) == 0) {
+                version();
+                exit(EXIT_SUCCESS);
+            }
             break;
         case 'm':
             setMName = 1;
@@ -113,7 +122,12 @@ void parseOptions(int argc, char **argv, char *filename) {
         usage();
     }
 }
+void version(void) {
+    fprintf(stderr, "mafBlockDuplicateFilter, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+            g_build_git_branch, g_build_git_sha);
+}
 void usage(void) {
+    version();
     fprintf(stderr, "Usage: mafBlockDuplicateFilter --maf mafWithDuplicates.maf > pruned.maf \n\n"
             "mafBlockDuplicateFilter is a program to filter out duplications from a Multiple \n"
             "Alignment Format (maf) file. This program assumes the sequence name field is \n"

@@ -30,6 +30,7 @@
 #include "common.h"
 #include "sharedMaf.h"
 
+void version(void);
 void usage(void);
 void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t *start, 
                   uint32_t *stop, bool *isSoft);

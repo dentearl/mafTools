@@ -34,7 +34,6 @@ g_BoilerPlate = '''/*
  */
 '''
 g_git = mtt.which('git')
-
 def runCommand(cmd):
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     pout, perr = p.communicate()
@@ -47,7 +46,6 @@ def getBranch():
             return b[2:]
 def getSha():
     return runCommand([g_git, 'rev-parse', 'HEAD']).strip()
-
 def writeHeader(location):
     f = open(os.path.join(location, 'buildVersion.h'), 'w')
     f.write(g_BoilerPlate)
@@ -58,7 +56,6 @@ def writeHeader(location):
     f.write('extern const char g_build_git_sha[];\n')
     f.write('#endif // _BUILD_VERSION_H_\n')
     f.close()
-
 def writeSource(location, buildDate, buildBranch, buildSha):
     f = open(os.path.join(location, 'buildVersion.c'), 'w')
     f.write(g_BoilerPlate)
@@ -67,7 +64,6 @@ def writeSource(location, buildDate, buildBranch, buildSha):
     f.write('const char g_build_git_branch[] = "%s";\n' % buildBranch)
     f.write('const char g_build_git_sha[] = "%s";\n' % buildSha)
     f.close()
-
 def main():
     location = os.path.join(os.curdir, 'src')
     buildDate = time.strftime('%Y-%m-%dT%H:%M%Z', time.localtime()) # gmtime()

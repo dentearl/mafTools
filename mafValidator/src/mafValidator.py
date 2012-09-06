@@ -39,6 +39,8 @@ import os
 import re
 import sys
 
+g_version = '0.1 May 2012'
+
 class ValidatorError(Exception): pass
 class SourceLengthError(ValidatorError): pass
 class SpeciesFieldError(ValidatorError): pass
@@ -69,7 +71,12 @@ def initOptions(parser):
                      default=True, action='store_false',
                      help=('Turn off the checks for duplicate columns, may be useful for pairwise-only '
                            'alignments. default=duplicate checking is on.'))
+   parser.add_option('--version', dest='isVersion', action='store_true', default=False,
+                     help='Print version number and exit.')
 def checkOptions(options, args, parser):
+   if options.isVersion:
+      print 'mafValidator.py, version %s' % g_version
+      sys.exit(0)
    if options.filename is None:
       parser.error('specify --maf')
    if not os.path.exists(options.filename):

@@ -29,16 +29,21 @@
 #include "sonLib.h"
 #include "common.h"
 #include "comparatorAPI.h"
+#include "buildVersion.h"
 
 const char *g_version = "version 0.1 July 2012";
 
-void usage(void);
 void version(void);
-int parseArgs(int argc, char **argv, char **maf, char **maf2, char **seqList);
+void usage(void);
+int parseOptions(int argc, char **argv, char **maf, char **maf2, char **seqList);
 stSet* buildSet(char *listOfLegitSequences);
 
+void version(void) {
+    fprintf(stderr, "mafPairCounter, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+            g_build_git_branch, g_build_git_sha);
+}
 void usage(void) {
-    fprintf(stderr, "mafPairCounter, %s\n\n", g_version);
+    version();
     fprintf(stderr, "Usage: $ mafPairCounter --maf=FILE\n\n");
     fprintf(stderr, "This program is used to count the number of pairs of aligned positions\n"
             "that are contained in a maf file. Can be run to determine all possible pairs, or\n"
@@ -58,10 +63,7 @@ void usage(void) {
                  "reported will be from the --maf option.");
     usageMessage('v', "version", "Print current version number.");
 }
-void version(void) {
-    fprintf(stderr, "mafPairCounter, %s\n", g_version);
-}
-int parseArgs(int argc, char **argv, char **maf, char **maf2, char **seqList) {
+int parseOptions(int argc, char **argv, char **maf, char **maf2, char **seqList) {
     static const char *optString = "v:h:";
     static const struct option longOpts[] = {
         {"maf", required_argument, 0, 0},
@@ -139,7 +141,7 @@ int main(int argc, char **argv) {
     stSet *maf1SeqSet = NULL;
     stSet *maf2SeqSet = NULL;
     stHash *sequenceLengthHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
-    parseArgs(argc, argv, &maf, &maf2, &listOfLegitSequences);
+    parseOptions(argc, argv, &maf, &maf2, &listOfLegitSequences);
     if (listOfLegitSequences != NULL) {
         legitSeqsSet = buildSet(listOfLegitSequences);
     }

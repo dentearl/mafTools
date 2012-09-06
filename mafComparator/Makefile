@@ -34,7 +34,7 @@ testObjects = test/test.comparatorAPI.o test/test.comparatorRandom.o
 
 all: buildVersion ${progs}
 buildVersion:
-	@python src/createVersionSources.py
+	@python ../include/createVersionSources.py
 
 ${binPath}/%: src/%.c ${extraAPI} $(wildcard src/*.h)
 	@mkdir -p $(dir $@)
