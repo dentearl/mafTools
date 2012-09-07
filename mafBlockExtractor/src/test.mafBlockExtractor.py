@@ -186,11 +186,11 @@ class ExtractionTest(unittest.TestCase):
                 else:
                     shuffledBlocks.append(g_nonOverlappingBlocks[k])
                     k += 1
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
                                    ''.join(shuffledBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor'))]
-            cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+            cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1],
                     '--soft'
@@ -207,11 +207,11 @@ class ExtractionTest(unittest.TestCase):
         for i in xrange(0, 10):
             tmpDir = os.path.abspath(mtt.makeTempDir('nonExtraction_0'))
             random.shuffle(g_nonOverlappingBlocks)
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
                                    ''.join(g_nonOverlappingBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor'))]
-            cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+            cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1],
                     '--soft'
@@ -247,13 +247,13 @@ s target.chr0       36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACC
         mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
         self.assertTrue(mtt.fileIsEmpty(os.path.join(tmpDir, 'extracted.maf')))
         mtt.removeDir(tmpDir)
-    def dtestMemory0(self):
+    def testMemory0(self):
         """ If valgrind is installed on the system, check for memory related errors (0).
         """
-        mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
+        mtt.makeTempDirParent()
         for i in xrange(0, 10):
             shuffledBlocks = []
             tmpDir = os.path.abspath(mtt.makeTempDir('memory_0'))
@@ -269,12 +269,12 @@ s target.chr0       36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACC
                 else:
                     shuffledBlocks.append(g_nonOverlappingBlocks[k])
                     k += 1
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
                                    ''.join(shuffledBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = mtt.genericValgrind(tmpDir)
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor')))
-            cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+            cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1],
                     '--soft']
@@ -283,22 +283,22 @@ s target.chr0       36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACC
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)
-    def dtestMemory1(self):
+    def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
-        mtt.makeTempDirParent()
         valgrind = mtt.which('valgrind')
         if valgrind is None:
             return
+        mtt.makeTempDirParent()
         for i in xrange(0, 10):
             tmpDir = os.path.abspath(mtt.makeTempDir('memory_1'))
             random.shuffle(g_nonOverlappingBlocks)
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
                                    ''.join(g_nonOverlappingBlocks), g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = mtt.genericValgrind(tmpDir)
             cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor')))
-            cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+            cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
                     '--seq', g_targetSeq, '--start', '%d' % g_targetRange[0], 
                     '--stop', '%d' % g_targetRange[1],
                     '--soft']
@@ -506,6 +506,9 @@ class HardTrimTest(unittest.TestCase):
     def testHardExtraction_0(self):
         """ mafBlockExtractor should output trimmed blocks by default.
         """
+        valgrind = mtt.which('valgrind')
+        if valgrind is None:
+            return
         mtt.makeTempDirParent()
         i = -1
         for inblocks, seq, start, stop, outblocks in self.testSet:
@@ -523,6 +526,32 @@ class HardTrimTest(unittest.TestCase):
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsHardExtracted(outblocks, os.path.join(tmpDir, 'extracted.maf')))
+            mtt.removeDir(tmpDir)
+    def testMemory2(self):
+        """ If valgrind is installed on the system, check for memory related errors (2).
+        """
+        valgrind = mtt.which('valgrind')
+        if valgrind is None:
+            return
+        mtt.makeTempDirParent()
+        i = -1
+        for inblocks, seq, start, stop, outblocks in self.testSet:
+            i += 1
+            tmpDir = os.path.abspath(mtt.makeTempDir('memory_2'))
+            random.shuffle(g_nonOverlappingBlocks)
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
+                                   ''.join(g_nonOverlappingBlocks), g_headers)
+            parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cmd = mtt.genericValgrind(tmpDir)
+            cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafBlockExtractor')))
+            cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
+                    '--seq', seq, '--start', '%d' % start, 
+                    '--stop', '%d' % stop,
+                    ]
+            outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
+            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
+            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+            self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)
 
 class CuTestMemory(unittest.TestCase):
