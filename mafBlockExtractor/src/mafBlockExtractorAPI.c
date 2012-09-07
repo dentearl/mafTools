@@ -232,6 +232,11 @@ mafBlock_t *trimBlock(mafBlock_t *b, uint32_t n, bool isLeft) {
             maf_mafLine_setNext(ml2, maf_newMafLine());
             ml2 = maf_mafLine_getNext(ml2);
         }
+        if (maf_mafLine_getLine(ml1) == NULL) {
+            ml1 = maf_mafLine_getNext(ml1);
+            prevLineUsed = false;
+            continue;
+        }
         maf_mafLine_setType(ml2, maf_mafLine_getType(ml1));
         maf_mafLine_setLineNumber(ml2, ++linenumber);
         maf_mafBlock_incrementNumberOfLines(mb);
@@ -245,6 +250,7 @@ mafBlock_t *trimBlock(mafBlock_t *b, uint32_t n, bool isLeft) {
         }
         maf_mafBlock_incrementNumberOfSequences(mb);
         seq = maf_mafLine_getSequence(ml1);
+        
         m = 0;
         len = strlen(seq);
         if (maf_mafBlock_getSequenceFieldLength(mb) == 0) {
@@ -400,7 +406,6 @@ void checkBlock(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, b
     // read through each line of a mafBlock and if the sequence matches the region
     // we're looking for, report the block.
     mafLine_t *ml = maf_mafBlock_getHeadLine(b);
-    assert(maf_mafLine_getType(ml) == 'a' || maf_mafLine_getType(ml) == 'h');
     while (ml != NULL) {
         if (searchMatched(ml, seq, start, stop)) {
             if (!*printedHeader) {

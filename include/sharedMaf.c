@@ -111,7 +111,9 @@ mafLine_t* maf_copyMafLine(mafLine_t *orig) {
         return NULL;
     }
     mafLine_t *ml = maf_newMafLine();
-    ml->line = de_strdup(orig->line);
+    if (orig->line != NULL) {
+        ml->line = de_strdup(orig->line);
+    }
     ml->lineNumber = orig->lineNumber;
     ml->type = orig->type;
     if (orig->species != NULL) {
