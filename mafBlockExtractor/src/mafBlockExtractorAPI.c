@@ -157,17 +157,13 @@ mafBlock_t *processBlockForTrim(mafBlock_t *b, const char *seq, uint32_t start, 
     // create a targetColumns array and then check to see if this block needs to be trimmed
     bool *targetColumns = NULL;
     uint32_t len = 0, n = 0;
-    // printf("processBlockForTrim(), blocklen: %" PRIu32 "\n", maf_mafBlock_getSequenceFieldLength(b));
     getTargetColumns(&targetColumns, &len, b, seq, start, stop);
-    // printf("back from getTargetColumns(): len=%" PRIu32 "\n", len);
-    // printBoolArray(targetColumns, len);
     if (sumBool(targetColumns, len) == 0) {
         free(targetColumns);
         return NULL;
     }
     if (sumBool(targetColumns, len) == len) {
         // bail out, nothing to trim here.
-        // printf("bailing out, sumBool:%"PRIu32" == len %"PRIu32"\n", sumBool(targetColumns, len), len);
         free(targetColumns);
         return b;
     }
@@ -188,7 +184,6 @@ mafBlock_t *processBlockForTrim(mafBlock_t *b, const char *seq, uint32_t start, 
             }
         }
     }
-    // printf("processBlockForTrim(), n:%" PRIu32 "\n", n);
     if (n == 0) {
         // nothing to trim, return a copy of the original
         free(targetColumns);
@@ -196,6 +191,7 @@ mafBlock_t *processBlockForTrim(mafBlock_t *b, const char *seq, uint32_t start, 
     } else if (n == maf_mafBlock_getSequenceFieldLength(b)) {
         // this would be the case where every single element in targetColumns is 0,
         // which would mean this block contains nothing relevant.
+        free(targetColumns);
         return NULL;
     } else {
         // need to trim off `n' bases from the left / right
