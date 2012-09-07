@@ -96,6 +96,10 @@ void getTargetColumns(bool **targetColumns, uint32_t *len, mafBlock_t *b, const 
             ml = maf_mafLine_getNext(ml);
             continue;
         }
+        if (maf_mafLine_getSpecies(ml) == NULL) {
+            ml = maf_mafLine_getNext(ml);
+            continue;
+        }
         // make sure name is the same
         if (strcmp(maf_mafLine_getSpecies(ml), seqName) != 0) {
             ml = maf_mafLine_getNext(ml);
@@ -354,11 +358,7 @@ void splitBlock(mafBlock_t *b, uint32_t n, mafBlock_t **mbLeft, mafBlock_t **mbR
 void trimAndReportBlock(mafBlock_t *orig, const char *seq, uint32_t start, uint32_t stop) {
     // we can not modify orig, it is cleaned up in processBody()
     mafBlock_t *leftTrimmed = NULL, *rightTrimmed = NULL, *copy = NULL;
-    // printf("trimAndReportBlock()\n");
-    // printf("orig: sfl: %" PRIu32 "\n", maf_mafBlock_getSequenceFieldLength(orig));
-    // maf_mafBlock_print(orig);
     copy = maf_copyMafBlock(orig);
-    // printf("copy 0: sfl: %" PRIu32 "\n", maf_mafBlock_getSequenceFieldLength(copy));
     leftTrimmed = processBlockForTrim(copy, seq, start, stop, true);
     if (leftTrimmed == NULL) {
         maf_destroyMafBlockList(copy);
@@ -368,27 +368,23 @@ void trimAndReportBlock(mafBlock_t *orig, const char *seq, uint32_t start, uint3
         maf_destroyMafBlockList(copy);
         copy = leftTrimmed;
     }
-    // printf("copy 1: sfl: %" PRIu32 "\n", maf_mafBlock_getSequenceFieldLength(copy));
-    // maf_mafBlock_print(copy);
     mafBlock_t *left = NULL, *right = NULL;
     processBlockForSplit(copy, seq, start, stop, &left, &right);
+    if (left != copy) {
+        maf_destroyMafBlockList(copy);
+        copy = left;
+    }
     if (right != NULL) {
         // recurse for a spell if we're doing block splitting
-        // printf("recursing\n");
         trimAndReportBlock(right, seq, start, stop);
+        maf_destroyMafBlockList(right);
     }
-    // printf("left: sfl: %" PRIu32 "\n", maf_mafBlock_getSequenceFieldLength(left));
-    // maf_mafBlock_print(left);
-    rightTrimmed = processBlockForTrim(left, seq, start, stop, false);
-    // printf("REPORTING:\n##########\n");
+    rightTrimmed = processBlockForTrim(copy, seq, start, stop, false);
     if (rightTrimmed != NULL)
         maf_mafBlock_print(rightTrimmed);
-    // printf("##########\n");
-    if (rightTrimmed != left) {
-        maf_destroyMafBlockList(rightTrimmed);
-    }
-    if (left != copy) {
-        maf_destroyMafBlockList(left);
+    if (rightTrimmed != copy) {
+        maf_destroyMafBlockList(copy);
+        copy = rightTrimmed;
     }
     maf_destroyMafBlockList(copy);
 }

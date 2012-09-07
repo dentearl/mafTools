@@ -16,25 +16,25 @@ buildVersion:
 
 ${bin}/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies} ${API}
 	mkdir -p $(dir $@)
-	${cc} ${args} -O3 $< ${API} -o $@.tmp 
+	${cc} ${args} -O3 $< ${API} -o $@.tmp -lm
 	mv $@.tmp $@
 
 test/mafBlockExtractor: src/mafBlockExtractor.c ${dependencies} ${testAPI}
 	mkdir -p $(dir $@)
-	${cc} ${args} -g -O0 $< ${testAPI} -o $@.tmp 
+	${cc} ${args} -g -O0 $< ${testAPI} -o $@.tmp -lm
 	mv $@.tmp $@
 
 %.o: %.c %.h
-	${cc} -O3 -c ${args} $< -o $@.tmp
+	${cc} -O3 -c ${args} $< -o $@.tmp -lm
 	mv $@.tmp $@
 
 test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
-	${cc} -c $< -o $@.tmp ${args} -g -O0
+	${cc} -c $< -o $@.tmp ${args} -g -O0 -lm
 	mv $@.tmp $@
 test/%.o: src/%.c src/%.h 
 	mkdir -p $(dir $@)
-	${cc} -c $< -o $@.tmp ${args} -g -O0
+	${cc} -c $< -o $@.tmp ${args} -g -O0 -lm
 	mv $@.tmp $@
 
 clean:
@@ -45,12 +45,12 @@ test: test/allTests test/mafBlockExtractor
 
 test/allTests: src/allTests.c ${testObjects} ${testAPI}
 	mkdir -p $(dir $@)
-	${cc} $^ -o $@.tmp ${args} -g -O0 
+	${cc} $^ -o $@.tmp ${args} -g -O0 -lm
 	mv $@.tmp $@
 
 test/test.mafBlockExtractor.o: src/test.mafBlockExtractor.c src/test.mafBlockExtractor.h ${testAPI}
 	mkdir -p $(dir $@)
-	${cc} -c $< -o $@.tmp ${args} -g -O0
+	${cc} -c $< -o $@.tmp ${args} -g -O0 -lm
 	mv $@.tmp $@
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h

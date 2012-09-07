@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <inttypes.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -838,19 +839,64 @@ void maf_writeBlock(mafFileApi_t *mfa, mafBlock_t *mb) {
     ++(mfa->lineNumber);
 }
 void maf_mafBlock_print(mafBlock_t *m) {
+    // pretty print a mafBlock.
     if (m == NULL) {
         printf("..block NULL\n");
         return;
     }
     mafLine_t* ml = maf_mafBlock_getHeadLine(m);
     char *line = NULL;
+    uint32_t maxName = 1, maxStart = 1, maxLen = 1, maxSource = 1;
+    char fmtName[10] = "\0", fmtStart[32] = "\0", fmtLen[32] = "\0", fmtSource[32] = "\0", fmtLine[256] = "\0";
     while (ml != NULL) {
         line = maf_mafLine_getLine(ml);
         if (line == NULL) {
-            printf("..line NULL\n");
             break;
         }
-        printf("%s\n", line);
+        if (maf_mafLine_getType(ml) != 's') {
+            ml = maf_mafLine_getNext(ml);
+            continue;
+        }
+        if (maxName < strlen(maf_mafLine_getSpecies(ml))) {
+            maxName = strlen(maf_mafLine_getSpecies(ml));
+        }
+        if (maxStart < maf_mafLine_getStart(ml)) {
+            maxStart = maf_mafLine_getStart(ml);
+        }
+        if (maxLen < maf_mafLine_getLength(ml)) {
+            maxLen = maf_mafLine_getLength(ml);
+        }
+        if (maxSource < maf_mafLine_getSourceLength(ml)) {
+            maxSource = maf_mafLine_getSourceLength(ml);
+        }
+        ml = maf_mafLine_getNext(ml);
+    }
+    ml = maf_mafBlock_getHeadLine(m);
+    if (ml != NULL) {
+        sprintf(fmtName, " %%-%"PRIu32"s", maxName + 2);
+        sprintf(fmtStart, " %%%d"PRIu32, (int)log10(maxStart) + 2);
+        sprintf(fmtLen, " %%%d"PRIu32, (int)log10(maxLen) + 2);
+        sprintf(fmtSource, " %%%d"PRIu32, (int)log10(maxSource) + 2);
+        strcat(fmtLine, "s");
+        strcat(fmtLine, fmtName);
+        strcat(fmtLine, fmtStart);
+        strcat(fmtLine, fmtLen);
+        strcat(fmtLine, " %c");
+        strcat(fmtLine, fmtSource);
+        strcat(fmtLine, " %s\n");
+    }
+    while (ml != NULL) {
+        line = maf_mafLine_getLine(ml);
+        if (line == NULL) {
+            // printf("..line NULL\n");
+            break;
+        }
+        if (maf_mafLine_getType(ml) != 's') {
+            printf("%s\n", line);
+        } else {
+            printf(fmtLine, maf_mafLine_getSpecies(ml), maf_mafLine_getStart(ml), maf_mafLine_getLength(ml),
+                   maf_mafLine_getStrand(ml), maf_mafLine_getSourceLength(ml), maf_mafLine_getSequence(ml));
+        }
         ml = maf_mafLine_getNext(ml);
     }
     printf("\n");

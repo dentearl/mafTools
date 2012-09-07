@@ -14,15 +14,15 @@ clean:
 	rm -f allTests *.o *.pyc
 
 allTests: allTests.c test.sharedMaf.h test.sharedMaf.c ${testObjects}
-	${cc} -g -O0 ${args} $^ -o $@.tmp
+	${cc} -g -O0 ${args} $^ -o $@.tmp -lm
 	mv $@.tmp $@
 
 %.o: %.c %.h
-	${cc} -O3 -c ${args} $< -o $@.tmp
+	${cc} -O3 -c ${args} $< -o $@.tmp -lm
 	mv $@.tmp $@
 test/%.o: ./%.c ./%.h
 	mkdir -p $(dir $@)
-	${cc} -g -O0 -c ${args} $< -o $*.tmp
+	${cc} -g -O0 -c ${args} $< -o $*.tmp -lm
 	mv $*.tmp $@
 
 test: allTests
