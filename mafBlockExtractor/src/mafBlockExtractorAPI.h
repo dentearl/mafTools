@@ -33,11 +33,10 @@
 
 bool checkRegion(uint32_t targetStart, uint32_t targetStop, uint32_t lineStart, 
                  uint32_t length, uint32_t sourceLength, char strand);
-void quickPrintBlock(mafBlock_t *b);
 bool searchMatched(mafLine_t *ml, const char *seq, uint32_t start, uint32_t stop);
 void printHeader(void);
-void getTargetColumns(bool **targetColumns, uint32_t *n, mafBlock_t *b, const char *seq, 
-                      uint32_t start, uint32_t stop);
+uint32_t getTargetColumns(bool **targetColumns, uint32_t *n, mafBlock_t *b, const char *seq, 
+                          uint32_t start, uint32_t stop);
 mafBlock_t *processBlockForTrim(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, bool isLeft);
 mafBlock_t *trimBlock(mafBlock_t *b, uint32_t n, bool isLeft);
 void processBlockForSplit(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, 

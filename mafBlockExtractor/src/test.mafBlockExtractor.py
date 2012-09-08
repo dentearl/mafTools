@@ -117,14 +117,18 @@ s target.chr0     36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACCTA
 
 '''
     ]
-
+def hashStr(s):
+    return s.replace(' ', '').replace('\n', '')
+g_overlappingBlocksHashed = set()
+for b in g_overlappingBlocks:
+    g_overlappingBlocksHashed.add(hashStr(b))
 def mafIsExtracted(maf):
     f = open(maf)
     lastLine = mtt.processHeader(f)
     for i in xrange(0, len(g_overlappingBlocks)):
         b = mtt.extractBlockStr(f, lastLine)
         lastLine = None
-        if b not in g_overlappingBlocks:
+        if hashStr(b) not in g_overlappingBlocksHashed:
             print 'dang, block'
             print b
             print 'is not in set of expected output'
@@ -322,8 +326,6 @@ class MafBlock:
         return v
     def hashify(self):
         return self.__str__().replace(' ', '').replace('\n', '')
-def hashStr(s):
-    return s.replace(' ', '').replace('\n', '')
 class MafLine:
     def __init__(self, name, start, length, strand, sourceLength, sequence):
         self.name = name
@@ -573,6 +575,17 @@ class HardTrimTest(unittest.TestCase):
                                  MafLine('name2.chr1',  21, 1, '+', 100, 'T'),
                                  MafLine('name3.chr2',  20, 1, '+', 100, 'T'),
                                  ]),
+          ],
+         ),
+        # test10
+        ([MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '+', 158545518, 'gcagctgaaaaca'),
+                                 MafLine('name.chr1', 0, 10, '+', 100, 'ATGT---ATGCCG'),
+                                 MafLine('name2.chr1', 0, 10, '+', 100, 'ATGT---ATGCCG'),
+                                 ])],
+         'target.chr0',
+         20,
+         30,
+         [
           ],
          ),
         ]

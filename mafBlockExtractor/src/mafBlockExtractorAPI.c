@@ -71,11 +71,12 @@ bool searchMatched(mafLine_t *ml, const char *seq, uint32_t start, uint32_t stop
 void printHeader(void) {
     printf("##maf version=1\n\n");
 }
-void getTargetColumns(bool **targetColumns, uint32_t *len, mafBlock_t *b, const char *seqName,
-                      uint32_t start, uint32_t stop) {
+uint32_t getTargetColumns(bool **targetColumns, uint32_t *len, mafBlock_t *b, const char *seqName,
+                          uint32_t start, uint32_t stop) {
     // given a block and a target, create an array of bools where true means the target
     // is present in that column and false means it is absent
     mafLine_t *ml = maf_mafBlock_getHeadLine(b);
+    uint32_t sum = 0;
     while(maf_mafLine_getType(ml) != 's') {
         ml = maf_mafLine_getNext(ml);
     }
@@ -84,7 +85,7 @@ void getTargetColumns(bool **targetColumns, uint32_t *len, mafBlock_t *b, const 
     // printf("target columns len: %" PRIu32 "\n", *len);
     if (*len == 0) {
         *targetColumns = NULL;
-        return;
+        return sum;
     }
     *targetColumns = (bool*) de_malloc(sizeof(bool*) * (*len));
     memset(*targetColumns, false, sizeof(bool*) * (*len));
@@ -114,13 +115,18 @@ void getTargetColumns(bool **targetColumns, uint32_t *len, mafBlock_t *b, const 
         pos = maf_mafLine_getPositiveCoord(ml);
         for (uint32_t i = 0; i < (*len); ++i) {
             if (seq[i] != '-') {
-                (*targetColumns)[i] = (*targetColumns)[i] | ((start <= pos) && (pos <= stop));
+                if ((start <= pos) && (pos <= stop)) {
+                    if ((*targetColumns)[i] == 0) {
+                        ++sum;
+                        (*targetColumns)[i] = 1;
+                    }
+                }
                 pos += it;
             }
         }
         ml = maf_mafLine_getNext(ml);
     }
-    // printf("I'm out, son: len=%" PRIu32 "\n", *len);
+    return sum;
 }
 uint32_t sumBool(bool *array, uint32_t n) {
     uint32_t a = 0;
@@ -156,13 +162,13 @@ mafBlock_t *processBlockForTrim(mafBlock_t *b, const char *seq, uint32_t start, 
     // take in a prospective block, and some target information
     // create a targetColumns array and then check to see if this block needs to be trimmed
     bool *targetColumns = NULL;
-    uint32_t len = 0, n = 0;
-    getTargetColumns(&targetColumns, &len, b, seq, start, stop);
-    if (sumBool(targetColumns, len) == 0) {
+    uint32_t len = 0, n = 0, sum = 0;
+    sum = getTargetColumns(&targetColumns, &len, b, seq, start, stop);
+    if (sum == 0) {
         free(targetColumns);
         return NULL;
     }
-    if (sumBool(targetColumns, len) == len) {
+    if (sum == len) {
         // bail out, nothing to trim here.
         free(targetColumns);
         return b;
@@ -184,19 +190,17 @@ mafBlock_t *processBlockForTrim(mafBlock_t *b, const char *seq, uint32_t start, 
             }
         }
     }
+    free(targetColumns);
     if (n == 0) {
         // nothing to trim, return a copy of the original
-        free(targetColumns);
         return maf_copyMafBlock(b);
     } else if (n == maf_mafBlock_getSequenceFieldLength(b)) {
         // this would be the case where every single element in targetColumns is 0,
         // which would mean this block contains nothing relevant.
-        free(targetColumns);
         return NULL;
     } else {
         // need to trim off `n' bases from the left / right
         // where n is greater than 0 and less than the total length of the sequence
-        free(targetColumns);
         return trimBlock(b, n, isLeft);
     }
 }
@@ -225,6 +229,8 @@ mafBlock_t *trimBlock(mafBlock_t *b, uint32_t n, bool isLeft) {
     while (ml1 != NULL) {
         // loop through all maf lines in a block
         if (prevLineUsed) {
+            // advance ml2
+            maf_mafBlock_setTailLine(mb, ml2); // assign this first, in case last line is not used.
             maf_mafLine_setNext(ml2, maf_newMafLine());
             ml2 = maf_mafLine_getNext(ml2);
         }
@@ -238,17 +244,15 @@ mafBlock_t *trimBlock(mafBlock_t *b, uint32_t n, bool isLeft) {
         maf_mafBlock_incrementNumberOfLines(mb);
         maf_mafBlock_incrementLineNumber(mb);
         if (maf_mafLine_getType(ml2) != 's') {
-            maf_mafLine_setLine(ml2, de_malloc(strlen(maf_mafLine_getLine(ml1)) + 1));
-            strcpy(maf_mafLine_getLine(ml2), maf_mafLine_getLine(ml1));
+            maf_mafLine_setLine(ml2, de_strdup(maf_mafLine_getLine(ml1)));
             ml1 = maf_mafLine_getNext(ml1);
             prevLineUsed = true;
             continue;
         }
         maf_mafBlock_incrementNumberOfSequences(mb);
         seq = maf_mafLine_getSequence(ml1);
-        
         m = 0;
-        len = strlen(seq);
+        len = maf_mafBlock_getSequenceFieldLength(b);
         if (maf_mafBlock_getSequenceFieldLength(mb) == 0) {
             maf_mafBlock_setSequenceFieldLength(mb, len);
         }
@@ -280,10 +284,9 @@ mafBlock_t *trimBlock(mafBlock_t *b, uint32_t n, bool isLeft) {
             maf_mafLine_setSequence(ml2, de_strdup(seq + n));
         } else {
             maf_mafLine_setStart(ml2, maf_mafLine_getStart(ml1));
-            size_t len = strlen(seq);
             if (len <= n) {
                 fprintf(stderr, "Well, this is bullshit.\n");
-                fprintf(stderr, "Trying to trim %" PRIu32 " off of a sequence of length %zu\n", n, len);
+                fprintf(stderr, "Trying to trim %" PRIu32 " off of a sequence of length %"PRIu32"\n", n, len);
                 fprintf(stderr, "line: %s\n", seq);
                 exit(EXIT_FAILURE);
             }
@@ -300,13 +303,15 @@ mafBlock_t *trimBlock(mafBlock_t *b, uint32_t n, bool isLeft) {
         emptyBlock = false;
     }
     maf_mafBlock_incrementLineNumber(mb); // extra \n at the end of a block
-    maf_mafBlock_setTailLine(mb, ml2);
+    if (prevLineUsed) {
+        maf_mafBlock_setTailLine(mb, ml2);
+    }
     if (!emptyBlock) {
         return mb;
     } else {
         // this condition should never be tripped, we have a condition set up
         // in the "process" wrapper above this function.
-        printf("block was empty, this should not happen\n");
+        printf("block was empty, this should never happen in trimBlock()\n");
         assert(2 + 2 == 5);
         maf_destroyMafBlockList(mb);
         return NULL;
@@ -315,11 +320,8 @@ mafBlock_t *trimBlock(mafBlock_t *b, uint32_t n, bool isLeft) {
 void processBlockForSplit(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, 
                           mafBlock_t **left, mafBlock_t **right) {
     bool *targetColumns = NULL;
-    uint32_t len = 0, n = 0;
-    // printf("processBlockForSplit()\n");
-    getTargetColumns(&targetColumns, &len, b, seq, start, stop);
-    // printf("a different place for target columns...\n");
-    // printBoolArray(targetColumns, len);
+    uint32_t len = 0, n = 0, sum = 0;
+    sum = getTargetColumns(&targetColumns, &len, b, seq, start, stop);
     for (uint32_t i = 0; i < len; ++i) {
         if (targetColumns[i]) {
             ++n;
@@ -327,7 +329,8 @@ void processBlockForSplit(mafBlock_t *b, const char *seq, uint32_t start, uint32
             break;
         }
     }
-    if (sumBool(targetColumns, len) == len) {
+    free(targetColumns);
+    if (sum == len) {
         // bail out, nothing to trim here.
         *left = b;
         *right = NULL;
@@ -335,18 +338,15 @@ void processBlockForSplit(mafBlock_t *b, const char *seq, uint32_t start, uint32
         // split the block in twain
         splitBlock(b, n, left, right);
     }
-    free(targetColumns);
 }
 void splitBlock(mafBlock_t *b, uint32_t n, mafBlock_t **mbLeft, mafBlock_t **mbRight) {
     /* n is the number of bases to be included in the left block
      * 
      */
-    // printf("splitBlock()\n");
     assert(*mbLeft == NULL);
     assert(*mbRight == NULL);
     uint32_t m = maf_mafBlock_getSequenceFieldLength(b);
     if ((n > 0) && (n < m - 1)) {
-        // printf("trimming stuff? n:%"PRIu32" m:%" PRIu32"\n", n, m);
         // Yes, this looks confusing, but think of it this way:
         // the left block must be right-trimmed and the right block must be left-trimmed.
         *mbLeft = trimBlock(b, m - n, false);
@@ -367,19 +367,15 @@ void trimAndReportBlock(mafBlock_t *orig, const char *seq, uint32_t start, uint3
         return;
     }
     if (leftTrimmed != copy) {
+        // i.e. we actually trimmed off some stuff
         maf_destroyMafBlockList(copy);
         copy = leftTrimmed;
     }
-    mafBlock_t *left = NULL, *right = NULL;
-    processBlockForSplit(copy, seq, start, stop, &left, &right);
-    if (left != copy) {
+    mafBlock_t *leftPart = NULL, *rightPart = NULL;
+    processBlockForSplit(copy, seq, start, stop, &leftPart, &rightPart);
+    if (leftPart != copy) {
         maf_destroyMafBlockList(copy);
-        copy = left;
-    }
-    if (right != NULL) {
-        // recurse for a spell if we're doing block splitting
-        trimAndReportBlock(right, seq, start, stop);
-        maf_destroyMafBlockList(right);
+        copy = leftPart;
     }
     rightTrimmed = processBlockForTrim(copy, seq, start, stop, false);
     if (rightTrimmed != NULL)
@@ -389,14 +385,11 @@ void trimAndReportBlock(mafBlock_t *orig, const char *seq, uint32_t start, uint3
         copy = rightTrimmed;
     }
     maf_destroyMafBlockList(copy);
-}
-void quickPrintBlock(mafBlock_t *b) {
-    mafLine_t *ml = maf_mafBlock_getHeadLine(b);
-    while (ml != NULL) {
-        printf("%s\n", maf_mafLine_getLine(ml));
-        ml = maf_mafLine_getNext(ml);
+    if (rightPart != NULL) {
+        // recurse for a spell if we're doing block splitting
+        trimAndReportBlock(rightPart, seq, start, stop);
+        maf_destroyMafBlockList(rightPart);
     }
-    printf("\n");
 }
 void checkBlock(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, bool *printedHeader, bool isSoft) {
     // read through each line of a mafBlock and if the sequence matches the region
@@ -409,7 +402,7 @@ void checkBlock(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, b
                 *printedHeader = true;
             }
             if (isSoft) {
-                quickPrintBlock(b);
+                maf_mafBlock_print(b);
                 break;
             } else {
                 trimAndReportBlock(b, seq, start, stop);
