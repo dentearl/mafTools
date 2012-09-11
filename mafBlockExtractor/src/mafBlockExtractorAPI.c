@@ -390,7 +390,7 @@ mafBlock_t *processBlockForSplice(mafBlock_t *b, const char *seq, uint32_t start
     // walks mafBlock_t b, returns a mafBlock_t (using the linked list feature) of all spliced out bits.
     bool *targetColumns = NULL;
     uint32_t len = 0, sum = 0;
-    mafBlock_t *head = NULL, *mb;
+    mafBlock_t *head = NULL, *mb = NULL;
     sum = getTargetColumns(&targetColumns, &len, b, seq, start, stop);
     // printTargetColumns(targetColumns, len);
     int32_t **offsets = createOffsets(maf_mafBlock_getNumberOfSequences(b));
