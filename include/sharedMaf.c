@@ -131,7 +131,11 @@ mafLine_t* maf_copyMafLine(mafLine_t *orig) {
 }
 mafBlock_t* maf_newMafBlockFromString(const char *s, uint32_t lineNumber) {
     if (s[0] != 'a') {
-        maf_failBadFormat(lineNumber, "Unable to create maf block from input, first line does not start with 'a'");
+        char *error = de_malloc(kMaxStringLength);
+        sprintf(error, 
+                "Unable to create maf block from input, "
+                "first line does not start with 'a': %s", s);
+        maf_failBadFormat(lineNumber, error);
     }
     mafBlock_t* mb = maf_newMafBlock();
     mafLine_t* ml = NULL;
@@ -626,6 +630,9 @@ void maf_mafBlock_decrementLineNumber(mafBlock_t *mb) {
 void maf_mafBlock_setSequenceFieldLength(mafBlock_t *mb, uint32_t sfl) {
     mb->sequenceFieldLength = sfl;
 }
+void maf_mafBlock_setNext(mafBlock_t *mb, mafBlock_t *next) {
+    mb->next = next;
+}
 void maf_mafLine_setLine(mafLine_t *ml, char *line) {
     ml->line = line;
 }
@@ -840,6 +847,12 @@ void maf_writeBlock(mafFileApi_t *mfa, mafBlock_t *mb) {
     fprintf(mfa->mfp, "\n");
     ++(mfa->lineNumber);
 }
+void maf_mafBlock_printList(mafBlock_t *m) {
+    while (m != NULL) {
+        maf_mafBlock_print(m);
+        m = maf_mafBlock_getNext(m);
+    }
+}
 void maf_mafBlock_print(mafBlock_t *m) {
     // pretty print a mafBlock.
     if (m == NULL) {
@@ -926,4 +939,13 @@ char* maf_mafLine_imputeLine(mafLine_t* ml) {
             maf_mafLine_getSequence(ml));
     return s;
 }
-
+uint32_t countNonGaps(char *seq) {
+    uint32_t n = strlen(seq);
+    uint32_t m = 0;
+    for (uint32_t i = 0; i < n; ++i) {
+        if (seq[i] != '-') {
+            ++m;
+        }
+    }
+    return m;
+}

@@ -94,6 +94,7 @@ void maf_mafBlock_setLineNumber(mafBlock_t *mb, uint32_t n);
 void maf_mafBlock_incrementLineNumber(mafBlock_t *mb);
 void maf_mafBlock_decrementLineNumber(mafBlock_t *mb);
 void maf_mafBlock_setSequenceFieldLength(mafBlock_t *mb, uint32_t sfl);
+void maf_mafBlock_setNext(mafBlock_t *mb, mafBlock_t *next);
 void maf_mafLine_setLine(mafLine_t *ml, char *line);
 void maf_mafLine_setLineNumber(mafLine_t *ml, uint32_t n);
 void maf_mafLine_setType(mafLine_t *ml, char c);
@@ -112,6 +113,8 @@ uint32_t maf_mafLine_getNumberOfSequences(mafLine_t *m);
 uint32_t maf_mafLine_getPositiveCoord(mafLine_t *ml);
 uint32_t maf_mafLine_getPositiveLeftCoord(mafLine_t *ml);
 unsigned umax(unsigned a, unsigned b);
+uint32_t countNonGaps(char *seq);
 // print
+void maf_mafBlock_printList(mafBlock_t *m);
 void maf_mafBlock_print(mafBlock_t *m);
 #endif // SHAREDMAF_H_
