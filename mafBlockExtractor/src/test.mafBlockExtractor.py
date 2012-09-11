@@ -137,7 +137,7 @@ def mafIsExtracted(maf):
             return False
     f.close()
     return True
-def mafIsHardExtracted(outblocks, maf):
+def mafIsHardExtracted(name, outblocks, maf):
     blockSet = set()
     for b in outblocks:
         blockSet.add(b.hashify())
@@ -149,6 +149,7 @@ def mafIsHardExtracted(outblocks, maf):
         b = rawBlockToObj(r)
         if b is not None:
             if b.hashify() not in blockSet:
+                print '\n[%s]' % name
                 print 'dang, hashed output contains'
                 print b.hashify()
                 print 'not in hashed expected output'
@@ -160,6 +161,7 @@ def mafIsHardExtracted(outblocks, maf):
         r = mtt.extractBlockStr(f)
     for b in blockSet:
         if b not in observedBlocks:
+            print '\n[%s]' % name
             print 'dang, expected hashed output block'
             print b
             print 'not observed in hashed output blocks'
@@ -487,23 +489,25 @@ class HardTrimTest(unittest.TestCase):
                                  ]),
           ],
          ),
+        ####################
         # test8
-        ([MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '-', 20, 'gcagctgaaaaca'),
-                                 MafLine('name.chr1', 0, 10, '+', 100,  'ATTGT---AAGTG'),
-                                 MafLine('name2.chr1', 0, 10, '+', 100, 'ATTGT---AAGTG'),
-                                 MafLine('name3.chr2', 0, 9, '+', 100,  'ATTGT----AGTG'),
+        ([MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '-',  20, 'gcagctgaaaaca'),
+                                 MafLine('name.chr1',   0, 10, '+', 100, 'ATTGT---AAGTG'),
+                                 MafLine('name2.chr1',  0, 10, '+', 100, 'ATTGT---AAGTG'),
+                                 MafLine('name3.chr2',  0,  9, '+', 100, 'ATTGT----AGTG'),
                                  ]),
           ],
          'target.chr0',
          8,
          16,
-         [MafBlock('a score=0', [MafLine('target.chr0', 3, 9, '-', 20, 'gctgaaaac'),
-                                 MafLine('name.chr1', 3, 6, '+', 100,  'GT---AAGT'),
-                                 MafLine('name2.chr1', 3, 6, '+', 100, 'GT---AAGT'),
-                                 MafLine('name3.chr2', 3, 5, '+', 100, 'GT----AGT'),
+         [MafBlock('a score=0', [MafLine('target.chr0', 3, 9, '-',  20, 'gctgaaaac'),
+                                 MafLine('name.chr1',   3, 6, '+', 100, 'GT---AAGT'),
+                                 MafLine('name2.chr1',  3, 6, '+', 100, 'GT---AAGT'),
+                                 MafLine('name3.chr2',  3, 5, '+', 100, 'GT----AGT'),
                                  ]),
           ],
          ),
+        ####################
         # test9
         ([MafBlock('a score=0', [MafLine('target.chr0', 0, 13, '-', 20, 'g-c-a-g-c-t-g-a-a-a-a-c-a-'),
                                  MafLine('name.chr1', 0, 23, '+', 100,  'ATTGT---AAGTGTTTTTTTTTTTTT'),
@@ -611,7 +615,8 @@ class HardTrimTest(unittest.TestCase):
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
-            self.assertTrue(mafIsHardExtracted(outblocks, os.path.join(tmpDir, 'extracted.maf')))
+            self.assertTrue(mafIsHardExtracted('hardextraction_0_%d' % i, outblocks, 
+                                               os.path.join(tmpDir, 'extracted.maf')))
             mtt.removeDir(tmpDir)
     def testMemory2(self):
         """ If valgrind is installed on the system, check for memory related errors (2).

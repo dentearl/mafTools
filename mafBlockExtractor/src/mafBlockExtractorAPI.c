@@ -386,8 +386,10 @@ void destroyOffsets(int32_t **offs, uint32_t n) {
     free(offs);
     offs = NULL;
 }
-mafBlock_t *processBlockForSplice(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop) {
+mafBlock_t *processBlockForSplice(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, bool store) {
     // walks mafBlock_t b, returns a mafBlock_t (using the linked list feature) of all spliced out bits.
+    // if store is true, will return a mafBlock_t linked list of all sub-blocks. If store is false,
+    // will report each sub-block (maf_mafBlock_print()) as it comes in and immediatly destroy that block.
     bool *targetColumns = NULL;
     uint32_t len = 0, sum = 0;
     mafBlock_t *head = NULL, *mb = NULL;
@@ -407,17 +409,23 @@ mafBlock_t *processBlockForSplice(mafBlock_t *b, const char *seq, uint32_t start
             ++r;
         }
         // set ri equal to the index of the last element
-        if (r == len - 1) {
-            ri = r;
+        ri = r - 1;
+        if (store) {
+            // used in unit tests
+            if (head == NULL) {
+                head = spliceBlock(b, l, ri, offsets);
+                mb = head;
+            } else {
+                maf_mafBlock_setNext(mb, spliceBlock(b, l, ri, offsets));
+                mb = maf_mafBlock_getNext(mb);
+            }
         } else {
-            ri = r - 1;
-        }
-        if (head == NULL) {
-            head = spliceBlock(b, l, ri, offsets);
-            mb = head;
-        } else {
-            maf_mafBlock_setNext(mb, spliceBlock(b, l, ri, offsets));
-            mb = maf_mafBlock_getNext(mb);
+            // used in production
+            mb = spliceBlock(b, l, ri, offsets);
+            maf_mafBlock_print(mb);
+            if (mb != b) {
+                maf_destroyMafBlockList(mb);
+            }
         }
         l = r;
         if (l == len - 1) { 
@@ -429,6 +437,11 @@ mafBlock_t *processBlockForSplice(mafBlock_t *b, const char *seq, uint32_t start
     destroyOffsets(offsets, maf_mafBlock_getNumberOfSequences(b));
     return head;
 }
+void printOffsetArray(int32_t **offsetArray, uint32_t n) {
+    for (uint32_t i = 0; i < n; ++i) {
+        printf("(%" PRIi32 ", %" PRIi32 "), ", offsetArray[i][0], offsetArray[i][1]);
+    }
+}
 mafBlock_t *spliceBlock(mafBlock_t *b, uint32_t l, uint32_t r, int32_t **offsetArray) {
     // b is the input maf block
     // l is the left index in the sequence field, the start of inclusion
@@ -436,6 +449,9 @@ mafBlock_t *spliceBlock(mafBlock_t *b, uint32_t l, uint32_t r, int32_t **offsetA
     if ((l == 0) && (r == maf_mafBlock_getSequenceFieldLength(b) - 1)) {
         return b;
     }
+    // printf("spliceBlock(b, l=%"PRIu32" r%"PRIu32" offsetArray=[", l, r);
+    // printOffsetArray(offsetArray, maf_mafBlock_getNumberOfSequences(b));
+    // printf("])\n");
     mafBlock_t *mb = maf_newMafBlock();
     mafLine_t *ml1 = NULL, *ml2 = NULL;
     ml1 = maf_mafBlock_getHeadLine(b);
@@ -533,21 +549,12 @@ mafBlock_t *spliceBlock(mafBlock_t *b, uint32_t l, uint32_t r, int32_t **offsetA
         maf_mafLine_setStart(ml2, maf_mafLine_getStart(ml1) + offsetArray[si][1]);
         // update offsetArray:
         for (uint32_t i = offsetArray[si][0] + 1; i <= r; ++i) {
-            // figure out the non-gap offset for the splice in point, `l'
             offsetArray[si][0] = i;
             if (seq[i] != '-') {
                 ++offsetArray[si][1];
             }
         }
-        if (offsetArray[si][0] > 0) {
-            // backing this off by one corrects for the + 1 in the for loop initial above
-            --offsetArray[si][0];
-            if (seq[offsetArray[si][0] + 1] != '-') {
-                --offsetArray[si][1];
-            }
-        }
         maf_mafLine_setSequence(ml2, de_strndup(seq + l, 1 + r - l));
-        // maf_mafLine_setSequence(ml2, de_strndup(seq, len - n));
         maf_mafLine_setLength(ml2, countNonGaps(maf_mafLine_getSequence(ml2)));
         maf_mafBlock_setSequenceFieldLength(mb, strlen(maf_mafLine_getSequence(ml2)));
         maf_mafLine_setStrand(ml2, maf_mafLine_getStrand(ml1));
@@ -612,6 +619,7 @@ void checkBlock(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, b
     // read through each line of a mafBlock and if the sequence matches the region
     // we're looking for, report the block.
     mafLine_t *ml = maf_mafBlock_getHeadLine(b);
+    mafBlock_t *dummy = NULL;
     while (ml != NULL) {
         if (searchMatched(ml, seq, start, stop)) {
             if (!*printedHeader) {
@@ -622,7 +630,9 @@ void checkBlock(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, b
                 maf_mafBlock_print(b);
                 break;
             } else {
-                trimAndReportBlock(b, seq, start, stop);
+                dummy = processBlockForSplice(b, seq, start, stop, false);
+                assert(dummy == NULL);
+                // trimAndReportBlock(b, seq, start, stop);
                 break;
             }
         } 

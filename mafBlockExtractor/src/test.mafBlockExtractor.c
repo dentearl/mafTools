@@ -192,7 +192,11 @@ static bool mafBlockListsAreEqual(mafBlock_t *head1, mafBlock_t *head2) {
         if ((mb1 == NULL) && (mb2 == NULL)) {
             return true;
         } else {
-            fprintf(stderr, "one mafBlock is null, mb1:%p mb2:%p\n", (void*) mb1, (void*) mb2);
+            fprintf(stderr, "one mafBlock list is null, mb1:%p mb2:%p\n", (void*) mb1, (void*) mb2);
+            printf("block list1:\n");
+            maf_mafBlock_printList(head1);
+            printf("block list2:\n");
+            maf_mafBlock_printList(head2);
             return false;
         }
     }
@@ -337,11 +341,11 @@ static void test_splice_0(CuTest *testCase) {
     /*     printf("offs[%"PRIu32"][0] = %"PRIu32"\n", i, offs[i][0]); */
     /*     printf("offs[%"PRIu32"][1] = %"PRIu32"\n", i, offs[i][1]); */
     /* } */
-    CuAssertTrue(testCase, offs[0][0] == 11); // seq field coord
-    CuAssertTrue(testCase, offs[0][1] == 11); // non-gap offset
+    CuAssertTrue(testCase, offs[0][0] == 12); // seq field coord
+    CuAssertTrue(testCase, offs[0][1] == 12); // non-gap offset
     for (uint32_t i = 1; i < 3; ++i) {
-        CuAssertTrue(testCase, offs[i][0] == 11);
-        CuAssertTrue(testCase, offs[i][1] == 8);
+        CuAssertTrue(testCase, offs[i][0] == 12);
+        CuAssertTrue(testCase, offs[i][1] == 9);
     }
     destroyOffsets(offs, 3);
     // test 1
@@ -428,11 +432,11 @@ static void test_splice_0(CuTest *testCase) {
                "s name.chr1      4 11 +       100 ATATTATGCCG\n"
                "s name2.chr1     4 11 +       100 ATATAATGCCG\n",
                4, 14, offs);
-    CuAssertTrue(testCase, offs[0][0] == 13); // seq field coord
-    CuAssertTrue(testCase, offs[0][1] == 11); // non-gap offset
+    CuAssertTrue(testCase, offs[0][0] == 14); // seq field coord
+    CuAssertTrue(testCase, offs[0][1] == 12); // non-gap offset
     for (uint32_t i = 1; i < 3; ++i) {
-        CuAssertTrue(testCase, offs[i][0] == 13);
-        CuAssertTrue(testCase, offs[i][1] == 13);
+        CuAssertTrue(testCase, offs[i][0] == 14);
+        CuAssertTrue(testCase, offs[i][1] == 14);
     }
     destroyOffsets(offs, 3);
     // test 8
@@ -491,7 +495,7 @@ static void processSpliceTest(CuTest *testCase, const char *seq, uint32_t start,
         }
     }
     va_end(argp);
-    mafBlock_t *ob = processBlockForSplice(ib, seq, start, stop);
+    mafBlock_t *ob = processBlockForSplice(ib, seq, start, stop, true);
     CuAssertTrue(testCase, mafBlockListsAreEqual(eb, ob));
     if (ib != ob)
         maf_destroyMafBlockList(ob);
@@ -660,6 +664,49 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0  1 1 + 158545518 a\n"
                       "s name.chr1      12 1 +       100 G\n"
                       "s name2.chr1     12 1 +       100 G\n"
+                      );
+    // test 12
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 8, 16,
+                      "a score=0\n"
+                      "s theTarget.chr0 0  0 -  20 gcagctgaaaaca\n"
+                      "s name.chr1      0 10 + 100 ATTGT---AAGTG\n"
+                      "s name2.chr1     0 10 + 100 ATTGT---AAGTG\n"
+                      "s name3.chr1     0 10 + 100 ATTGT----AGTG\n",
+                      1,
+                      "a score=0\n"
+                      "s theTarget.chr0 3 9 -  20 gctgaaaac\n"
+                      "s name.chr1      3 6 + 100 GT---AAGT\n"
+                      "s name2.chr1     3 6 + 100 GT---AAGT\n"
+                      "s name3.chr1     3 5 + 100 GT----AGT\n"
+                      );
+    // test 13
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 0, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 20 +  20 g-c-a-g\n"
+                      "s name.chr1      0 10 + 100 ATTGTGG\n"
+                      "s name2.chr1     0 10 + 100 ATTGT--\n"
+                      "s name3.chr1     0 10 + 100 ATTGT--\n",
+                      4,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 1 +  20 g\n"
+                      "s name.chr1      0 1 + 100 A\n"
+                      "s name2.chr1     0 1 + 100 A\n"
+                      "s name3.chr1     0 1 + 100 A\n",
+                      "a score=0\n"
+                      "s theTarget.chr0 1 1 +  20 c\n"
+                      "s name.chr1      2 1 + 100 T\n"
+                      "s name2.chr1     2 1 + 100 T\n"
+                      "s name3.chr1     2 1 + 100 T\n",
+                      "a score=0\n"
+                      "s theTarget.chr0 2 1 +  20 a\n"
+                      "s name.chr1      4 1 + 100 T\n"
+                      "s name2.chr1     4 1 + 100 T\n"
+                      "s name3.chr1     4 1 + 100 T\n",
+                      "a score=0\n"
+                      "s theTarget.chr0 3 1 +  20 g\n"
+                      "s name.chr1      6 1 + 100 G\n"
                       );
 }
 static void trimTest(CuTest *testCase, const char *input, const char *expected, uint32_t n, bool isLeft) {
