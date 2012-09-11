@@ -24,6 +24,7 @@
  */
 #include <assert.h>
 #include <inttypes.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -77,8 +78,11 @@ static bool mafLinesAreEqual(mafLine_t* ml1, mafLine_t *ml2) {
         return false;
     }
     if (maf_mafLine_getStart(ml1) != maf_mafLine_getStart(ml2)) {
-        fprintf(stderr, "mafLines differ in start: %3" PRIu32 " vs %3" PRIu32 "\n",
-                maf_mafLine_getStart(ml1), maf_mafLine_getStart(ml2));
+        fprintf(stderr, "mafLines differ in start:\n %3" PRIu32 ":%s\n %3" PRIu32 ":%s\n",
+                maf_mafLine_getStart(ml1), 
+                maf_mafLine_getLine(ml1), 
+                maf_mafLine_getStart(ml2),
+                maf_mafLine_getLine(ml2));
         return false;
     }
     if (maf_mafLine_getLength(ml1) != maf_mafLine_getLength(ml2)) {
@@ -182,6 +186,46 @@ static bool mafBlocksAreEqual(mafBlock_t *mb1, mafBlock_t *mb2) {
     }
     return true;
 }
+static bool mafBlockListsAreEqual(mafBlock_t *head1, mafBlock_t *head2) {
+    mafBlock_t *mb1 = head1, *mb2 = head2;
+    if ((mb1 == NULL) || (mb2 == NULL)) {
+        if ((mb1 == NULL) && (mb2 == NULL)) {
+            return true;
+        } else {
+            fprintf(stderr, "one mafBlock is null, mb1:%p mb2:%p\n", (void*) mb1, (void*) mb2);
+            return false;
+        }
+    }
+    uint32_t count1 = 0;
+    while (mb1 != NULL) {
+        mb1 = maf_mafBlock_getNext(mb1);
+        ++count1;
+    }
+    uint32_t count2 = 0;
+    while (mb2 != NULL) {
+        mb2 = maf_mafBlock_getNext(mb2);
+        ++count2;
+    }
+    if (count1 != count2) {
+        fprintf(stderr, "mafBlock lists have different lengths!, mb1:%"PRIu32" mb2:%"PRIu32"\n", 
+                count1, count2);
+        printf("block list1:\n");
+        maf_mafBlock_printList(head1);
+        printf("block list2:\n");
+        maf_mafBlock_printList(head2);
+        return false;
+    }
+    mb1 = head1;
+    mb2 = head2;
+    while (mb1 != NULL) {
+        if (!mafBlocksAreEqual(mb1, mb2)) {
+            return false;
+        }
+        mb1 = maf_mafBlock_getNext(mb1);
+        mb2 = maf_mafBlock_getNext(mb2);
+    }
+    return true;
+}
 static void targetColumnTest(CuTest *testCase, const char *mafString, uint32_t start, 
                              uint32_t stop, uint32_t expectedLen, bool expected[]) {
     mafBlock_t *ib = maf_newMafBlockFromString(mafString, 3);
@@ -244,6 +288,379 @@ static void test_getTargetColumn_0(CuTest *testCase) {
                      "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
                      "s name2.chr1     0 10 -       100 ATGT---ATGCCG\n",
                      158545507, 158545517, 13, test5);
+}
+static void spliceTest(CuTest *testCase, const char *input, const char *expected, uint32_t l, 
+                       uint32_t r, int32_t **offs) {
+    mafBlock_t *ib = maf_newMafBlockFromString(input, 3);
+    mafBlock_t *eb = maf_newMafBlockFromString(expected, 3);
+    bool cleanOffs = false;
+    if (offs == NULL) {
+        cleanOffs = true;
+        offs = createOffsets(maf_mafBlock_getNumberOfSequences(ib));
+    }
+    mafBlock_t *ob = spliceBlock(ib, l, r, offs);
+    CuAssertTrue(testCase, mafBlocksAreEqual(eb, ob));
+    if ((l == 0) && (r == maf_mafBlock_getSequenceFieldLength(ib) - 1)) {
+        CuAssertTrue(testCase, ib == ob);
+    }
+    // clean up
+    if (cleanOffs) {
+        destroyOffsets(offs, maf_mafBlock_getNumberOfSequences(ib));
+    }
+    if (ib != ob)
+        maf_destroyMafBlockList(ob);
+    maf_destroyMafBlockList(ib);
+    maf_destroyMafBlockList(eb);
+}
+static void test_splice_0(CuTest *testCase) {
+    int32_t **offs = NULL;
+    // int testcount = 0;
+    // test 0
+    // printf("test %d\n", testcount++);
+    offs = createOffsets(3);
+    /* for (uint32_t i = 0; i < 3; ++i) { */
+    /*     printf("offs[%"PRIu32"][0] = %"PRIu32"\n", i, offs[i][0]); */
+    /*     printf("offs[%"PRIu32"][1] = %"PRIu32"\n", i, offs[i][1]); */
+    /* } */
+    spliceTest(testCase, 
+               "a score=0\n"
+               "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+               "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
+               "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+               "a score=0\n"
+               "s theTarget.chr0 2 11 + 158545518 agctgaaaaca\n"
+               "s name.chr1      2  8 +       100 GT---ATGCCG\n"
+               "s name2.chr1     2  8 +       100 GT---ATGCCG\n",
+               2, 12, offs);
+    /* printf("##########\n"); */
+    /* for (uint32_t i = 0; i < 3; ++i) { */
+    /*     printf("offs[%"PRIu32"][0] = %"PRIu32"\n", i, offs[i][0]); */
+    /*     printf("offs[%"PRIu32"][1] = %"PRIu32"\n", i, offs[i][1]); */
+    /* } */
+    CuAssertTrue(testCase, offs[0][0] == 11); // seq field coord
+    CuAssertTrue(testCase, offs[0][1] == 11); // non-gap offset
+    for (uint32_t i = 1; i < 3; ++i) {
+        CuAssertTrue(testCase, offs[i][0] == 11);
+        CuAssertTrue(testCase, offs[i][1] == 8);
+    }
+    destroyOffsets(offs, 3);
+    // test 1
+    // printf("test %d\n", testcount++);
+    spliceTest(testCase,
+               "a score=0\n"
+               "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+               "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
+               "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+               "a score=0\n"
+               "s theTarget.chr0 4 9 + 158545518 ctgaaaaca\n"
+               "s name.chr1      4 6 +       100 ---ATGCCG\n"
+               "s name2.chr1     4 6 +       100 ---ATGCCG\n",
+               4, 12, NULL);
+    // test 2
+    // printf("test %d\n", testcount++);
+    spliceTest(testCase, 
+               "a score=0\n"
+               "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+               "s name.chr1      0  3 +       100 ATG----------\n"
+               "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+               "a score=0\n"
+               "s theTarget.chr0 4 9 + 158545518 ctgaaaaca\n"
+               "s name2.chr1     4 6 +       100 ---ATGCCG\n",
+               4, 12, NULL);
+    // test 3
+    // printf("test %d\n", testcount++);
+    spliceTest(testCase,
+               "a score=0\n"
+               "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+               "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
+               "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+               "a score=0\n"
+               "s theTarget.chr0 6 7 + 158545518 gaaaaca\n"
+               "s name.chr1      4 6 +       100 -ATGCCG\n"
+               "s name2.chr1     4 6 +       100 -ATGCCG\n",
+               6, 12, NULL);
+    // test 4
+    // printf("test %d\n", testcount++);
+    spliceTest(testCase,
+               "a score=0\n"
+               "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+               "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
+               "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+               "a score=0\n"
+               "s theTarget.chr0 12 1 + 158545518 a\n"
+               "s name.chr1       9 1 +       100 G\n"
+               "s name2.chr1      9 1 +       100 G\n",
+               12, 12, NULL);
+    // test 5
+    // printf("test %d\n", testcount++);
+    spliceTest(testCase,
+               "a score=0\n"
+               "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+               "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
+               "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+               "a score=0\n"
+               "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+               "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
+               "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+               0, 12, NULL);
+    // test 6
+    // printf("test %d\n", testcount++);
+    spliceTest(testCase,
+               "a score=0\n"
+               "s theTarget.chr0 0 13 + 158545518 gcag--ctgaaaaca\n"
+               "s name.chr1      0 15 +       100 ATGTATATTATGCCG\n"
+               "s name2.chr1     0 15 +       100 ATGTATATAATGCCG\n",
+               "a score=0\n"
+               "s theTarget.chr0 0 4 + 158545518 gcag\n"
+               "s name.chr1      0 4 +       100 ATGT\n"
+               "s name2.chr1     0 4 +       100 ATGT\n",
+               0, 3, NULL);
+    // test 7
+    // printf("test %d\n", testcount++);
+    offs = createOffsets(3);
+    spliceTest(testCase,
+               "a score=0\n"
+               "s theTarget.chr0 0 13 + 158545518 gcag--ctgaaaaca\n"
+               "s name.chr1      0 15 +       100 ATGTATATTATGCCG\n"
+               "s name2.chr1     0 15 +       100 ATGTATATAATGCCG\n",
+               "a score=0\n"
+               "s theTarget.chr0 4  9 + 158545518 --ctgaaaaca\n"
+               "s name.chr1      4 11 +       100 ATATTATGCCG\n"
+               "s name2.chr1     4 11 +       100 ATATAATGCCG\n",
+               4, 14, offs);
+    CuAssertTrue(testCase, offs[0][0] == 13); // seq field coord
+    CuAssertTrue(testCase, offs[0][1] == 11); // non-gap offset
+    for (uint32_t i = 1; i < 3; ++i) {
+        CuAssertTrue(testCase, offs[i][0] == 13);
+        CuAssertTrue(testCase, offs[i][1] == 13);
+    }
+    destroyOffsets(offs, 3);
+    // test 8
+    // printf("test %d\n", testcount++);
+    spliceTest(testCase, 
+               "a score=0\n"
+               "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+               "s name.chr1      0 13 +       100 ATGTATTATGCCG\n"
+               "s name2.chr1     0 13 +       100 ATGTATAATGCCG\n",
+               "a score=0\n"
+               "s theTarget.chr0 5 6 + 158545518 tgaaaa\n"
+               "s name.chr1      5 6 +       100 TTATGC\n"
+               "s name2.chr1     5 6 +       100 TAATGC\n",
+               5, 10, NULL);
+    // test 9
+    // printf("test %d\n", testcount++);
+    offs = createOffsets(3);
+    spliceTest(testCase, 
+               "a score=0\n"
+               "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+               "s name.chr1      0 13 +       100 ATGTATTATGCCG\n"
+               "s name2.chr1     0 13 +       100 ATGTATAATGCCG\n",
+               "a score=0\n"
+               "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+               "s name.chr1      0 13 +       100 ATGTATTATGCCG\n"
+               "s name2.chr1     0 13 +       100 ATGTATAATGCCG\n",
+               0, 12, offs);
+    for (uint32_t i = 0; i < 3; ++i) {
+        // SPECIAL CASE! 
+        // since the block is passed back directly, since no splice is performed,
+        // there is no update made to the offset array. This makes sense because 
+        // the array will not be used again.
+        CuAssertTrue(testCase, offs[i][0] == 0);
+        CuAssertTrue(testCase, offs[i][1] == 0);
+    }
+    destroyOffsets(offs, 3);
+
+}
+static void processSpliceTest(CuTest *testCase, const char *seq, uint32_t start, uint32_t stop, 
+                              const char *input, int numExpectedBlocks, ...) {
+    // varargs that come in are a variable number of const char * items that should be built
+    // into a mafBlock_t list.
+    mafBlock_t *ib = maf_newMafBlockFromString(input, 3);
+    mafBlock_t *eb = NULL, *ep = NULL;
+    va_list argp;
+    const char *s;
+    va_start(argp, numExpectedBlocks);
+    for (int i = 0; i < numExpectedBlocks; ++i) {
+        s = va_arg(argp, const char *);
+        if (eb == NULL) {
+            eb = maf_newMafBlockFromString(s, 3);
+            ep = eb;
+        } else {
+            maf_mafBlock_setNext(ep, maf_newMafBlockFromString(s, 3));
+            ep = maf_mafBlock_getNext(ep);
+        }
+    }
+    va_end(argp);
+    mafBlock_t *ob = processBlockForSplice(ib, seq, start, stop);
+    CuAssertTrue(testCase, mafBlockListsAreEqual(eb, ob));
+    if (ib != ob)
+        maf_destroyMafBlockList(ob);
+    maf_destroyMafBlockList(ib);
+    maf_destroyMafBlockList(eb);
+}
+static void test_processSplice_0(CuTest *testCase) {
+    // int testcount = 0;
+    // test 0
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 2, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+                      "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
+                      "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+                      1, 
+                      "a score=0\n"
+                      "s theTarget.chr0 2 11 + 158545518 agctgaaaaca\n"
+                      "s name.chr1      2  8 +       100 GT---ATGCCG\n"
+                      "s name2.chr1     2  8 +       100 GT---ATGCCG\n");
+    // test 1
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 4, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+                      "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
+                      "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+                      1, 
+                      "a score=0\n"
+                      "s theTarget.chr0 4 9 + 158545518 ctgaaaaca\n"
+                      "s name.chr1      4 6 +       100 ---ATGCCG\n"
+                      "s name2.chr1     4 6 +       100 ---ATGCCG\n");
+    // test 2
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 4, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+                      "s name.chr1      0  3 +       100 ATG----------\n"
+                      "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+                      1, 
+                      "a score=0\n"
+                      "s theTarget.chr0 4 9 + 158545518 ctgaaaaca\n"
+                      "s name2.chr1     4 6 +       100 ---ATGCCG\n");
+    // test 3
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 6, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+                      "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
+                      "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+                      1, 
+                      "a score=0\n"
+                      "s theTarget.chr0 6 7 + 158545518 gaaaaca\n"
+                      "s name.chr1      4 6 +       100 -ATGCCG\n"
+                      "s name2.chr1     4 6 +       100 -ATGCCG\n");
+    // test 4
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 12, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+                      "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
+                      "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+                      1, 
+                      "a score=0\n"
+                      "s theTarget.chr0 12 1 + 158545518 a\n"
+                      "s name.chr1       9 1 +       100 G\n"
+                      "s name2.chr1      9 1 +       100 G\n");
+    // test 5
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 0, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+                      "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
+                      "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+                      1, 
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+                      "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
+                      "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n");
+    // test 6
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 20, 30,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+                      "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
+                      "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
+                      0,
+                      NULL);
+    // test 7
+    // printf("process test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 0, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 --gcagctgaaaaca\n"
+                      "s name.chr1      0 12 +       100 TTATGG---ATGCCG\n"
+                      "s name2.chr1     0 12 +       100 TTATGT---ATGCCG\n",
+                      1,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+                      "s name.chr1      2 10 +       100 ATGG---ATGCCG\n"
+                      "s name2.chr1     2 10 +       100 ATGT---ATGCCG\n"
+                      );
+    // test 8
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 0, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca--\n"
+                      "s name.chr1      0 12 +       100 ATGG---ATGCCGCC\n"
+                      "s name2.chr1     0 12 +       100 ATGT---ATGCCGCC\n",
+                      1,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+                      "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
+                      "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n"
+                      );
+    // test 9
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 0, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 gcagct---gaaaaca\n"
+                      "s name.chr1      0 13 +       100 ATGG---TTTATGCCG\n"
+                      "s name2.chr1     0 13 +       100 ATGT---TTTATGCCG\n",
+                      2, 
+                      "a score=0\n"
+                      "s theTarget.chr0 0 6 + 158545518 gcagct\n"
+                      "s name.chr1      0 4 +       100 ATGG--\n"
+                      "s name2.chr1     0 4 +       100 ATGT--\n",
+                      "a score=0\n"
+                      "s theTarget.chr0 6 7 + 158545518 gaaaaca\n"
+                      "s name.chr1      6 7 +       100 TATGCCG\n"
+                      "s name2.chr1     6 7 +       100 TATGCCG\n"
+                      );
+    // test 10
+    // printf("process test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 2, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 gcagct---gaaa---aca\n"
+                      "s name.chr1      0 16 +       100 ATGG---TTTATGCCGGGG\n"
+                      "s name2.chr1     0 16 +       100 ATGT---TTTATGCCGGGG\n",
+                      3, 
+                      "a score=0\n"
+                      "s theTarget.chr0 2 4 + 158545518 agct\n"
+                      "s name.chr1      2 2 +       100 GG--\n"
+                      "s name2.chr1     2 2 +       100 GT--\n",
+                      "a score=0\n"
+                      "s theTarget.chr0 6 4 + 158545518 gaaa\n"
+                      "s name.chr1      6 4 +       100 TATG\n"
+                      "s name2.chr1     6 4 +       100 TATG\n",
+                      "a score=0\n"
+                      "s theTarget.chr0 10 3 + 158545518 aca\n"
+                      "s name.chr1      13 3 +       100 GGG\n"
+                      "s name2.chr1     13 3 +       100 GGG\n"
+                      );
+    // test 11
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 0, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0  2 + 158545518 g--------------a\n"
+                      "s name.chr1      0 13 +       100 ATGG---TTTATGCCG\n"
+                      "s name2.chr1     0 13 +       100 ATGT---TTTATGCCG\n",
+                      2, 
+                      "a score=0\n"
+                      "s theTarget.chr0 0 1 + 158545518 g\n"
+                      "s name.chr1      0 1 +       100 A\n"
+                      "s name2.chr1     0 1 +       100 A\n",
+                      "a score=0\n"
+                      "s theTarget.chr0  1 1 + 158545518 a\n"
+                      "s name.chr1      12 1 +       100 G\n"
+                      "s name2.chr1     12 1 +       100 G\n"
+                      );
 }
 static void trimTest(CuTest *testCase, const char *input, const char *expected, uint32_t n, bool isLeft) {
     mafBlock_t *ib = maf_newMafBlockFromString(input, 3);
@@ -421,7 +838,6 @@ static void processTrimTest(CuTest *testCase, const char *input, const char *exp
     maf_destroyMafBlockList(ib);
     maf_destroyMafBlockList(ob);
 }
-                            
 static void test_processLeftTrim_0(CuTest *testCase) {
     // test 0
     processTrimTest(testCase,
@@ -667,7 +1083,20 @@ static void test_processSplit_0(CuTest *testCase) {
 CuSuite* extractor_TestSuite(void) {
     CuSuite* suite = CuSuiteNew();
     (void) printBoolArray;
+    (void) test_getTargetColumn_0;
+    (void) test_splice_0;
+    (void) test_processSplice_0;
+    (void) test_leftTrim_0;
+    (void) test_rightTrim_0;
+    (void) test_split_0;
+    (void) test_processLeftTrim_0;
+    (void) test_processRightTrim_0;
+    (void) test_processLeftTrim_1;
+    (void) test_processRightTrim_1;
+    (void) test_processSplit_0;
     SUITE_ADD_TEST(suite, test_getTargetColumn_0);
+    SUITE_ADD_TEST(suite, test_splice_0);
+    SUITE_ADD_TEST(suite, test_processSplice_0);
     SUITE_ADD_TEST(suite, test_leftTrim_0);
     SUITE_ADD_TEST(suite, test_rightTrim_0);
     SUITE_ADD_TEST(suite, test_split_0);

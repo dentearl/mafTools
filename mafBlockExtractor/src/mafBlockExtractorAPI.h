@@ -37,11 +37,16 @@ bool searchMatched(mafLine_t *ml, const char *seq, uint32_t start, uint32_t stop
 void printHeader(void);
 uint32_t getTargetColumns(bool **targetColumns, uint32_t *n, mafBlock_t *b, const char *seq, 
                           uint32_t start, uint32_t stop);
+void printTargetColumns(bool *targetColumns, uint32_t n);
 mafBlock_t *processBlockForTrim(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, bool isLeft);
 mafBlock_t *trimBlock(mafBlock_t *b, uint32_t n, bool isLeft);
 void processBlockForSplit(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, 
                           mafBlock_t **left, mafBlock_t **right);
 void splitBlock(mafBlock_t *b, uint32_t n, mafBlock_t **mb_left, mafBlock_t **mb_right);
+int32_t **createOffsets(uint32_t n);
+void destroyOffsets(int32_t **offs, uint32_t n);
+mafBlock_t *processBlockForSplice(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop);
+mafBlock_t *spliceBlock(mafBlock_t *mb, uint32_t l, uint32_t r, int32_t **offsetArray);
 void trimAndReportBlock(mafBlock_t *orig, const char *seq, uint32_t start, uint32_t stop);
 void checkBlock(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, bool *printedHeader, bool isSoft);
 void processBody(mafFileApi_t *mfa, char *seq, uint32_t start, uint32_t stop, bool isSoft);
