@@ -554,7 +554,7 @@ s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGT
 s baboon.chr0    116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
 s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
 s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
-s dae.chr0            0 11 -       10  A----------CTAAGCCAA---------------------G
+s dae.chr0            0 11 -        10 A----------CTAAGCCAA---------------------G
 
 ''',
                  '''a score=23262.0     
@@ -571,7 +571,7 @@ s dae.chr0            5  6 -        10 A----------CTAA--------------------------
         """mafValidator should fail when sequences ranges go outside of source length
         """
         tmpDir = mtt.makeTempDir('sequenceRanges')
-        for b in self.badRanges:
+        for i, b in enumerate(self.badRanges, 0):
             mafFile, header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), b, g_headers)
             self.assertRaises(mafval.OutOfRangeError, mafval.validateMaf, mafFile, options)
         mtt.removeDir(tmpDir)

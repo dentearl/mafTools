@@ -327,6 +327,10 @@ def validateSeqLine(namePat, options, lineno, line, filename, sequenceColumnDict
    if data[4] not in ('-', '+'):
       raise StrandCharacterError('maf %s has unexpected character in strand field "%s" on line number %d: %s' 
                                  % (filename, data[4], lineno, line))
+   if data[4] == '+':
+      strand = 1
+   else:
+      strand = -1
    if int(data[3]) != len(data[6].replace('-', '')):
       raise AlignmentLengthError('maf %s sequence length field (%d) contradicts alignment field (non-gapped length %d) on line number %d: %s'
                                  % (filename, int(data[3]), len(data[6].replace('-', '')), lineno, line))
