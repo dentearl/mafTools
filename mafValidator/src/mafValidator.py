@@ -369,7 +369,7 @@ def checkForDuplicateColumns(data, scd, filename, lineno, line):
    else:
       start, stop = totalSrcLength - (start + length), totalSrcLength - start
    if scd[name][start:stop].any():
-      raise DuplicateColumnError('maf %s has duplicate columns, first detected on line number %d: %s' 
+      raise DuplicateColumnError('maf %s has duplicate columns, second instance discovered on line number %d: %s' 
                                  % (filename, lineno, line))
    scd[data[1]][start:stop] = True
 def validateHeader(f, filename):
