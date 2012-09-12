@@ -462,7 +462,7 @@ mafBlock_t *spliceBlock(mafBlock_t *b, uint32_t l, uint32_t r, int32_t **offsetA
     }
     assert(r < maf_mafBlock_getSequenceFieldLength(b));
     ml1 = maf_mafLine_getNext(ml1);
-    maf_mafBlock_setHeadLine(mb, maf_newMafLineFromString("a score=0", lineNumber));
+    maf_mafBlock_setHeadLine(mb, maf_newMafLineFromString("a score=0 mafBlockExtractor_splicedBlock=true", lineNumber));
     ml2 = maf_mafBlock_getHeadLine(mb);
     maf_mafBlock_setLineNumber(mb, lineNumber);
     maf_mafBlock_incrementNumberOfLines(mb);
