@@ -684,10 +684,10 @@ static void test_processSplice_0(CuTest *testCase) {
     // printf("test %d\n", testcount++);
     processSpliceTest(testCase, "theTarget.chr0", 0, 20,
                       "a score=0\n"
-                      "s theTarget.chr0 0 20 +  20 g-c-a-g\n"
-                      "s name.chr1      0 10 + 100 ATTGTGG\n"
-                      "s name2.chr1     0 10 + 100 ATTGT--\n"
-                      "s name3.chr1     0 10 + 100 ATTGT--\n",
+                      "s theTarget.chr0 0 4 +  20 g-c-a-g\n"
+                      "s name.chr1      0 6 + 100 ATTGTGG\n"
+                      "s name2.chr1     0 5 + 100 ATTGT--\n"
+                      "s name3.chr1     0 5 + 100 ATTGT--\n",
                       4,
                       "a score=0\n"
                       "s theTarget.chr0 0 1 +  20 g\n"
@@ -708,6 +708,160 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0 3 1 +  20 g\n"
                       "s name.chr1      6 1 + 100 G\n"
                       );
+    // test 14
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 0, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 16 4 -  20 gc-ag\n"
+                      "s name.chr1       0 5 + 100 ATTGG\n"
+                      "s name2.chr1      0 5 + 100 ATTGG\n"
+                      "s name3.chr1      0 5 + 100 ATTGG\n",
+                      2,
+                      "a score=0\n"
+                      "s theTarget.chr0 16 2 -  20 gc\n"
+                      "s name.chr1       0 2 + 100 AT\n"
+                      "s name2.chr1      0 2 + 100 AT\n"
+                      "s name3.chr1      0 2 + 100 AT\n",
+                      "a score=0\n"
+                      "s theTarget.chr0 18 2 -  20 ag\n"
+                      "s name.chr1       3 2 + 100 GG\n"
+                      "s name2.chr1      3 2 + 100 GG\n"
+                      "s name3.chr1      3 2 + 100 GG\n"
+                      );
+    // test 15
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 0, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 16 4 -  20 gc-ag\n"
+                      "s name.chr1       0 5 + 100 ATTGG\n"
+                      "s name2.chr1      0 5 + 100 ATTGG\n"
+                      "s name3.chr1      0 5 + 100 ATTGG\n",
+                      2,
+                      "a score=0\n"
+                      "s theTarget.chr0 16 2 -  20 gc\n"
+                      "s name.chr1       0 2 + 100 AT\n"
+                      "s name2.chr1      0 2 + 100 AT\n"
+                      "s name3.chr1      0 2 + 100 AT\n",
+                      "a score=0\n"
+                      "s theTarget.chr0 18 2 -  20 ag\n"
+                      "s name.chr1       3 2 + 100 GG\n"
+                      "s name2.chr1      3 2 + 100 GG\n"
+                      "s name3.chr1      3 2 + 100 GG\n"
+                      );
+    // test 15
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 0, 17,
+                      "a score=0\n"
+                      "s theTarget.chr0  0 4 -  20 gc-ag\n"
+                      "s name.chr1       0 5 + 100 ATTGG\n"
+                      "s name2.chr1      0 5 + 100 ATTGG\n"
+                      "s name3.chr1     99 1 - 100 ---G-\n",
+                      1,
+                      "a score=0\n"
+                      "s theTarget.chr0  2 2 -  20 ag\n"
+                      "s name.chr1       3 2 + 100 GG\n"
+                      "s name2.chr1      3 2 + 100 GG\n"
+                      "s name3.chr1     99 1 - 100 G-\n"
+                      );
+    // test 15
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 0, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0  0 2 +  20 ag---\n"
+                      "s theTarget.chr0  0 2 -  20 ---ag\n"
+                      "s name.chr1       0 5 + 100 ATTGG\n"
+                      "s name2.chr1      0 5 + 100 ATTGG\n"
+                      "s name3.chr1     99 1 - 100 ---G-\n",
+                      2,
+                      "a score=0\n"
+                      "s theTarget.chr0  0 2 +  20 ag\n"
+                      "s name.chr1       0 2 + 100 AT\n"
+                      "s name2.chr1      0 2 + 100 AT\n",
+                      "a score=0\n"
+                      "s theTarget.chr0  0 2 -  20 ag\n"
+                      "s name.chr1       3 2 + 100 GG\n"
+                      "s name2.chr1      3 2 + 100 GG\n"
+                      "s name3.chr1     99 1 - 100 G-\n"
+                      );
+    // test 16
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 0, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0  0 3 +  20 agg--\n"
+                      "s theTarget.chr0  0 2 -  20 ---ag\n"
+                      "s name.chr1       0 5 + 100 ATTGG\n"
+                      "s name2.chr1      0 5 + 100 ATTGG\n"
+                      "s name3.chr1     99 1 - 100 ---G-\n",
+                      1,
+                      "a score=0\n"
+                      "s theTarget.chr0  0 3 +  20 agg--\n"
+                      "s theTarget.chr0  0 2 -  20 ---ag\n"
+                      "s name.chr1       0 5 + 100 ATTGG\n"
+                      "s name2.chr1      0 5 + 100 ATTGG\n"
+                      "s name3.chr1     99 1 - 100 ---G-\n"
+                      );
+    // test 16
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 0, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0  0 3 +  20 ag---\n"
+                      "s theTarget.chr0  0 2 -  20 ---ag\n"
+                      "s name.chr1       0 5 + 100 ATTGG\n"
+                      "s name2.chr1      0 5 + 100 ATTGG\n"
+                      "s name3.chr1     99 1 - 100 ---G-\n",
+                      2,
+                      "a score=0\n"
+                      "s theTarget.chr0  0 2 +  20 ag\n"
+                      "s name.chr1       0 2 + 100 AT\n"
+                      "s name2.chr1      0 2 + 100 AT\n",
+                      "a score=0\n"
+                      "s theTarget.chr0  0 2 -  20 ag\n"
+                      "s name.chr1       3 2 + 100 GG\n"
+                      "s name2.chr1      3 2 + 100 GG\n"
+                      "s name3.chr1     99 1 - 100 G-\n"
+                      );
+    // test 17
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "dm3.chr3R", 12450223, 12950222,
+                      "a score=0\n"
+                      "s dm3.chr3R                  15282289    2 -  27905053 TG-----------------------------------------\n"
+                      "s dm3.chr3R                  15282292   41 -  27905053 --CCAAACGAAATGAAATTTTCAGTTGAGTTGCCACAAGCCCT\n"
+                      "s droRho.ctg7180000755597        5772    2 -      5776 TG-----------------------------------------\n"
+                      "s droRho.ctg7180000755597        5775    1 -      5776 --C----------------------------------------\n",
+                      1,
+                      "a score=0\n"
+                      "s dm3.chr3R                  15282289    2 -  27905053 TG-----------------------------------------\n"
+                      "s dm3.chr3R                  15282292   41 -  27905053 --CCAAACGAAATGAAATTTTCAGTTGAGTTGCCACAAGCCCT\n"
+                      "s droRho.ctg7180000755597        5772    2 -      5776 TG-----------------------------------------\n"
+                      "s droRho.ctg7180000755597        5775    1 -      5776 --C----------------------------------------\n"
+                      );
+    // test 18
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "dm3.chr3R", 12450223, 12950222,
+                      "a score=0\n"
+                      "s dm3.chr3R                  15282289    2 -  27905053 -TG-----------------------------------------\n"
+                      "s dm3.chr3R                  15282292   41 -  27905053 ---CCAAACGAAATGAAATTTTCAGTTGAGTTGCCACAAGCCCT\n"
+                      "s droRho.ctg7180000755597        5772    2 -      5776 -TG-----------------------------------------\n"
+                      "s droRho.ctg7180000755597        5775    1 -      5776 ---C----------------------------------------\n",
+                      1,
+                      "a score=0\n"
+                      "s dm3.chr3R                  15282289    2 -  27905053 TG-----------------------------------------\n"
+                      "s dm3.chr3R                  15282292   41 -  27905053 --CCAAACGAAATGAAATTTTCAGTTGAGTTGCCACAAGCCCT\n"
+                      "s droRho.ctg7180000755597        5772    2 -      5776 TG-----------------------------------------\n"
+                      "s droRho.ctg7180000755597        5775    1 -      5776 --C----------------------------------------\n"
+                      );
+    // test 19
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 2, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 -gcagctgaaaaca\n"
+                      "s name.chr1      0 10 +       100 -ATGT---ATGCCG\n"
+                      "s name2.chr1     0 10 +       100 -ATGT---ATGCCG\n",
+                      1, 
+                      "a score=0\n"
+                      "s theTarget.chr0 2 11 + 158545518 agctgaaaaca\n"
+                      "s name.chr1      2  8 +       100 GT---ATGCCG\n"
+                      "s name2.chr1     2  8 +       100 GT---ATGCCG\n");
 }
 static void trimTest(CuTest *testCase, const char *input, const char *expected, uint32_t n, bool isLeft) {
     mafBlock_t *ib = maf_newMafBlockFromString(input, 3);

@@ -506,7 +506,9 @@ mafBlock_t *spliceBlock(mafBlock_t *b, uint32_t l, uint32_t r, int32_t **offsetA
                offsetArray[si][0] <= (int32_t)l) {
             ++offsetArray[si][0];
             if (seq[offsetArray[si][0]] != '-' && offsetArray[si][1] > 0) {
-                // if we've advanced to a non-gap char, advance the offset
+                // if we've advanced to a non-gap char and the local offset
+                // is not 0 (i.e. these aren't simply leading gaps, then
+                // advance the offset
                 ++offsetArray[si][1]; // advance offset
             }
         }
@@ -536,13 +538,14 @@ mafBlock_t *spliceBlock(mafBlock_t *b, uint32_t l, uint32_t r, int32_t **offsetA
             ++si;
             continue;
         }
-        // offsets
-        while (seq[offsetArray[si][0]] == '-') {
+        // Walk up beyond the `l' point if the left edge falls on a gap character
+        while (seq[offsetArray[si][0]] == '-' && offsetArray[si][0] < (int32_t) len) {
             ++offsetArray[si][0];
-            if (seq[offsetArray[si][0]] != '-') {
+            if (seq[offsetArray[si][0]] != '-' && offsetArray[si][1] > 0) {
                 ++offsetArray[si][1];
             }
         }
+        // ensure local offset is set properly
         if (offsetArray[si][1] == -1) {
             offsetArray[si][1] = 0;
         }
