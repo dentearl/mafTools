@@ -862,6 +862,24 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0 2 11 + 158545518 agctgaaaaca\n"
                       "s name.chr1      2  8 +       100 GT---ATGCCG\n"
                       "s name2.chr1     2  8 +       100 GT---ATGCCG\n");
+    // test 19
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "theTarget.chr0", 2, 20,
+                      "a score=0\n"
+                      "s theTarget.chr0 0 13 + 158545518 -gcagctgaa--aaca\n"
+                      "s name.chr1      0 11 +       100 -ATGT---ATG-TCCG\n"
+                      "s name2.chr1     0 12 +       100 -ATGT---ATGTTCCA\n",
+                      2, 
+                      "a score=0\n"
+                      "s theTarget.chr0 2 7 + 158545518 agctgaa\n"
+                      "s name.chr1      2 4 +       100 GT---AT\n"
+                      "s name2.chr1     2 4 +       100 GT---AT\n",
+                      "a score=0\n"
+                      "s theTarget.chr0 9 4 + 158545518 aaca\n"
+                      "s name.chr1      7 4 +       100 TCCG\n"
+                      "s name2.chr1     8 4 +       100 TCCA\n"
+                      );
+    
 }
 static void trimTest(CuTest *testCase, const char *input, const char *expected, uint32_t n, bool isLeft) {
     mafBlock_t *ib = maf_newMafBlockFromString(input, 3);
