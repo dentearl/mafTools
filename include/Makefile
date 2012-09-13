@@ -5,7 +5,7 @@ export SHELLOPTS=pipefail
 all:
 
 clean:
-	rm allTests
+	rm -f allTests
 
 allTests: allTests.c test.sharedMaf.h ../external/CuTest.c sharedMaf.h common.h
 	gcc -g -O0 -std=c99 -Wextra -Wall -Werror -pedantic -I ../external/ $^ -o $@.tmp
