@@ -11,6 +11,7 @@ class GenericObject:
 options = GenericObject()
 options.lookForDuplicateColumns = True
 options.testChromNames = False
+options.validateSequence = True
 
 g_headers = ['''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
@@ -338,6 +339,7 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
         customOpts = GenericObject()
         customOpts.lookForDuplicateColumns = True
         customOpts.testChromNames = True
+        customOpts.validateSequence = False
         tmpDir = mtt.makeTempDir('badNames')
         for b in self.badNames:
             mafFile, header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), b, g_headers)
@@ -366,6 +368,7 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
         customOpts = GenericObject()
         customOpts.lookForDuplicateColumns = True
         customOpts.testChromNames = True
+        customOpts.validateSequence = False
         tmpDir = mtt.makeTempDir('sourceLengths')
         for i, b in enumerate(self.badSources):
             mafFile, header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), b, g_headers)
@@ -942,7 +945,101 @@ s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
         customOpts = GenericObject()
         customOpts.lookForDuplicateColumns = False
         customOpts.testChromNames = True
+        customOpts.validateSequence = True
         tmpDir = mtt.makeTempDir('notTestingDuplicateColumns')
+        for g in self.badMafs:
+            mafFile, header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), g, g_headers)
+            self.assertTrue(mafval.validateMaf(mafFile, customOpts))
+        mtt.removeDir(tmpDir)
+class InconsistentSequenceChecks(unittest.TestCase):
+    badMafs = ['''a score=23262.0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=23262.0
+# hg16.chr7 in this block contains inconsistent sequences
+#                                      ----------***
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaTTT
+s panTro1.chr6        1 13 + 161576975 gcagctgaaaaca
+s baboon.chr0         2 13 +   4622798 gcagctgaaaaca
+s mm4.chr6            2 13 + 151104725 ACAGCTGAAAATA
+
+''',
+               '''a score=23262.0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=0
+#                                      **-----------
+s hg16.chr7    27707221 13 + 158545518 AAagctgaaaaca 
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+i panTro1.chr6 N 0 C 0
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+i baboon.chr0   I 234 n 19
+
+a score=0
+s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
+e mm4.chr6     53310102 13 + 151104725 I
+
+a score=0
+s hg16.chr7    27707221 13 + 158545518 Tcagctgaaaaca 
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+
+''',
+               '''a score=23262.0
+s hg16.chr7           0 13 +        20 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=23262.0
+# hg16.chr7 in this block contains inconsistent sequences
+#                                             ----*-
+s hg16.chr7           0 13 -        20 agtagtatgttAt
+s panTro1.chr6        1 13 + 161576975 gcagctgaaaaca
+s baboon.chr0         2 13 +   4622798 gcagctgaaaaca
+s mm4.chr6            2 13 + 151104725 ACAGCTGAAAATA
+
+''',
+               '''a score=23262.0
+s hg16.chr7           0 13 +        20 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+a score=23262.0
+# hg16.chr7 in this block contains inconsistent sequences
+s hg16.chr7           1 13 +        20 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
+
+''',
+               ]
+    def testInconsistentSequences(self):
+        """ mafValidator should fail when a sequence becomes inconsistent
+        """
+        tmpDir = mtt.makeTempDir('inconsistentSequences')
+        customOpts = GenericObject()
+        customOpts.lookForDuplicateColumns = False
+        customOpts.testChromNames = True
+        customOpts.validateSequence = True
+        for g in self.badMafs:
+            mafFile, header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), g, g_headers)
+            self.assertRaises(mafval.SequenceConsistencyError, mafval.validateMaf, mafFile, customOpts)
+        mtt.removeDir(tmpDir)
+    def testNotTestingInconsistentSequences(self):
+        """ mafValidator should ignore inconsistent sequences when option is switched off
+        """
+        customOpts = GenericObject()
+        customOpts.lookForDuplicateColumns = False
+        customOpts.testChromNames = True
+        customOpts.validateSequence = False
+        tmpDir = mtt.makeTempDir('notTestingInconsistentSequences')
         for g in self.badMafs:
             mafFile, header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), g, g_headers)
             self.assertTrue(mafval.validateMaf(mafFile, customOpts))
