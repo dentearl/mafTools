@@ -74,8 +74,8 @@ def initOptions(parser):
                            'alignments. default=duplicate checking is on.'))
    parser.add_option('--validateSequence', dest='validateSequence', 
                      default=False, action='store_true',
-                     help=('Turn on checks to make sure all sequence fields are  '
-                           'consistent.'))
+                     help=('Turn on checks to make sure all sequence fields are '
+                           'consistent. Slows things down considerably.'))
    parser.add_option('--version', dest='isVersion', action='store_true', default=False,
                      help='Print version number and exit.')
 def checkOptions(options, args, parser):
