@@ -33,14 +33,14 @@ s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon.chr0    249182 13 +   4622798 gcagctgaaaaca
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
-a score=0
+a score=0 key=value
 s hg16.chr7    17707221 13 + 158545518 gcagctgaaaaca 
 s panTro1.chr6 18869787 13 + 161576975 gcagctgaaaaca
 i panTro1.chr6 N 0 C 0
 s baboon.chr0   1249182 13 +   4622798 gcagctgaaaaca
 i baboon.chr0   I 234 n 19
 
-a score=0
+a score=0 
 s hg16.chr7     7707221 13 + 158545518 gcagctgaaaaca
 e mm4.chr6      3310102 13 + 151104725 I
 
@@ -228,8 +228,6 @@ class HeaderCheck(unittest.TestCase):
             mafFile, header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), b, self.badHeaders)
             self.assertRaises(mafval.HeaderError, mafval.validateMaf, mafFile, options)
             mtt.removeDir(tmpDir)
-      
-
 class FooterCheck(unittest.TestCase):
     badFooters = ['''a score=23262.0     
 s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
@@ -260,7 +258,6 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
             mafFile, header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), b, g_headers)
             self.assertRaises(mafval.FooterError, mafval.validateMaf, mafFile, options)
             mtt.removeDir(tmpDir)
-
 class FieldNumberCheck(unittest.TestCase):
     badFieldNumbers = ['''a score=23262.0     
 s hg18.7       27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
@@ -464,7 +461,7 @@ s baboon.chr0    116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGT
 s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
 s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
 
-a score=0 banana
+a score=0 banana=true &&&
 s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
 s rn3.chr4     81344243 39 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
 
