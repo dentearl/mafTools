@@ -76,7 +76,8 @@ def initOptions(parser):
    parser.add_option('--validateSequence', dest='validateSequence', 
                      default=False, action='store_true',
                      help=('Turn on checks to make sure all sequence fields are '
-                           'consistent. Slows things down considerably.'))
+                           'consistent. Slows things down considerably. Note that selecting this option'
+                           'implicitly sets --ignoreDuplicateColumns'))
    parser.add_option('--version', dest='isVersion', action='store_true', default=False,
                      help='Print version number and exit.')
 def checkOptions(options, args, parser):
@@ -87,6 +88,9 @@ def checkOptions(options, args, parser):
       parser.error('specify --maf')
    if not os.path.exists(options.filename):
       parser.error('--maf %s does not exist.' % options.filename)
+   if options.validateSequence:
+      options.lookForDuplicateColumns = False
+
 def validateMaf(filename, options):
    """ returns true on valid maf file
    a completely empty file should be considered invalid.
