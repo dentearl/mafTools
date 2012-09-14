@@ -7,7 +7,7 @@
 [Dent Earl](https://github.com/dentearl/)
 
 ## Description
-mafValidator is a script to validate the formatting and basic data contained in a maf file.
+mafValidator is a script to validate the formatting and basic data contained in a maf file. 
 
 ## Dependencies
 * Python 2.6 &le; version &lt; 3.0

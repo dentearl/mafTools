@@ -1041,7 +1041,16 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
             mafFile, header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), g, g_headers)
             self.assertTrue(mafval.validateMaf(mafFile, customOpts))
         mtt.removeDir(tmpDir)
-
+class EmptyFileCheck(unittest.TestCase):
+    empty = ['',]
+    def testEmptyFiles(self):
+        """ mafValidator should fail on empty files
+        """
+        for b in self.empty:
+            tmpDir = mtt.makeTempDir('emptyFiles')
+            mafFile, header = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), b, self.empty)
+            self.assertRaises(mafval.EmptyInputError, mafval.validateMaf, mafFile, options)
+            mtt.removeDir(tmpDir)
 class GoodKnownMafs(unittest.TestCase):
     def testGoodMafs(self):
         """ mafValidator should accept known good mafs

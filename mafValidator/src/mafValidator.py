@@ -59,6 +59,7 @@ class ELineFormatError(ValidatorError): pass
 class QLineFormatError(ValidatorError): pass
 class DuplicateColumnError(ValidatorError): pass
 class SequenceConsistencyError(ValidatorError): pass
+class EmptyInputError(ValidatorError): pass
 
 def initOptions(parser):
    parser.add_option('--maf', dest='filename', 
@@ -88,7 +89,11 @@ def checkOptions(options, args, parser):
       parser.error('--maf %s does not exist.' % options.filename)
 def validateMaf(filename, options):
    """ returns true on valid maf file
+   a completely empty file should be considered invalid.
    """ 
+   if os.path.getsize(filename) == 0:
+      # empty files are considered invalid
+      raise EmptyInputError('maf %s is completely empty.' % filename)
    nameRegex = r'(.+?)\.(chr.+)'
    namePat = re.compile(nameRegex)
    sequenceColumnDict = {}
