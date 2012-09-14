@@ -847,6 +847,17 @@ void maf_writeBlock(mafFileApi_t *mfa, mafBlock_t *mb) {
     fprintf(mfa->mfp, "\n");
     ++(mfa->lineNumber);
 }
+void maf_mafBlock_appendToAlignmentBlock(mafBlock_t *m, char *s) {
+    mafLine_t *ml = maf_mafBlock_getHeadLine(m);
+    char *line = maf_mafLine_getLine(ml);
+    assert(line[0] == 'a');
+    char *newline = (char*) de_malloc(strlen(line) + strlen(s) + 1);
+    newline[0] = '\0';
+    strcat(newline, line);
+    strcat(newline, s);
+    free(ml->line);
+    ml->line = newline;
+}
 void maf_mafBlock_printList(mafBlock_t *m) {
     while (m != NULL) {
         maf_mafBlock_print(m);

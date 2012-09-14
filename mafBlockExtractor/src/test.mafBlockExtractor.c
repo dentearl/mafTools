@@ -495,7 +495,7 @@ static void processSpliceTest(CuTest *testCase, const char *seq, uint32_t start,
         }
     }
     va_end(argp);
-    mafBlock_t *ob = processBlockForSplice(ib, seq, start, stop, true);
+    mafBlock_t *ob = processBlockForSplice(ib, 1, seq, start, stop, true);
     CuAssertTrue(testCase, mafBlockListsAreEqual(eb, ob));
     if (ib != ob)
         maf_destroyMafBlockList(ob);

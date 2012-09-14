@@ -386,7 +386,8 @@ void destroyOffsets(int32_t **offs, uint32_t n) {
     free(offs);
     offs = NULL;
 }
-mafBlock_t *processBlockForSplice(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, bool store) {
+mafBlock_t *processBlockForSplice(mafBlock_t *b, uint32_t blockNumber, const char *seq, 
+                                  uint32_t start, uint32_t stop, bool store) {
     // walks mafBlock_t b, returns a mafBlock_t (using the linked list feature) of all spliced out bits.
     // if store is true, will return a mafBlock_t linked list of all sub-blocks. If store is false,
     // will report each sub-block (maf_mafBlock_print()) as it comes in and immediatly destroy that block.
@@ -397,6 +398,8 @@ mafBlock_t *processBlockForSplice(mafBlock_t *b, const char *seq, uint32_t start
     // printTargetColumns(targetColumns, len);
     int32_t **offsets = createOffsets(maf_mafBlock_getNumberOfSequences(b));
     uint32_t l = 0, r = 0, ri = 0;
+    uint32_t spliceNumber = 0;
+    char *id = (char*) de_malloc(kMaxStringLength);
     while (l < len) {
         if (!targetColumns[l]) {
             // find the left most element
@@ -416,16 +419,26 @@ mafBlock_t *processBlockForSplice(mafBlock_t *b, const char *seq, uint32_t start
                 head = spliceBlock(b, l, ri, offsets);
                 mb = head;
             } else {
+                if (mb != b) {
+                    sprintf(id, " splice_id=%" PRIu32 "_%" PRIu32, blockNumber, spliceNumber);
+                    maf_mafBlock_appendToAlignmentBlock(mb, id);
+                }
                 maf_mafBlock_setNext(mb, spliceBlock(b, l, ri, offsets));
                 mb = maf_mafBlock_getNext(mb);
+                ++spliceNumber;
             }
         } else {
             // used in production
             mb = spliceBlock(b, l, ri, offsets);
+            if (mb != b) {
+                sprintf(id, " splice_id=%" PRIu32 "_%" PRIu32, blockNumber, spliceNumber);
+                maf_mafBlock_appendToAlignmentBlock(mb, id);
+            }
             maf_mafBlock_print(mb);
             if (mb != b) {
                 maf_destroyMafBlockList(mb);
             }
+            ++spliceNumber;
         }
         l = r;
         if (l == len - 1) { 
@@ -433,6 +446,7 @@ mafBlock_t *processBlockForSplice(mafBlock_t *b, const char *seq, uint32_t start
         }
     }
     // clean up
+    free(id);
     free(targetColumns);
     destroyOffsets(offsets, maf_mafBlock_getNumberOfSequences(b));
     return head;
@@ -623,6 +637,7 @@ void checkBlock(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, b
     // we're looking for, report the block.
     mafLine_t *ml = maf_mafBlock_getHeadLine(b);
     mafBlock_t *dummy = NULL;
+    uint32_t blockNumber = 0;
     while (ml != NULL) {
         if (searchMatched(ml, seq, start, stop)) {
             if (!*printedHeader) {
@@ -633,7 +648,7 @@ void checkBlock(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, b
                 maf_mafBlock_print(b);
                 break;
             } else {
-                dummy = processBlockForSplice(b, seq, start, stop, false);
+                dummy = processBlockForSplice(b, blockNumber, seq, start, stop, false);
                 assert(dummy == NULL);
                 // trimAndReportBlock(b, seq, start, stop);
                 break;

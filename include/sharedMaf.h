@@ -95,6 +95,7 @@ void maf_mafBlock_incrementLineNumber(mafBlock_t *mb);
 void maf_mafBlock_decrementLineNumber(mafBlock_t *mb);
 void maf_mafBlock_setSequenceFieldLength(mafBlock_t *mb, uint32_t sfl);
 void maf_mafBlock_setNext(mafBlock_t *mb, mafBlock_t *next);
+void maf_mafBlock_appendToAlignmentBlock(mafBlock_t *m, char *s);
 void maf_mafLine_setLine(mafLine_t *ml, char *line);
 void maf_mafLine_setLineNumber(mafLine_t *ml, uint32_t n);
 void maf_mafLine_setType(mafLine_t *ml, char c);
