@@ -28,6 +28,8 @@ import sys
 import unittest
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '../../include/')))
 import mafToolsTest as mtt
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '../../mafValidator/src/')))
+import mafValidator as mafval
 
 g_targetSeq = 'target.chr0'
 g_targetRange = (50, 70) # zero based, inclusive
@@ -52,7 +54,7 @@ s name.chr1           0 10 +       100 ATGT---ATGCCG
 s name2.chr1         50 10 +       100 ATGT---ATGCCG
 s name3.chr9         50 10 +       100 ATGTA---TGCCG
 s name4.chr&         50 10 +       100 ATG---TATGCCG
-s name5 50 10 + 100 ATGTATGCCG
+s name5              50 10 +       100 ATGT---ATGCCG
 
 ''',
             # the overlap is one base long, right on 50.
@@ -117,6 +119,11 @@ s target.chr0     36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACCTA
 
 '''
     ]
+class GenericValidationOptions:
+    def __init__(self):
+        self.lookForDuplicateColumns = False
+        self.testChromNames = False
+        self.validateSequence = True
 def hashStr(s):
     return s.replace(' ', '').replace('\n', '')
 g_overlappingBlocksHashed = set()
@@ -177,6 +184,7 @@ class ExtractionTest(unittest.TestCase):
         """ mafBlockExtractor should output blocks that meet the criteria for extraction. That is they contain the target sequence and have at least one base in the target range.
         """
         mtt.makeTempDirParent()
+        customOpts = GenericValidationOptions()
         for i in xrange(0, 10):
             shuffledBlocks = []
             tmpDir = os.path.abspath(mtt.makeTempDir('extraction'))
@@ -205,10 +213,12 @@ class ExtractionTest(unittest.TestCase):
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsExtracted(os.path.join(tmpDir, 'extracted.maf')))
+            self.assertTrue(mafval.validateMaf(os.path.join(tmpDir, 'extracted.maf'), customOpts))
             mtt.removeDir(tmpDir)
     def testNonExtraction0(self):
         """ mafBlockExtractor should not extract blocks when they do not match.
         """
+        customOpts = GenericValidationOptions()
         mtt.makeTempDirParent()
         for i in xrange(0, 10):
             tmpDir = os.path.abspath(mtt.makeTempDir('nonExtraction_0'))
@@ -225,11 +235,13 @@ class ExtractionTest(unittest.TestCase):
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
-            self.assertTrue(mtt.fileIsEmpty(os.path.join(tmpDir, 'extracted.maf')))
+            self.assertTrue(mtt.mafIsEmpty(os.path.join(tmpDir, 'extracted.maf'), g_headers))
+            self.assertTrue(mafval.validateMaf(os.path.join(tmpDir, 'extracted.maf'), customOpts))
             mtt.removeDir(tmpDir)
     def testNonExtraction1(self):
         """ mafBlockExtractor should not extract blocks when they do not match.
         """
+        customOpts = GenericValidationOptions()
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('nonExtraction_1'))
         block = '''a degree=4
@@ -251,7 +263,8 @@ s target.chr0       36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACC
         outpipes = [os.path.abspath(os.path.join(tmpDir, 'extracted.maf'))]
         mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
         mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
-        self.assertTrue(mtt.fileIsEmpty(os.path.join(tmpDir, 'extracted.maf')))
+        self.assertTrue(mtt.mafIsEmpty(os.path.join(tmpDir, 'extracted.maf'), g_headers))
+        self.assertTrue(mafval.validateMaf(os.path.join(tmpDir, 'extracted.maf'), customOpts))
         mtt.removeDir(tmpDir)
     def testMemory0(self):
         """ If valgrind is installed on the system, check for memory related errors (0).
@@ -624,6 +637,7 @@ class HardTrimTest(unittest.TestCase):
         if valgrind is None:
             return
         mtt.makeTempDirParent()
+        customOpts = GenericValidationOptions()
         i = -1
         for inblocks, seq, start, stop, outblocks in self.testSet:
             i += 1
@@ -641,6 +655,7 @@ class HardTrimTest(unittest.TestCase):
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mafIsHardExtracted('hardextraction_0_%d' % i, outblocks, 
                                                os.path.join(tmpDir, 'extracted.maf')))
+            self.assertTrue(mafval.validateMaf(os.path.join(tmpDir, 'extracted.maf'), customOpts))
             mtt.removeDir(tmpDir)
     def testMemory2(self):
         """ If valgrind is installed on the system, check for memory related errors (2).

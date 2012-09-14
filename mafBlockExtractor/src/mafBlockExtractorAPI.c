@@ -649,4 +649,8 @@ void processBody(mafFileApi_t *mfa, char *seq, uint32_t start, uint32_t stop, bo
         checkBlock(thisBlock, seq, start, stop, &printedHeader, isSoft);
         maf_destroyMafBlockList(thisBlock);
     }
+    if (!printedHeader) {
+        // this makes the output valid even when no data was output
+        printHeader();
+    }
 }
