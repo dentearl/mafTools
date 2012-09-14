@@ -632,12 +632,12 @@ void trimAndReportBlock(mafBlock_t *orig, const char *seq, uint32_t start, uint3
         maf_destroyMafBlockList(rightPart);
     }
 }
-void checkBlock(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, bool *printedHeader, bool isSoft) {
+void checkBlock(mafBlock_t *b, uint32_t blockNumber, const char *seq, uint32_t start, 
+                uint32_t stop, bool *printedHeader, bool isSoft) {
     // read through each line of a mafBlock and if the sequence matches the region
     // we're looking for, report the block.
     mafLine_t *ml = maf_mafBlock_getHeadLine(b);
     mafBlock_t *dummy = NULL;
-    uint32_t blockNumber = 0;
     while (ml != NULL) {
         if (searchMatched(ml, seq, start, stop)) {
             if (!*printedHeader) {
@@ -660,9 +660,11 @@ void checkBlock(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, b
 void processBody(mafFileApi_t *mfa, char *seq, uint32_t start, uint32_t stop, bool isSoft) {
     mafBlock_t *thisBlock = NULL;
     bool printedHeader = false;
+    uint32_t blockNumber = 0;
     while ((thisBlock = maf_readBlock(mfa)) != NULL) {
-        checkBlock(thisBlock, seq, start, stop, &printedHeader, isSoft);
+        checkBlock(thisBlock, blockNumber, seq, start, stop, &printedHeader, isSoft);
         maf_destroyMafBlockList(thisBlock);
+        ++blockNumber;
     }
     if (!printedHeader) {
         // this makes the output valid even when no data was output

@@ -49,7 +49,8 @@ mafBlock_t *processBlockForSplice(mafBlock_t *b, uint32_t blockNumber, const cha
                                   uint32_t start, uint32_t stop, bool store);
 mafBlock_t *spliceBlock(mafBlock_t *mb, uint32_t l, uint32_t r, int32_t **offsetArray);
 void trimAndReportBlock(mafBlock_t *orig, const char *seq, uint32_t start, uint32_t stop);
-void checkBlock(mafBlock_t *b, const char *seq, uint32_t start, uint32_t stop, bool *printedHeader, bool isSoft);
+void checkBlock(mafBlock_t *b, uint32_t blockNumber, const char *seq, uint32_t start, 
+                uint32_t stop, bool *printedHeader, bool isSoft);
 void processBody(mafFileApi_t *mfa, char *seq, uint32_t start, uint32_t stop, bool isSoft);
 uint32_t sumBool(bool *array, uint32_t n);
 
