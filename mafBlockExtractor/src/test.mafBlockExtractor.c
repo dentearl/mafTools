@@ -151,8 +151,12 @@ static bool mafBlocksAreEqual(mafBlock_t *mb1, mafBlock_t *mb2) {
         }
     }
     if (maf_mafBlock_getLineNumber(mb1) != maf_mafBlock_getLineNumber(mb2)) {
-        fprintf(stderr, "mafBlocks differ in lineNumber, %3" PRIu32 " vs %3" PRIu32 "\n",
+        fprintf(stderr, "mafBlocks differ in lineNumber, %3" PRIu32 " vs %3" PRIu32 ".\n",
                 maf_mafBlock_getLineNumber(mb1), maf_mafBlock_getLineNumber(mb2));
+        printf("mb1:\n");
+        maf_mafBlock_print(mb1);
+        printf("mb2:\n");
+        maf_mafBlock_print(mb2);
         return false;
     }
     if (maf_mafBlock_getNumberOfLines(mb1) != maf_mafBlock_getNumberOfLines(mb2)) {
@@ -475,12 +479,37 @@ static void test_splice_0(CuTest *testCase) {
     destroyOffsets(offs, 3);
 
 }
+struct blockRecord {
+    // ugly solution to task of keeping track of all blocks.
+    mafBlock_t *b;
+    struct blockRecord *next;
+};
+typedef struct blockRecord blockRecord_t;
 static void processSpliceTest(CuTest *testCase, const char *seq, uint32_t start, uint32_t stop, 
                               const char *input, int numExpectedBlocks, ...) {
     // varargs that come in are a variable number of const char * items that should be built
     // into a mafBlock_t list.
-    mafBlock_t *ib = maf_newMafBlockFromString(input, 3);
-    mafBlock_t *eb = NULL, *ep = NULL;
+    mafBlock_t *ibhead = maf_newMafBlockListFromString(input, 3);
+    // printf("ibhead 0:\n");
+    // maf_mafBlock_printList(ibhead);
+    mafBlock_t *ib = ibhead, *eb = NULL, *ep = NULL, *obhead = NULL, *ob = NULL, *tmp = NULL;
+    blockRecord_t *headRecord = NULL, *br = NULL;
+    while (ib != NULL) {
+        // since processBlockForSplice can actually alter the input it we need to make a record
+        // of the input blocks so that they can all be free'd later
+        if (headRecord == NULL) {
+            headRecord = (blockRecord_t *) de_malloc(sizeof(blockRecord_t));
+            headRecord->next = NULL;
+            br = headRecord;
+        } else {
+            br->next = (blockRecord_t *) de_malloc(sizeof(blockRecord_t));
+            br = br->next;
+            br->next = NULL;
+        }
+        br->b = ib;
+        ib = maf_mafBlock_getNext(ib);
+    }
+    ib = ibhead;
     va_list argp;
     const char *s;
     va_start(argp, numExpectedBlocks);
@@ -495,11 +524,37 @@ static void processSpliceTest(CuTest *testCase, const char *seq, uint32_t start,
         }
     }
     va_end(argp);
-    mafBlock_t *ob = processBlockForSplice(ib, 1, seq, start, stop, true);
-    CuAssertTrue(testCase, mafBlockListsAreEqual(eb, ob));
-    if (ib != ob)
-        maf_destroyMafBlockList(ob);
-    maf_destroyMafBlockList(ib);
+    while (ib != NULL) {
+        // process each member of the maf block linked list individiually
+        tmp = processBlockForSplice(ib, 1, seq, start, stop, true);
+        if (obhead == NULL) {
+            ob = tmp;
+            obhead = ob;
+        } else {
+            maf_mafBlock_setNext(ob, tmp);
+            ob = maf_mafBlock_getNext(ob);
+        }
+        ib = maf_mafBlock_getNext(ib);
+    }
+    CuAssertTrue(testCase, mafBlockListsAreEqual(eb, obhead));
+    // printf("ibhead 1:\n");
+    // maf_mafBlock_printList(ibhead);
+    // printf("obhead:\n");
+    // maf_mafBlock_printList(obhead);
+    if (ibhead != obhead) {
+        // printf("  freeing obhead!\n");
+        maf_destroyMafBlockList(obhead);
+    } else {
+        // printf("  leaving obhead!\n");
+    }
+    // maf_destroyMafBlockList(ibhead);
+    while (headRecord != NULL) {
+        // free all of the input maf blocks
+        maf_destroyMafBlockList(headRecord->b);
+        br = headRecord;
+        headRecord = headRecord->next;
+        free(br);
+    }
     maf_destroyMafBlockList(eb);
 }
 static void test_processSplice_0(CuTest *testCase) {
@@ -507,7 +562,7 @@ static void test_processSplice_0(CuTest *testCase) {
     // test 0
     // printf("test %d\n", testcount++);
     processSpliceTest(testCase, "theTarget.chr0", 2, 20,
-                      "a score=0\n"
+                      "a score=0 test=0\n"
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
                       "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
@@ -519,7 +574,7 @@ static void test_processSplice_0(CuTest *testCase) {
     // test 1
     // printf("test %d\n", testcount++);
     processSpliceTest(testCase, "theTarget.chr0", 4, 20,
-                      "a score=0\n"
+                      "a score=0 test=1\n"
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
                       "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
@@ -531,7 +586,7 @@ static void test_processSplice_0(CuTest *testCase) {
     // test 2
     // printf("test %d\n", testcount++);
     processSpliceTest(testCase, "theTarget.chr0", 4, 20,
-                      "a score=0\n"
+                      "a score=0 test=2\n"
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0  3 +       100 ATG----------\n"
                       "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
@@ -542,7 +597,7 @@ static void test_processSplice_0(CuTest *testCase) {
     // test 3
     // printf("test %d\n", testcount++);
     processSpliceTest(testCase, "theTarget.chr0", 6, 20,
-                      "a score=0\n"
+                      "a score=0 test=3\n"
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
                       "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
@@ -554,7 +609,7 @@ static void test_processSplice_0(CuTest *testCase) {
     // test 4
     // printf("test %d\n", testcount++);
     processSpliceTest(testCase, "theTarget.chr0", 12, 20,
-                      "a score=0\n"
+                      "a score=0 test=4\n"
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
                       "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
@@ -566,7 +621,7 @@ static void test_processSplice_0(CuTest *testCase) {
     // test 5
     // printf("test %d\n", testcount++);
     processSpliceTest(testCase, "theTarget.chr0", 0, 20,
-                      "a score=0\n"
+                      "a score=0 test=5\n"
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
                       "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
@@ -578,7 +633,7 @@ static void test_processSplice_0(CuTest *testCase) {
     // test 6
     // printf("test %d\n", testcount++);
     processSpliceTest(testCase, "theTarget.chr0", 20, 30,
-                      "a score=0\n"
+                      "a score=0 test=6\n"
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
                       "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
@@ -910,6 +965,26 @@ static void test_processSplice_0(CuTest *testCase) {
                       "a score=0\n"
                       "s simRat.chrR      72133439   7 +  88137694 GACAACT\n"
                       "s simHuman.chrJ    18234964   7 -  88398963 GCCTGTT\n"
+                      );
+    // test 22
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "simHuman.chrJ", 69805407, 70305406,
+                      "a score=375.0\n"
+                      "s simHuman.chrJ    69889402  29 +  88398963 CAATTTAACTTGGATGATTGGTTGTCATA\n"
+                      "s simDog.chrF      43936434  16 +  64906724 CAATTTAACTAGGGTG-------------\n\n"
+                      "a score=6637.0\n"
+                      "s simHuman.chrJ    69889669   19 +  88398963 -------------TCATATATCATGCCCT-TAA\n"
+                      "s simDog.chrF      20970287   20 -  64906724 T-------------TGTATATCATGCCCTGTTC\n",
+                      3,
+                      "a score=0\n"
+                      "s simHuman.chrJ    69889402  29 +  88398963 CAATTTAACTTGGATGATTGGTTGTCATA\n"
+                      "s simDog.chrF      43936434  16 +  64906724 CAATTTAACTAGGGTG-------------\n",
+                      "a score=0\n"
+                      "s simHuman.chrJ    69889669   16 +  88398963 TCATATATCATGCCCT\n"
+                      "s simDog.chrF      20970288   15 -  64906724 -TGTATATCATGCCCT\n",
+                      "a score=0\n"
+                      "s simHuman.chrJ    69889685    3 +  88398963 TAA\n"
+                      "s simDog.chrF      20970304    3 -  64906724 TTC\n"
                       );
 
 }

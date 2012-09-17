@@ -129,6 +129,44 @@ mafLine_t* maf_copyMafLine(mafLine_t *orig) {
     ml->next = maf_copyMafLine(orig->next);
     return ml;
 }
+mafBlock_t* maf_newMafBlockListFromString(const char *s, uint32_t lineNumber) {
+    // given a string, walk through and create a mafBlock_t linked list 
+    // for all maf blocks in the string
+    mafBlock_t *head = NULL, *mb = NULL, *tmp = NULL;
+    char *block_s = NULL;
+    size_t len, start = 0, stop;
+    len = strlen(s);
+    for (stop = start + 1; stop < len; ++stop) {
+        if (s[stop] == 'a' && s[stop - 1] == '\n') {
+            block_s = (char *) de_malloc(stop - start + 2);
+            strncpy(block_s, s + start, stop - start + 1);
+            block_s[stop - start + 1] = '\0';
+            tmp = maf_newMafBlockFromString(block_s, lineNumber);
+            if (head == NULL) {
+                mb = tmp;
+                head = mb;
+            } else {
+                maf_mafBlock_setNext(mb, tmp);
+                mb = maf_mafBlock_getNext(mb);
+            }
+            free(block_s);
+            start = stop;
+        }
+    }
+    block_s = (char *) de_malloc(stop - start + 2);
+    strncpy(block_s, s + start, stop - start + 1);
+    block_s[stop - start + 1] = '\0';
+    tmp = maf_newMafBlockFromString(block_s, lineNumber);
+    if (head == NULL) {
+        mb = tmp;
+        head = mb;
+    } else {
+        maf_mafBlock_setNext(mb, tmp);
+        mb = maf_mafBlock_getNext(mb);
+    }
+    free(block_s);
+    return head;
+}
 mafBlock_t* maf_newMafBlockFromString(const char *s, uint32_t lineNumber) {
     if (s[0] != 'a') {
         char *error = de_malloc(kMaxStringLength);
@@ -254,7 +292,26 @@ mafBlock_t* maf_newMafBlock(void) {
     mb->sequenceFieldLength = 0;
     return mb;
 }
+mafBlock_t* maf_copyMafBlockList(mafBlock_t *orig) {
+    if (orig == NULL) {
+        return NULL;
+    }
+    mafBlock_t *head = NULL, *mb = NULL, *tmp = NULL;
+    while (orig != NULL) {
+        if (head == NULL) {
+            tmp = maf_copyMafBlock(orig);
+            mb = tmp;
+            head = mb;
+        } else {
+            tmp = maf_copyMafBlock(orig);
+            maf_mafBlock_setNext(mb, tmp);
+            mb = maf_mafBlock_getNext(mb);
+        }
+    }
+    return head;
+}
 mafBlock_t* maf_copyMafBlock(mafBlock_t *orig) {
+    // copies a SINGLE maf block. Does not copy down the tree.
     if (orig == NULL) {
         return NULL;
     }
@@ -269,7 +326,6 @@ mafBlock_t* maf_copyMafBlock(mafBlock_t *orig) {
     mb->numberOfSequences = orig->numberOfSequences;
     mb->numberOfLines = orig->numberOfLines;
     mb->sequenceFieldLength = orig->sequenceFieldLength;
-    mb->next = maf_copyMafBlock(orig->next);
     return mb;
 }
 mafFileApi_t* maf_newMfa(const char *filename, char const *mode) {
@@ -293,6 +349,9 @@ void maf_destroyMafLineList(mafLine_t *ml) {
     }
 }
 void maf_destroyMafBlockList(mafBlock_t *mb) {
+    if (mb == NULL) {
+        return;
+    }
     mafBlock_t *tmp = NULL;
     while(mb != NULL) {
         tmp = mb;

@@ -184,7 +184,7 @@ mafBlock_t *processBlockForSplice(mafBlock_t *b, uint32_t blockNumber, const cha
     // walks mafBlock_t b, returns a mafBlock_t (using the linked list feature) of all spliced out bits.
     // if store is true, will return a mafBlock_t linked list of all sub-blocks. If store is false,
     // will report each sub-block (maf_mafBlock_print()) as it comes in and immediatly destroy that block.
-    /* 
+    /*
     printf("\n\nprocessBlockForSplice(block=%"PRIu32", seq=%s, start=%"PRIu32", stop=%"PRIu32")\n",
            blockNumber, seq, start, stop);
     maf_mafBlock_print(b);
@@ -218,6 +218,7 @@ mafBlock_t *processBlockForSplice(mafBlock_t *b, uint32_t blockNumber, const cha
                 mb = head;
             } else {
                 if (mb != b) {
+                    // manipulated blocks should have this extra tag attached
                     sprintf(id, " splice_id=%" PRIu32 "_%" PRIu32, blockNumber, spliceNumber);
                     maf_mafBlock_appendToAlignmentBlock(mb, id);
                 }
@@ -324,6 +325,10 @@ mafBlock_t *spliceBlock(mafBlock_t *b, uint32_t l, uint32_t r, int32_t **offsetA
             }
         }
         // printf(" [%2"PRIi32", %2"PRIi32"] post-initial gap / left edge discovery: %s \n", offsetArray[si][0], offsetArray[si][1], maf_mafLine_getSpecies(ml1));
+        // we normally ignore the initial value because it's already been set. however if -1 it must be set
+        if (seq[offsetArray[si][0]] != '-' && offsetArray[si][1] == -1) {
+            offsetArray[si][1] = 0;
+        }
         // offsets
         for (int32_t i = offsetArray[si][0] + 1; i <= (int32_t)l; ++i) {
             // figure out the non-gap offset for the splice-in point, `l'
