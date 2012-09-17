@@ -894,7 +894,24 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s simCow.chrB      60357749   15 +  86443571 ----TGGGGACAAGGTTTA--\n"
                       "s simHuman.chrJ     6786872   21 -  88398963 TGTACAGCAGCCCTGCTTAGT\n"
                       );
-    
+    // test 21
+    // printf("test %d\n", testcount++);
+    processSpliceTest(testCase, "simHuman.chrJ", 69805407, 70305406,
+                      "a score=0.0000000\n"
+                      "s simRat.chrR      72133413   33 +  88137694 G--------TTGTTTTTATTGATGCTAGTAGTTTGACAACT\n"
+                      "s simHuman.chrJ    18234935   38 -  88398963 GTT----GATAGTTGAGAATACACCAAGCTTGT-GCCTGTT\n",
+                      3,
+                      "a score=0\n"
+                      "s simRat.chrR      72133413   1 +  88137694 G--\n"
+                      "s simHuman.chrJ    18234935   3 -  88398963 GTT\n",
+                      "a score=0\n"
+                      "s simRat.chrR      72133414   24 +  88137694 --TTGTTTTTATTGATGCTAGTAGTT\n"
+                      "s simHuman.chrJ    18234938   26 -  88398963 GATAGTTGAGAATACACCAAGCTTGT\n",
+                      "a score=0\n"
+                      "s simRat.chrR      72133439   7 +  88137694 GACAACT\n"
+                      "s simHuman.chrJ    18234964   7 -  88398963 GCCTGTT\n"
+                      );
+
 }
 CuSuite* extractor_TestSuite(void) {
     CuSuite* suite = CuSuiteNew();

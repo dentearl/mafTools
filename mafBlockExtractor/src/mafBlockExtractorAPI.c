@@ -74,9 +74,9 @@ void printHeader(void) {
 void printTargetColumns(bool *targetColumns, uint32_t n) {
     for (uint32_t i = 0; i < n; ++i) {
         if (targetColumns[i])
-            printf("1");
+            printf("*");
         else 
-            printf("0");
+            printf(".");
         // if (!((i + 1) % 5))
         //     printf(" ");
     }
@@ -161,20 +161,6 @@ uint32_t sumBool(bool *array, uint32_t n) {
     // printf("\n");
     return a;
 }
-void printBoolArray(bool *targetColumns, uint32_t len) {
-    printf("printBoolArray: len=%" PRIu32 "\n", len);
-    for (uint32_t i = 0; i < len; ++i) {
-        if (targetColumns[i]) {
-            printf("1");
-        } else {
-            printf("0");
-        }
-        if (i + 1 % 5 == 0) {
-            printf(" ");
-        }
-    }
-    printf("\n");
-}
 int32_t **createOffsets(uint32_t n) {
     // create a matrix to store relative offsets for walking through a maf block
     int32_t **offs = (int32_t**) de_malloc(sizeof(int32_t*) * n);
@@ -198,9 +184,10 @@ mafBlock_t *processBlockForSplice(mafBlock_t *b, uint32_t blockNumber, const cha
     // walks mafBlock_t b, returns a mafBlock_t (using the linked list feature) of all spliced out bits.
     // if store is true, will return a mafBlock_t linked list of all sub-blocks. If store is false,
     // will report each sub-block (maf_mafBlock_print()) as it comes in and immediatly destroy that block.
-    /* printf("\n\nprocessBlockForSplice(block=%"PRIu32", seq=%s, start=%"PRIu32", stop=%"PRIu32")\n",
-       blockNumber, seq, start, stop);
-       maf_mafBlock_print(b);
+    /* 
+    printf("\n\nprocessBlockForSplice(block=%"PRIu32", seq=%s, start=%"PRIu32", stop=%"PRIu32")\n",
+           blockNumber, seq, start, stop);
+    maf_mafBlock_print(b);
     */
     bool *targetColumns = NULL;
     uint32_t len = 0, sum = 0;
@@ -275,9 +262,6 @@ mafBlock_t *spliceBlock(mafBlock_t *b, uint32_t l, uint32_t r, int32_t **offsetA
         return b;
     }
     // printf("spliceBlock(l=%"PRIu32", r=%"PRIu32")\n", l, r);
-    // printf("spliceBlock(b, l=%"PRIu32" r%"PRIu32" offsetArray=[", l, r);
-    // printOffsetArray(offsetArray, maf_mafBlock_getNumberOfSequences(b));
-    // printf("])\n");
     mafBlock_t *mb = maf_newMafBlock();
     mafLine_t *ml1 = NULL, *ml2 = NULL;
     ml1 = maf_mafBlock_getHeadLine(b);
@@ -382,6 +366,9 @@ mafBlock_t *spliceBlock(mafBlock_t *b, uint32_t l, uint32_t r, int32_t **offsetA
         int32_t seqCoords = offsetArray[si][1];
         if (offsetArray[si][1] == -1) {
             seqCoords = 0;
+            if (seq[offsetArray[si][0]] != '-') {
+                offsetArray[si][1] = 0;
+            }
         }
         // printf(" [%2"PRIi32", %2"PRIi32"] seqCoords:%"PRIi32" set properly: %s\n", offsetArray[si][0], offsetArray[si][1], seqCoords, maf_mafLine_getSpecies(ml1));
         maf_mafLine_setStart(ml2, maf_mafLine_getStart(ml1) + seqCoords);
