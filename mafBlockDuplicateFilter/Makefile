@@ -4,29 +4,35 @@ args = -Wall -Wextra -Werror -std=c99 -pedantic -I ../external -I ../include
 bin = ../bin
 PROGS = mafBlockDuplicateFilter
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*)
-objects = ../include/common.o ../include/sharedMaf.o ../external/CuTest.a
-testObjects := test/sharedMaf.o test/common.o ../external/CuTest.a 
+objects = ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/buildVersion.o
+testObjects := test/sharedMaf.o test/common.o ../external/CuTest.a  test/buildVersion.o
 
-.PHONY: all clean test
+.PHONY: all clean test buildVersion
 
-all: $(foreach f,${PROGS}, ${bin}/$f)
+all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
+buildVersion:
+	@python ../include/createVersionSources.py
 
 ${bin}/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
-	${cc} ${args} -O3 $< ${objects} -o $@.tmp 
+	${cc} ${args} -O3 $< ${objects} -o $@.tmp -lm
 	mv $@.tmp $@
 
 test/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies} ${testObjects}
 	mkdir -p $(dir $@)
-	${cc} ${args} -g -O0 $< ${objects} -o $@.tmp 
+	${cc} ${args} -g -O0 $< ${testObjects} -o $@.tmp -lm
 	mv $@.tmp $@
 
 %.o: %.c %.h
-	${cc} -c ${args} $< -o $@.tmp
+	${cc} -c ${args} $< -o $@.tmp -lm
 	mv $@.tmp $@
 test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
-	${cc} -g -O0 -c ${args} $< -o $@.tmp
+	${cc} -g -O0 -c ${args} $< -o $@.tmp -lm
+	mv $@.tmp $@
+test/%.o: src/%.c src/%.h
+	mkdir -p $(dir $@)
+	${cc} -g -O0 -c ${args} $< -o $@.tmp -lm
 	mv $@.tmp $@
 
 clean:

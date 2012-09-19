@@ -36,13 +36,22 @@
 #include <unistd.h>
 #include "common.h"
 #include "sharedMaf.h"
+#include "buildVersion.h"
 
+const char *g_version = "version 0.1 September 2012";
+
+void version(void);
 void usage(void);
 void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *isInclude, int64_t *blockDegLT, int64_t *blockDegGT);
 void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start, 
                  uint32_t length, uint32_t sourceLength, char strand);
 
+void version(void) {
+    fprintf(stderr, "mafBlockFilter, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+            g_build_git_branch, g_build_git_sha);
+}
 void usage(void) {
+    version();
     fprintf(stderr, "Usage: mafBlockFilter --maf [path to maf] "
             "[options]\n\n"
             "mafBlockFilter is a program that will look through a\n"
@@ -68,10 +77,11 @@ void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *i
     int c;
     bool setMafName = false, setNames = false, setBlockLimits = false;
     while (1) {
-        static struct option long_options[] = {
+        static struct option longOptions[] = {
             {"debug", no_argument, &g_debug_flag, 1},
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
+            {"version", no_argument, 0, 0},
             {"maf",  required_argument, 0, 'm'},
             {"includeSeq",  required_argument, 0, 'i'},
             {"excludeSeq",  required_argument, 0, 'e'},
@@ -79,14 +89,18 @@ void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *i
             {"noDegreeLT", required_argument, 0, 'l'},
             {0, 0, 0, 0}
         };
-        int option_index = 0;
+        int longIndex = 0;
         c = getopt_long(argc, argv, "m:i:e:g:l:v:h",
-                        long_options, &option_index);
+                        longOptions, &longIndex);
         if (c == -1) {
             break;
         }
         switch (c) {
         case 0:
+            if (strcmp("version", longOptions[longIndex].name) == 0) {
+                version();
+                exit(EXIT_SUCCESS);
+            }
             break;
         case 'm':
             setMafName = true;

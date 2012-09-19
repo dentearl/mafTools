@@ -3,12 +3,14 @@ SHELL:=/bin/bash
 bin = ../bin
 PROGS = mafStats
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*)
-objects := ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/test.mafStats.o ${sonLibPath}/sonLib.a 
-testObjects := test/sharedMaf.o test/common.o ../external/CuTest.a src/test.mafStats.o ${sonLibPath}/sonLib.a 
+objects := ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/test.mafStats.o ${sonLibPath}/sonLib.a src/buildVersion.o
+testObjects := test/sharedMaf.o test/common.o ../external/CuTest.a src/test.mafStats.o ${sonLibPath}/sonLib.a test/buildVersion.o
 
-.PHONY: all clean test
+.PHONY: all clean test buildVersion
 
-all: $(foreach f,${PROGS}, ${bin}/$f)
+all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
+buildVersion:
+	@python ../include/createVersionSources.py
 
 ${bin}/mafStats: src/mafStats.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
@@ -23,6 +25,10 @@ test/mafStats: src/mafStats.c ${dependencies} ${testObjects}
 	${cxx} -c $< -o $@.tmp ${cflags}
 	mv $@.tmp $@
 test/%.o: ../include/%.c ../include/%.h
+	mkdir -p $(dir $@)
+	${cxx} -c $< -o $@.tmp ${testFlags}
+	mv $@.tmp $@
+test/%.o: src/%.c src/%.h
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags}
 	mv $@.tmp $@

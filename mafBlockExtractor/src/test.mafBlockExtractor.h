@@ -22,49 +22,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
-#ifndef _MAFSTATS_H_
-#define _MAFSTATS_H_
-
+#ifndef TEST_EXTRACTOR_API_H_
+#define TEST_EXTRACTOR_API_H_
+#include <assert.h>
+#include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "CuTest.h"
+#include "common.h"
+#include "sharedMaf.h"
+#include "mafBlockExtractorAPI.h"
 
-typedef struct stats {
-    char *filename;
-    uint64_t numLines;
-    uint64_t numHeaderLines;
-    uint64_t numSeqLines;
-    uint64_t numBlocks;
-    uint64_t numELines;
-    uint64_t numILines;
-    uint64_t numQLines;
-    uint64_t numCommentLines;
-    uint64_t numGapCharacters;
-    uint64_t numSeqCharacters;
-    uint64_t numColumns;
-    uint64_t sumSeqField;
-    uint64_t maxSeqField;
-    uint64_t sumNumSpeciesInBlock;
-    uint64_t maxNumSpeciesInBlock;
-    uint64_t sumBlockArea;
-    uint64_t maxBlockArea;
-    stHash *seqHash; // keyed with names, valued with uint64_t count of bases present
-} stats_t;
-typedef struct seq {
-    char *name;
-    uint64_t count;
-} seq_t;
+CuSuite* extractor_TestSuite(void);
 
-void version(void);
-void usage(void);
-void parseOptions(int argc, char **argv, char **filename);
-stats_t* stats_create(char *filename);
-void stats_destroy(stats_t *stats);
-void countCharacters(char *seq, stats_t *stats);
-void processBlock(mafBlock_t *mb, stats_t *stats);
-void recordStats(mafFileApi_t *mfa, stats_t *stats);
-void readFilesize(struct stat *fileStat, char **filesizeString);
-int cmp_seq(const void *a, const void *b);
-void reportHash(stHash *hash);
-void reportStats(stats_t *stats);
-
-#endif // _MAFSTATS_H_
+#endif // TEST_EXTRACTOR_API_H_

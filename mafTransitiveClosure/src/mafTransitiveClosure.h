@@ -113,6 +113,15 @@ int64_t localSeqCoordsToGlobalPositiveCoords(int64_t c, uint32_t start, uint32_t
 int64_t localSeqCoordsToGlobalPositiveStartCoords(int64_t c, uint32_t start, uint32_t sourceLength, 
                                                   char strand, uint32_t length);
 void mafBlock_sortBlockByIncreasingGap(mafBlock_t *mb);
+void walkBlockAddingSequence(mafBlock_t *mb, stHash *hash, stHash *nameHash);
+void reportSequenceHash(stHash *hash, stHash *nameHash);
+void destroyVizMatrix(int **mat, unsigned n);
+int cmp_by_gaps(const void *a, const void *b);
+uint32_t getMaxNameLength(stHash *hash);
+void getMaxFieldLengths(stHash *hash, stHash *nameHash, stPinchBlock *block, uint32_t *maxStart, 
+                        uint32_t *maxLength, uint32_t *maxSource);
+char* getSequenceSubset(char *seq, int64_t start, char strand, int64_t length);
+void reportTransitiveClosure(stPinchThreadSet *threadSet, stHash *hash, stHash *nameHash);
 // debugging tools
 int** getVizMatrix(mafBlock_t *mb, unsigned n, unsigned m);
 void updateVizMatrix(int **mat, mafTcComparisonOrder_t *co);

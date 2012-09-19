@@ -2,3 +2,4 @@ bin
 *.o
 *.pyc
 *.a
+buildVersion*

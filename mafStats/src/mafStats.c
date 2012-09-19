@@ -33,45 +33,25 @@
 #include "common.h"
 #include "sharedMaf.h"
 #include "mafStats.h"
+#include "buildVersion.h"
 
-const char *kVersion = "v0.1 July 2012";
+const char *g_version = "v0.1 July 2012";
 
-typedef struct stats {
-    char *filename;
-    uint64_t numLines;
-    uint64_t numHeaderLines;
-    uint64_t numSeqLines;
-    uint64_t numBlocks;
-    uint64_t numELines;
-    uint64_t numILines;
-    uint64_t numQLines;
-    uint64_t numCommentLines;
-    uint64_t numGapCharacters;
-    uint64_t numSeqCharacters;
-    uint64_t numColumns;
-    uint64_t sumSeqField;
-    uint64_t maxSeqField;
-    uint64_t sumNumSpeciesInBlock;
-    uint64_t maxNumSpeciesInBlock;
-    uint64_t sumBlockArea;
-    uint64_t maxBlockArea;
-    stHash *seqHash; // keyed with names, valued with uint64_t count of bases present
-} stats_t;
-typedef struct seq {
-    char *name;
-    uint64_t count;
-} seq_t;
+void version(void) {
+    fprintf(stderr, "mafStats, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+            g_build_git_branch, g_build_git_sha);
+}
 void usage(void) {
-    fprintf(stderr, "mafStats, %s.\n", kVersion);
-    fprintf(stderr, "Usage:  --maf [maf file] [options]\n\n"
-            "description goes here.\n\n");
+    version();
+    fprintf(stderr, "Usage: mafStats --maf [maf file] [options]\n\n"
+            "A program to read MAF file and report back statistics about the contents.\n\n");
     fprintf(stderr, "Options: \n");
     usageMessage('h', "help", "show this help message and exit.");
     usageMessage('m', "maf", "path to the maf file.");
     usageMessage('v', "verbose", "turns on verbose output.");
     exit(EXIT_FAILURE);
 }
-void parseArgs(int argc, char **argv, char **filename) {
+void parseOptions(int argc, char **argv, char **filename) {
     extern int g_verbose_flag;
     extern int g_debug_flag;
     int c;
@@ -81,6 +61,7 @@ void parseArgs(int argc, char **argv, char **filename) {
             {"debug", no_argument, 0, 'd'},
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
+            {"version", no_argument, 0, 0},
             {"maf",  required_argument, 0, 'm'},
             {0, 0, 0, 0}
         };
@@ -90,6 +71,12 @@ void parseArgs(int argc, char **argv, char **filename) {
         if (c == -1)
             break;
         switch (c) {
+        case 0:
+            if (strcmp("version", long_options[option_index].name) == 0) {
+                version();
+                exit(EXIT_SUCCESS);
+            }
+            break;
         case 'm':
             setMName = true;
             *filename = stString_copy(optarg);
@@ -323,7 +310,7 @@ void reportStats(stats_t *stats) {
 }
 int main(int argc, char **argv) {
     char *maf = NULL;
-    parseArgs(argc, argv, &maf);
+    parseOptions(argc, argv, &maf);
     mafFileApi_t *mfa = maf_newMfa(maf, "r");
     stats_t *stats = stats_create(maf);
 

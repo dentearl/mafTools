@@ -39,6 +39,8 @@ import os
 import re
 import sys
 
+g_version = '0.1 May 2012'
+
 class ValidatorError(Exception): pass
 class SourceLengthError(ValidatorError): pass
 class SpeciesFieldError(ValidatorError): pass
@@ -56,6 +58,8 @@ class ILineFormatError(ValidatorError): pass
 class ELineFormatError(ValidatorError): pass
 class QLineFormatError(ValidatorError): pass
 class DuplicateColumnError(ValidatorError): pass
+class SequenceConsistencyError(ValidatorError): pass
+class EmptyInputError(ValidatorError): pass
 
 def initOptions(parser):
    parser.add_option('--maf', dest='filename', 
@@ -69,17 +73,36 @@ def initOptions(parser):
                      default=True, action='store_false',
                      help=('Turn off the checks for duplicate columns, may be useful for pairwise-only '
                            'alignments. default=duplicate checking is on.'))
+   parser.add_option('--validateSequence', dest='validateSequence', 
+                     default=False, action='store_true',
+                     help=('Turn on checks to make sure all sequence fields are '
+                           'consistent. Slows things down considerably. Note that selecting this option'
+                           'implicitly sets --ignoreDuplicateColumns'))
+   parser.add_option('--version', dest='isVersion', action='store_true', default=False,
+                     help='Print version number and exit.')
 def checkOptions(options, args, parser):
+   if options.isVersion:
+      print 'mafValidator.py, version %s' % g_version
+      sys.exit(0)
    if options.filename is None:
       parser.error('specify --maf')
    if not os.path.exists(options.filename):
       parser.error('--maf %s does not exist.' % options.filename)
+   if options.validateSequence:
+      options.lookForDuplicateColumns = False
+
 def validateMaf(filename, options):
    """ returns true on valid maf file
+   a completely empty file should be considered invalid.
    """ 
+   if os.path.getsize(filename) == 0:
+      # empty files are considered invalid
+      raise EmptyInputError('maf %s is completely empty.' % filename)
    nameRegex = r'(.+?)\.(chr.+)'
    namePat = re.compile(nameRegex)
    sequenceColumnDict = {}
+   sequenceFieldDict = {}
+   
    f = open(filename, 'r')
    headerProcessedLines = validateHeader(f, filename)
    sources = {}
@@ -102,7 +125,7 @@ def validateMaf(filename, options):
                                                  'by an alignment line on line number %d: %s' 
                                                  % (filename, lineno, line))
          species, chrom, length, alFieldLen = validateSeqLine(namePat, options, lineno, line, 
-                                                              filename, sequenceColumnDict)
+                                                              filename, sequenceColumnDict, sequenceFieldDict)
          if alignmentFieldLength is None:
             alignmentFieldLength = alFieldLen
          else:
@@ -312,7 +335,7 @@ def validateKeyValuePairLine(lineno, line, filename):
          raise KeyValuePairError('maf %s has a line that does not contain '
                                  'good key-value pairs on line number %d: %s' 
                                  % (filename, lineno, line))
-def validateSeqLine(namePat, options, lineno, line, filename, sequenceColumnDict):
+def validateSeqLine(namePat, options, lineno, line, filename, sequenceColumnDict, sequenceFieldDict):
    data = line.split()
    if len(data) != 7:
       raise FieldNumberError('maf %s has incorrect number of fields on line number %d: %s' 
@@ -320,6 +343,10 @@ def validateSeqLine(namePat, options, lineno, line, filename, sequenceColumnDict
    if data[4] not in ('-', '+'):
       raise StrandCharacterError('maf %s has unexpected character in strand field "%s" on line number %d: %s' 
                                  % (filename, data[4], lineno, line))
+   if data[4] == '+':
+      strand = 1
+   else:
+      strand = -1
    if int(data[3]) != len(data[6].replace('-', '')):
       raise AlignmentLengthError('maf %s sequence length field (%d) contradicts alignment field (non-gapped length %d) on line number %d: %s'
                                  % (filename, int(data[3]), len(data[6].replace('-', '')), lineno, line))
@@ -334,6 +361,8 @@ def validateSeqLine(namePat, options, lineno, line, filename, sequenceColumnDict
                             % (filename, lineno, line))
    if options.lookForDuplicateColumns:
       checkForDuplicateColumns(data, sequenceColumnDict, filename, lineno, line)
+   if options.validateSequence:
+      checkForSequenceInconsistencies(data, sequenceFieldDict, filename, lineno, line)   
    if options.testChromNames:
       m = re.match(namePat, data[1])
       if m is None:
@@ -341,6 +370,49 @@ def validateSeqLine(namePat, options, lineno, line, filename, sequenceColumnDict
                                  % (filename, data[1], lineno, line))
       return m.group(1), m.group(2), data[5], len(data[6])
    return data[1], None, data[5], len(data[6])
+def reverseComplement(s):
+   s = s[::-1]
+   s = s.replace('A', '1')
+   s = s.replace('a', '1')
+   s = s.replace('T', 'A')
+   s = s.replace('t', 'A')
+   s = s.replace('1', 'T')
+   s = s.replace('G', '2')
+   s = s.replace('g', '2')
+   s = s.replace('C', 'G')
+   s = s.replace('c', 'G')
+   s = s.replace('2', 'C')
+   return s
+def checkForSequenceInconsistencies(data, sfd, filename, lineno, line):
+   """ sfd = sequenceFieldDict, a dictionary keyed on sequence field names and valued with
+   numpy arrays (dtype chararray) that stores all reperesentations of the sequence in the maf.
+   If the sequence should change over the course of the file, throws an error.
+   """
+   name = data[1]
+   start, length = map(int, data[2:4])
+   strand = data[4]
+   totalSrcLength = int(data[5])
+   if name not in sfd:
+      sfd[name] = numpy.zeros(int(totalSrcLength), dtype=numpy.string_)
+      sfd[name][:] = 'N'
+   if data[4] == '+':
+      stop = start + length
+      seqstr = data[6]
+   else:
+      start, stop = totalSrcLength - (start + length), totalSrcLength - start
+      seqstr = reverseComplement(data[6])
+   # remove gaps, switch to uppercase
+   seqstr = seqstr.upper().replace('-', '')
+   seq = numpy.zeros(length, dtype=numpy.string_)
+   seq[:] = list(seqstr)
+   stored = numpy.ma.array(sfd[name][start:stop], mask=sfd[name][start:stop] == 'N')
+   if not (stored == seq).all():
+      if not (stored == seq).mask.all():
+         if not stored is numpy.ma.masked:
+            raise SequenceConsistencyError('maf %s has inconsistent sequence, discovered on line number %d. '
+                                           '\nFirst: %s\nNow  : %s\n%s' 
+                                           % (filename, lineno, stored, seqstr, line))
+   sfd[name][start:stop] = seq
 def checkForDuplicateColumns(data, scd, filename, lineno, line):
    """ scd = sequenceColumnDict, a dictionary keyed on sequence field names and valued with
    numpy arrays (dtype boolean) that indicates whether or not a column has already appeared in
@@ -362,9 +434,9 @@ def checkForDuplicateColumns(data, scd, filename, lineno, line):
    else:
       start, stop = totalSrcLength - (start + length), totalSrcLength - start
    if scd[name][start:stop].any():
-      raise DuplicateColumnError('maf %s has duplicate columns, first detected on line number %d: %s' 
+      raise DuplicateColumnError('maf %s has duplicate columns, second instance discovered on line number %d: %s' 
                                  % (filename, lineno, line))
-   scd[data[1]][start:stop] = True
+   scd[name][start:stop] = True
 def validateHeader(f, filename):
    """ tests the first line of the maf file to make sure it is valid. 
    valid starts are either "track ..." or "##maf..."
