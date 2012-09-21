@@ -58,6 +58,7 @@ WiggleContainer* wiggleContainer_init(void) {
     WiggleContainer *wc = st_malloc(sizeof(*wc));
     wc->ref = NULL;
     wc->partner = NULL;
+    wc->refStart = 0;
     wc->refLength = 0;
     wc->numBins = 0;
     wc->binLength = 0;
@@ -75,14 +76,16 @@ Options* options_construct(void) {
     o->outputFile = NULL;
     o->bedFiles = NULL;
     o->wigglePairs = NULL;
+    o->wiggleRegionStart = 0;
+    o->wiggleRegionStop = 0;
     o->numPairsString = NULL;
     o->legitSequences = NULL;
-    o->numberOfSamples = 1000000; // by default do a million samples per pair.
+    o->numberOfSamples = 1000000; // by default do a million samples per file pair.
     o->randomSeed = (time(NULL) << 16) | (getpid() & 65535); // Likely to be unique
     o->near = 0;
     o->numPairs1 = 0;
     o->numPairs2 = 0;
-    o->wiggleBinLength = 100000; // by default have 100,000 length bins
+    o->wiggleBinLength = 100000; // by default have bins of length 100,000 
     return o;
 }
 APair* aPair_construct(const char *seq1, const char *seq2, uint32_t pos1, uint32_t pos2) {
@@ -101,11 +104,12 @@ ResultPair *resultPair_construct(const char *seq1, const char *seq2) {
     resultPair->seq2 = stString_copy(seq2);
     return resultPair;
 }
-WiggleContainer* wiggleContainer_construct(char *ref, char *partner, uint64_t refLength, 
-                                           uint64_t wiggleBinLength) {
+WiggleContainer* wiggleContainer_construct(char *ref, char *partner, uint64_t refStart, 
+                                           uint64_t refLength, uint64_t wiggleBinLength) {
     WiggleContainer *wc = wiggleContainer_init();
     wc->ref = stString_copy(ref);
     wc->partner = stString_copy(partner);
+    wc->refStart = refStart;
     wc->refLength = refLength;
     wc->numBins = (uint64_t)ceil((double)refLength / wiggleBinLength);
     wc->binLength = wiggleBinLength;
@@ -1142,6 +1146,23 @@ void homologyTests1(APair *thisPair, stHash *intervalsHash, stSortedSet *pairs,
         recordNearPair(thisPair, pairs, near, positivePairs);
     } 
 }
+bool positionIsInWiggleRegion(WiggleContainer *wc, uint64_t *refPos) {
+    // verify that refPos, a positive coordinate, is within the wiggle 
+    // container's region of interest
+    if (wc == NULL) {
+        return false;
+    }
+    if (refPos == NULL) {
+        return false;
+    }
+    if (*refPos < wc->refStart) {
+        return false;
+    }
+    if (*refPos > wc->refStart + wc->refLength) {
+        return false;
+    }
+    return true;
+}
 void enumerateHomologyResults(stSortedSet *sampledPairs, stSortedSet *resultPairs, stHash *intervalsHash,
                               stSet *positivePairs, stHash *wigglePairHash, bool isAtoB, 
                               uint64_t wiggleBinLength) {
@@ -1155,6 +1176,7 @@ void enumerateHomologyResults(stSortedSet *sampledPairs, stSortedSet *resultPair
     ResultPair *thisResultPair = NULL;
     WiggleContainer *wc = NULL;
     uint64_t *refPos = NULL;
+    uint64_t localPos = 0; // local offset within the region of interest (0 is wc->refStart)
     char wigKey[kMaxStringLength];
     wigKey[0] = '\0';
     while ((pair = stSortedSet_getNext(sit)) != NULL) {
@@ -1204,22 +1226,25 @@ void enumerateHomologyResults(stSortedSet *sampledPairs, stSortedSet *resultPair
         }
         
         ++(thisResultPair->total);
-        if (wc != NULL && refPos != NULL) {
+        // put results in wiggle pairs
+        if (positionIsInWiggleRegion(wc, refPos)) {
+            localPos = *refPos - wc->refStart;
             if (isAtoB) {
-                ++(wc->absentAtoB[(int)floor(*refPos / wiggleBinLength)]);
+                ++(wc->absentAtoB[(int)floor(localPos / wiggleBinLength)]);
             } else {
-                ++(wc->absentBtoA[(int)floor(*refPos / wiggleBinLength)]);
+                ++(wc->absentBtoA[(int)floor(localPos / wiggleBinLength)]);
             }
         }
         if (foundPair) {
             ++(thisResultPair->inAll);
-            if (wc != NULL && refPos != NULL) {
+            if (positionIsInWiggleRegion(wc, refPos)) {
+                localPos = *refPos - wc->refStart;
                 if (isAtoB) {
-                    --(wc->absentAtoB[(int)floor(*refPos / wiggleBinLength)]);
-                    ++(wc->presentAtoB[(int)floor(*refPos / wiggleBinLength)]);
+                    --(wc->absentAtoB[(int)floor(localPos / wiggleBinLength)]);
+                    ++(wc->presentAtoB[(int)floor(localPos / wiggleBinLength)]);
                 } else {
-                    --(wc->absentBtoA[(int)floor(*refPos / wiggleBinLength)]);
-                    ++(wc->presentBtoA[(int)floor(*refPos / wiggleBinLength)]);
+                    --(wc->absentBtoA[(int)floor(localPos / wiggleBinLength)]);
+                    ++(wc->presentBtoA[(int)floor(localPos / wiggleBinLength)]);
                 }
             }
         } else {
@@ -1397,9 +1422,11 @@ void reportResultsForWiggles(stHash *wigglePairHash, FILE *fileHandle) {
     while ((key = stHash_getNext(hit)) != NULL) {
         wc = stHash_search(wigglePairHash, key);
         findentprintf(fileHandle, 2, "<wigglePair reference=\"%s\" partner=\"%s\" "
-                      "referenceLength=\"%" PRIu64 "\" numberOfBins=\"%" PRIu64 "\" "
-                      "binLength=\"%" PRIu64 "\">\n",
-                      wc->ref, wc->partner, wc->refLength, wc->numBins, wc->binLength);
+                      "referenceStart=\"%" PRIu64 "\" referenceLength=\"%" PRIu64 "\" "
+                      "numberOfBins=\"%" PRIu64 "\" "
+                      "binLength=\"%" PRIu64 "\" >\n",
+                      wc->ref, wc->partner, wc->refStart, wc->refLength, wc->numBins, wc->binLength);
+                      
         reportResultsForWigglesArrays(fileHandle, wc);
         findentprintf(fileHandle, 2, "</wigglePair>\n");
     }
@@ -1535,24 +1562,33 @@ bool patternMatches(char *a, char *b) {
     }
 }
 void buildWigglePairHash(stHash *sequenceLengthHash, stList *wigglePairPatternList, stHash *wigglePairHash,
-                         uint64_t wiggleBinLength) {
+                         uint64_t wiggleBinLength, uint64_t wiggleRegionStart, uint64_t wiggleRegionStop) {
     stHashIterator *hit1 = NULL;
     stHashIterator *hit2 = NULL;
     char *key1 = NULL;
     char *key2 = NULL;
     char *name = NULL;
     WiggleContainer *wc = NULL;
+    uint64_t regionLength = 0;
     for (int32_t i = 0; i < stList_length(wigglePairPatternList) - 1; i = i + 2) {
+        // for every wiggle pair
         hit1 = stHash_getIterator(sequenceLengthHash);
         while ((key1 = stHash_getNext(hit1)) != NULL) {
             if (patternMatches(stList_get(wigglePairPatternList, i), key1)) {
                 hit2 = stHash_getIterator(sequenceLengthHash);
                 while ((key2 = stHash_getNext(hit2)) != NULL) {
                     if (patternMatches(stList_get(wigglePairPatternList, i + 1), key2)) {
+                        if (wiggleRegionStop == 0) {
+                            // if the option is not set, use the source length field
+                            regionLength = *(uint64_t*)stHash_search(sequenceLengthHash, key1);
+                        } else {
+                            regionLength = 1 + wiggleRegionStop - wiggleRegionStart;
+                        }
                         name = st_malloc(kMaxStringLength);
                         sprintf(name, "%s-%s", key1, key2);
-                        wc = wiggleContainer_construct(key1, key2, 
-                                                       *(uint64_t*)stHash_search(sequenceLengthHash, key1),
+                        wc = wiggleContainer_construct(key1, key2,
+                                                       wiggleRegionStart,
+                                                       regionLength,
                                                        wiggleBinLength);
                         stHash_insert(wigglePairHash, stString_copy(name), wc);
                         free(name);

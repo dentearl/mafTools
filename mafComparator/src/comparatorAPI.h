@@ -49,6 +49,8 @@ typedef struct _options {
     char *outputFile;
     char *bedFiles;
     char *wigglePairs;
+    uint64_t wiggleRegionStart;
+    uint64_t wiggleRegionStop;
     char *legitSequences; // the intersection of sequence names between inputs
     char *numPairsString;
     uint32_t numberOfSamples;
@@ -91,6 +93,7 @@ typedef struct _wiggleContainer {
     // contains arrays of counts, used by the --wigglePair option
     char *ref;
     char *partner;
+    uint64_t refStart; // starting base. i.e. --wiggleRegionStart
     uint64_t refLength;
     uint64_t numBins;
     uint64_t binLength;
@@ -117,7 +120,8 @@ APair* aPair_construct(const char *seq1, const char *seq2, uint32_t pos1, uint32
 APair* aPair_copyConstruct(APair *pair);
 void aPair_destruct(APair *pair);
 WiggleContainer* wiggleContainer_init(void);
-WiggleContainer* wiggleContainer_construct(char *ref, char *partner, uint64_t refLength, uint64_t wiggleBinLength);
+WiggleContainer* wiggleContainer_construct(char *ref, char *partner, uint64_t refStart, 
+                                           uint64_t refLength, uint64_t wiggleBinLength);
 ResultPair *resultPair_construct(const char *seq1, const char *seq2);
 void aPosition_fillOut(APosition *aPosition, char *name, uint32_t pos);
 APosition* aPosition_init(void);
@@ -213,7 +217,8 @@ void printSortedSet(stSortedSet *pairs);
 unsigned countChars(char *s, char c);
 bool patternMatches(char *a, char *b);
 void buildWigglePairHash(stHash *sequenceLengthHash, stList *wigglePairPatternList, 
-                         stHash *wigglePairHash, uint64_t wiggleBinLength);
+                         stHash *wigglePairHash, uint64_t wiggleBinLength, uint64_t wiggleRegionStart,
+                         uint64_t wiggleRegionStop);
 void reportResultsForWiggles(stHash *wigglePairHash, FILE *fileHandle);
 void buildSeqNamesSet(Options *options, stSet *seqNamesSet, stHash *sequenceLengthHash);
 #endif /* _COMPARATOR_API_H_ */

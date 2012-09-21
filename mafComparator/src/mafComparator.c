@@ -270,6 +270,10 @@ void usage(void) {
                  "wildcard character. i.e. hg19*:mm9* will match hg19.chr1 and "
                  "mm9.chr1 etc etc resulting in all pairs between hg19* and mm9*. This feature "
                  "ignores any intervals described with the --bedFiles option.");
+    usageMessage('\0', "wiggleRegionStart", "The starting base (inclusive) of the sub-region to "
+                 "analyze. Do not set if you wish to use the entire sequence.");
+    usageMessage('\0', "wiggleRegionStop", "The ending base (inclusive) of the sub-region to "
+                 "analyze. Do not set if you wish to use the entire sequence.");
     usageMessage('\0', "wiggleBinLength", "The length of the bins when the --wigglePairs option is "
                  "invoked. [default: 100000]");
     usageMessage('\0', "numberOfPairs", "A pair of comma separated positive integers representing "
@@ -308,9 +312,11 @@ int parseOptions(int argc, char **argv, Options* options) {
         {"samples", required_argument, 0, 0},
         {"sampleNumber", required_argument, 0, 0},
         {"wigglePairs", required_argument, 0, 0},
+        {"wiggleBinLength", required_argument, 0, 0},
+        {"wiggleRegionStart", required_argument, 0, 0},
+        {"wiggleRegionStop", required_argument, 0, 0},
         {"numberOfPairs", required_argument, 0, 0},
         {"legitSequences", required_argument, 0, 0},
-        {"wiggleBinLength", required_argument, 0, 0},
         {"printFailed", no_argument, 0, 'p'},
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
@@ -356,6 +362,16 @@ int parseOptions(int argc, char **argv, Options* options) {
             }
             if (strcmp("wiggleBinLength", longOptions[longIndex].name) == 0) {
                 i = sscanf(optarg, "%" PRIu64, &(options->wiggleBinLength));
+                assert(i == 1);
+                break;
+            }
+            if (strcmp("wiggleRegionStart", longOptions[longIndex].name) == 0) {
+                i = sscanf(optarg, "%" PRIu64, &(options->wiggleRegionStart));
+                assert(i == 1);
+                break;
+            }
+            if (strcmp("wiggleRegionStop", longOptions[longIndex].name) == 0) {
+                i = sscanf(optarg, "%" PRIu64, &(options->wiggleRegionStop));
                 assert(i == 1);
                 break;
             }
@@ -424,7 +440,17 @@ int parseOptions(int argc, char **argv, Options* options) {
     }
     if (options->wigglePairs != NULL) {
         if (!countChars(options->wigglePairs, ':') % 2) {
-            fprintf(stderr, "\nError, --wigglePairs must come in comma separated pairs.\n");
+            fprintf(stderr, "\nError, --wigglePairs must come in comma-separated pairs of "
+                    "colon-separated values. E.g. hg19*:mm9*,hg19*:bosTau3*,... etc\n");
+            exit(2);
+        }
+    }
+    if (options->wiggleRegionStart != 0 && options->wiggleRegionStop != 0) {
+        // we allow stop to be 0 and start to be positive, stop will be set to the sequence end.
+        // this is a shortcut to knowing the full length of the sequence on the command line.
+        if (options->wiggleRegionStop < options->wiggleRegionStart) {
+            fprintf(stderr, "\nError, value of --wiggleRegionStart must be less "
+                    "than value of --wiggleRegionStop.\n");
             exit(2);
         }
     }
@@ -456,7 +482,7 @@ int main(int argc, char **argv) {
     FILE *fileHandle = NULL;
     stHash *intervalsHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free,
                                               (void(*)(void *)) stSortedSet_destruct);
-    // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
+    // (0) Parse the inputs
     parseOptions(argc, argv, options);
     stList *wigglePairPatternList = stList_construct3(0, free);
     listifercateKeyValuePairs(options->wigglePairs, wigglePairPatternList);
@@ -464,14 +490,13 @@ int main(int argc, char **argv) {
     st_setLogLevelFromString(options->logLevelString);
     st_logDebug("Seeding the random number generator with the value %lo\n", options->randomSeed);
     st_randomSeed(options->randomSeed);
-    // (0) Check the inputs.
+    // Check the inputs.
     // Parse the bed file hashes
     if(options->bedFiles != NULL) {
         parseBedFiles(options->bedFiles, intervalsHash);
     } else {
         st_logDebug("No bed files specified\n");
     }
-    // hashifercateList(wigglePairList, wigglePairHash);
     // Log (some of) the inputs
     st_logInfo("MAF file 1 name : %s\n", options->mafFile1);
     st_logInfo("MAF file 2 name : %s\n", options->mafFile2);
@@ -486,7 +511,8 @@ int main(int argc, char **argv) {
     // build final wiggle things
     stHash *wigglePairHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, 
                                                free, (void(*)(void *))wiggleContainer_destruct);
-    buildWigglePairHash(sequenceLengthHash, wigglePairPatternList, wigglePairHash, options->wiggleBinLength);
+    buildWigglePairHash(sequenceLengthHash, wigglePairPatternList, wigglePairHash, options->wiggleBinLength,
+                        options->wiggleRegionStart, options->wiggleRegionStop);
     // Do comparisons.
     if (g_isVerboseFailures) {
         fprintf(stderr, "# Sampling from %s, comparing to %s\n", options->mafFile1, options->mafFile2);
@@ -518,13 +544,20 @@ int main(int argc, char **argv) {
     } else {
         wiggleString[0] = '\0';
     }
+    char wiggleRegionString[kMaxStringLength];
+    if (options->wiggleRegionStop != 0) {
+        sprintf(wiggleRegionString, " wiggleRegionStart=\"%" PRIu64 "\" wiggleRegionStop=\"%" PRIu64 "\"", 
+                options->wiggleRegionStart, options->wiggleRegionStop);
+    } else {
+        wiggleRegionString[0] = '\0';
+    }
     fprintf(fileHandle, "<alignmentComparisons numberOfSamples=\"%" PRIu32 "\" "
             "near=\"%" PRIu32 "\" seed=\"%" PRIu32 "\" maf1=\"%s\" maf2=\"%s\" "
             "numberOfPairsInMaf1=\"%" PRIu64 "\" "
-            "numberOfPairsInMaf2=\"%" PRIu64 "\"%s%s version=\"%s\" "
+            "numberOfPairsInMaf2=\"%" PRIu64 "\"%s%s%s version=\"%s\" "
             "buildDate=\"%s\" buildBranch=\"%s\" buildCommit=\"%s\">\n",
             options->numberOfSamples, options->near, options->randomSeed, options->mafFile1, options->mafFile2, 
-            options->numPairs1, options->numPairs2, bedString, wiggleString,
+            options->numPairs1, options->numPairs2, bedString, wiggleString, wiggleRegionString,
             g_version, g_build_date, g_build_git_branch, g_build_git_sha);
     reportResults(results_12, options->mafFile1, options->mafFile2, fileHandle, options->near, 
                   seqNamesSet, options->bedFiles);
