@@ -221,4 +221,5 @@ void buildWigglePairHash(stHash *sequenceLengthHash, stList *wigglePairPatternLi
                          uint64_t wiggleRegionStop);
 void reportResultsForWiggles(stHash *wigglePairHash, FILE *fileHandle);
 void buildSeqNamesSet(Options *options, stSet *seqNamesSet, stHash *sequenceLengthHash);
+bool positionIsInWiggleRegion(WiggleContainer *wc, uint64_t *refPos);
 #endif /* _COMPARATOR_API_H_ */
