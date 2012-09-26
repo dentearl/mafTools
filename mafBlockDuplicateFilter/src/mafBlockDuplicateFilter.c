@@ -305,6 +305,9 @@ bool checkForDupes(char **species, int index, mafLine_t *m) {
 }
 void reportBlock(mafBlock_t *b) {
     // print out a maf block in the form of the mafline linked list
+    // We *MUST* use this function instead of the convience function maf_mafBlock_print()
+    // because we have screwed with the structure field "species" and removed the chromosome
+    // information. Using _print() will omitt the chromosome information in the printed block.
     mafLine_t *ml = maf_mafBlock_getHeadLine(b);
     while (ml != NULL) {
         printf("%s\n", maf_mafLine_getLine(ml));
