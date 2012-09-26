@@ -473,12 +473,14 @@ void correctSpeciesNames(mafBlock_t *block) {
     // NOTE!! This means that we cannot use the convience function maf_mafBlock_print()
     // to print out the block at the end as the ->species field is going to be "wrong"
     mafLine_t *m = maf_mafBlock_getHeadLine(block);
+    unsigned len = 0;
     while(m != NULL) {
         if (maf_mafLine_getType(m) != 's') {
             m = maf_mafLine_getNext(m);
             continue;
         }
-        for (unsigned i = 0; i < strlen(maf_mafLine_getSpecies(m)); ++i) {
+        len = strlen(maf_mafLine_getSpecies(m));
+        for (unsigned i = 0; i < len; ++i) {
             if (maf_mafLine_getSpecies(m)[i] == '.') {
                 maf_mafLine_getSpecies(m)[i] = '\0';
                 break;
