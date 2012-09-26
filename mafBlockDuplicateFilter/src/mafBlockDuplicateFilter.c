@@ -197,10 +197,10 @@ unsigned maxRes(unsigned residues[]) {
     return m;
 }
 char consensusResidue(unsigned residues[]) {
-    // given an unsigned array of counts of the 4 bases in the order A, C, G, T
+    // given an unsigned array of counts of the 4 bases in the order A, C, G, T, N
     // return as a char the IUPAC for the consensus residue.
     unsigned m = maxRes(residues);
-    bool maxA = false, maxC = false, maxG = false, maxT = false, allGap = false;
+    bool maxA = false, maxC = false, maxG = false, maxT = false, maxN = false, allGap = false;
     if (residues[0] == m)
         maxA = true;
     if (residues[1] == m)
@@ -210,8 +210,10 @@ char consensusResidue(unsigned residues[]) {
     if (residues[3] == m)
         maxT = true;
     if (residues[4] == m)
+        maxN = true;
+    if (residues[5] == m)
         allGap = true;
-    if (maxA && maxC && maxG && maxT)
+    if ((maxA && maxC && maxG && maxT) || (maxN))
         return 'N';
     if (maxA && maxC && maxG)
         return 'V';
@@ -249,7 +251,7 @@ void buildConsensus(char *consensus, char **sequences, int numSeqs, unsigned lin
     // given an empty string of the correct length, `consensus', a string array
     // containing all of the sequences, build the consensus sequence and store it
     // in the provided string.
-    unsigned residues[5]; // order: {A, C, G, T, -}
+    unsigned residues[6]; // order: {A, C, G, T, N, -}
     int n = (int) strlen(sequences[0]);
     for (int i = 0; i < n; ++i) {
         // columns
@@ -273,6 +275,10 @@ void buildConsensus(char *consensus, char **sequences, int numSeqs, unsigned lin
             case 'T':
             case 't':
                 residues[3]++;
+                break;
+            case 'N':
+            case 'n':
+                residues[4]++;
                 break;
             case '-':
                 break;
@@ -367,7 +373,7 @@ double bitScore(char a, char b) {
     // a is the truth, b is the prediction
     a = toupper(a);
     b = toupper(b);
-    if (a == 'N')
+    if ((a == 'N') || (b == 'N'))
         return 0.0;
     double f = 0.41503749927884381854626105605; // -log2(3/4)
     switch (a) {
