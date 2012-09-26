@@ -592,11 +592,8 @@ void processBody(mafFileApi_t *mfa) {
 int main(int argc, char **argv) {
     char filename[kMaxStringLength];
     parseOptions(argc, argv, filename);
-    
     mafFileApi_t *mfa = maf_newMfa(filename, "r");
     processBody(mfa);
-
     maf_destroyMfa(mfa);
-
     return EXIT_SUCCESS;
 }
