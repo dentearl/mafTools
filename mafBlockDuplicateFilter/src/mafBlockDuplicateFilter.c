@@ -470,6 +470,8 @@ int cmp_by_score(const void *a, const void *b) {
 void correctSpeciesNames(mafBlock_t *block) {
     // the sharedMaf.h block reading function takes the entire name field,
     // but we only want the name field up until the first '.' is observed.
+    // NOTE!! This means that we cannot use the convience function maf_mafBlock_print()
+    // to print out the block at the end as the ->species field is going to be "wrong"
     mafLine_t *m = maf_mafBlock_getHeadLine(block);
     while(m != NULL) {
         if (maf_mafLine_getType(m) != 's') {
@@ -581,7 +583,7 @@ void destroyStringArray(char **sArray, int n) {
 void processBody(mafFileApi_t *mfa) {
     // walk the body of the maf file and process it, block by block.
     mafBlock_t *thisBlock = NULL;
-    thisBlock = maf_readBlock(mfa); // unused
+    thisBlock = maf_readBlock(mfa); // header block, unused
     maf_destroyMafBlockList(thisBlock);
     while((thisBlock = maf_readBlock(mfa)) != NULL) {
         correctSpeciesNames(thisBlock);
