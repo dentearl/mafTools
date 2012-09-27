@@ -55,7 +55,7 @@ void usage(void);
 void version(void);
 void printHeader(void);
 void processBody(mafFileApi_t *mfa);
-bool checkBlock(bool headerPrinted, mafBlock_t *block);
+void checkBlock(mafBlock_t *block);
 // void destroyBlock(mafLine_t *m);
 void destroyScoredMafLineList(scoredMafLine_t *sml);
 void destroyDuplicates(duplicate_t *d);
@@ -502,7 +502,7 @@ void correctSpeciesNames(mafBlock_t *block) {
         m = maf_mafLine_getNext(m);
     }
 }
-bool checkBlock(bool headerPrinted, mafBlock_t *block) {
+void checkBlock(mafBlock_t *block) {
     // read through each line of a mafBlock and filter duplicates.
     // Report the top scoring duplication only.
     mafLine_t *ml = maf_mafBlock_getHeadLine(block);
@@ -549,15 +549,11 @@ bool checkBlock(bool headerPrinted, mafBlock_t *block) {
         ml = maf_mafLine_getNext(ml);
     }
     if (!containsDuplicates) {
-        if (!headerPrinted) {
-            printHeader();
-            headerPrinted = true;
-        }
         reportBlock(block);
         destroyStringArray(species, n);
         destroyStringArray(sequences, n);
         destroyDuplicates(dupSpeciesHead);
-        return headerPrinted;
+        return;
     }
     // this block contains duplicates
     char *consensus = (char *) de_malloc(longestLine(block) + 1);
@@ -565,17 +561,12 @@ bool checkBlock(bool headerPrinted, mafBlock_t *block) {
     buildConsensus(consensus, sequences, n, 
                    maf_mafLine_getLineNumber(maf_mafBlock_getHeadLine(block))); // lineno used for error reporting
     findBestDupes(dupSpeciesHead, consensus);
-    if (!headerPrinted) {
-        printHeader();
-        headerPrinted = true;
-    }
     reportBlockWithDuplicates(block, dupSpeciesHead);
     // clean up
     destroyStringArray(species, n);
     destroyStringArray(sequences, n);
     destroyDuplicates(dupSpeciesHead);
     free(consensus);
-    return headerPrinted;
 }
 void destroyDuplicates(duplicate_t *d) {
     // free all memory associated with a duplicate linked list
@@ -609,10 +600,10 @@ void processBody(mafFileApi_t *mfa) {
     mafBlock_t *thisBlock = NULL;
     thisBlock = maf_readBlock(mfa); // header block, unused
     maf_destroyMafBlockList(thisBlock);
-    bool headerPrinted = false;
+    printHeader();
     while((thisBlock = maf_readBlock(mfa)) != NULL) {
         correctSpeciesNames(thisBlock);
-        headerPrinted = checkBlock(headerPrinted, thisBlock);
+        checkBlock(thisBlock);
         maf_destroyMafBlockList(thisBlock);
     }
 }
