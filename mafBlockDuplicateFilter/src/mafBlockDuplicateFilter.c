@@ -53,8 +53,9 @@ typedef struct duplicate {
 
 void usage(void);
 void version(void);
+void printHeader(void);
 void processBody(mafFileApi_t *mfa);
-void checkBlock(mafBlock_t *block);
+bool checkBlock(bool headerPrinted, mafBlock_t *block);
 // void destroyBlock(mafLine_t *m);
 void destroyScoredMafLineList(scoredMafLine_t *sml);
 void destroyDuplicates(duplicate_t *d);
@@ -163,6 +164,9 @@ duplicate_t* newDuplicate(void) {
     d->next = NULL;
     d->numSequences = 1;
     return d;
+}
+void printHeader(void) {
+    printf("##maf version=1\n\n");
 }
 unsigned longestLine(mafBlock_t *mb) {
     // walk the mafline linked list and return the longest m->line value
@@ -498,7 +502,7 @@ void correctSpeciesNames(mafBlock_t *block) {
         m = maf_mafLine_getNext(m);
     }
 }
-void checkBlock(mafBlock_t *block) {
+bool checkBlock(bool headerPrinted, mafBlock_t *block) {
     // read through each line of a mafBlock and filter duplicates.
     // Report the top scoring duplication only.
     mafLine_t *ml = maf_mafBlock_getHeadLine(block);
@@ -545,11 +549,15 @@ void checkBlock(mafBlock_t *block) {
         ml = maf_mafLine_getNext(ml);
     }
     if (!containsDuplicates) {
+        if (!headerPrinted) {
+            printHeader();
+            headerPrinted = true;
+        }
         reportBlock(block);
         destroyStringArray(species, n);
         destroyStringArray(sequences, n);
         destroyDuplicates(dupSpeciesHead);
-        return;
+        return headerPrinted;
     }
     // this block contains duplicates
     char *consensus = (char *) de_malloc(longestLine(block) + 1);
@@ -557,12 +565,17 @@ void checkBlock(mafBlock_t *block) {
     buildConsensus(consensus, sequences, n, 
                    maf_mafLine_getLineNumber(maf_mafBlock_getHeadLine(block))); // lineno used for error reporting
     findBestDupes(dupSpeciesHead, consensus);
+    if (!headerPrinted) {
+        printHeader();
+        headerPrinted = true;
+    }
     reportBlockWithDuplicates(block, dupSpeciesHead);
     // clean up
     destroyStringArray(species, n);
     destroyStringArray(sequences, n);
     destroyDuplicates(dupSpeciesHead);
     free(consensus);
+    return headerPrinted;
 }
 void destroyDuplicates(duplicate_t *d) {
     // free all memory associated with a duplicate linked list
@@ -596,9 +609,10 @@ void processBody(mafFileApi_t *mfa) {
     mafBlock_t *thisBlock = NULL;
     thisBlock = maf_readBlock(mfa); // header block, unused
     maf_destroyMafBlockList(thisBlock);
+    bool headerPrinted = false;
     while((thisBlock = maf_readBlock(mfa)) != NULL) {
         correctSpeciesNames(thisBlock);
-        checkBlock(thisBlock);
+        headerPrinted = checkBlock(headerPrinted, thisBlock);
         maf_destroyMafBlockList(thisBlock);
     }
 }
