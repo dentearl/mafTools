@@ -80,10 +80,10 @@ static bool maf_isBlankLine(char *s) {
     }
     return true;
 }
-static void maf_checkForPrematureMafEnd(int status, char *line) {
+static void maf_checkForPrematureMafEnd(char *filename, int status, char *line) {
     if (status == -1) {
         free(line);
-        fprintf(stderr, "Error, premature end to maf file\n");
+        fprintf(stderr, "Error, premature end to maf file: %s\n", filename);
         exit(EXIT_FAILURE);
     }
 }
@@ -730,7 +730,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
     int status = de_getline(&line, &n, mfa->mfp);
     bool validHeader = false;
     ++(mfa->lineNumber);
-    maf_checkForPrematureMafEnd(status, line);
+    maf_checkForPrematureMafEnd(maf_mafFileApi_getFilename(mfa), status, line);
     if (strncmp(line, "track", 5) == 0) {
         // possible first line of a maf
         validHeader = true;
@@ -746,7 +746,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         ++(mfa->lineNumber);
         header->lineNumber = mfa->lineNumber;
         ++(header->numberOfLines);
-        maf_checkForPrematureMafEnd(status, line);
+        maf_checkForPrematureMafEnd(maf_mafFileApi_getFilename(mfa), status, line);
     }
     if (strncmp(line, "##maf", 5) == 0) {
         // possible first or second line of maf
@@ -768,7 +768,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         ++(mfa->lineNumber);
         header->lineNumber = mfa->lineNumber;
         ++(header->numberOfLines);
-        maf_checkForPrematureMafEnd(status, line);
+        maf_checkForPrematureMafEnd(maf_mafFileApi_getFilename(mfa), status, line);
     }
     if (!validHeader) {
         fprintf(stderr, "Error, maf file %s does not contain a valid header!\n", mfa->filename);
@@ -790,7 +790,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         ++(mfa->lineNumber);
         header->lineNumber = mfa->lineNumber;
         ++(header->numberOfLines);
-        maf_checkForPrematureMafEnd(status, line);
+        maf_checkForPrematureMafEnd(maf_mafFileApi_getFilename(mfa), status, line);
     }
     if (line[0] == 'a') {
         // stuff this line in ->lastLine for processesing
