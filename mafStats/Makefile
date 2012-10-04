@@ -37,7 +37,7 @@ clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/ 
 
 test: buildVersion test/allTests
-	$< && rm -rf ./test/
+	test/allTests && rm -rf ./test/
 
 test/allTests: src/allTests.c ${testObjects}
 	mkdir -p $(dir $@)
