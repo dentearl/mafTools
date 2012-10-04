@@ -38,7 +38,7 @@ test/%.o: src/%.c src/%.h
 clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
 
-test: test/mafBlockStrandCoercer
+test: buildVersion test/mafBlockStrandCoercer
 	python2.7 src/test.mafBlockStrandCoercer.py --verbose && rm -rf test/ && rmdir ./tempTestDir
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h

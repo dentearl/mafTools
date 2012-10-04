@@ -36,7 +36,7 @@ test/%.o: src/%.c src/%.h
 clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/ 
 
-test: test/allTests
+test: buildVersion test/allTests
 	$< && rm -rf ./test/
 
 test/allTests: src/allTests.c ${testObjects}

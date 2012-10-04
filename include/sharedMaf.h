@@ -41,6 +41,7 @@ mafLine_t* maf_newMafLineFromString(const char *s, uint32_t lineNumber);
 mafBlock_t* maf_copyMafBlock(mafBlock_t *orig);
 mafBlock_t* maf_copyMafBlockList(mafBlock_t *orig);
 mafLine_t* maf_copyMafLine(mafLine_t *orig);
+mafLine_t* maf_copyMafLineList(mafLine_t *orig);
 void maf_destroyMafLineList(mafLine_t *ml);
 void maf_destroyMafBlockList(mafBlock_t *mb);
 void maf_destroyMfa(mafFileApi_t *mfa);

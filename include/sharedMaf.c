@@ -106,7 +106,28 @@ mafLine_t* maf_newMafLine(void) {
     ml->next = NULL;
     return ml;
 }
+mafLine_t* maf_copyMafLineList(mafLine_t *orig) {
+    // create and return a copy of orig, a mafLine_t linked list
+    if (orig == NULL) {
+        return NULL;
+    }
+    mafLine_t *head = NULL, *ml = NULL, *tmp = NULL;
+    while (orig != NULL) {
+        if (head == NULL) {
+            tmp = maf_copyMafLine(orig);
+            ml = tmp;
+            head = ml;
+        } else {
+            tmp = maf_copyMafLine(orig);
+            maf_mafLine_setNext(ml, tmp);
+            ml = maf_mafLine_getNext(ml);
+        }
+        orig = maf_mafLine_getNext(orig);
+    }
+    return head;
+}
 mafLine_t* maf_copyMafLine(mafLine_t *orig) {
+    // create and return a copy of a single mafLine_t structure
     if (orig == NULL) {
         return NULL;
     }
@@ -126,7 +147,6 @@ mafLine_t* maf_copyMafLine(mafLine_t *orig) {
     if (orig->sequence != NULL) {
         ml->sequence = de_strdup(orig->sequence);
     }
-    ml->next = maf_copyMafLine(orig->next);
     return ml;
 }
 mafBlock_t* maf_newMafBlockListFromString(const char *s, uint32_t lineNumber) {
@@ -311,6 +331,7 @@ mafBlock_t* maf_copyMafBlockList(mafBlock_t *orig) {
             maf_mafBlock_setNext(mb, tmp);
             mb = maf_mafBlock_getNext(mb);
         }
+        orig = maf_mafBlock_getNext(orig);
     }
     return head;
 }
@@ -321,7 +342,7 @@ mafBlock_t* maf_copyMafBlock(mafBlock_t *orig) {
     }
     mafBlock_t *mb = maf_newMafBlock();
     // copy mafLine_t linked list
-    mb->headLine = maf_copyMafLine(orig->headLine);
+    mb->headLine = maf_copyMafLineList(orig->headLine);
     // record the mafBlock tail line
     mafLine_t *ml = mb->headLine;
     while (ml != NULL) {
