@@ -231,7 +231,9 @@ mafLine_t* maf_newMafLineFromString(const char *s, uint32_t lineNumber) {
     tkn = strtok(cline, " \t");
     if (tkn == NULL) {
         free(cline);
-        maf_failBadFormat(lineNumber, "Unable to separate line on tabs and spaces at line definition field.");
+        char *error = de_malloc(kMaxStringLength);
+        sprintf(error, "Unable to separate line on tabs and spaces at line definition field:\n%s", s);
+        maf_failBadFormat(lineNumber, error);
     }
     tkn = strtok(NULL, " \t"); // name field
     if (tkn == NULL) {
@@ -273,7 +275,9 @@ mafLine_t* maf_newMafLineFromString(const char *s, uint32_t lineNumber) {
     tkn = strtok(NULL, " \t"); // sequence field
     if (tkn == NULL) {
         free(cline);
-        maf_failBadFormat(lineNumber, "Unable to separate line on tabs and spaces at sequence field.");
+        char *error = de_malloc(kMaxStringLength);
+        sprintf(error, "Unable to separate line on tabs and spaces at sequence field:\n%s", s);
+        maf_failBadFormat(lineNumber, error);
     }
     char *seq = (char *) de_malloc(strlen(tkn) + 1);
     strcpy(seq, tkn);
@@ -311,17 +315,20 @@ mafBlock_t* maf_copyMafBlockList(mafBlock_t *orig) {
     return head;
 }
 mafBlock_t* maf_copyMafBlock(mafBlock_t *orig) {
-    // copies a SINGLE maf block. Does not copy down the tree.
+    // copies a SINGLE maf block. Does not copy down the linked list of blocks.
     if (orig == NULL) {
         return NULL;
     }
-    mafBlock_t *mb = (mafBlock_t *) de_malloc(sizeof(*mb));
+    mafBlock_t *mb = maf_newMafBlock();
+    // copy mafLine_t linked list
     mb->headLine = maf_copyMafLine(orig->headLine);
+    // record the mafBlock tail line
     mafLine_t *ml = mb->headLine;
     while (ml != NULL) {
         mb->tailLine = ml;
         ml = ml->next;
     }
+    // copy attributes
     mb->lineNumber = orig->lineNumber;
     mb->numberOfSequences = orig->numberOfSequences;
     mb->numberOfLines = orig->numberOfLines;

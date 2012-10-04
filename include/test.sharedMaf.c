@@ -550,18 +550,46 @@ static void test_flipBlockStrand_0(CuTest *testCase) {
                                                  "s name.chr1   0 10 +       100 ATGT---ATGCCG\n"
                                                  "s name2.chr1  0 10 +       100 ATGT---ATGCCG\n"
                                                  , 3);
-    mafBlock_t *mb = maf_newMafBlockFromString("a score=0\n"
-                                               "s target.chr0 0 13 + 158545518 gcagctgaaaaca\n"
-                                               "s name.chr1   0 10 +       100 ATGT---ATGCCG\n"
-                                               "s name2.chr1  0 10 +       100 ATGT---ATGCCG\n"
-                                               , 3);
+    mafBlock_t *mb = maf_copyMafBlock(orig);
+    // sanity check
+    assert(mb != NULL);
+    CuAssertTrue(testCase, mb != orig);
+    CuAssertTrue(testCase, mafBlocksAreEqual(mb, orig));
     mafBlock_t *exp = maf_newMafBlockFromString("a score=0\n"
                                                 "s target.chr0 158545505 13 - 158545518 tgttttcagctgc\n"
                                                 "s name.chr1          90 10 -       100 CGGCAT---ACAT\n"
                                                 "s name2.chr1         90 10 -       100 CGGCAT---ACAT\n"
                                                , 3);
-    // sanity check
+    maf_mafBlock_flipStrand(mb);
+    // flip test
+    CuAssertTrue(testCase, mafBlocksAreEqual(mb, exp));
+    maf_mafBlock_flipStrand(mb);
+    // round trip test
     CuAssertTrue(testCase, mafBlocksAreEqual(mb, orig));
+    maf_destroyMafBlockList(mb);
+    maf_destroyMafBlockList(exp);
+    maf_destroyMafBlockList(orig);
+}
+static void test_flipBlockStrand_1(CuTest *testCase) {
+    mafBlock_t *orig = maf_newMafBlockFromString("a score=6636.0\n"
+                                                 "s hg18.chr7    27707221 13 + 158545518 gcagct--gaaaaca\n"
+                                                 "s panTro1.chr6 28869787 13 + 161576975 gcagct--gaaaaca\n"
+                                                 "# comment line\n"
+                                                 "s baboon         249182 13 -   4622798 gc--agctgaaaaca\n"
+                                                 "s mm4.chr6     53310102 13 + 151104725 ACAG--CTGAAAATA\n"
+                                                 , 3);
+    mafBlock_t *mb = maf_copyMafBlock(orig);
+    // sanity check
+    assert(mb != NULL);
+    CuAssertTrue(testCase, mb != orig);
+    CuAssertTrue(testCase, mafBlocksAreEqual(mb, orig));
+    mafBlock_t *exp = maf_newMafBlockFromString("a score=6636.0\n"
+                                                "s hg18.chr7    130838284 13 - 158545518 tgttttc--agctgc\n"
+                                                "s panTro1.chr6 132707175 13 - 161576975 tgttttc--agctgc\n"
+                                                "# comment line\n"
+                                                "s baboon         4373603 13 +   4622798 tgttttcagct--gc\n"
+                                                "s mm4.chr6      97794610 13 - 151104725 TATTTTCAG--CTGT\n"
+                                                , 3);
     maf_mafBlock_flipStrand(mb);
     // flip test
     CuAssertTrue(testCase, mafBlocksAreEqual(mb, exp));
@@ -581,5 +609,6 @@ CuSuite* mafShared_TestSuite(void) {
     SUITE_ADD_TEST(suite, test_readWriteMaf);
     SUITE_ADD_TEST(suite, test_newMafBlockFromString_0);
     SUITE_ADD_TEST(suite, test_flipBlockStrand_0);
+    SUITE_ADD_TEST(suite, test_flipBlockStrand_1);
     return suite;
 }
