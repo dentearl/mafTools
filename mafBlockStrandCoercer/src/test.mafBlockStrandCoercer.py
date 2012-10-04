@@ -210,11 +210,6 @@ s target.chr0 158545407 13 + 158545518 gcagctgaaaaca
 
 ''', '+'),
             ]
-class GenericValidationOptions:
-    def __init__(self):
-        self.lookForDuplicateColumns = False
-        self.testChromNames = False
-        self.validateSequence = True
 def hashify(s):
     return s.replace(' ', '').replace('\n', '')
 def mafIsCoerced(maf, expected):
@@ -222,7 +217,10 @@ def mafIsCoerced(maf, expected):
     lastLine = mtt.processHeader(f)
     # walk through the maf, assessing the equivalence to the blockList items
     b = mtt.extractBlockStr(f, lastLine)
-    lastLine = None
+    while (b is not None):
+        lastLine = None
+        maf += b
+        b = mtt.extractBlockStr(f, lastLine)
     if hashify(b) != hashify(expected):
         print 'dang'
         print 'observed:'
@@ -238,7 +236,7 @@ class CoercionTest(unittest.TestCase):
         """
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('coercion'))
-        customOpts = GenericValidationOptions()
+        customOpts = mafval.GenericValidationOptions()
         for a, expected, strand in g_blocks:
             testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    ''.join(a), g_headers)
@@ -260,7 +258,7 @@ class CoercionTest(unittest.TestCase):
         if valgrind is None:
             return
         tmpDir = os.path.abspath(mtt.makeTempDir('memeory1'))
-        customOpts = GenericValidationOptions()
+        customOpts = mafval.GenericValidationOptions()
         for a, expected, strand in g_blocks:
             testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    ''.join(a), g_headers)
