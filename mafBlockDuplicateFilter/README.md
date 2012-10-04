@@ -14,11 +14,12 @@ mafBlockDuplicateFilter is a program to filter out duplications from a Multiple 
 3. Type <code>make</code>.
 
 ## Use
-<code>mafBlockDuplicateFilter < mafWithDuplicates.maf > pruned.maf </code>
+<code>mafBlockDuplicateFilter --maf mafWithDuplicates.maf > pruned.maf </code>
 
 ### Options
 * <code>-h, --help</code>   show this help message and exit.
+* <code>-m, --maf</code>    path to maf file.
 
 ## Example
-    $ ./mafBlockDuplicateFilter < mafWithDuplicates.maf > mafPruned.maf
+    $ ./mafBlockDuplicateFilter --maf mafWithDuplicates.maf > mafPruned.maf
 
