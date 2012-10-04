@@ -117,6 +117,10 @@ uint32_t maf_mafLine_getPositiveCoord(mafLine_t *ml);
 uint32_t maf_mafLine_getPositiveLeftCoord(mafLine_t *ml);
 unsigned umax(unsigned a, unsigned b);
 uint32_t countNonGaps(char *seq);
+void maf_mafBlock_flipStrand(mafBlock_t *mb);
+void reverseComplementSequence(char *s, size_t n); // in-place reverse complement
+void complementSequence(char *s, size_t n);
+char complementChar(char c);
 // print
 void maf_mafBlock_printList(mafBlock_t *m);
 void maf_mafBlock_print(mafBlock_t *m);

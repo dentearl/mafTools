@@ -1019,3 +1019,105 @@ uint32_t countNonGaps(char *seq) {
     }
     return m;
 }
+void maf_mafBlock_flipStrand(mafBlock_t *mb) {
+    // take a maf block and perform an in-place strand flip (including reverse complementing the
+    // sequence, transforming the start coords) on all maf lines in the block.
+    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
+    while (ml != NULL) {
+        if (maf_mafLine_getType(ml) != 's') {
+            ml = maf_mafLine_getNext(ml);
+            continue;
+        }
+        // rc sequence
+        reverseComplementSequence(maf_mafLine_getSequence(ml), maf_mafBlock_getSequenceFieldLength(mb));
+        // coordinate transform
+        maf_mafLine_setStart(ml, maf_mafLine_getSourceLength(ml) - 
+                             (maf_mafLine_getStart(ml) + maf_mafLine_getLength(ml)));
+        // strand flip
+        if (maf_mafLine_getStrand(ml) == '+') {
+            maf_mafLine_setStrand(ml, '-');
+        } else { 
+            maf_mafLine_setStrand(ml, '+');
+        }
+        ml = maf_mafLine_getNext(ml);
+    }
+}
+void reverseComplementSequence(char *s, size_t n) {
+    // accepts upper and lower case, full iupac
+   int c, i, j;
+    for (i = 0, j = n - 1; i < j; ++i, j--) {
+        c = s[i];
+        s[i] = s[j];
+        s[j] = c;
+    }
+    complementSequence(s, n);
+}
+void complementSequence(char *s, size_t n) {
+    // accepts upper and lower case, full iupac
+    for (unsigned i = 0; i < n; ++i)
+        s[i] = complementChar(s[i]);
+}
+char complementChar(char c) {
+    // accepts upper and lower case, full iupac
+    bool wasUpper = false;
+    char a = '\0';
+    if (toupper(c) == c) {
+        wasUpper = true;
+    }
+    switch (toupper(c)) {
+    case 'A': 
+        a = 't';
+        break;
+    case 'C':
+        a = 'g';
+        break;
+    case 'G':
+        a = 'c';
+        break;
+    case 'T':
+        a = 'a';
+        break;
+    case 'M':
+        a = 'k';
+        break;
+    case 'R':
+        a = 'y';
+        break;
+    case 'W':
+        a = 'w';
+        break;
+    case 'S':
+        a = 's';
+        break;
+    case 'Y':
+        a = 'r';
+        break;
+    case 'K':
+        a = 'm';
+        break;
+    case 'V':
+        a = 'b';
+        break;
+    case 'H':
+        a = 'd';
+        break;
+    case 'D':
+        a = 'h';
+        break;
+    case 'B':
+        a = 'v';
+        break;
+    case 'N':
+    case '-':
+    case 'X':
+        a = c;
+        break;
+    default:
+        fprintf(stderr, "Error, unanticipated character in DNA sequence: %c\n", c);
+        exit(EXIT_FAILURE);
+    }
+    if (wasUpper) {
+        a = toupper(a);
+    }
+    return a;
+}
