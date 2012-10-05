@@ -142,7 +142,7 @@ s target1.chr0       50 10 +       100 ATGTATG---CCG
 
 '''),
             ('''a score=0
-# test1
+# test5
 s target2.chr0         0 13 + 158545518 gcagctgaaaaca
 s panTro1.chr6  28869787 13 + 161576975 gcagctgaaaaca
 s baboon          249182 13 +   4622798 gcagctgaaaaca
@@ -156,6 +156,20 @@ s name4.chr&          50 10 +       100 ATG---TATGCCG
 s name5               50 10 +       100 ATGTATGCCG
 s target0.chr0         0 13 + 158545518 gcagctgaaaaca
 
+a score=0
+s name                0 10 +       100 ATGTATGC---CG
+s name2.chr1         50 10 +       100 ATGTATG---CCG
+s name3.chr9         50 10 +       100 ATGTATG---CCG
+s name4.chr&         50 10 +       100 ATGTATG---CCG
+
+a score=0
+s name                0 10 +       100 ATGTATGC---CG
+s target3.chr0         0 13 + 158545518 gcagctgaaaaca
+s name2.chr1         50 10 +       100 ATGTATG---CCG
+s name3.chr9         50 10 +       100 ATGTATG---CCG
+s target0.chr0         0 13 + 158545518 gcagctgaaaaca
+s name4.chr&         50 10 +       100 ATGTATG---CCG
+
 ''',
                     '''a ordered=true
 s target0.chr1         0 13 + 158545518 gcagctgaaaaca
@@ -163,7 +177,12 @@ s target0.chr0         0 13 + 158545518 gcagctgaaaaca
 s target2.chr0         0 13 + 158545518 gcagctgaaaaca
 s target3.chr0         0 13 + 158545518 gcagctgaaaaca
 
+a ordered=true
+s target0.chr0         0 13 + 158545518 gcagctgaaaaca
+s target3.chr0         0 13 + 158545518 gcagctgaaaaca
+
 '''),
+            
             ]
 def hashify(s):
     return s.replace(' ', '').replace('\n', '')
