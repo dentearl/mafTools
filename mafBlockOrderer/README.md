@@ -24,7 +24,7 @@ mafBlockOrderer is a program that will look through a maf file block by block an
 * <code>-v, --verbose</code>   turns on verbose output.
 
 ## Example
-    $ ./mafBlockOrderer --maf example.maf --species hg18,mm9,rn4,banana
+    $ ./mafBlockOrderer --maf example.maf --order hg18,mm9,rn4,banana
     ##maf version=1
     a score=0
     s banana.chr1 0 10 + 1000000 ACGTACGTAC
