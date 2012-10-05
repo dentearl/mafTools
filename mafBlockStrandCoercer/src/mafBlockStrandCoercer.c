@@ -152,12 +152,12 @@ void version(void) {
 void usage(void) {
     version();
     fprintf(stderr, "Usage: mafBlockStrandCoercer --maf alignment.maf --seq hg18 --strand + > positive.maf \n\n"
-            "mafBlockStrandCoercer is a program to coerce a particular strandedness out for a block\n"
+            "mafBlockStrandCoercer is a program to coerce a particular strandedness for all blocks\n"
             "based the strandedness of a target sequence. When a block contains the target sequence but\n"
-            "in the flipped orientation then the block is flipped, i.e. all start coordinates are transformed,\n"
-            "and all sequence fields are reverse-complemented. If the block contains the target sequence\n"
-            "multiple times and with conflicing strands (i.e. both + and - strands are observed), then\n"
-            "nothing is done.\n");
+            "in the flipped orientation (relative to the --strand option) then the block is flipped,\n"
+            "i.e. all start coordinates are transformed, and all sequence fields are reverse-complemented.\n"
+            "If the block contains the target sequence multiple times and with conflicing strands\n"
+            "(i.e. both + and - strands are observed), then nothing is done.\n");
     fprintf(stderr, "Options: \n");
     usageMessage('h', "help", "show this help message and exit.");
     usageMessage('m', "maf", "input alignment maf file.");
