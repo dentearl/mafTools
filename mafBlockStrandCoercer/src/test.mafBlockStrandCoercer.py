@@ -211,20 +211,23 @@ s target.chr0 158545407 13 + 158545518 gcagctgaaaaca
 ''', '+'),
             ]
 def hashify(s):
+    if s is None:
+        return None
     return s.replace(' ', '').replace('\n', '')
-def mafIsCoerced(maf, expected):
-    f = open(maf)
+def mafIsCoerced(filename, expected):
+    f = open(filename)
     lastLine = mtt.processHeader(f)
     # walk through the maf, assessing the equivalence to the blockList items
     b = mtt.extractBlockStr(f, lastLine)
+    maf = ''
     while (b is not None):
         lastLine = None
         maf += b
         b = mtt.extractBlockStr(f, lastLine)
-    if hashify(b) != hashify(expected):
-        print 'dang'
+    if hashify(maf) != hashify(expected):
+        print '\ndang'
         print 'observed:'
-        print b
+        print maf
         print '!='
         print 'expected:'
         print expected
