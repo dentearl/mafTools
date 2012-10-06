@@ -60,6 +60,12 @@ class QLineFormatError(ValidatorError): pass
 class DuplicateColumnError(ValidatorError): pass
 class SequenceConsistencyError(ValidatorError): pass
 class EmptyInputError(ValidatorError): pass
+class GenericValidationOptions:
+   # used by other python modules when calling mafValidator from unit tests
+    def __init__(self):
+        self.lookForDuplicateColumns = False
+        self.testChromNames = False
+        self.validateSequence = True
 
 def initOptions(parser):
    parser.add_option('--maf', dest='filename', 

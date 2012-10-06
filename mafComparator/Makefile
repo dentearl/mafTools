@@ -75,7 +75,7 @@ test/%.o: src/%.c src/%.h ${sonLibPath}/sonLib.a
 	rm -f CuTest.o
 	mv CuTest.a $@
 
-test: test/allTests test/mafComparator test/testRand
+test: buildVersion test/allTests test/mafComparator test/testRand
 	./test/allTests && python2.7 src/test.mafComparator.py --verbose  && rm -rf ./test/ && rmdir ./tempTestDir
 
 test/allTests: src/allTests.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a

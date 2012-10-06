@@ -147,6 +147,31 @@ s panTro1.chr7 28869787 13 + 161576975 gcagctgaatacT
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 ''',),
+                     ('''a score=0
+#dup block 1, name4 is duplicate
+s target.chr0        38 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon         249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 gcagctgannnnn
+s name.chr1           0 13 +       100 gcagctgaaaacN
+s name2.chr1         50 13 +       100 gcagctgaaaacN
+s name3.chr9         50 13 +       100 gcagctgaaaaca
+s name4.chr&         50 13 +       100 gcagctgaaaaca
+s name4.chrA         50 13 +       100 gcagctgaaaacT
+
+''',
+                      '''a score=0
+#dup block 1, name4 is duplicate
+s target.chr0        38 13 + 158545518 gcagctgaaaaca
+s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
+s baboon         249182 13 +   4622798 gcagctgaaaaca
+s mm4.chr6     53310102 13 + 151104725 gcagctgannnnn
+s name.chr1           0 13 +       100 gcagctgaaaacN
+s name2.chr1         50 13 +       100 gcagctgaaaacN
+s name3.chr9         50 13 +       100 gcagctgaaaaca
+s name4.chr&         50 13 +       100 gcagctgaaaaca
+
+''',),
             ]
 g_nonDuplicateBlocks = ['''a score=23262.0
 #non-dup block 1

@@ -40,7 +40,7 @@ test/%.o: src/%.c src/%.h
 clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/ temTestDir/
 
-test: test/allTests test/mafBlockExtractor
+test: buildVersion test/allTests test/mafBlockExtractor
 	./test/allTests && python2.7 src/test.mafBlockExtractor.py --verbose && rmdir ./tempTestDir && rm -rf ./test/
 
 test/allTests: src/allTests.c ${testObjects} ${testAPI}

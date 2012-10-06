@@ -225,7 +225,7 @@ static bool mafBlocksAreEqual(mafBlock_t *input, mafBlock_t *expected, bool verb
 static void test_reverseComplement(CuTest *testCase) {
     // test that the reverseComplement function works properly
     char *input = de_strdup("GGGGaaaaaaaatttatatat");
-    char *output = de_strdup("ATATATAAATTTTTTTTCCCC");
+    char *output = de_strdup("atatataaattttttttCCCC");
     reverseComplementSequence(input, strlen(input));
     CuAssertTrue(testCase, strlen(input) == strlen(output));
     CuAssertTrue(testCase, strncmp(input, output, strlen(output)) == 0);

@@ -119,11 +119,6 @@ s target.chr0     36713600 348 - 53106993 ATATTGAGGAGCAGGATGGGTATAGAAGCCCTGACCTA
 
 '''
     ]
-class GenericValidationOptions:
-    def __init__(self):
-        self.lookForDuplicateColumns = False
-        self.testChromNames = False
-        self.validateSequence = True
 def hashStr(s):
     return s.replace(' ', '').replace('\n', '')
 g_overlappingBlocksHashed = set()
@@ -184,7 +179,7 @@ class ExtractionTest(unittest.TestCase):
         """ mafBlockExtractor should output blocks that meet the criteria for extraction. That is they contain the target sequence and have at least one base in the target range.
         """
         mtt.makeTempDirParent()
-        customOpts = GenericValidationOptions()
+        customOpts = mafval.GenericValidationOptions()
         for i in xrange(0, 10):
             shuffledBlocks = []
             tmpDir = os.path.abspath(mtt.makeTempDir('extraction'))
@@ -218,7 +213,7 @@ class ExtractionTest(unittest.TestCase):
     def testNonExtraction0(self):
         """ mafBlockExtractor should not extract blocks when they do not match.
         """
-        customOpts = GenericValidationOptions()
+        customOpts = mafval.GenericValidationOptions()
         mtt.makeTempDirParent()
         for i in xrange(0, 10):
             tmpDir = os.path.abspath(mtt.makeTempDir('nonExtraction_0'))
@@ -241,7 +236,7 @@ class ExtractionTest(unittest.TestCase):
     def testNonExtraction1(self):
         """ mafBlockExtractor should not extract blocks when they do not match.
         """
-        customOpts = GenericValidationOptions()
+        customOpts = mafval.GenericValidationOptions()
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('nonExtraction_1'))
         block = '''a degree=4
@@ -667,7 +662,7 @@ MafLine('simHuman.chrJ', 6786941, 60, '-', 88398963, '--------------------------
         if valgrind is None:
             return
         mtt.makeTempDirParent()
-        customOpts = GenericValidationOptions()
+        customOpts = mafval.GenericValidationOptions()
         i = -1
         for inblocks, seq, start, stop, outblocks in self.testSet:
             i += 1

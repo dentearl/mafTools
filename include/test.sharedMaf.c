@@ -449,7 +449,8 @@ static bool mafLinesAreEqual(mafLine_t* ml1, mafLine_t *ml2) {
         return false;
     }
     if (maf_mafLine_getStart(ml1) != maf_mafLine_getStart(ml2)) {
-        fprintf(stderr, "mafLines differ in start\n");
+        fprintf(stderr, "mafLines differ in start: ml1: %" PRIu32 " ml2: %" PRIu32 "\n",
+                maf_mafLine_getStart(ml1), maf_mafLine_getStart(ml2));
         return false;
     }
     if (maf_mafLine_getLength(ml1) != maf_mafLine_getLength(ml2)) {
@@ -534,18 +535,70 @@ static void test_newMafBlockFromString_0(CuTest *testCase) {
     maf_mafBlock_setLineNumber(ib, 7);
     maf_mafBlock_setNumberOfLines(ib, 4);
     maf_mafBlock_setNumberOfSequences(ib, 3);
-    
-    // CuAssertTrue(testCase, true);
-    
     mafBlock_t *ib2 = maf_newMafBlockFromString("a score=0\n"
                                                 "s target.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                                                 "s name.chr1 0 10 + 100 ATGT---ATGCCG\n"
                                                 "s name2.chr1 0 10 + 100 ATGT---ATGCCG\n"
                                                 , 3);
     CuAssertTrue(testCase, mafBlocksAreEqual(ib, ib2));
-    
     maf_destroyMafBlockList(ib);
     maf_destroyMafBlockList(ib2);
+}
+static void test_flipBlockStrand_0(CuTest *testCase) {
+    mafBlock_t *orig = maf_newMafBlockFromString("a score=0\n"
+                                                 "s target.chr0 0 13 + 158545518 gcagctgaaaaca\n"
+                                                 "s name.chr1   0 10 +       100 ATGT---ATGCCG\n"
+                                                 "s name2.chr1  0 10 +       100 ATGT---ATGCCG\n"
+                                                 , 3);
+    mafBlock_t *mb = maf_copyMafBlock(orig);
+    // sanity check
+    assert(mb != NULL);
+    CuAssertTrue(testCase, mb != orig);
+    CuAssertTrue(testCase, mafBlocksAreEqual(mb, orig));
+    mafBlock_t *exp = maf_newMafBlockFromString("a score=0\n"
+                                                "s target.chr0 158545505 13 - 158545518 tgttttcagctgc\n"
+                                                "s name.chr1          90 10 -       100 CGGCAT---ACAT\n"
+                                                "s name2.chr1         90 10 -       100 CGGCAT---ACAT\n"
+                                               , 3);
+    maf_mafBlock_flipStrand(mb);
+    // flip test
+    CuAssertTrue(testCase, mafBlocksAreEqual(mb, exp));
+    maf_mafBlock_flipStrand(mb);
+    // round trip test
+    CuAssertTrue(testCase, mafBlocksAreEqual(mb, orig));
+    maf_destroyMafBlockList(mb);
+    maf_destroyMafBlockList(exp);
+    maf_destroyMafBlockList(orig);
+}
+static void test_flipBlockStrand_1(CuTest *testCase) {
+    mafBlock_t *orig = maf_newMafBlockFromString("a score=6636.0\n"
+                                                 "s hg18.chr7    27707221 13 + 158545518 gcagct--gaaaaca\n"
+                                                 "s panTro1.chr6 28869787 13 + 161576975 gcagct--gaaaaca\n"
+                                                 "# comment line\n"
+                                                 "s baboon         249182 13 -   4622798 gc--agctgaaaaca\n"
+                                                 "s mm4.chr6     53310102 13 + 151104725 ACAG--CTGAAAATA\n"
+                                                 , 3);
+    mafBlock_t *mb = maf_copyMafBlock(orig);
+    // sanity check
+    assert(mb != NULL);
+    CuAssertTrue(testCase, mb != orig);
+    CuAssertTrue(testCase, mafBlocksAreEqual(mb, orig));
+    mafBlock_t *exp = maf_newMafBlockFromString("a score=6636.0\n"
+                                                "s hg18.chr7    130838284 13 - 158545518 tgttttc--agctgc\n"
+                                                "s panTro1.chr6 132707175 13 - 161576975 tgttttc--agctgc\n"
+                                                "# comment line\n"
+                                                "s baboon         4373603 13 +   4622798 tgttttcagct--gc\n"
+                                                "s mm4.chr6      97794610 13 - 151104725 TATTTTCAG--CTGT\n"
+                                                , 3);
+    maf_mafBlock_flipStrand(mb);
+    // flip test
+    CuAssertTrue(testCase, mafBlocksAreEqual(mb, exp));
+    maf_mafBlock_flipStrand(mb);
+    // round trip test
+    CuAssertTrue(testCase, mafBlocksAreEqual(mb, orig));
+    maf_destroyMafBlockList(mb);
+    maf_destroyMafBlockList(exp);
+    maf_destroyMafBlockList(orig);
 }
 CuSuite* mafShared_TestSuite(void) {
     CuSuite* suite = CuSuiteNew();
@@ -555,5 +608,7 @@ CuSuite* mafShared_TestSuite(void) {
     SUITE_ADD_TEST(suite, test_lineNumbers);
     SUITE_ADD_TEST(suite, test_readWriteMaf);
     SUITE_ADD_TEST(suite, test_newMafBlockFromString_0);
+    SUITE_ADD_TEST(suite, test_flipBlockStrand_0);
+    SUITE_ADD_TEST(suite, test_flipBlockStrand_1);
     return suite;
 }

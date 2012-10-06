@@ -80,10 +80,10 @@ static bool maf_isBlankLine(char *s) {
     }
     return true;
 }
-static void maf_checkForPrematureMafEnd(int status, char *line) {
+static void maf_checkForPrematureMafEnd(char *filename, int status, char *line) {
     if (status == -1) {
         free(line);
-        fprintf(stderr, "Error, premature end to maf file\n");
+        fprintf(stderr, "Error, premature end to maf file: %s\n", filename);
         exit(EXIT_FAILURE);
     }
 }
@@ -106,7 +106,28 @@ mafLine_t* maf_newMafLine(void) {
     ml->next = NULL;
     return ml;
 }
+mafLine_t* maf_copyMafLineList(mafLine_t *orig) {
+    // create and return a copy of orig, a mafLine_t linked list
+    if (orig == NULL) {
+        return NULL;
+    }
+    mafLine_t *head = NULL, *ml = NULL, *tmp = NULL;
+    while (orig != NULL) {
+        if (head == NULL) {
+            tmp = maf_copyMafLine(orig);
+            ml = tmp;
+            head = ml;
+        } else {
+            tmp = maf_copyMafLine(orig);
+            maf_mafLine_setNext(ml, tmp);
+            ml = maf_mafLine_getNext(ml);
+        }
+        orig = maf_mafLine_getNext(orig);
+    }
+    return head;
+}
 mafLine_t* maf_copyMafLine(mafLine_t *orig) {
+    // create and return a copy of a single mafLine_t structure
     if (orig == NULL) {
         return NULL;
     }
@@ -126,7 +147,6 @@ mafLine_t* maf_copyMafLine(mafLine_t *orig) {
     if (orig->sequence != NULL) {
         ml->sequence = de_strdup(orig->sequence);
     }
-    ml->next = maf_copyMafLine(orig->next);
     return ml;
 }
 mafBlock_t* maf_newMafBlockListFromString(const char *s, uint32_t lineNumber) {
@@ -231,7 +251,9 @@ mafLine_t* maf_newMafLineFromString(const char *s, uint32_t lineNumber) {
     tkn = strtok(cline, " \t");
     if (tkn == NULL) {
         free(cline);
-        maf_failBadFormat(lineNumber, "Unable to separate line on tabs and spaces at line definition field.");
+        char *error = de_malloc(kMaxStringLength);
+        sprintf(error, "Unable to separate line on tabs and spaces at line definition field:\n%s", s);
+        maf_failBadFormat(lineNumber, error);
     }
     tkn = strtok(NULL, " \t"); // name field
     if (tkn == NULL) {
@@ -273,7 +295,9 @@ mafLine_t* maf_newMafLineFromString(const char *s, uint32_t lineNumber) {
     tkn = strtok(NULL, " \t"); // sequence field
     if (tkn == NULL) {
         free(cline);
-        maf_failBadFormat(lineNumber, "Unable to separate line on tabs and spaces at sequence field.");
+        char *error = de_malloc(kMaxStringLength);
+        sprintf(error, "Unable to separate line on tabs and spaces at sequence field:\n%s", s);
+        maf_failBadFormat(lineNumber, error);
     }
     char *seq = (char *) de_malloc(strlen(tkn) + 1);
     strcpy(seq, tkn);
@@ -307,21 +331,25 @@ mafBlock_t* maf_copyMafBlockList(mafBlock_t *orig) {
             maf_mafBlock_setNext(mb, tmp);
             mb = maf_mafBlock_getNext(mb);
         }
+        orig = maf_mafBlock_getNext(orig);
     }
     return head;
 }
 mafBlock_t* maf_copyMafBlock(mafBlock_t *orig) {
-    // copies a SINGLE maf block. Does not copy down the tree.
+    // copies a SINGLE maf block. Does not copy down the linked list of blocks.
     if (orig == NULL) {
         return NULL;
     }
-    mafBlock_t *mb = (mafBlock_t *) de_malloc(sizeof(*mb));
-    mb->headLine = maf_copyMafLine(orig->headLine);
+    mafBlock_t *mb = maf_newMafBlock();
+    // copy mafLine_t linked list
+    mb->headLine = maf_copyMafLineList(orig->headLine);
+    // record the mafBlock tail line
     mafLine_t *ml = mb->headLine;
     while (ml != NULL) {
         mb->tailLine = ml;
         ml = ml->next;
     }
+    // copy attributes
     mb->lineNumber = orig->lineNumber;
     mb->numberOfSequences = orig->numberOfSequences;
     mb->numberOfLines = orig->numberOfLines;
@@ -730,7 +758,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
     int status = de_getline(&line, &n, mfa->mfp);
     bool validHeader = false;
     ++(mfa->lineNumber);
-    maf_checkForPrematureMafEnd(status, line);
+    maf_checkForPrematureMafEnd(maf_mafFileApi_getFilename(mfa), status, line);
     if (strncmp(line, "track", 5) == 0) {
         // possible first line of a maf
         validHeader = true;
@@ -746,7 +774,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         ++(mfa->lineNumber);
         header->lineNumber = mfa->lineNumber;
         ++(header->numberOfLines);
-        maf_checkForPrematureMafEnd(status, line);
+        maf_checkForPrematureMafEnd(maf_mafFileApi_getFilename(mfa), status, line);
     }
     if (strncmp(line, "##maf", 5) == 0) {
         // possible first or second line of maf
@@ -768,7 +796,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         ++(mfa->lineNumber);
         header->lineNumber = mfa->lineNumber;
         ++(header->numberOfLines);
-        maf_checkForPrematureMafEnd(status, line);
+        maf_checkForPrematureMafEnd(maf_mafFileApi_getFilename(mfa), status, line);
     }
     if (!validHeader) {
         fprintf(stderr, "Error, maf file %s does not contain a valid header!\n", mfa->filename);
@@ -790,7 +818,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         ++(mfa->lineNumber);
         header->lineNumber = mfa->lineNumber;
         ++(header->numberOfLines);
-        maf_checkForPrematureMafEnd(status, line);
+        maf_checkForPrematureMafEnd(maf_mafFileApi_getFilename(mfa), status, line);
     }
     if (line[0] == 'a') {
         // stuff this line in ->lastLine for processesing
@@ -1018,4 +1046,106 @@ uint32_t countNonGaps(char *seq) {
         }
     }
     return m;
+}
+void maf_mafBlock_flipStrand(mafBlock_t *mb) {
+    // take a maf block and perform an in-place strand flip (including reverse complementing the
+    // sequence, transforming the start coords) on all maf lines in the block.
+    mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
+    while (ml != NULL) {
+        if (maf_mafLine_getType(ml) != 's') {
+            ml = maf_mafLine_getNext(ml);
+            continue;
+        }
+        // rc sequence
+        reverseComplementSequence(maf_mafLine_getSequence(ml), maf_mafBlock_getSequenceFieldLength(mb));
+        // coordinate transform
+        maf_mafLine_setStart(ml, maf_mafLine_getSourceLength(ml) - 
+                             (maf_mafLine_getStart(ml) + maf_mafLine_getLength(ml)));
+        // strand flip
+        if (maf_mafLine_getStrand(ml) == '+') {
+            maf_mafLine_setStrand(ml, '-');
+        } else { 
+            maf_mafLine_setStrand(ml, '+');
+        }
+        ml = maf_mafLine_getNext(ml);
+    }
+}
+void reverseComplementSequence(char *s, size_t n) {
+    // accepts upper and lower case, full iupac
+   int c, i, j;
+    for (i = 0, j = n - 1; i < j; ++i, j--) {
+        c = s[i];
+        s[i] = s[j];
+        s[j] = c;
+    }
+    complementSequence(s, n);
+}
+void complementSequence(char *s, size_t n) {
+    // accepts upper and lower case, full iupac
+    for (unsigned i = 0; i < n; ++i)
+        s[i] = complementChar(s[i]);
+}
+char complementChar(char c) {
+    // accepts upper and lower case, full iupac
+    bool wasUpper = false;
+    char a = '\0';
+    if (toupper(c) == c) {
+        wasUpper = true;
+    }
+    switch (toupper(c)) {
+    case 'A': 
+        a = 't';
+        break;
+    case 'C':
+        a = 'g';
+        break;
+    case 'G':
+        a = 'c';
+        break;
+    case 'T':
+        a = 'a';
+        break;
+    case 'M':
+        a = 'k';
+        break;
+    case 'R':
+        a = 'y';
+        break;
+    case 'W':
+        a = 'w';
+        break;
+    case 'S':
+        a = 's';
+        break;
+    case 'Y':
+        a = 'r';
+        break;
+    case 'K':
+        a = 'm';
+        break;
+    case 'V':
+        a = 'b';
+        break;
+    case 'H':
+        a = 'd';
+        break;
+    case 'D':
+        a = 'h';
+        break;
+    case 'B':
+        a = 'v';
+        break;
+    case 'N':
+    case '-':
+    case 'X':
+        a = c;
+        break;
+    default:
+        fprintf(stderr, "Error, unanticipated character in DNA sequence: %c\n", c);
+        exit(EXIT_FAILURE);
+    }
+    if (wasUpper) {
+        a = toupper(a);
+    }
+    return a;
 }

@@ -2,10 +2,10 @@ SHELL:=/bin/bash
 cc = gcc
 args = -Wall -Wextra -Werror -std=c99 -pedantic -I ../external -I ../include
 bin = ../bin
-PROGS = mafBlockDuplicateFilter
+PROGS = mafBlockOrderer
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*)
 objects = ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/buildVersion.o
-testObjects := test/sharedMaf.o test/common.o ../external/CuTest.a  test/buildVersion.o
+testObjects = test/common.o test/sharedMaf.o ../external/CuTest.a test/buildVersion.o
 
 .PHONY: all clean test buildVersion
 
@@ -13,18 +13,18 @@ all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
 buildVersion:
 	@python ../include/createVersionSources.py
 
-${bin}/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies} ${objects}
+${bin}/mafBlockOrderer: src/mafBlockOrderer.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
 	${cc} ${args} -O3 $< ${objects} -o $@.tmp -lm
 	mv $@.tmp $@
 
-test/mafBlockDuplicateFilter: src/mafBlockDuplicateFilter.c ${dependencies} ${testObjects}
+test/mafBlockOrderer: src/mafBlockOrderer.c ${dependencies} ${testObjects}
 	mkdir -p $(dir $@)
 	${cc} ${args} -g -O0 $< ${testObjects} -o $@.tmp -lm
 	mv $@.tmp $@
 
 %.o: %.c %.h
-	${cc} -c ${args} $< -o $@.tmp -lm
+	${cc} -O3 -c ${args} $< -o $@.tmp -lm
 	mv $@.tmp $@
 test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
@@ -38,8 +38,8 @@ test/%.o: src/%.c src/%.h
 clean:
 	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
 
-test: buildVersion test/mafBlockDuplicateFilter
-	python2.7 src/test.mafBlockDuplicateFilter.py --verbose && rm -rf test/ && rmdir ./tempTestDir
+test: buildVersion test/mafBlockOrderer
+	python2.7 src/test.mafBlockOrderer.py --verbose && rm -rf test/ && rmdir ./tempTestDir
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
 	${cc} -c ${args} $<

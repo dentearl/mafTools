@@ -208,60 +208,6 @@ void destroyMafTcComparisonOrder(mafTcComparisonOrder_t *co) {
         free(tmp);
     }
 }
-void reverseComplementSequence(char *s, size_t n) {
-    // accepts upper and lower case, returns upper case 
-   int c, i, j;
-    for (i = 0, j = n - 1; i < j; ++i, j--) {
-        c = s[i];
-        s[i] = s[j];
-        s[j] = c;
-    }
-    complementSequence(s, n);
-}
-void complementSequence(char *s, size_t n) {
-    // accepts upper and lower case, returns upper case
-    for (unsigned i = 0; i < n; ++i)
-        s[i] = complementChar(s[i]);
-}
-char complementChar(char c) {
-    switch (toupper(c)) {
-    case 'A': 
-        return 'T';
-    case 'C':
-        return 'G';
-    case 'G':
-        return 'C';
-    case 'T':
-        return 'A';
-    case 'M':
-        return 'K';
-    case 'R':
-        return 'Y';
-    case 'W':
-        return 'W';
-    case 'S':
-        return 'S';
-    case 'Y':
-        return 'R';
-    case 'K':
-        return 'M';
-    case 'V':
-        return 'B';
-    case 'H':
-        return 'D';
-    case 'D':
-        return 'H';
-    case 'B':
-        return 'V';
-    case 'N':
-    case '-':
-    case 'X':
-        return c;
-    default:
-        fprintf(stderr, "Error, unanticipated character in sequence: %c\n", c);
-        exit(EXIT_FAILURE);
-    }
-}
 void addSequenceValuesToMtcSeq(mafLine_t *ml, mafTcSeq_t *mtcs) {
     // add sequence values to maf transitive closure sequence
     int32_t s; // transformed pos coordinate start (zero based)
@@ -629,11 +575,6 @@ void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint3
         length = 0;
         ++g_numPinches;
     }
-    /* if (g_numPinches > kPinchThreshold) { */
-    /*     stPinchThreadSet_joinTrivialBoundaries(threadSet); */
-    /*     g_numPinches = 0; */
-    /* } */
-    // de_debug("exiting processPairForPinching()...\n");
 }
 static void printMatrix(char **mat, uint32_t n) {
     fprintf(stderr, "printMatrix()\n");
@@ -835,16 +776,11 @@ void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet) {
     mafTcComparisonOrder_t *tmp = NULL;
     stPinchThread *a = NULL, *b = NULL;
     while (c != NULL) {
-        // de_debug("c != NULL, c->ref=%" PRIu32 ", c->region->start=%" PRIu32 " c->region->end=%" PRIu32 "\n", 
-        //          c->ref, c->region->start, c->region->end);
         a = stPinchThreadSet_getThread(threadSet, stHash_stringKey(names[c->ref]));
         assert(a != NULL);
         for (uint32_t r = c->ref + 1; r < numSeqs; ++r) {
             b = stPinchThreadSet_getThread(threadSet, stHash_stringKey(names[r]));
             assert(b != NULL);
-            // de_debug("going to pinch ref %" PRIu32 ":%s to %" PRIu32 ":%s\n", c->ref, names[c->ref], r, names[r]);
-            // de_debug("a %" PRIu32 ": %s\n", c->ref, mat[c->ref]);
-            // de_debug("b %" PRIu32 ": %s\n", r, mat[r]);
             processPairForPinching(threadSet, a, starts[c->ref], sourceLengths[c->ref], strands[c->ref],
                                    mat[c->ref], b, starts[r], sourceLengths[r], strands[r], mat[r], 
                                    c->region->start, c->region->end, bookmarks[c->ref], bookmarks[r],
@@ -916,9 +852,9 @@ void getMaxFieldLengths(stHash *hash, stHash *nameHash, stPinchBlock *block, uin
                     (((int64_t)((mafTcSeq_t*)stHash_search(hash, key))->length) - 
                      stPinchSegment_getStart(thisSeg) - stPinchSegment_getLength(thisSeg)));
         }
-        if (*maxStart < strlen(temp))
+        if (*maxStart < strlen(temp)) {
             *maxStart = strlen(temp);
-
+        }
         free(temp);
         temp = (char*) de_malloc(kMaxStringLength);
         sprintf(temp, "%" PRIi64, stPinchSegment_getLength(thisSeg));
@@ -1007,28 +943,20 @@ int main(int argc, char **argv) {
     char filename[kMaxStringLength];
     stHash *sequenceHash, *nameHash;
     parseOptions(argc, argv, filename);
-    
     // first pass, build sequence hash
     mafFileApi_t *mfa = maf_newMfa(filename, "r");
     createSequenceHash(mfa, &sequenceHash, &nameHash);
-    // reportSequenceHash(sequenceHash, nameHash);
     stPinchThreadSet *threadSet = buildThreadSet(sequenceHash);
-    // return EXIT_SUCCESS;
-
     maf_destroyMfa(mfa);
-    
     // second pass, build pinch graph
     mfa = maf_newMfa(filename, "r");
     addAlignmentsToThreadSet(mfa, threadSet);
     maf_destroyMfa(mfa);
-    
     // consolidate and report
     reportTransitiveClosure(threadSet, sequenceHash, nameHash);
-    
     // cleanup
     stHash_destruct(sequenceHash);
     stHash_destruct(nameHash);
     stPinchThreadSet_destruct(threadSet);
-
     return EXIT_SUCCESS;
 }
