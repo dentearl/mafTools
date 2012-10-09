@@ -25,7 +25,7 @@ With the exception of the python dependencies, when a component is missing a dep
 * **mafDuplicateFilter** A program to filter alignment blocks to remove duplicate species. One sequence per species is allowed to remain, chosen by comparing the sequence to the consensus for the block and computing a similarity bit score between the IUPAC formatted consensus and the sequence. The highest scoring duplicate stays, or in the case of ties, the sequence closest to the start of the file stays.
 * **mafExtractor** A program to extract all alignment blocks that contain a region in a particular sequence. Useful for isolating regions of interest in large maf files.
 * **mafFilter** A program to filter a maf based on sequence names. Can be used to include or exclude sequence names. Useful for removing extraneous sequences from maf files.
-* **mafFinder** A program to search for a position in a particular sequence. Useful for determining where in maf a particular part of the alignment resides.
+* **mafPositionFinder** A program to search for a position in a particular sequence. Useful for determining where in maf a particular part of the alignment resides.
 * **mafRowOrderer** A program to order maf lines within blocks. Useful for moving a reference species to the top of all blocks. Species not specified in the ordering are automatically trimmed from the results.
 * **mafSorter** A program to sort all of the blocks in a MAF based on the (absolute) start position of one of the sequences. Blocks without the sequence are placed at the start of the output in their original order.
 * **mafStats** A program to read a maf file and report back summary statistics about the file contents.
