@@ -38,7 +38,7 @@ endif
 ##############################
 dependentModules= ${Comparator} ${TransitiveClosure} ${CoveragePickles} ${Stats}
 
-modules = include ${dependentModules} mafValidator mafBlockFinder mafBlockExtractor mafBlockSorter mafBlockDuplicateFilter mafBlockFilter mafBlockStrandCoercer mafBlockOrderer
+modules = include ${dependentModules} mafValidator mafPositionFinder mafExtractor mafSorter mafDuplicateFilter mafFilter mafStrander mafRowOrderer
 
 .PHONY: all %.all clean %.clean test %.test
 
