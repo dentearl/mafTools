@@ -1,0 +1,81 @@
+##################################################
+# input maf
+a score=0.0 status=test.input
+s ref.chr1   10 10 + 100 ACGTACGTAC
+s seq1.chr@   0 10 + 100 AAAAAAAAAA
+s seq2.chr&  10  5 + 100 -----CCCCC
+s seq6.chr1  10  5 + 100 -----GGGGG
+s seq7.chr20  0  5 + 100 AAAAA-----
+
+a score=0.0 status=test.input
+s ref.chr1   20 10 + 100 GTACGTACGT
+s seq2.chr!!  5  5 + 100 CCCCC-----
+s seq3.chr0  20  5 + 100 -----GGGGG
+s seq6.chr1  22  5 + 100 GGGGG-----
+
+a score=0.0 status=test.input
+s ref.chr1   30 10 + 100 ACGTACGTAC
+s seq4.chr1   0  5 - 100 GG-----GGG
+s seq5.chr2   0 10 + 100 CCCCCCCCCC
+s seq7.chr20 42  5 + 100 -----AAAAA
+
+##################################################
+# input sequences
+> ref.chr1 
+GGGGGGGGGACGTACGTACGTACGTACGTGGGG
+> seq1.chr@
+AAAAAAAAAAGG
+> seq2.chr&
+AAAAAAAAACCCCCAA
+> seq2.chr!!
+AAAACCCCCAA
+> seq3.chr0
+AAAAAAAAAAAAAAAAAAAGGGGGAA
+seq4.chr1
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCC
+> seq6.chr1
+AAAAAAAAAGGGGGAAAAAAAGGGGGAA
+> seq7.chr20
+AAAAAGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGAAAAATT
+
+##################################################
+# output
+
+# optional maf output, where breakpoint N is 5 (as seen in seq2)
+# and insert sequence is *at least* 17 as seen in seq7.
+a score=0.0 status=test.expected
+s ref.chr1 10 30 + 100 ACGTACGTAC-----------------GTACGTACGT-------------------------------------ACGTACGTAC
+s seq1      0 15 +  15 AAAAAAAAAA----------------------AAAAA-----------------------------------------------
+s seq2      0 15 +  15 -----CCCCC------------NNNNNCCCCC----------------------------------------------------
+s seq6      0 17 +  17 -----GGGGGAAAAAAAGGGGG--------------------------------------------------------------
+s seq7      0 47 +  47 AAAAA--------------------------------GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG-----AAAAA
+s seq3      0  5 +   5 --------------------------------GGGGG-----------------------------------------------
+s seq4      0  5 -   5 --------------------------------------------------------------------------GG-----GGG
+s seq5      0 10 +  10 --------------------------------------------------------------------------CCCCCCCCCC
+
+# expected fasta output:
+> ref.chr1
+ACGTACGTAC-----------------GTACGTACGT-------------
+------------------------ACGTACGTAC
+> seq1
+AAAAAAAAAA----------------------AAAAA-------------
+----------------------------------
+> seq2
+-----CCCCC------------NNNNNCCCCC------------------
+----------------------------------
+> seq6
+-----GGGGGAAAAAAAGGGGG----------------------------
+----------------------------------
+> seq7
+AAAAA--------------------------------GGGGGGGGGGGGG
+GGGGGGGGGGGGGGGGGGGGGGGG-----AAAAA
+> seq3
+--------------------------------GGGGG-------------
+----------------------------------
+> seq4
+--------------------------------------------------
+------------------------GG-----GGG
+> seq5
+--------------------------------------------------
+------------------------CCCCCCCCCC

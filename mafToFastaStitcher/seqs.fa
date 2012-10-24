@@ -1,0 +1,28 @@
+> ref.chr1 
+ggggggggggACGTACGTACGTACGTACGTACGTACGTACgg
+
+>seq1.chr@
+AAAAAAAAAA
+
+> seq7.chr20
+AAAAAgggggggggggggggggggggggggggggggggggggAAAAAtt
+
+> seq2.chr&
+aaaaaaaaaaCCCCCaa
+
+> seq2.chr!!
+aaaaaCCCCCaa
+
+> seq3.chr0
+aaaaaaaaaaaaaaaaaaaGGGGGaa
+
+> seq4.chr1
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaCCCCC
+
+> seq5.chr2
+CCCCCCCCCC
+
+> seq6.chr1
+AAAAAAAAAAGGGGGAAAAAAAGGGGGAA
+
