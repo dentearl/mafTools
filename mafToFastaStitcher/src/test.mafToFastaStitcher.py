@@ -112,6 +112,87 @@ s seq4.chr1   0  5 - 100 ---------------------------------------------GG-----GGG
 s seq5.chr2   0 10 + 100 ---------------------------------------------CCCCCCCCCC
 ''',
                  ),
+                ('''a somethingerother
+s ref.chr1   10 10 + 100 ACGTACGTAC
+s seq1.chr0   1 10 - 100 AAAAAAAAAA
+s seq2.chr0   2  5 + 100 -----CCCCC
+s seq3.chr0   3  8 - 100 -tttttttt-
+
+a blah
+s ref.chr1   20 10 + 100 GGGGGGGGGG
+s seq1.chr0  11  5 - 100 --tttt--t-
+s seq2.chr0   7 10 + 100 cccccggggg
+s seq4.chr0   5 10 + 100 TTTTTTTTTT
+
+a blahz
+s ref.chr1   30 10 + 100 CCCCCCCCCC
+s seq1.chr0  16 10 - 100 AAAAAAAAAA
+s seq3.chr0  11 10 - 100 cccgggttta
+
+a something
+s ref.chr1   40 10 + 100 aaaaaaaaaa
+s seq4.chr0  15  5 + 100 ---gggAA--
+s seq5.chr0   0  9 + 100 GGGGGG-GGG
+s seq3.chrX   0 10 - 100 acgtacgtac
+
+a things
+s ref.chr1   50 10 + 100 TTTTTTTGGG
+s seq6.chr0   7  4 +  20 --A--C-G-T
+s seq4.chr0  70  6 + 100 --TTA--AGT
+
+a words
+s ref.chr1   60 10 + 100 cccGGGAAAT
+s seq2.chr0  24  8 + 100 -ccGGGAAA-
+''',
+                ['''> ref.chr1
+ACGTACGTACGGGGGGGGGGCCCCCCCCCCaaaaaaaaaaTTTTTTTGGGcccGGGAAAT
+> seq1.chr0
+ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggTTTTTTTTTTaaaaaTTTTTTTTTTg
+> seq2.chr0
+aaCCCCCcccccgggggCCTTTTTccGGGAAAtttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
+> seq3.chr0
+GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGtaaacccgggaaaaaaaaTTT
+''',
+                 '''> seq3.chrX
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTgtacgtacga
+> seq4.chr0
+aaaaaTTTTTTTTTTgggAAccccccccccccccccccccccccccccccccccccccccccccccccccTTAAGTgggggggggggggggggggggggg
+> seq5.chr0
+GGGGGGGGaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+> seq6.chr0
+gggggggACGTaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+'''],
+'''> ref.chr1
+ACGTACGTACGGGGGGGGGGCCCCCCCCCC------aaaaaaaaaa----
+--TTTTTTTGGG-------cccGGGAAAT
+> seq1.chr0
+AAAAAAAAAA--tttt--t-AAAAAAAAAA--------------------
+-----------------------------
+> seq2.chr0
+-----CCCCCcccccggggg------------------------------
+------------CCTTTTT-ccGGGAAA-
+> seq3
+-tttttttt-----------cccgggtttaNNNNNNacgtacgtac----
+-----------------------------
+> seq4
+----------TTTTTTTTTT-------------------gggAA--NNNN
+NN--TTA--AGT-----------------
+> seq5.chr0
+------------------------------------GGGGGG-GGG----
+-----------------------------
+> seq6.chr0
+--------------------------------------------------
+----A--C-G-T-----------------
+''',
+'''a stitched=true
+s ref.chr1   10 60 + 100 ACGTACGTACGGGGGGGGGGCCCCCCCCCC------aaaaaaaaaa------TTTTTTTGGG-------cccGGGAAAT
+s seq1.chr0   1 25 - 100 AAAAAAAAAA--tttt--t-AAAAAAAAAA-------------------------------------------------
+s seq2.chr0   2 30 + 100 -----CCCCCcccccggggg------------------------------------------CCTTTTT-ccGGGAAA-
+s seq3        0 34 +  34 -tttttttt-----------cccgggtttaNNNNNNacgtacgtac---------------------------------
+s seq4        0 27 +  27 ----------TTTTTTTTTT-------------------gggAA--NNNNNN--TTA--AGT-----------------
+s seq5.chr0   0  9 + 100 ------------------------------------GGGGGG-GGG---------------------------------
+s seq6.chr0   7  4 +  20 ------------------------------------------------------A--C-G-T-----------------
+'''),
                 ]
 
 def hashify(s):
@@ -140,6 +221,7 @@ def fastaIsCorrect(filename, expected):
                 print '!='
                 print 'expected:'
                 print explines[i]
+                return False
         return False
     return True
 def mafIsCorrect(filename, expected):
