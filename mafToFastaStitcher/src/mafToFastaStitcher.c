@@ -173,7 +173,7 @@ void usage(void) {
 int main(int argc, char **argv) {
     options_t *options = options_construct();
     stHash *sequenceHash = NULL; // keyed on fasta headers, valued with mtfseq_t pointers
-    stHash *alignmentHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, destroyMtfseq); // keyed on species names, valued with row_t pointers
+    stHash *alignmentHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, destroyRow); // keyed on species names, valued with row_t pointers
     stList *rowOrder = stList_construct3(0, free); // when adding keys to alignmentHash, append to this list
     parseOptions(argc, argv, options);
     // read fastas, populate sequenceHash
@@ -185,10 +185,10 @@ int main(int argc, char **argv) {
         // fasta output
         writeFastaOut(alignmentHash, rowOrder, options);
     }
-    // if (options->outMaf != NULL) {
+    if (options->outMaf != NULL) {
         // maf output
         writeMafOut(alignmentHash, rowOrder, options);
-        //}
+    }
     // cleanup
     stHash_destruct(alignmentHash);
     stHash_destruct(sequenceHash);

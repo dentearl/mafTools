@@ -77,20 +77,18 @@ mtfseq_t* newMtfseq(uint32_t length) {
     mtfs->seq[mtfs->index] = '\0';
     return mtfs;
 }
-void resizeMtfseq(mtfseq_t **m1) {
+void resizeMtfseq(mtfseq_t *m) {
     // double the size of the mtfseq_t, updating all members
     uint32_t n = 2 << 16;
-    if (n < (*m1)->memLength) {
-        n = (*m1)->memLength;
+    if (n < m->memLength) {
+        n = m->memLength;
     }
-    mtfseq_t *m2 = newMtfseq(n);
-    m2->index = (*m1)->index;
-    for (uint32_t i = 0; i < m2->index; ++i) {
-        m2->seq[i] = (*m1)->seq[i];
-    }
-    m2->seq[m2->index] = '\0';
-    destroyMtfseq(*m1);
-    *m1 = m2;
+    m->memLength = n;
+    char *new = (char*) st_malloc(n);
+    new[0] = '\0';
+    strcpy(new, m->seq);
+    free(m->seq);
+    m->seq = new;
 }
 void resizeRowSequence(row_t *r) {
     // double the size of the mtfseq_t, updating all members
@@ -99,9 +97,11 @@ void resizeRowSequence(row_t *r) {
         n = r->memLength;
     }
     r->memLength = n;
-    char *new = (char *)st_malloc(n);
+    char *new = (char *) st_malloc(n);
     new[0] = '\0';
     strcpy(new, r->sequence);
+    free(r->sequence);
+    r->sequence = new;
 }
 void destroyMtfseq(void *p) {
     // extra casting due to function being called by stHash destructor
@@ -121,7 +121,7 @@ row_t* newRow(uint32_t n) {
     r->prevStrand = '0';
     r->sourceLength = 0;
     r->memLength = n;
-    r->sequence = (char*)st_malloc(n);
+    r->sequence = (char*) st_malloc(n);
     r->sequence[0] = '\0';
     r->index = 0;
     return r;
@@ -136,6 +136,9 @@ void destroyRow(void *row) {
 row_t* mafLineToRow(mafLine_t *ml) {
     // take a mafLine_t pointer and turn it into a valid row_t pointer
     row_t *r = newRow(nearestTwo(maf_mafLine_getSequenceFieldLength(ml)));
+    assert(r->name == NULL);
+    assert(r->prevName == NULL);
+    assert(r->sequence[0] == '\0');
     r->name = stString_copy(maf_mafLine_getSpecies(ml));
     r->prevName = stString_copy(maf_mafLine_getSpecies(ml));
     row_copyIn(r, maf_mafLine_getSequence(ml)); // copy in sequence
@@ -149,11 +152,15 @@ row_t* mafLineToRow(mafLine_t *ml) {
 }
 stHash* createSequenceHash(char *fastas) {
     unsigned n = 1 + countChar(fastas, ',');
-    char **fasta = extractSubStrings(fastas, n, ',');
+    char **fastaArray = extractSubStrings(fastas, n, ',');
     stHash *sequenceHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, destroyMtfseq);
     for (unsigned i = 0; i < n; ++i) {
-        addSequencesToHash(sequenceHash, fasta[i]);
+        addSequencesToHash(sequenceHash, fastaArray[i]);
     }
+    for (unsigned i = 0; i < n; ++i) {
+        free(fastaArray[i]);
+    }
+    free(fastaArray);
     return sequenceHash;
 }
 stHash* mafBlockToBlockHash(mafBlock_t *mb, stList *orderList) {
@@ -185,26 +192,24 @@ stHash* mafBlockToBlockHash(mafBlock_t *mb, stList *orderList) {
     }
     return bh;
 }
-void seq_copyIn(mtfseq_t **mtfs, char *src) {
+void seq_copyIn(mtfseq_t *mtfs, char *src) {
     // copy src into mtfseq_t->seq starting at ->index. 
     unsigned n = strlen(src);
-    while ((*mtfs)->index + n + 1 >= (*mtfs)->memLength) {
+    while (mtfs->index + n + 1 >= mtfs->memLength) {
         resizeMtfseq(mtfs);
     }
     for (unsigned i = 0; i < n; ++i) {
         // copy the new sequence into ->seq at the index;
-        (*mtfs)->seq[((*mtfs)->index)++] = src[i];
+        mtfs->seq[(mtfs->index)++] = src[i];
     }
-    (*mtfs)->seq[(*mtfs)->index] = '\0';
+    mtfs->seq[mtfs->index] = '\0';
     // printf("done inside copyIn, memLength: %"PRIu32" index: %"PRIu32"\n", 
     //        (*mtfs)->memLength, (*mtfs)->index);
 }
 void row_copyIn(row_t *row, char *src) {
     // copy src into row_t starting with ->index. 
     unsigned n = strlen(src);
-    while (row->index + n + 1 >= row->memLength) {
-        resizeRowSequence(row);
-    }
+    extendSequence(row, n + 1);
     for (unsigned i = 0; i < n; ++i) {
         // copy the new sequence into ->sequence at the index;
         row->sequence[(row->index)++] = src[i];
@@ -216,43 +221,43 @@ void addSequencesToHash(stHash *hash, char *filename) {
     FILE *ifp = de_fopen(filename, "r");
     int32_t n = kMaxStringLength;
     char *line = (char*) st_malloc(n);
+    char *headPtr = line;
     char *name = NULL;
     mtfseq_t *mtfs = NULL; 
     while (de_getline(&line, &n, ifp) != -1) {
         if (line[0] == '>') {
+            // sequence header
             if (name != NULL) {
                 // record previous sequence before moving on
-                // printf("name: %s, memLength: %"PRIu32", index: %"PRIu32"\n", 
-                //        name, mtfs->memLength, mtfs->index);
                 stHash_insert(hash, stString_copy(name), mtfs);
                 free(name);
                 mtfs = NULL;
             }
             name = stString_getNextWord(&line);
             if (strlen(name) < 2 && name[0] == '>') {
+                // chuck the > as a name, we want an actual sequence name
+                free(name);
                 name = stString_getNextWord(&line);
             }
             if (name[0] == '>') {
+                // we don't want the > at the start of a name, get rid of it
                 char *tmp = name;
                 name = stString_copy(name + 1);
                 free(tmp);
             }
-            // printf("New name: %s\n", name);
             mtfs = newMtfseq(2 << 16);
         } else {
-            seq_copyIn(&mtfs, line);
-            // printf("done with seq_copyIn, name: %s memLength: %"PRIu32" index: %"PRIu32"\n", 
-            //        name, mtfs->memLength, mtfs->index);
+            // sequence line
+            seq_copyIn(mtfs, line);
         }
     }
     if (name != NULL) {
         // record last sequence
-        // printf("line: %s, name: %s, memLength: %"PRIu32", index: %"PRIu32"\n", 
-        //        line, name, mtfs->memLength, mtfs->index);
         stHash_insert(hash, stString_copy(name), mtfs);
         free(name);
     }
     fclose(ifp);
+    free(headPtr);
 }
 void reportSequenceHash(stHash *hash) {
     stHashIterator *hit = stHash_getIterator(hash);
@@ -271,7 +276,6 @@ void extendSequence(row_t *r, uint32_t n) {
     while (r->index + n + 1 >= r->memLength) {
         resizeRowSequence(r);
     }
-    // printf("extendend! [%s] %"PRIu32"\n", r->sequence, r->sequenceLength);
 }
 void penalize(stHash *hash, char *name, uint32_t n) {
     // walk the hash looking for a row_t with ->name equal to input *name,
@@ -288,20 +292,20 @@ void penalize(stHash *hash, char *name, uint32_t n) {
         fill = '-';
         rowSppName = copySpeciesName(row->name);
         if (strcmp(rowSppName, sppName) == 0) {
-            printf("   laying the hurt down on %20s: ", rowSppName);
+            // printf("   laying the hurt down on %20s: ", rowSppName);
             // penalize this row
             fill = 'N';
             row->length += n;
             row->prevRightPos += n;
         } else {
-            printf("   just going to gap       %20s: ", rowSppName);
+            // printf("   just going to gap       %20s: ", rowSppName);
         }
         for (uint32_t i = 0; i < n; ++i) {
             row->sequence[row->index] = fill;
             ++(row->index);
         }
         row->sequence[row->index] = '\0';
-        printf("%s\n", row->sequence);
+        // printf("%s\n", row->sequence);
         free(rowSppName);
         rowSppName = NULL;
     }
@@ -320,27 +324,31 @@ void interstitialInsert(stHash *alignHash, stHash *seqHash, char *name, uint32_t
         row = stHash_search(alignHash, key);
         extendSequence(row, n); // make space
         if (strcmp(row->name, name) == 0) {
-            printf("    going to interstitialize %20s: ", row->name);
+            // printf("    going to interstitialize %20s: ", row->name);
             // insert into this row
             row->length += n;
             row->prevRightPos += n;
             mtfs = stHash_search(seqHash, name);
-            assert(mtfs != NULL);
+            if (mtfs == NULL) {
+                fprintf(stderr, "Error, unable to locate sequnce %s in the sequence hash. "
+                        "Check your input fasta files.\n", name);
+                exit(EXIT_FAILURE);
+            }
             seq = extractSubSequence(mtfs, strand, pos, n);
             for (uint32_t i = 0; i < n; ++i) {
                 row->sequence[row->index] = seq[i];
                 ++(row->index);
             }
-            printf("%s\n", row->sequence);
+            // printf("%s\n", row->sequence);
             free(seq);
         } else {
-            printf("    just going to gap        %20s: ", row->name);
+            // printf("    just going to gap        %20s: ", row->name);
             // these aren't the droids you're looking for, write some gaps instead
             for (uint32_t i = 0; i < n; ++i) {
                 row->sequence[row->index] = '-';
                 ++(row->index);
             }
-            printf("%s\n", row->sequence);
+            // printf("%s\n", row->sequence);
         }
         row->sequence[row->index] = '\0';
     }
@@ -369,9 +377,7 @@ void addMafLineToRow(row_t *row, mafLine_t *ml) {
     // given a row_t and a mafLine_t, add the information from the mafLine_t to the row_t
     char *seq = maf_mafLine_getSequence(ml);
     size_t n = strlen(seq);
-    while (row->index + n + 1 >= row->memLength) {
-        resizeRowSequence(row);
-    }
+    extendSequence(row, n + 1);
     row_copyIn(row, seq);
     free(row->prevName);
     row->prevName = stString_copy(maf_mafLine_getSpecies(ml));
@@ -384,23 +390,18 @@ void addMafLineToRow(row_t *row, mafLine_t *ml) {
 }
 void prependGaps(row_t *r, uint32_t n) {
     // add `n' many gap characters, '-', to the begining of row_t *r
-    while (r->index + n + 1 >= r->memLength) {
-        resizeRowSequence(r);
-    }
-    char *tmp = r->sequence;
+    extendSequence(r, n + 1);
     char *new = (char*) st_malloc(r->memLength);
     new[0] = '\0';
     for (uint32_t i = 0; i < n; ++i) {
         new[i] = '-';
     }
     new[n] = '\0';
-    if (tmp != NULL) {
-        strcat(new, tmp);
+    if (r->sequence != NULL) {
+        strcat(new, r->sequence);
+        free(r->sequence);
     }
     r->sequence = new;
-    if (tmp != NULL) {
-        free(tmp);
-    }
     r->index += n;
 }
 uint32_t nearestTwo(uint32_t n) {
@@ -429,10 +430,10 @@ void addMafBlockToRowHash(stHash *alignHash, stHash *seqHash, stList *orderList,
             alignHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, destroyMtfseq);
         }
         r = stHash_search(alignHash, sppName);
-        printf("observed sequence %s,\n", seqName);
+        // printf("observed sequence %s,\n", seqName);
         uint32_t n;
         if (r == NULL) {
-            printf("sequence %s is novel, adding to hash\n", seqName);
+            // printf("sequence %s is novel, adding to hash\n", seqName);
             // add this row to the hash
             stHashIterator *hit = stHash_getIterator(alignHash);
             char *key = stHash_getNext(hit);
@@ -440,17 +441,20 @@ void addMafBlockToRowHash(stHash *alignHash, stHash *seqHash, stList *orderList,
                 // if key is not null then figure out how many gap chars to put in front of this sequence
                 row_t *value = stHash_search(alignHash, key);
                 n = value->index;
-                stHash_destructIterator(hit);
             } else {
                 n = 0;
             }
+            stHash_destructIterator(hit);
             if (n > 0) {
                 r = newRow(nearestTwo(n));
-                printf("prepend some gaps (%" PRIu32 ") on %s\n", n, seqName);
+                // printf("prepend some gaps (%" PRIu32 ") on %s\n", n, seqName);
                 prependGaps(r, n);
             } else { 
                 r = newRow(2 << 7); // 256 seems like an okay starting point
             }
+            // empty row_t structure, populate it:
+            assert(r->name == NULL);
+            assert(r->prevName == NULL);
             r->name = stString_copy(seqName);
             r->prevName = stString_copy(seqName);
             r->start = maf_mafLine_getStart(ml);
@@ -458,18 +462,18 @@ void addMafBlockToRowHash(stHash *alignHash, stHash *seqHash, stList *orderList,
             r->strand = maf_mafLine_getStrand(ml);
             r->prevStrand = r->strand;
             stHash_insert(alignHash, stString_copy(sppName), r);
-            printf("inserted %s %s\n", sppName, r->name);
+            // printf("inserted %s %s\n", sppName, r->name);
             stList_append(orderList, stString_copy(sppName));
         } else {
             // row already in hash
             if (r->prevStrand != maf_mafLine_getStrand(ml)) {
                 // different strands is a breakpoint
-                printf("penalize 0 (%"PRIu32") %s\n", options->breakpointPenalty, seqName);
+                // printf("penalize 0 (%"PRIu32") %s\n", options->breakpointPenalty, seqName);
                 penalize(alignHash, seqName, options->breakpointPenalty);
                 r->strand = '*';
             } else if (strcmp(r->prevName, seqName) != 0) {
                 // different names implies diff. chromosomes, is a breakpoint
-                printf("penalize 1 (%"PRIu32") %s\n", options->breakpointPenalty, seqName);
+                // printf("penalize 1 (%"PRIu32") %s\n", options->breakpointPenalty, seqName);
                 penalize(alignHash, seqName, options->breakpointPenalty);
                 r->strand = '*';
                 r->multipleNames = true;
@@ -481,12 +485,19 @@ void addMafBlockToRowHash(stHash *alignHash, stHash *seqHash, stList *orderList,
                 r->start = 0;
             } else if (r->prevRightPos + options->interstitialSequence < maf_mafLine_getStart(ml)) {
                 // same chromosome but beyond the accepted interstitial range, breakpoint
-                printf("penalize 2 (%"PRIu32") %s\n", options->breakpointPenalty, seqName);
+                // printf("penalize 2 (%"PRIu32") %s\n", options->breakpointPenalty, seqName);
                 penalize(alignHash, seqName, options->breakpointPenalty);
+                r->multipleNames = true;
+                free(r->name);
+                r->name = copySpeciesName(seqName);
+                free(r->prevName);
+                r->prevName = stString_copy(seqName);
+                r->start = 0;
+                r->sourceLength = r->length;
             } else if ((r->prevRightPos + 1 < maf_mafLine_getStart(ml)) && 
                        (r->prevRightPos + 1 + options->interstitialSequence >= maf_mafLine_getStart(ml))) {
                 // same chromosome and within the accepted interstitial range, insert sequence
-                printf("interstitialize %s\n", seqName);
+                // printf("interstitialize %s\n", seqName);
                 interstitialInsert(alignHash, seqHash, seqName, 
                                    r->prevRightPos + 1, 
                                    maf_mafLine_getStrand(ml), 
@@ -500,7 +511,7 @@ void addMafBlockToRowHash(stHash *alignHash, stHash *seqHash, stList *orderList,
     // secord loop, append the block's sequence to the hash rows, update the prev* entries
     ml = maf_mafBlock_getHeadLine(mb);
     stSet *presentSet = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
-    uint32_t seqFieldLength = 0;
+    uint32_t currentIndex = 0;
     while (ml != NULL) {
         if (maf_mafLine_getType(ml) != 's') {
             ml = maf_mafLine_getNext(ml);
@@ -512,24 +523,27 @@ void addMafBlockToRowHash(stHash *alignHash, stHash *seqHash, stList *orderList,
         stSet_insert(presentSet, stString_copy(sppName));
         assert(r != NULL);
         addMafLineToRow(r, ml);
-        seqFieldLength = maf_mafLine_getSequenceFieldLength(ml);
+        currentIndex = r->index;
         free(sppName);
         ml = maf_mafLine_getNext(ml);
     }
     stHashIterator *hit = stHash_getIterator(alignHash);
     char *key = NULL;
-    printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> RESULTS <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+    // printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> RESULTS <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+    // third loop, gap out all sequences that are in the alignHash but were not in the mafBlock
     while ((key = stHash_getNext(hit)) != NULL) {
         if (stSet_search(presentSet, key) == NULL) {
             // this species was not presentSet in the current mafBlock, gap out the sequence.
             r = stHash_search(alignHash, key);
-            extendSequence(r, seqFieldLength);
-            for (uint32_t i = r->index; i < r->index + seqFieldLength; ++i) {
+            extendSequence(r, 1 + currentIndex - r->index);
+            for (uint32_t i = r->index; i < currentIndex; ++i) {
                 r->sequence[i] = '-';
             }
-            r->sequence[r->index] = '\0';
+            r->sequence[currentIndex] = '\0';
+            r->index = currentIndex;
         }
-        printf("       result              %20s: %s\n", r->name, r->sequence);
+        r = stHash_search(alignHash, key);
+        // printf("       result              %20s: %s\n", r->name, r->sequence);
     }
     stSet_destruct(presentSet);
     stHash_destructIterator(hit);
@@ -541,22 +555,22 @@ void buildAlignmentHash(mafFileApi_t *mfapi, stHash *alignmentHash, stHash *sequ
     assert(sequenceHash != NULL);
     assert(rowOrder != NULL);
     while ((mb = maf_readBlock(mfapi)) != NULL) {
-        printf("working on this block:\n");
-        maf_mafBlock_print(mb);
+        // printf("working on this block:\n");
+        // maf_mafBlock_print(mb);
         addMafBlockToRowHash(alignmentHash, sequenceHash, rowOrder, mb, options);
-        printf("   ...block done.\n\n");
+        // printf("   ...block done.\n\n");
         maf_destroyMafBlockList(mb);
     }
 }
 void writeFastaOut(stHash *alignmentHash, stList *rowOrder, options_t *options) {
     row_t *r = NULL;
     FILE *fa = de_fopen(options->outMfa, "w");
-    printf("printing fasta out!\n");
+    // printf("printing fasta out!\n");
     for (int32_t i = 0; i < stList_length(rowOrder); ++i) {
         r = stHash_search(alignmentHash, stList_get(rowOrder, i));
         assert(r != NULL);
         fprintf(fa, "> %s\n", r->name);
-        printf("> %s\n%s\n", r->name, r->sequence);
+        // printf("> %s\n%s\n", r->name, r->sequence);
         for (uint32_t j = 0; j < r->index; ++j) {
             fprintf(fa, "%c", r->sequence[j]);
             if (!((j + 1) % 50) && j != r->index - 1) {
@@ -569,17 +583,17 @@ void writeFastaOut(stHash *alignmentHash, stList *rowOrder, options_t *options) 
 }
 void writeMafOut(stHash *alignmentHash, stList *rowOrder, options_t *options) {
     row_t *r = NULL;
-    // FILE *maf = de_fopen(options->outMaf, "w");
-    fprintf(stderr, "printing Maf out!\n");
+    FILE *maf = de_fopen(options->outMaf, "w");
+    // fprintf(stderr, "printing Maf out!\n");
     uint32_t maxName = 1, maxStart = 1, maxLen = 1, maxSource = 1;
     char fmtName[10] = "\0", fmtStart[32] = "\0", fmtLen[32] = "\0", fmtSource[32] = "\0", *fmtLine = NULL;
+    fprintf(maf, "##maf version=1\n\n");
     for (int32_t i = 0; i < stList_length(rowOrder); ++i) {
         // first loop, get formating correct
         r = stHash_search(alignmentHash, stList_get(rowOrder, i));
-        printf("collecting info on ");
-        printf("%s\n", (char*)stList_get(rowOrder, i));
+        // printf("collecting info on ");
+        // printf("%s\n", (char*)stList_get(rowOrder, i));
         assert(r != NULL);
-        // fprintf(fa, "> %s\n", (char*)stList_get(rowOrder, i));
         if (maxName < strlen(r->name)) {
             maxName = strlen(r->name);
         }
@@ -608,8 +622,8 @@ void writeMafOut(stHash *alignmentHash, stList *rowOrder, options_t *options) {
     strcat(fmtLine, fmtSource);
     strcat(fmtLine, " %s\n");
     char strand;
-    fprintf(stderr, "a stitched=true\n");
-    printf("\nPrinting actual block now, fmtline: %s", fmtLine);
+    fprintf(maf, "a stitched=true\n");
+    // printf("\nPrinting actual block now, fmtline: %s", fmtLine);
     for (int32_t i = 0; i < stList_length(rowOrder); ++i) {
         // second loop, print!
         r = stHash_search(alignmentHash, stList_get(rowOrder, i));
@@ -619,8 +633,9 @@ void writeMafOut(stHash *alignmentHash, stList *rowOrder, options_t *options) {
         } else {
             strand = r->strand;
         }
-        fprintf(stderr, fmtLine, r->name, r->start, r->length, strand, r->sourceLength, r->sequence);
+        fprintf(maf, fmtLine, r->name, r->start, r->length, strand, r->sourceLength, r->sequence);
     }
-    fprintf(stderr, "\n");
+    fprintf(maf, "\n");
     free(fmtLine);
+    fclose(maf);
 }

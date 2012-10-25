@@ -72,44 +72,44 @@ AAAAAAAAAAAAAAAAAAAGGGGGAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCC
 > seq6.chr1
-AAAAAAAAAGGGGGAAAAAAAGGGGGAA
+AAAAAAAAAAGGGGGAAAAAAAGGGGGAA
 > seq7.chr20
 AAAAAGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGAAAAATT
 '''],
                  '''> ref.chr1
-ACGTACGTAC-----------------GTACGTACGT-------------
-------------------------ACGTACGTAC
+ACGTACGTAC-------------------GTACGTACGT------ACGTA
+CGTAC
 > seq1
-AAAAAAAAAA----------------------AAAAA-------------
-----------------------------------
+AAAAAAAAAANNNNNN------------------AAAAA-----------
+-----
 > seq2
------CCCCC------------NNNNNCCCCC------------------
-----------------------------------
+-----CCCCC------NNNNNN-------CCCCC----------------
+-----
 > seq6.chr1
------GGGGGAAAAAAAGGGGG----------------------------
-----------------------------------
-> seq7.chr20
-AAAAA--------------------------------GGGGGGGGGGGGG
-GGGGGGGGGGGGGGGGGGGGGGGG-----AAAAA
+-----GGGGG------------AAAAAAAGGGGG----------------
+-----
+> seq7
+AAAAA----------------------------------NNNNNN-----
+AAAAA
 > seq3.chr0
---------------------------------GGGGG-------------
-----------------------------------
-> seq4.crh1
---------------------------------------------------
-------------------------GG-----GGG
+----------------------------------GGGGG-----------
+-----
+> seq4.chr1
+---------------------------------------------GG---
+--GGG
 > seq5.chr2
---------------------------------------------------
-------------------------CCCCCCCCCC
+---------------------------------------------CCCCC
+CCCCC
 ''',
                  '''a stitched=true
-s ref.chr1 10 30 + 100 ACGTACGTAC------------------------------GTACGTACGT-------------------------------------ACGTACGTAC
-s seq1      0 15 +  15 AAAAAAAAAANNNNNN-----------------------------AAAAA-----------------------------------------------
-s seq2      0 15 +  15 -----CCCCC------NNNNNN------------------CCCCC----------------------------------------------------
-s seq6      0 17 +  17 -----GGGGG-----------------AAAAAAA------GGGGG----------------------------------------------------
-s seq7      0 47 +  47 AAAAA-----------------------------NNNNNN-----AAAAA-----------------------------------------------
-s seq3      0  5 +   5 ---------------------------------------------GGGGG-----------------------------------------------
-s seq4      0  5 -   5 ---------------------------------------------------------------------------------------GG-----GGG
-s seq5      0 10 +  10 ---------------------------------------------------------------------------------------CCCCCCCCCC
+s ref.chr1   10 30 + 100 ACGTACGTAC-------------------GTACGTACGT------ACGTACGTAC
+s seq1        0 21 +  21 AAAAAAAAAANNNNNN------------------AAAAA----------------
+s seq2        0 16 +  16 -----CCCCC------NNNNNN-------CCCCC---------------------
+s seq6.chr1  10 17 + 100 -----GGGGG------------AAAAAAAGGGGG---------------------
+s seq7        0 16 +  16 AAAAA----------------------------------NNNNNN-----AAAAA
+s seq3.chr0  20  5 + 100 ----------------------------------GGGGG----------------
+s seq4.chr1   0  5 - 100 ---------------------------------------------GG-----GGG
+s seq5.chr2   0 10 + 100 ---------------------------------------------CCCCCCCCCC
 ''',
                  ),
                 ]
@@ -130,6 +130,16 @@ def fastaIsCorrect(filename, expected):
         print '!='
         print 'expected:'
         print expected
+        obslines = obs.split('\n')
+        explines = expected.split('\n')
+        for i in xrange(0, len(obslines)):
+            if hashify(obslines[i]) != hashify(explines[i]):
+                print 'problem at line %d' % (i + 1)
+                print 'observed:'
+                print obslines[i]
+                print '!='
+                print 'expected:'
+                print explines[i]
         return False
     return True
 def mafIsCorrect(filename, expected):
@@ -194,18 +204,20 @@ class FastaStitchTest(unittest.TestCase):
                                    ''.join(inMaf), g_headers)
             testFaNames = testFasta(os.path.abspath(tmpDir), inFaList)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafToFastaStitcher')), 
-                   '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
-                   '--seqs', testFaNames,
-                   '--breakpointPenalty', '6', '--interstitialSequence', '20',
-                   '--outMfa', os.path.abspath(os.path.join(tmpDir, 'out.fa'))]
+            cmd = []
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafToFastaStitcher')), 
+                    '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+                    '--seqs', testFaNames,
+                    '--breakpointPenalty', '6', '--interstitialSequence', '20',
+                    '--outMfa', os.path.abspath(os.path.join(tmpDir, 'out.fa')),
+                    '--outMaf', os.path.abspath(os.path.join(tmpDir, 'out.maf')),]
             mtt.recordCommands([cmd], tmpDir)
             mtt.runCommandsS([cmd], tmpDir)
             self.assertTrue(fastaIsCorrect(os.path.abspath(os.path.join(tmpDir, 'out.fa')), outFa))
-            # self.assertTrue(fastaIsCorrect(os.path.abspath(os.path.join(tmpDir, 'out.maf')), outMaf))
-            # self.assertTrue(mafval.validateMaf(os.path.join(tmpDir, 'out.maf'), customOpts))
+            self.assertTrue(mafIsCorrect(os.path.abspath(os.path.join(tmpDir, 'out.maf')), outMaf))
+            self.assertTrue(mafval.validateMaf(os.path.join(tmpDir, 'out.maf'), customOpts))
         mtt.removeDir(tmpDir)
-    def dtestMemory1(self):
+    def testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (1).
         """
         mtt.makeTempDirParent()
@@ -214,19 +226,21 @@ class FastaStitchTest(unittest.TestCase):
             return
         tmpDir = os.path.abspath(mtt.makeTempDir('memory1'))
         customOpts = mafval.GenericValidationOptions()
-        for a, expected, strand in g_blocks:
+        for inMaf, inFaList, outFa, outMaf  in g_knownData:
             testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
-                                   ''.join(a), g_headers)
+                                   ''.join(inMaf), g_headers)
+            testFaNames = testFasta(os.path.abspath(tmpDir), inFaList)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = mtt.genericValgrind(tmpDir)
-            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafStrander')), 
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafToFastaStitcher')), 
                     '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
-                    '--seq', 'target', '--strand', strand]
-            outpipes = [os.path.abspath(os.path.join(tmpDir, 'coerced.maf'))]
-            mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
-            mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+                    '--seqs', testFaNames,
+                    '--breakpointPenalty', '6', '--interstitialSequence', '20',
+                    '--outMfa', os.path.abspath(os.path.join(tmpDir, 'out.fa')),
+                    '--outMaf', os.path.abspath(os.path.join(tmpDir, 'out.maf')),]
+            mtt.recordCommands([cmd], tmpDir)
+            mtt.runCommandsS([cmd], tmpDir)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-            self.assertTrue(mafval.validateMaf(os.path.join(tmpDir, 'coerced.maf'), customOpts))
         mtt.removeDir(tmpDir)
 
 if __name__ == '__main__':

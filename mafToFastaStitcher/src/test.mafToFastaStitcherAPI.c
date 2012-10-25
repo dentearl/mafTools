@@ -59,13 +59,13 @@ static void printList(stList *list, const char *title) {
 static bool rowsAreEqual(row_t *a, row_t *b) {
     if (a->name != NULL && b->name != NULL) {
         if (strcmp(a->name, b->name) != 0) {
-            fprintf(stderr, "rows differ: names %s %s\n", a->name, b->name);
+            fprintf(stderr, "rows differ: names a:%s, b:%s\n", a->name, b->name);
             return false;
         }
     }
     if (a->prevName != NULL && b->prevName != NULL) {
         if (strcmp(a->prevName, b->prevName) != 0) {
-            fprintf(stderr, "%s rows differ: prevNames %s %s\n", a->name, a->prevName, b->prevName);
+            fprintf(stderr, "%s rows differ: prevNames a:%s, b:%s\n", a->name, a->prevName, b->prevName);
             return false;
         }
     }
@@ -169,7 +169,7 @@ static bool listsAreEqual(stList *observedList, stList *expectedList) {
 }
 static mtfseq_t* newMtfseqFromString(char *s) {
     mtfseq_t *mtfs = newMtfseq(strlen(s) + 1);
-    seq_copyIn(&mtfs, s);
+    seq_copyIn(mtfs, s);
     return mtfs;
 }
 static stHash *createBlockHashFromString(char *input, stList *orderList) {
@@ -181,7 +181,7 @@ static stHash *createBlockHashFromString(char *input, stList *orderList) {
 static stHash *createSeqHashFromString(char *name, char *input) {
     mtfseq_t *mtfs = newMtfseq(strlen(input));
     stHash *hash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, destroyMtfseq);
-    seq_copyIn(&mtfs, input);
+    seq_copyIn(mtfs, input);
     stHash_insert(hash, stString_copy(name), mtfs);
     return hash;
 }
@@ -249,6 +249,67 @@ static void test_newBlockHashFromBlock_0(CuTest *testCase) {
     stList_destruct(orderList);
     stHash_destruct(observedHash);
 }
+static void test_addMafLineToRow_0(CuTest *testCase) {
+    row_t *obs = newRow(20);
+    obs->name = stString_copy("seq1.chr0");
+    obs->prevName = stString_copy("seq1.chr0");
+    obs->multipleNames = false;
+    obs->start = 3;
+    obs->length = 10;
+    obs->prevRightPos = 20;
+    obs->strand = '+';
+    obs->prevStrand = '+';
+    obs->sourceLength = 100;
+    row_copyIn(obs, "acgtacgtac");
+    mafLine_t *ml = maf_newMafLineFromString("s seq1.chr0 13 5 + 100 ACGTA", 10);
+    addMafLineToRow(obs, ml);
+    row_t *exp = newRow(20);
+    exp->name = stString_copy("seq1.chr0");
+    exp->prevName = stString_copy("seq1.chr0");
+    exp->multipleNames = false;
+    exp->start = 3;
+    exp->length = 15;
+    exp->prevRightPos = 17;
+    exp->strand = '+';
+    exp->prevStrand = '+';
+    exp->sourceLength = 100;
+    row_copyIn(exp, "acgtacgtacACGTA");
+    CuAssertTrue(testCase, rowsAreEqual(obs, exp));
+    destroyRow(obs);
+    destroyRow(exp);
+    maf_destroyMafLineList(ml);
+}
+static void test_addMafLineToRow_1(CuTest *testCase) {
+    row_t *obs = newRow(20);
+    obs->name = stString_copy("seq1.chr0");
+    obs->prevName = stString_copy("seq1.amazing");
+    obs->multipleNames = true;
+    obs->start = 3;
+    obs->length = 10;
+    obs->prevRightPos = 20;
+    obs->strand = '+';
+    obs->prevStrand = '+';
+    obs->sourceLength = 100;
+    row_copyIn(obs, "acgtacgtac");
+    mafLine_t *ml = maf_newMafLineFromString("s seq1.chr_bleh 13 5 + 100 ACGTA", 10);
+    addMafLineToRow(obs, ml);
+    row_t *exp = newRow(20);
+    exp->name = stString_copy("seq1.chr0");
+    exp->prevName = stString_copy("seq1.chr_bleh");
+    exp->multipleNames = true;
+    exp->start = 3;
+    exp->length = 15;
+    exp->prevRightPos = 17;
+    exp->strand = '+';
+    exp->prevStrand = '+';
+    exp->sourceLength = 15;
+    row_copyIn(exp, "acgtacgtacACGTA");
+    CuAssertTrue(testCase, rowsAreEqual(obs, exp));
+    destroyRow(obs);
+    destroyRow(exp);
+    maf_destroyMafLineList(ml);
+}
+
 static void test_penalize_0(CuTest *testCase) {
     stList *observedList = stList_construct3(0, free);
     stList *expectedList = stList_construct3(0, free);
@@ -485,11 +546,14 @@ static void test_addBlockToHash_3(CuTest *testCase) {
                                              "s reference.chr0 0 18 + 158545518 gcagctgaaaaca------------ACGTA\n"
                                              "s name.chr1      0 17 +       100 ATGT---ATGCCGac----------gtcGG\n"
                                              "s name2.chr1     0 15 +       100 ATGT---ATGCCG------------ATGTg\n"
-                                             "s name3.chr1     0 28 +       100 GCAGCTGAAAACA--NNNNNNNNNNCCCCC\n",
+                                             "s name3          0 28 +        28 GCAGCTGAAAACA--NNNNNNNNNNCCCCC\n",
                                              expectedList
                                              );
     row_t *r = stHash_search(expectedHash, "name3");
     r->prevRightPos = 54;
+    free(r->prevName);
+    r->prevName = stString_copy("name3.chr1");
+    r->multipleNames = true;
     stHash *seqHash = createSeqHashFromString("name.chr1", "ATGTATGCCGacgtc"
                                               "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
                                               "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
@@ -707,6 +771,8 @@ CuSuite* mafToFastaStitcher_TestSuite(void) {
     // listing the tests as void allows us to quickly comment out certain tests
     // when trying to isolate bugs highlighted by one particular test
     (void) test_newBlockHashFromBlock_0;
+    (void) test_addMafLineToRow_0;
+    (void) test_addMafLineToRow_1;
     (void) test_penalize_0;
     (void) test_interstitial_0;
     (void) test_addBlockToHash_0;
@@ -718,6 +784,8 @@ CuSuite* mafToFastaStitcher_TestSuite(void) {
     (void) test_addBlockToHash_6;
     CuSuite* suite = CuSuiteNew();
     SUITE_ADD_TEST(suite, test_newBlockHashFromBlock_0);
+    SUITE_ADD_TEST(suite, test_addMafLineToRow_0);
+    SUITE_ADD_TEST(suite, test_addMafLineToRow_1);
     SUITE_ADD_TEST(suite, test_penalize_0);
     SUITE_ADD_TEST(suite, test_interstitial_0);
     SUITE_ADD_TEST(suite, test_addBlockToHash_0);

@@ -49,9 +49,8 @@ ${bin}/mafToFastaStitcher: src/mafToFastaStitcher.c ${dependencies} ${extraAPI}
 	${cxx} -c $< -o $@.tmp ${cflags}
 	mv $@.tmp $@
 
-test: buildVersion test/allTests # test/mafToFastaStitcher
-#	./test/allTests && python2.7 src/test.mafToFastaStitcher.py --verbose # && rm -rf ./test/ && rmdir ./tempTestDir
-	python2.7 src/test.mafToFastaStitcher.py --verbose # && rm -rf ./test/ && rmdir ./tempTestDir
+test: buildVersion test/allTests test/mafToFastaStitcher
+	./test/allTests && python2.7 src/test.mafToFastaStitcher.py --verbose && rm -rf ./test/ && rmdir ./tempTestDir
 test/allTests: src/allTests.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
 	${cxx} $^ -o $@.tmp ${testFlags}

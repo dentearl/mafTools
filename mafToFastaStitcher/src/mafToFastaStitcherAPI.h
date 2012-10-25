@@ -50,15 +50,15 @@ typedef struct _row {
     // a single element of either a multiple fasta alignment (mfa)
     // or a single row in a multiple alignment format (maf) file.
     char *name;
+    char *prevName; // 
+    char *sequence;
     bool multipleNames; // initalized false, if prevName is ever != name, then this should be set permanently true
     uint32_t start; 
     uint32_t length;
     uint32_t prevRightPos; // rightmost position in the sequence, 0 based
-    char *prevName; // 
     char strand; // `+' `-' or `*' when both strands have been observed (multipleNames should be set true)
     char prevStrand; //
     uint32_t sourceLength;
-    char *sequence;
     uint32_t index; // first empty position in *sequence
     uint32_t memLength; //size of the *sequence buffer
 } row_t;
@@ -66,7 +66,7 @@ typedef struct _row {
 options_t* options_construct(void);
 void destroyOptions(options_t *o);
 mtfseq_t* newMtfseq(uint32_t length);
-void resizeMtfseq(mtfseq_t **m1);
+void resizeMtfseq(mtfseq_t *m);
 void resizeRowSequence(row_t *r);
 void destroyMtfseq(void *p);
 row_t* newRow(uint32_t length);
@@ -74,7 +74,7 @@ void destroyRow(void *row);
 row_t* mafLineToRow(mafLine_t *ml);
 stHash* mafBlockToBlockHash(mafBlock_t *mb, stList *orderList);
 stHash* createSequenceHash(char *fastas);
-void seq_copyIn(mtfseq_t **mtfss, char *src);
+void seq_copyIn(mtfseq_t *mtfss, char *src);
 void row_copyIn(row_t *row, char *src);
 void addSequencesToHash(stHash *hash, char *filename);
 void reportSequenceHash(stHash *hash);
