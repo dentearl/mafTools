@@ -226,3 +226,40 @@ char* de_strtok(char **s, char t) {
     }
     return NULL;
 }
+unsigned countChar(char *s, const char c) {
+    // counts the number of a specified character in a string.
+    unsigned i, m, n = 0;
+    m = strlen(s);
+    if (m == 0) {
+        return 0;
+    }
+    for (i = 0; i < m; ++i) {
+        if (s[i] == c) {
+            ++n;
+        }
+    }
+    return n;
+}
+char** extractSubStrings(char *nameList, unsigned n, const char delineator) {
+    // n is the number of names in the name list
+    // create a char array to hold each element in the *namelist comma separated list
+    if (n == 0) {
+        return NULL;
+    }
+    char t[2];
+    t[0] = delineator;
+    t[1] = '\0';
+    char **mat = (char**) de_malloc(sizeof(char*) * n);
+    unsigned index = 0;
+    char *tkn = NULL;
+    char *copy = de_strdup(nameList);
+    tkn = strtok(copy, t);
+    while (tkn != NULL) {
+        mat[index] = (char*) de_malloc(sizeof(char) * (strlen(tkn) + 1));
+        strcpy(mat[index++], tkn);
+        tkn = strtok(NULL, t);
+    }
+    free(copy);
+    copy = NULL;
+    return mat;
+}

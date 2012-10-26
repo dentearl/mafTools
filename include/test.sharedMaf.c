@@ -600,6 +600,22 @@ static void test_flipBlockStrand_1(CuTest *testCase) {
     maf_destroyMafBlockList(exp);
     maf_destroyMafBlockList(orig);
 }
+static void performTest_copySpeciesName(CuTest *testCase, const char *a, const char *b) {
+    char *input = de_strdup(a);
+    char *expected = de_strdup(b);
+    char *observed = copySpeciesName(input);
+    CuAssertTrue(testCase, strlen(expected) == strlen(observed));
+    CuAssertTrue(testCase, (strcmp(expected, observed) == 0));
+    free(input);
+    free(expected);
+    free(observed);
+}
+static void test_copySpeciesName_0(CuTest *testCase) {
+    performTest_copySpeciesName(testCase, "hg18.chr1", "hg18");
+    performTest_copySpeciesName(testCase, "panTro1.chr6", "panTro1");
+    performTest_copySpeciesName(testCase, "baboon", "baboon");
+    performTest_copySpeciesName(testCase, "dasNov1.scaffold_179265", "dasNov1");
+}
 CuSuite* mafShared_TestSuite(void) {
     CuSuite* suite = CuSuiteNew();
     SUITE_ADD_TEST(suite, test_newMafLineFromString);
@@ -610,5 +626,6 @@ CuSuite* mafShared_TestSuite(void) {
     SUITE_ADD_TEST(suite, test_newMafBlockFromString_0);
     SUITE_ADD_TEST(suite, test_flipBlockStrand_0);
     SUITE_ADD_TEST(suite, test_flipBlockStrand_1);
+    SUITE_ADD_TEST(suite, test_copySpeciesName_0);
     return suite;
 }

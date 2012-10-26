@@ -167,7 +167,7 @@ void processBlock(mafBlock_t *mb, stats_t *stats) {
         if (t == 's') {
             ++(stats->numSeqLines);
             if (blockSeqFieldLength == 0) {
-                blockSeqFieldLength = (uint64_t) strlen(maf_mafLine_getSequence(ml));
+                blockSeqFieldLength = (uint64_t) maf_mafLine_getSequenceFieldLength(ml);
                 stats->numColumns += blockSeqFieldLength;
                 if (stats->maxSeqField < blockSeqFieldLength) {
                     stats->maxSeqField = blockSeqFieldLength;

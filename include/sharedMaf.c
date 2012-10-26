@@ -57,6 +57,7 @@ struct mafLine {
     char strand;
     uint32_t sourceLength;
     char *sequence; // sequence field
+    uint32_t sequenceFieldLength;
     struct mafLine *next;
 };
 struct mafBlock {
@@ -83,6 +84,7 @@ static bool maf_isBlankLine(char *s) {
 static void maf_checkForPrematureMafEnd(char *filename, int status, char *line) {
     if (status == -1) {
         free(line);
+        line = NULL;
         fprintf(stderr, "Error, premature end to maf file: %s\n", filename);
         exit(EXIT_FAILURE);
     }
@@ -103,6 +105,7 @@ mafLine_t* maf_newMafLine(void) {
     ml->strand = 0;
     ml->sourceLength = 0;
     ml->sequence = NULL;
+    ml->sequenceFieldLength = 0;
     ml->next = NULL;
     return ml;
 }
@@ -147,6 +150,7 @@ mafLine_t* maf_copyMafLine(mafLine_t *orig) {
     if (orig->sequence != NULL) {
         ml->sequence = de_strdup(orig->sequence);
     }
+    ml->sequenceFieldLength = orig->sequenceFieldLength;
     return ml;
 }
 mafBlock_t* maf_newMafBlockListFromString(const char *s, uint32_t lineNumber) {
@@ -170,6 +174,7 @@ mafBlock_t* maf_newMafBlockListFromString(const char *s, uint32_t lineNumber) {
                 mb = maf_mafBlock_getNext(mb);
             }
             free(block_s);
+            block_s = NULL;
             start = stop;
         }
     }
@@ -185,6 +190,7 @@ mafBlock_t* maf_newMafBlockListFromString(const char *s, uint32_t lineNumber) {
         mb = maf_mafBlock_getNext(mb);
     }
     free(block_s);
+    block_s = NULL;
     return head;
 }
 mafBlock_t* maf_newMafBlockFromString(const char *s, uint32_t lineNumber) {
@@ -209,6 +215,7 @@ mafBlock_t* maf_newMafBlockFromString(const char *s, uint32_t lineNumber) {
     ml = maf_newMafLineFromString(tkn, lineNumber++);
     maf_mafBlock_setHeadLine(mb, ml);
     free(tkn);
+    tkn = NULL;
     tkn = de_strtok(ptr, '\n');
     while (tkn != NULL) {
         maf_mafBlock_incrementLineNumber(mb);
@@ -217,13 +224,15 @@ mafBlock_t* maf_newMafBlockFromString(const char *s, uint32_t lineNumber) {
         ml = maf_mafLine_getNext(ml);
         if (maf_mafLine_getType(ml) == 's') {
             maf_mafBlock_incrementNumberOfSequences(mb);
-            mb->sequenceFieldLength = strlen(maf_mafLine_getSequence(ml));
+            mb->sequenceFieldLength = maf_mafLine_getSequenceFieldLength(ml);
         }
         maf_mafBlock_setTailLine(mb, ml);
         free(tkn);
+        tkn = NULL;
         tkn = de_strtok(ptr, '\n');
     }
     free(cline_orig);
+    cline_orig = NULL;
     return mb;
 }
 mafLine_t* maf_newMafLineFromString(const char *s, uint32_t lineNumber) {
@@ -245,12 +254,14 @@ mafLine_t* maf_newMafLineFromString(const char *s, uint32_t lineNumber) {
     ml->type = ml->line[0];
     if (ml->type != 's') {
         free(cline);
+        cline = NULL;
         return ml;
     }
     char *tkn = NULL;
     tkn = strtok(cline, " \t");
     if (tkn == NULL) {
         free(cline);
+        cline = NULL;
         char *error = de_malloc(kMaxStringLength);
         sprintf(error, "Unable to separate line on tabs and spaces at line definition field:\n%s", s);
         maf_failBadFormat(lineNumber, error);
@@ -258,6 +269,7 @@ mafLine_t* maf_newMafLineFromString(const char *s, uint32_t lineNumber) {
     tkn = strtok(NULL, " \t"); // name field
     if (tkn == NULL) {
         free(cline);
+        cline = NULL;
         maf_failBadFormat(lineNumber, "Unable to separate line on tabs and spaces at name field.");
     }
     char *species = (char *) de_malloc(strlen(tkn) + 1);
@@ -266,18 +278,21 @@ mafLine_t* maf_newMafLineFromString(const char *s, uint32_t lineNumber) {
     tkn = strtok(NULL, " \t"); // start position
     if (tkn == NULL) {
         free(cline);
+        cline = NULL;
         maf_failBadFormat(lineNumber, "Unable to separate line on tabs and spaces at start position field.");
     }
     ml->start = strtoul(tkn, NULL, 10);
     tkn = strtok(NULL, " \t"); // length position
     if (tkn == NULL){
         free(cline);
+        cline = NULL;
         maf_failBadFormat(lineNumber, "Unable to separate line on tabs and spaces at length position field.");
     }
     ml->length = strtoul(tkn, NULL, 10);
     tkn = strtok(NULL, " \t"); // strand
     if (tkn == NULL) {
         free(cline);
+        cline = NULL;
         maf_failBadFormat(lineNumber, "Unable to separate line on tabs and spaces at strand field.");
     }
     if (tkn[0] != '-' && tkn[0] != '+') {
@@ -289,12 +304,14 @@ mafLine_t* maf_newMafLineFromString(const char *s, uint32_t lineNumber) {
     tkn = strtok(NULL, " \t"); // source length position
     if (tkn == NULL) {
         free(cline);
+        cline = NULL;
         maf_failBadFormat(lineNumber, "Unable to separate line on tabs and spaces at source length field.");
     }
     ml->sourceLength = strtoul(tkn, NULL, 10);
     tkn = strtok(NULL, " \t"); // sequence field
     if (tkn == NULL) {
         free(cline);
+        cline = NULL;
         char *error = de_malloc(kMaxStringLength);
         sprintf(error, "Unable to separate line on tabs and spaces at sequence field:\n%s", s);
         maf_failBadFormat(lineNumber, error);
@@ -302,7 +319,9 @@ mafLine_t* maf_newMafLineFromString(const char *s, uint32_t lineNumber) {
     char *seq = (char *) de_malloc(strlen(tkn) + 1);
     strcpy(seq, tkn);
     ml->sequence = seq;
+    ml->sequenceFieldLength = strlen(ml->sequence);
     free(cline);
+    cline = NULL;
     return ml;
 }
 mafBlock_t* maf_newMafBlock(void) {
@@ -366,14 +385,27 @@ mafFileApi_t* maf_newMfa(const char *filename, char const *mode) {
 }
 void maf_destroyMafLineList(mafLine_t *ml) {
     // walk down a mafLine_t following the ->next pointers, search and destroy
+    if (ml == NULL) {
+        return;
+    }
     mafLine_t *tmp = NULL;
     while(ml != NULL) {
         tmp = ml;
         ml = ml->next;
         free(tmp->line);
-        free(tmp->species);
-        free(tmp->sequence);
+        tmp->line = NULL;
+        if (tmp->species != NULL) {
+            // you can have a maf line without a species member
+            free(tmp->species);
+            tmp->species = NULL;
+        }
+        if (tmp->sequence != NULL) {
+            // you can have a maf line without a sequence member
+            free(tmp->sequence);
+            tmp->sequence = NULL;
+        }
         free(tmp);
+        tmp = NULL;
     }
 }
 void maf_destroyMafBlockList(mafBlock_t *mb) {
@@ -387,6 +419,7 @@ void maf_destroyMafBlockList(mafBlock_t *mb) {
         if (tmp->headLine != NULL)
             maf_destroyMafLineList(tmp->headLine);
         free(tmp);
+        tmp = NULL;
     }
 }
 void maf_destroyMfa(mafFileApi_t *mfa) {
@@ -395,8 +428,11 @@ void maf_destroyMfa(mafFileApi_t *mfa) {
         mfa->mfp = NULL;
     }
     free(mfa->lastLine);
+    mfa->lastLine = NULL;
     free(mfa->filename);
+    mfa->filename = NULL;
     free(mfa);
+    mfa = NULL;
 }
 char* maf_mafFileApi_getFilename(mafFileApi_t *mfa) {
     return mfa->filename;
@@ -443,9 +479,12 @@ char** maf_mafBlock_getSequenceMatrix(mafBlock_t *mb, unsigned n, unsigned m) {
 void maf_mafBlock_destroySequenceMatrix(char **mat, unsigned n) {
     // currently this is not stored and must be built
     // should return a matrix containing the alignment, one row per sequence
-    for (unsigned i = 0; i < n; ++i)
+    for (unsigned i = 0; i < n; ++i) {
         free(mat[i]);
+        mat[i] = NULL;
+    }
     free(mat);
+    mat = NULL;
 }
 char* maf_mafBlock_getStrandArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
@@ -623,6 +662,9 @@ uint32_t maf_mafLine_getSourceLength(mafLine_t *ml) {
 char* maf_mafLine_getSequence(mafLine_t *ml) {
     return ml->sequence;
 }
+uint32_t maf_mafLine_getSequenceFieldLength(mafLine_t *ml) {
+    return ml->sequenceFieldLength;
+}
 mafLine_t* maf_mafLine_getNext(mafLine_t *ml) {
     return ml->next;
 }
@@ -746,6 +788,7 @@ void maf_mafLine_setSourceLength(mafLine_t *ml, uint32_t n) {
 }
 void maf_mafLine_setSequence(mafLine_t *ml, char *s) {
     ml->sequence = s;
+    ml->sequenceFieldLength = strlen(ml->sequence);
 }
 void maf_mafLine_setNext(mafLine_t *ml, mafLine_t *next) {
     ml->next = next;
@@ -827,6 +870,7 @@ mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
         mfa->lastLine = copy;
     }
     free(line);
+    line = NULL;
     return header;
 }
 mafBlock_t* maf_readBlockBody(mafFileApi_t *mfa) {
@@ -838,7 +882,7 @@ mafBlock_t* maf_readBlockBody(mafFileApi_t *mfa) {
         if (ml->type == 's') {
             ++(thisBlock->numberOfSequences);
             if (thisBlock->sequenceFieldLength == 0) {
-                thisBlock->sequenceFieldLength = strlen(maf_mafLine_getSequence(ml));
+                thisBlock->sequenceFieldLength = maf_mafLine_getSequenceFieldLength(ml);
             }
         }
         ++(thisBlock->numberOfLines);
@@ -871,12 +915,13 @@ mafBlock_t* maf_readBlockBody(mafFileApi_t *mfa) {
         if (ml->type == 's') {
             ++(thisBlock->numberOfSequences);
             if (thisBlock->sequenceFieldLength == 0) {
-                thisBlock->sequenceFieldLength = strlen(maf_mafLine_getSequence(ml));
+                thisBlock->sequenceFieldLength = maf_mafLine_getSequenceFieldLength(ml);
             }
         }
         ++(thisBlock->numberOfLines);
     }
     free(line);
+    line = NULL;
     return thisBlock;
 }
 mafBlock_t* maf_readBlock(mafFileApi_t *mfa) {
@@ -1022,11 +1067,15 @@ static int intmax(int a, int b) {
     }
 }
 char* maf_mafLine_imputeLine(mafLine_t* ml) {
+    // HEY!
+    // IF you want to print a maf block, use maf_mafBlock_print(mafBlock_t *m). That is all.
+    //
     // given a mafLine_t *, return a fresh char *
-    // that could be printed directly into a .maf file
+    // that represents a pretty print of the maf line.
+    // i.e. it could be printed directly into a .maf file
     // uint32max = 4294967296 which is ~ 5 * 10^10
     char *s = (char*) de_malloc(2 + intmax(strlen(maf_mafLine_getSpecies(ml)), 15) + 
-                                15 + 15 + 3 + 15 + strlen(maf_mafLine_getSequence(ml)) + 
+                                15 + 15 + 3 + 15 + maf_mafLine_getSequenceFieldLength(ml) + 
                                 1 + 32); // extra 32 for possbile overflow from formatting
     sprintf(s, "s %-15s %10" PRIu32 " %10" PRIu32 " %c %10" PRIu32 " %s", 
             maf_mafLine_getSpecies(ml),
@@ -1148,4 +1197,20 @@ char complementChar(char c) {
         a = toupper(a);
     }
     return a;
+}
+char *copySpeciesName(char *s) {
+    // return a copy of the string, minus chromosome / contig information
+    // hg18.chr1 -> hg18
+    unsigned n, l = 0;
+    n = strlen(s);
+    for (l = 0; l < n; ++l) {
+        // find the first instance of a `.' character
+        if (s[l] == '.') {
+            break;
+        }
+    }
+    char *copy = (char *) de_malloc(l + 1);
+    strncpy(copy, s, l);
+    copy[l] = '\0';
+    return copy;
 }

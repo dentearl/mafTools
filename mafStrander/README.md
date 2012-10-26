@@ -3,7 +3,7 @@
 3 October 2012
 
 ## Author
-[Dent Earl](http://github.com/dentearl/)
+[Dent Earl](https://github.com/dentearl/)
 
 ## Description
 mafStrander is a program to coerce a particular strandedness out for all blocks based the strandedness of a target sequence. When a block contains the target sequence but in the flipped orientation (relative to the <code>--strand</code> option) then the block is flipped, i.e. all start coordinates are transformed, and all sequence fields are reverse-complemented. If the block contains the target sequence multiple times and with conflicing strands (i.e. both + and - strands are observed), then nothing is done.

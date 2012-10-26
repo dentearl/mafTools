@@ -45,5 +45,7 @@ void usageMessage(char shortopt, const char *name, const char *description);
 char* stringReplace(const char *string, const char a, const char b);
 int minint(int a, int b);
 char* de_strtok(char **s, char t);
+unsigned countChar(char *s, const char c);
+char** extractSubStrings(char *nameList, unsigned n, const char delineator);
 
 #endif // COMMON_H_

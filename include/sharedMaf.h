@@ -83,6 +83,7 @@ uint32_t maf_mafLine_getLength(mafLine_t *ml);
 char maf_mafLine_getStrand(mafLine_t *ml);
 uint32_t maf_mafLine_getSourceLength(mafLine_t *ml);
 char* maf_mafLine_getSequence(mafLine_t *ml);
+uint32_t maf_mafLine_getSequenceFieldLength(mafLine_t *ml);
 mafLine_t* maf_mafLine_getNext(mafLine_t *ml);
 // setters
 void maf_mafBlock_setHeadLine(mafBlock_t *mb, mafLine_t *ml);
@@ -122,6 +123,7 @@ void maf_mafBlock_flipStrand(mafBlock_t *mb);
 void reverseComplementSequence(char *s, size_t n); // in-place reverse complement
 void complementSequence(char *s, size_t n);
 char complementChar(char c);
+char *copySpeciesName(char *s); // hg18.chr1 -> hg18
 // print
 void maf_mafBlock_printList(mafBlock_t *m);
 void maf_mafBlock_print(mafBlock_t *m);
