@@ -83,6 +83,8 @@ void resizeMtfseq(mtfseq_t *m) {
     if (n < m->memLength) {
         n = m->memLength;
     }
+    n *= 2;
+    // de_debug("Doubling the size of mtfseq_t->seq, from %"PRIu32" to %"PRIu32"\n", m->memLength, n);
     m->memLength = n;
     char *new = (char*) st_malloc(n);
     new[0] = '\0';
@@ -96,6 +98,7 @@ void resizeRowSequence(row_t *r) {
     if (n < r->memLength) {
         n = r->memLength;
     }
+    n *= 2;
     r->memLength = n;
     char *new = (char *) st_malloc(n);
     new[0] = '\0';
@@ -223,7 +226,11 @@ void addSequencesToHash(stHash *hash, char *filename) {
     char *headPtr = line;
     char *name = NULL;
     mtfseq_t *mtfs = NULL; 
+    // uint32_t lineNumber = 1;
     while (de_getline(&line, &n, ifp) != -1) {
+        // if ((lineNumber++ % 25) == 0) {
+        //     de_debug("Reading %s line number %"PRIu32"...\n", filename, lineNumber);
+        // }
         if (line[0] == '>') {
             // sequence header
             if (name != NULL) {
@@ -237,13 +244,13 @@ void addSequencesToHash(stHash *hash, char *filename) {
                 // chuck the > as a name, we want an actual sequence name
                 free(name);
                 name = stString_getNextWord(&line);
-                de_verbose("Starting to read sequence %s from %s\n", name, filename);
+                de_debug("Starting to read sequence %s from %s\n", name, filename);
             }
             if (name[0] == '>') {
                 // we don't want the > at the start of a name, get rid of it
                 char *tmp = name;
                 name = stString_copy(name + 1);
-                de_verbose("Starting to read sequence %s from %s\n", name, filename);
+                de_debug("Starting to read sequence %s from %s\n", name, filename);
                 free(tmp);
             }
             mtfs = newMtfseq(2 << 16);
