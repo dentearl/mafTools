@@ -177,16 +177,20 @@ int main(int argc, char **argv) {
     stList *rowOrder = stList_construct3(0, free); // when adding keys to alignmentHash, append to this list
     parseOptions(argc, argv, options);
     // read fastas, populate sequenceHash
+    de_verbose("Creating sequence hash.\n");
     sequenceHash = createSequenceHash(options->seqs);
     mafFileApi_t *mfapi = maf_newMfa(options->maf, "r");
+    de_verbose("Creating alignment hash.\n");
     buildAlignmentHash(mfapi, alignmentHash, sequenceHash, rowOrder, options);
     maf_destroyMfa(mfapi);
     if (options->outMfa != NULL) {
         // fasta output
+        de_verbose("Writing fasta output.\n");
         writeFastaOut(alignmentHash, rowOrder, options);
     }
     if (options->outMaf != NULL) {
         // maf output
+        de_verbose("Writing maf output.\n");
         writeMafOut(alignmentHash, rowOrder, options);
     }
     // cleanup

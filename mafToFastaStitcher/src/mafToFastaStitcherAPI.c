@@ -155,9 +155,8 @@ stHash* createSequenceHash(char *fastas) {
     char **fastaArray = extractSubStrings(fastas, n, ',');
     stHash *sequenceHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, destroyMtfseq);
     for (unsigned i = 0; i < n; ++i) {
+        de_verbose("Reading fasta %s\n", fastaArray[i]);
         addSequencesToHash(sequenceHash, fastaArray[i]);
-    }
-    for (unsigned i = 0; i < n; ++i) {
         free(fastaArray[i]);
     }
     free(fastaArray);
@@ -238,11 +237,13 @@ void addSequencesToHash(stHash *hash, char *filename) {
                 // chuck the > as a name, we want an actual sequence name
                 free(name);
                 name = stString_getNextWord(&line);
+                de_verbose("Starting to read sequence %s from %s\n", name, filename);
             }
             if (name[0] == '>') {
                 // we don't want the > at the start of a name, get rid of it
                 char *tmp = name;
                 name = stString_copy(name + 1);
+                de_verbose("Starting to read sequence %s from %s\n", name, filename);
                 free(tmp);
             }
             mtfs = newMtfseq(2 << 16);
@@ -258,6 +259,7 @@ void addSequencesToHash(stHash *hash, char *filename) {
     }
     fclose(ifp);
     free(headPtr);
+    de_verbose("Finished reading fasta %s\n", filename);
 }
 void reportSequenceHash(stHash *hash) {
     stHashIterator *hit = stHash_getIterator(hash);

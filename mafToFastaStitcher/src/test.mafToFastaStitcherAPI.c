@@ -185,6 +185,59 @@ static stHash *createSeqHashFromString(char *name, char *input) {
     stHash_insert(hash, stString_copy(name), mtfs);
     return hash;
 }
+static void test_readingFasta_0(CuTest *testCase) {
+    char inputName[] = ">simChimp.chrA";
+    char inputSequence[] = "ATAATACTTGCACACTTCTGCTATTACTTGATGTGTTTTCTATGGGGTGT"
+        "CTTTCAGTGCTATGGGCAAGGCCATGGATTAATGGTGCCATAATTGCTCT"
+        "AGGCAGTGACTAGAAACAGTTCACAAGTTTTTACTGTATCAAACTATGTT"
+        "TTATAGTACGATTCACCCTCCAGGGGACCATCCCAAACTACTGGCCTAAA"
+        "AGGACCTGCCATGTTGTAACTCCCCAGCTTAGAAATATAGACGGGAGGAA"
+        "TGACaaaaagaagaaaaaaaaaaaaagaaaaaataaaaaaaaaacaaaaa"
+        "agatagagaaaaaaaaaagtaaaaacaaaaaaaaataaaaaagggaaaaa"
+        "aaataacaaaggaacaaaaaaaaaaaaaaaaaaataaaaagaaaaaCAAG"
+        "ATAACCTTCATGCCATTGGAGCTATCTATTATTGTCTTGACCTATGCTTT"
+        "ATCAATTTCTTCCTTCCTAGGAAGACATTTTTCTAGAAAGCTAAACGTTT"
+        "TTGTAGGCTTGCATGTTCTGTCTGGGCTTGAATGGTTGTGCGTCTACAAG"
+        "CCTCATTTACCATAGCACCATGCTTGGGTGGTATCTATCATCATTATCAA"
+        "TAGTCAAGTCATTATAATGTTTTGGTGATCAGGCCAGATCCCTTGCACCA"
+        "GTGACTTTCTAAATAGCACCTCCTCCATCATTTAAGGATCTCTAGCAACT"
+        "TTAATCTGACTCACCTTGCCATGCAGAGTGCATGTTCCTTTTTAACACCC"
+        "TGTGATTATGGGTTGGGTCTATTTGTATTTGTTTGATTACATCAGACGAC"
+        "CAGGCCAGAGACAGATAAACACAACAGCCACTGGAACCTAAAGCTGTGTT"
+        "CAGAATGTCACGGAATGTCTCATTGCACCCAGAGCTAGGGTGGGTATGAG"
+        "TATGATCTTCTACATAAGGTACCCCAGGAAAATTAACTTAACAACCAATC"
+        "AATTACAGAAGATGAATTCTGCTGTTGTCTCTTATTAGTTGGACTATTCA"
+        "GCCTAATGGTTGGCCACTTAGCTTGTCATGAGCATTACTGTACTACTATG"
+        "TCTAGTGTTTCCAGTTATTAGTTAGCCCACTGGATAGACAGTTTTGGCTT"
+        "GTTTTCTTTCATTTGTATTGCCCACTCACCTAGCAAATCAGACAAAGGGG"
+        "CATGTGAAAACTACCTTAGACTCTGCAGTTAGACAAACCATACTTTCCAC"
+        "ATAGACCTCAGACATTTGGACATGAATAATTTCCTTCCTCCGGAGTGGTG"
+        "GTTCCTCAACACTTATCACTTTCTTCTTCTTTTACCCGTATCACTGTCAA";
+    FILE *ofp = de_fopen("testFasta.fa", "w");
+    fprintf(ofp, "%s\n", inputName);
+    for (size_t i = 0; i < strlen(inputSequence); ++i) {
+        fprintf(ofp, "%c", inputSequence[i]);
+        if (((i + 1) % 50) == 0) {
+            fprintf(ofp, "\n");
+        }
+    }
+    fprintf(ofp, "\n");
+    fclose(ofp);
+    stHash *sequenceHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, destroyMtfseq);
+    addSequencesToHash(sequenceHash, "testFasta.fa");
+    mtfseq_t *value = NULL;
+    CuAssertTrue(testCase, (value = stHash_search(sequenceHash, "not in there")) == NULL);
+    CuAssertTrue(testCase, (value = stHash_search(sequenceHash, "simChimp.chrA")) != NULL);
+    if (value != NULL) {
+        CuAssertTrue(testCase, strlen(value->seq) == strlen(inputSequence));
+        CuAssertTrue(testCase, strcmp(value->seq, inputSequence) == 0);
+    }
+    if (remove("testFasta.fa")) {
+        fprintf(stderr, "Error, unable to remove temporary file testFasta.fa\n");
+        exit(EXIT_FAILURE);
+    }
+    stHash_destruct(sequenceHash);
+}
 static void test_newBlockHashFromBlock_0(CuTest *testCase) {
     stList *orderList = stList_construct3(0, free);
     stHash *observedHash = createBlockHashFromString("a score=0 test=0\n"
@@ -770,6 +823,7 @@ static void test_addBlockToHash_6(CuTest *testCase) {
 CuSuite* mafToFastaStitcher_TestSuite(void) {
     // listing the tests as void allows us to quickly comment out certain tests
     // when trying to isolate bugs highlighted by one particular test
+    (void) test_readingFasta_0;
     (void) test_newBlockHashFromBlock_0;
     (void) test_addMafLineToRow_0;
     (void) test_addMafLineToRow_1;
@@ -783,6 +837,7 @@ CuSuite* mafToFastaStitcher_TestSuite(void) {
     (void) test_addBlockToHash_5;
     (void) test_addBlockToHash_6;
     CuSuite* suite = CuSuiteNew();
+    SUITE_ADD_TEST(suite, test_readingFasta_0);
     SUITE_ADD_TEST(suite, test_newBlockHashFromBlock_0);
     SUITE_ADD_TEST(suite, test_addMafLineToRow_0);
     SUITE_ADD_TEST(suite, test_addMafLineToRow_1);
