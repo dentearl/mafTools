@@ -597,6 +597,11 @@ void writeMafOut(stHash *alignmentHash, stList *rowOrder, options_t *options) {
     uint32_t maxName = 1, maxStart = 1, maxLen = 1, maxSource = 1;
     char fmtName[10] = "\0", fmtStart[32] = "\0", fmtLen[32] = "\0", fmtSource[32] = "\0", *fmtLine = NULL;
     fprintf(maf, "##maf version=1\n\n");
+    if (stList_length(rowOrder) == 0) {
+        // There's nothing to write out.
+        fclose(maf);
+        return;
+    }
     for (int32_t i = 0; i < stList_length(rowOrder); ++i) {
         // first loop, get formating correct
         r = stHash_search(alignmentHash, stList_get(rowOrder, i));
