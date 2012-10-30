@@ -55,11 +55,12 @@ int32_t de_getline(char **s, int32_t *n, FILE *f) {
     char *s2 = *s;
     while (1) {
         register int32_t ch = (char) getc(f);
-        if (ch == '\r')
+        if (ch == '\r') {
             ch = getc(f);
+        }
         if (i == nMinus1) {
             *n = 2 * (*n) + 1;
-            *s = realloc(*s, (*n + 1));
+            *s = realloc(*s, (*n + 1) * sizeof(char));
             assert(*s != NULL);
             s2 = *s + i;
             nMinus1 = ((*n) - 1);

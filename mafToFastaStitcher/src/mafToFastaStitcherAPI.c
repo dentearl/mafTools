@@ -34,6 +34,7 @@
 #include "CuTest.h"
 #include "sharedMaf.h"
 #include "sonLib.h"
+#include "bioioC.h" // benLine()
 #include "mafToFastaStitcher.h"
 #include "mafToFastaStitcherAPI.h"
 #include "buildVersion.h"
@@ -223,34 +224,40 @@ void addSequencesToHash(stHash *hash, char *filename) {
     FILE *ifp = de_fopen(filename, "r");
     int32_t n = kMaxStringLength;
     char *line = (char*) st_malloc(n);
-    char *headPtr = line;
+    char *copy = NULL, *copyHead = NULL;
     char *name = NULL;
-    mtfseq_t *mtfs = NULL; 
+    mtfseq_t *mtfs = NULL;
     // uint32_t lineNumber = 1;
-    while (de_getline(&line, &n, ifp) != -1) {
+    while (benLine(&line, &n, ifp) != -1) {
         // if ((lineNumber++ % 25) == 0) {
         //     de_debug("Reading %s line number %"PRIu32"...\n", filename, lineNumber);
         // }
-        if (line[0] == '>') {
+        if (copyHead != NULL) {
+            free(copyHead);
+        }
+        copy = stString_copy(line);
+        copyHead = copy;
+        if (copy[0] == '>') {
             // sequence header
             if (name != NULL) {
                 // record previous sequence before moving on
+                de_debug("    ....Done\n");
                 stHash_insert(hash, stString_copy(name), mtfs);
                 free(name);
                 mtfs = NULL;
             }
-            name = stString_getNextWord(&line);
+            name = stString_getNextWord(&copy);
             if (strlen(name) < 2 && name[0] == '>') {
                 // chuck the > as a name, we want an actual sequence name
                 free(name);
-                name = stString_getNextWord(&line);
-                de_debug("Starting to read sequence %s from %s\n", name, filename);
+                name = stString_getNextWord(&copy);
+                de_debug("Reading sequence %s from %s\n", name, filename);
             }
             if (name[0] == '>') {
                 // we don't want the > at the start of a name, get rid of it
                 char *tmp = name;
                 name = stString_copy(name + 1);
-                de_debug("Starting to read sequence %s from %s\n", name, filename);
+                de_debug("Reading sequence %s from %s\n", name, filename);
                 free(tmp);
             }
             mtfs = newMtfseq(2 << 16);
@@ -261,11 +268,15 @@ void addSequencesToHash(stHash *hash, char *filename) {
     }
     if (name != NULL) {
         // record last sequence
+        de_debug("    ....Done\n");
         stHash_insert(hash, stString_copy(name), mtfs);
         free(name);
     }
+    if (copy != NULL) {
+        free(copy);
+    }
     fclose(ifp);
-    free(headPtr);
+    free(line);
     de_verbose("Finished reading fasta %s\n", filename);
 }
 void reportSequenceHash(stHash *hash) {
