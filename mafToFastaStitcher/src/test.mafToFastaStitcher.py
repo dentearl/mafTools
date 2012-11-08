@@ -38,7 +38,8 @@ g_headers = ['''##maf version=1 scoring=tba.v8
              '''##maf version=1 scoring=tba.v8
 # tba.v8 (((human chimp) baboon) (mouse rat))
 ''']
-g_knownData = [ ('''a score=0.0 status=test.input
+g_knownData = [ (None,
+'''a score=0.0 status=test.input
 s ref.chr1   10 10 + 100 ACGTACGTAC
 s seq1.chr@   0 10 + 100 AAAAAAAAAA
 s seq2.chr&  10  5 + 100 -----CCCCC
@@ -112,7 +113,8 @@ s seq4.chr1   0  5 - 100 ---------------------------------------------GG-----GGG
 s seq5.chr2   0 10 + 100 ---------------------------------------------CCCCCCCCCC
 ''',
                  ),
-                ('''a somethingerother
+                (None,
+'''a somethingerother
 s ref.chr1   10 10 + 100 ACGTACGTAC
 s seq1.chr0   1 10 - 100 AAAAAAAAAA
 s seq2.chr0   2  5 + 100 -----CCCCC
@@ -193,6 +195,81 @@ s seq4        0 27 +  27 ----------TTTTTTTTTT-------------------gggAA--NNNNNN--T
 s seq5.chr0   0  9 + 100 ------------------------------------GGGGGG-GGG---------------------------------
 s seq6.chr0   7  4 +  20 ------------------------------------------------------A--C-G-T-----------------
 '''),
+                ('ref.chr1',
+'''a score=0.0 status=test.input
+s ref.chr1   10 10 + 100 ACGTACGTAC
+s seq1.chr@   0 10 + 100 AAAAAAAAAA
+s seq2.chr&  10  5 + 100 -----CCCCC
+s seq6.chr1  10  5 + 100 -----GGGGG
+s seq7.chr20  0  5 + 100 AAAAA-----
+
+a score=0.0 status=test.input
+s ref.chr1   30 10 + 100 GTACGTACGT
+s seq1.chra  13  5 + 100 -----AAAAA
+s seq2.chr!!  5  5 + 100 CCCCC-----
+s seq3.chr0  20  5 + 100 -----GGGGG
+s seq6.chr1  22  5 + 100 GGGGG-----
+
+a score=0.0 status=test.input
+s ref.chr1   40 10 + 100 ACGTACGTAC
+s seq4.chr1   0  5 - 100 GG-----GGG
+s seq5.chr2   0 10 + 100 CCCCCCCCCC
+s seq7.chr20 42  5 + 100 -----AAAAA
+''',
+                 ['''> ref.chr1
+GGGGGGGGGGACGTACGTACttggccaataGTACGTACGTACGTACGTAC
+> seq1.chr@
+AAAAAAAAAAGG
+> seq2.chr&
+AAAAAAAAACCCCCAA
+> seq2.chr!!
+AAAACCCCCAA
+> seq3.chr0
+AAAAAAAAAAAAAAAAAAAGGGGGAA
+> seq4.chr1
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCC
+> seq6.chr1
+AAAAAAAAAAGGGGGAAAAAAAGGGGGAA
+> seq7.chr20
+AAAAAGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGAAAAATT
+'''],
+                 '''> ref.chr1
+ACGTACGTACttggccaata-------------------GTACGTACGT-
+-----ACGTACGTAC
+> seq1
+AAAAAAAAAA----------NNNNNN------------------AAAAA-
+---------------
+> seq2
+-----CCCCC----------------NNNNNN-------CCCCC------
+---------------
+> seq6.chr1
+-----GGGGG----------------------AAAAAAAGGGGG------
+---------------
+> seq7
+AAAAA--------------------------------------------N
+NNNNN-----AAAAA
+> seq3.chr0
+--------------------------------------------GGGGG-
+---------------
+> seq4.chr1
+--------------------------------------------------
+-----GG-----GGG
+> seq5.chr2
+--------------------------------------------------
+-----CCCCCCCCCC
+''',
+                 '''a stitched=true
+s ref.chr1   10 40 + 100 ACGTACGTACttggccaata-------------------GTACGTACGT------ACGTACGTAC
+s seq1        0 21 +  21 AAAAAAAAAA----------NNNNNN------------------AAAAA----------------
+s seq2        0 16 +  16 -----CCCCC----------------NNNNNN-------CCCCC---------------------
+s seq6.chr1  10 17 + 100 -----GGGGG----------------------AAAAAAAGGGGG---------------------
+s seq7        0 16 +  16 AAAAA--------------------------------------------NNNNNN-----AAAAA
+s seq3.chr0  20  5 + 100 --------------------------------------------GGGGG----------------
+s seq4.chr1   0  5 - 100 -------------------------------------------------------GG-----GGG
+s seq5.chr2   0 10 + 100 -------------------------------------------------------CCCCCCCCCC
+''',
+                 ),
                 ]
 
 def hashify(s):
@@ -281,7 +358,7 @@ class FastaStitchTest(unittest.TestCase):
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('fasta'))
         customOpts = mafval.GenericValidationOptions()
-        for inMaf, inFaList, outFa, outMaf  in g_knownData:
+        for reference, inMaf, inFaList, outFa, outMaf  in g_knownData:
             testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    ''.join(inMaf), g_headers)
             testFaNames = testFasta(os.path.abspath(tmpDir), inFaList)
@@ -293,6 +370,8 @@ class FastaStitchTest(unittest.TestCase):
                     '--breakpointPenalty', '6', '--interstitialSequence', '20',
                     '--outMfa', os.path.abspath(os.path.join(tmpDir, 'out.fa')),
                     '--outMaf', os.path.abspath(os.path.join(tmpDir, 'out.maf')),]
+            if reference is not None:
+                cmd += ['--reference', reference]
             mtt.recordCommands([cmd], tmpDir)
             mtt.runCommandsS([cmd], tmpDir)
             self.assertTrue(fastaIsCorrect(os.path.abspath(os.path.join(tmpDir, 'out.fa')), outFa))
@@ -308,7 +387,7 @@ class FastaStitchTest(unittest.TestCase):
             return
         tmpDir = os.path.abspath(mtt.makeTempDir('memory1'))
         customOpts = mafval.GenericValidationOptions()
-        for inMaf, inFaList, outFa, outMaf  in g_knownData:
+        for reference, inMaf, inFaList, outFa, outMaf  in g_knownData:
             testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    ''.join(inMaf), g_headers)
             testFaNames = testFasta(os.path.abspath(tmpDir), inFaList)
@@ -320,6 +399,8 @@ class FastaStitchTest(unittest.TestCase):
                     '--breakpointPenalty', '6', '--interstitialSequence', '20',
                     '--outMfa', os.path.abspath(os.path.join(tmpDir, 'out.fa')),
                     '--outMaf', os.path.abspath(os.path.join(tmpDir, 'out.maf')),]
+            if reference is not None:
+                cmd += ['--reference', reference]
             mtt.recordCommands([cmd], tmpDir)
             mtt.runCommandsS([cmd], tmpDir)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))

@@ -36,6 +36,7 @@ typedef struct _options {
     char *seqs;
     char *outMfa;
     char *outMaf;
+    char *reference;
     uint32_t breakpointPenalty;
     uint32_t interstitialSequence;
 } options_t;

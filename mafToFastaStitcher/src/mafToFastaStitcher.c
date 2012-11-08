@@ -45,7 +45,8 @@ void usage(void);
 void parseOptions(int argc, char **argv, options_t *options) {
     int c;
     bool setMafName = false, setSeqNames = false, setOutName = false, 
-        setBreakpointPenalty = false, setInterstitialSequence = false;;
+        setBreakpointPenalty = false, setInterstitialSequence = false,
+        setReference = false;
     size_t i;
     while (1) {
         static struct option long_options[] = {
@@ -59,6 +60,7 @@ void parseOptions(int argc, char **argv, options_t *options) {
             {"outMaf",  required_argument, 0, 0},
             {"breakpointPenalty",  required_argument, 0, 0},
             {"interstitialSequence",  required_argument, 0, 0},
+            {"referenceSequence",  required_argument, 0, 0},
             {0, 0, 0, 0}
         };
         int option_index = 0;
@@ -101,6 +103,11 @@ void parseOptions(int argc, char **argv, options_t *options) {
                 setInterstitialSequence = true;
                 i = sscanf(optarg, "%" PRIu32, &(options->interstitialSequence));
                 assert(i == 1);
+                break;
+            }
+            if (strcmp("referenceSequence", long_options[option_index].name) == 0) {
+                setReference = true;
+                options->reference = stString_copy(optarg);
                 break;
             }
             break;
@@ -167,6 +174,7 @@ void usage(void) {
     usageMessage('\0', "breakpointPenalty", "number of `N' characters to insert into a sequence when a breakpoint is detected.");
     usageMessage('\0', "interstitialSequence", "maximum length of interstitial sequence to be added (from a fasta) into the fasta before a breakpoint is declared and the <code>--breakpointPenalty</code> number of <code>N</code>'s is added instead.");
     usageMessage('\0', "outMaf", "multiple alignment format output file.");
+    usageMessage('\0', "reference", "optional. The name of the reference sequence. All intervening reference sequence between the first and last block of the input --maf will be read out in the output.");
     usageMessage('v', "verbose", "turns on verbose output.");
     exit(EXIT_FAILURE);
 }
@@ -182,7 +190,6 @@ int main(int argc, char **argv) {
     mafFileApi_t *mfapi = maf_newMfa(options->maf, "r");
     de_verbose("Creating alignment hash.\n");
     buildAlignmentHash(mfapi, alignmentHash, sequenceHash, rowOrder, options);
-    maf_destroyMfa(mfapi);
     if (options->outMfa != NULL) {
         // fasta output
         de_verbose("Writing fasta output.\n");
@@ -194,9 +201,10 @@ int main(int argc, char **argv) {
         writeMafOut(alignmentHash, rowOrder, options);
     }
     // cleanup
+    maf_destroyMfa(mfapi);
     stHash_destruct(alignmentHash);
     stHash_destruct(sequenceHash);
     stList_destruct(rowOrder);
     destroyOptions(options);
-    return EXIT_SUCCESS;
+    return(EXIT_SUCCESS);
 }

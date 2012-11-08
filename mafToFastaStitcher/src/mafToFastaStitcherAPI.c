@@ -45,6 +45,7 @@ options_t* options_construct(void) {
     o->seqs = NULL;
     o->outMfa = NULL;
     o->outMaf = NULL;
+    o->reference = NULL;
     o->breakpointPenalty = 0;
     o->interstitialSequence = 0;
     return o;
@@ -65,6 +66,10 @@ void destroyOptions(options_t *o) {
     if (o->outMaf != NULL) {
         free(o->outMaf);
         o->outMaf = NULL;
+    }
+    if (o->reference != NULL) {
+        free(o->reference);
+        o->reference = NULL;
     }
     free(o);
     o = NULL;
@@ -436,8 +441,8 @@ void addMafBlockToRowHash(stHash *alignHash, stHash *seqHash, stList *orderList,
                           mafBlock_t *mb, options_t *options) {
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     row_t *r = NULL;
-    char *seqName = NULL;
-    char *sppName = NULL;
+    char *seqName = NULL; // full name
+    char *sppName = NULL; // just the bit until the first '.' character
     // first loop, penalize and interstitialize the existing hash as necessary:
     while (ml != NULL) {
         if (maf_mafLine_getType(ml) != 's') {
@@ -482,11 +487,19 @@ void addMafBlockToRowHash(stHash *alignHash, stHash *seqHash, stList *orderList,
             r->strand = maf_mafLine_getStrand(ml);
             r->prevStrand = r->strand;
             stHash_insert(alignHash, stString_copy(sppName), r);
-            // printf("inserted %s %s\n", sppName, r->name);
+            de_debug("inserted new row into hash: %s %s\n", sppName, r->name);
             stList_append(orderList, stString_copy(sppName));
         } else {
             // row already in hash
-            if (r->prevStrand != maf_mafLine_getStrand(ml)) {
+            if ((options->reference != NULL) && (strcmp(options->reference, r->name) == 0)) {
+                // extend the reference if necessary
+                if (r->prevRightPos + 1 < maf_mafLine_getStart(ml)) {
+                    interstitialInsert(alignHash, seqHash, seqName, 
+                                       r->prevRightPos + 1,
+                                       maf_mafLine_getStrand(ml), 
+                                       maf_mafLine_getStart(ml) - r->prevRightPos - 1);
+                }
+            }else if (r->prevStrand != maf_mafLine_getStrand(ml)) {
                 // different strands is a breakpoint
                 // printf("penalize 0 (%"PRIu32") %s\n", options->breakpointPenalty, seqName);
                 penalize(alignHash, seqName, options->breakpointPenalty);
@@ -497,6 +510,7 @@ void addMafBlockToRowHash(stHash *alignHash, stHash *seqHash, stList *orderList,
                 penalize(alignHash, seqName, options->breakpointPenalty);
                 r->strand = '*';
                 r->multipleNames = true;
+                de_debug("penalizing %s because name has changed to %s.\n", r->prevName, seqName);
                 free(r->name);
                 r->name = copySpeciesName(seqName);
                 free(r->prevName);
@@ -508,6 +522,9 @@ void addMafBlockToRowHash(stHash *alignHash, stHash *seqHash, stList *orderList,
                 // printf("penalize 2 (%"PRIu32") %s\n", options->breakpointPenalty, seqName);
                 penalize(alignHash, seqName, options->breakpointPenalty);
                 r->multipleNames = true;
+                de_debug("penalizing %s because of interstitial distance. prev: %"PRIu32" current:%"PRIu32", "
+                         "line nubber: %"PRIu32"\n", 
+                         r->prevName, r->prevRightPos, maf_mafLine_getStart(ml), maf_mafLine_getLineNumber(ml));
                 free(r->name);
                 r->name = copySpeciesName(seqName);
                 free(r->prevName);
