@@ -390,7 +390,7 @@ mafBlock_t *spliceBlock(mafBlock_t *b, uint32_t l, uint32_t r, int32_t **offsetA
         // printf(" [%2"PRIi32", %2"PRIi32"] post update: %s\n", offsetArray[si][0], offsetArray[si][1], maf_mafLine_getSpecies(ml1));
         maf_mafLine_setSequence(ml2, de_strndup(seq + l, 1 + r - l));
         maf_mafLine_setLength(ml2, countNonGaps(maf_mafLine_getSequence(ml2)));
-        maf_mafBlock_setSequenceFieldLength(mb, strlen(maf_mafLine_getSequence(ml2)));
+        maf_mafBlock_setSequenceFieldLength(mb, maf_mafLine_getSequenceFieldLength(ml2));
         maf_mafLine_setStrand(ml2, maf_mafLine_getStrand(ml1));
         maf_mafLine_setSourceLength(ml2, maf_mafLine_getSourceLength(ml1));
         maf_mafLine_setSpecies(ml2, de_strdup(maf_mafLine_getSpecies(ml1)));

@@ -22,30 +22,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
-#ifndef COMMON_H_
-#define COMMON_H_
-#include <stdio.h>
+#ifndef MAFTOFASTASTITCHER_H_
+#define MAFTOFASTASTITCHER_H_
 #include <stdint.h>
+#include "sonLib.h"
+#include "common.h"
+#include "CuTest.h"
+#include "sharedMaf.h"
+#include "mafToFastaStitcherAPI.h"
 
-int g_verbose_flag;
-int g_debug_flag;
-const int kMaxStringLength;
-const int kMaxMessageLength;
-const int kMaxSeqName;
+void usage(void);
+void parseOptions(int argc, char **argv, options_t *options);
 
-void de_verbose(char const *fmt, ...);
-void de_debug(char const *fmt, ...);
-void* de_malloc(size_t n);
-int32_t de_getline(char **s, int32_t *n, FILE *f);
-FILE* de_fopen(const char *s, char const *mode);
-char* de_strdup(const char *s);
-char* de_strndup(const char *s, size_t n);
-void failBadFormat(void);
-void usageMessage(char shortopt, const char *name, const char *description);
-char* stringReplace(const char *string, const char a, const char b);
-int minint(int a, int b);
-char* de_strtok(char **s, char t);
-unsigned countChar(char *s, const char c);
-char** extractSubStrings(char *nameList, unsigned n, const char delineator);
-
-#endif // COMMON_H_
+#endif // MAFTOFASTASTITCHER_H_

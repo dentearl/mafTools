@@ -87,7 +87,7 @@ void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
     st_logDebug("Starting to parse bed files\n");
     char *spaceSepFiles = stringReplace(commaSepFiles, ',', ' ');
     char *currentLocation = spaceSepFiles;
-    char *currentWord;
+    char *currentWord = NULL;
     while ((currentWord = stString_getNextWord(&currentLocation)) != NULL) {
         parseBedFile(currentWord, bedFileHash);
         free(currentWord);

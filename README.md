@@ -10,8 +10,8 @@ With the exception of the python dependencies, when a component is missing a dep
 * [python 2.7](http://www.python.org/): all modules.
    * [scipy](http://www.scipy.org/)
    * [numpy](http://numpy.scipy.org/)
-* [sonLib](https://github.com/benedictpaten/sonLib/): mafComparator, mafStats, mafTransitiveClosure.
-* [pinchesAndCacti](https://github.com/benedictpaten/sonLib/): mafTransitiveClosure.
+* [sonLib](https://github.com/benedictpaten/sonLib/): mafComparator, mafStats, mafTransitiveClosure, mafToFastaStitcher.
+* [pinchesAndCacti](https://github.com/benedictpaten/pinchesAndCacti): mafTransitiveClosure.
 
 ## Installation
 0. Install dependencies.
@@ -30,6 +30,7 @@ With the exception of the python dependencies, when a component is missing a dep
 * **mafSorter** A program to sort all of the blocks in a MAF based on the (absolute) start position of one of the sequences. Blocks without the sequence are placed at the start of the output in their original order.
 * **mafStats** A program to read a maf file and report back summary statistics about the file contents.
 * **mafStrander** A program to enforce, when possible, a particular strandedness for blocks for a given species and strand orientation.
+* **mafToFastaStitcher** A program to convert a reference-based MAF file to a multiple sequence fasta. Requires both a .maf and a fasta containing complete sequences for all entries in the maf.
 * **mafTransitiveClosure** A program to perform the transitive closure on an alignment. That is it checks every column of the alignment and looks for situations where a position A is aligned to B in one part of a file and B is aligned to C in another part of the file. The transitive closure of this relationship would be a single column with A, B and C all present. Useful for when you have pairwise alignments and you wish to turn them into something more resembling a multiple alignment.
 * **mafValidator** A program to assess whether or not a given maf file's formatting is valid. 
 

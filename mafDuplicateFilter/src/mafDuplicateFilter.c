@@ -456,7 +456,7 @@ void findBestDupes(duplicate_t *head, char *consensus) {
             sml = sml->next;
         }
         // sort on scores
-        scoredMafLine_t *mafLineArray[d->numSequences];
+        scoredMafLine_t **mafLineArray = (scoredMafLine_t**) de_malloc(sizeof(*mafLineArray) * d->numSequences);
         populateMafLineArray(d->headScoredMaf, mafLineArray);
         qsort(mafLineArray, d->numSequences, sizeof(scoredMafLine_t *), cmp_by_score);
         // move the top score to the head of the list
@@ -469,6 +469,7 @@ void findBestDupes(duplicate_t *head, char *consensus) {
         }
         sml->next = NULL;
         d = d->next;
+        free(mafLineArray);
     }
 }
 int cmp_by_score(const void *a, const void *b) {

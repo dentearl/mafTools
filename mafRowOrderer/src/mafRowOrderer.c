@@ -213,40 +213,6 @@ void orderInput(mafFileApi_t *mfa, char **order, unsigned n) {
         maf_destroyMafBlockList(thisBlock);
     }
 }
-unsigned countNames(char *s) {
-    // counts the number of ',' characters in a string plus one
-    unsigned i, n, m;
-    m = strlen(s);
-    if (m == 0) {
-        return 0;
-    }
-    n = 1;
-    for (i = 0; i < m; ++i) {
-        if (s[i] == ',') {
-            ++n;
-        }
-    }
-    return n;
-}
-char** extractNames(char *nameList, unsigned n) {
-    // n is the number of names in the name list
-    // create a char array to hold each element in the *namelist comma separated list
-    if (n == 0) {
-        return NULL;
-    }
-    char **mat = (char**) de_malloc(sizeof(char*) * n);
-    unsigned index = 0;
-    char *tkn = NULL;
-    char *copy = de_strdup(nameList);
-    tkn = strtok(copy, ",");
-    while (tkn != NULL) {
-        mat[index] = (char*) de_malloc(sizeof(char) * (strlen(tkn) + 1));
-        strcpy(mat[index++], tkn);
-        tkn = strtok(NULL, ",");
-    }
-    free(copy);
-    return mat;
-}
 void destroyNameList(char **names, unsigned n) {
     for (unsigned i = 0; i < n; ++i) {
         free(names[i]);
@@ -258,8 +224,8 @@ int main(int argc, char **argv) {
     char orderlist[kMaxStringLength];
     orderlist[0] = '\0';
     parseOptions(argc, argv,  filename, orderlist);
-    unsigned n = countNames(orderlist);
-    char **order = extractNames(orderlist, n);
+    unsigned n = 1 + countChar(orderlist, ',');
+    char **order = extractSubStrings(orderlist, n, ',');
     mafFileApi_t *mfa = maf_newMfa(filename, "r");
     orderInput(mfa, order, n);
     maf_destroyMfa(mfa);

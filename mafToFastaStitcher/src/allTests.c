@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2012 by 
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * ... and other members of the Reconstruction Team of David Haussler's 
@@ -22,30 +22,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
-#ifndef COMMON_H_
-#define COMMON_H_
+
 #include <stdio.h>
-#include <stdint.h>
+#include <stdlib.h>
+#include "CuTest.h"
+#include "sonLib.h"
+#include "mafToFastaStitcher.h"
+#include "mafToFastaStitcherAPI.h"
+#include "test.mafToFastaStitcherAPI.h"
 
-int g_verbose_flag;
-int g_debug_flag;
-const int kMaxStringLength;
-const int kMaxMessageLength;
-const int kMaxSeqName;
+CuSuite* mafToFastaStitcher_TestSuite(void);
 
-void de_verbose(char const *fmt, ...);
-void de_debug(char const *fmt, ...);
-void* de_malloc(size_t n);
-int32_t de_getline(char **s, int32_t *n, FILE *f);
-FILE* de_fopen(const char *s, char const *mode);
-char* de_strdup(const char *s);
-char* de_strndup(const char *s, size_t n);
-void failBadFormat(void);
-void usageMessage(char shortopt, const char *name, const char *description);
-char* stringReplace(const char *string, const char a, const char b);
-int minint(int a, int b);
-char* de_strtok(char **s, char t);
-unsigned countChar(char *s, const char c);
-char** extractSubStrings(char *nameList, unsigned n, const char delineator);
-
-#endif // COMMON_H_
+int mtfs_RunAllTests(void) {
+    CuString *output = CuStringNew();
+    CuSuite *suite = CuSuiteNew();
+    CuSuite *mtfs_s = mafToFastaStitcher_TestSuite();
+    CuSuiteAddSuite(suite, mtfs_s);
+    CuSuiteRun(suite);
+    CuSuiteSummary(suite, output);
+    CuSuiteDetails(suite, output);
+    printf("%s\n", output->buffer);
+    CuStringDelete(output);
+    int status = (suite->failCount > 0);
+    free(mtfs_s);
+    CuSuiteDelete(suite);
+    return status;
+}
+int main(void) {
+    return mtfs_RunAllTests();
+}
