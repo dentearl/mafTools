@@ -7,11 +7,13 @@ dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*
 API = ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/mafExtractorAPI.o src/buildVersion.o
 testAPI = test/sharedMaf.o ../external/CuTest.a test/common.o test/mafExtractorAPI.o test/buildVersion.o
 testObjects := test/test.mafExtractor.o
+sources = src/mafExtractor.c src/mafExtractor.h
 
 .PHONY: all clean test buildVersion
 
 all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
-buildVersion:
+buildVersion: src/buildVersion.c
+src/buildVersion.c: ${sources} ${dependencies}
 	@python ../include/createVersionSources.py
 
 ${bin}/mafExtractor: src/mafExtractor.c ${dependencies} ${API}

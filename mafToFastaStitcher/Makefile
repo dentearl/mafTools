@@ -31,11 +31,13 @@ dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*
 extraAPI := ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/mafToFastaStitcherAPI.o ${sonLibPath}/sonLib.a src/buildVersion.o 
 testAPI := test/sharedMaf.o test/common.o ../external/CuTest.a test/mafToFastaStitcherAPI.o ${sonLibPath}/sonLib.a test/buildVersion.o
 testObjects := test/test.mafToFastaStitcherAPI.o 
+sources := src/mafToFastaStitcher.c src/mafToFastaStitcher.h
 
 .PHONY: all clean test buildVersion
 
 all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
-buildVersion:
+buildVersion: src/buildVersion.c
+src/buildVersion.c: ${sources} ${dependencies}
 	@python ../include/createVersionSources.py
 
 ${bin}/mafToFastaStitcher: src/mafToFastaStitcher.c ${dependencies} ${extraAPI}

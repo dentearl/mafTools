@@ -5,11 +5,13 @@ PROGS = mafTransitiveClosure
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*) $(wildcard ${sonLibPath}/*) ${sonLibPath}/sonLib.a ${sonLibPath}/stPinchesAndCacti.a src/allTests.c
 objects := ../include/common.o ../include/sharedMaf.o ${sonLibPath}/sonLib.a ../external/CuTest.a ${sonLibPath}/stPinchesAndCacti.a src/test.mafTransitiveClosure.o src/buildVersion.o
 testObjects := test/sharedMaf.o test/common.o ${sonLibPath}/sonLib.a ../external/CuTest.a ${sonLibPath}/stPinchesAndCacti.a src/test.mafTransitiveClosure.o test/buildVersion.o
+sources := src/mafTransitiveClosure.c src/mafTransitiveClosure.h
 
 .PHONY: all clean test buildVersion
 
 all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
-buildVersion:
+buildVersion: src/buildVersion.c
+src/buildVersion.c: ${sources} ${dependencies}
 	@python ../include/createVersionSources.py
 
 ${bin}/mafTransitiveClosure: src/mafTransitiveClosure.c ${dependencies} ${objects}

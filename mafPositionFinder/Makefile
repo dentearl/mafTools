@@ -6,11 +6,13 @@ PROGS = mafPositionFinder
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*)
 objects = ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/buildVersion.o
 testObjects = test/common.o test/sharedMaf.o ../external/CuTest.a test/buildVersion.o
+sources = src/mafPositionFinder.c
 
 .PHONY: all clean test buildVersion
 
 all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
-buildVersion:
+buildVersion: src/buildVersion.c
+src/buildVersion.c: ${sources} ${dependencies}
 	@python ../include/createVersionSources.py
 
 ${bin}/mafPositionFinder: src/mafPositionFinder.c ${dependencies} ${objects}

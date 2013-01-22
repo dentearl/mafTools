@@ -6,11 +6,13 @@ PROGS = mafStrander
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*)
 objects = ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/buildVersion.o
 testObjects := test/sharedMaf.o test/common.o ../external/CuTest.a  test/buildVersion.o
+sources = src/mafStrander.c
 
 .PHONY: all clean test buildVersion
 
 all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
-buildVersion:
+buildVersion: src/buildVersion.c
+src/buildVersion.c: ${sources} ${dependencies}
 	@python ../include/createVersionSources.py
 
 ${bin}/mafStrander: src/mafStrander.c ${dependencies} ${objects}

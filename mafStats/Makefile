@@ -5,11 +5,13 @@ PROGS = mafStats
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*)
 objects := ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/test.mafStats.o ${sonLibPath}/sonLib.a src/buildVersion.o
 testObjects := test/sharedMaf.o test/common.o ../external/CuTest.a src/test.mafStats.o ${sonLibPath}/sonLib.a test/buildVersion.o
+sources = src/mafStats.c src/mafStats.h
 
 .PHONY: all clean test buildVersion
 
 all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
-buildVersion:
+buildVersion: src/buildVersion.c
+src/buildVersion.c: ${sources} ${dependencies}
 	@python ../include/createVersionSources.py
 
 ${bin}/mafStats: src/mafStats.c ${dependencies} ${objects}

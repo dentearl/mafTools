@@ -25,15 +25,18 @@
 
 include ../include.mk
 binPath = ../bin
+dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*) $(wildcard ${sonLibPath}/*) ${sonLibPath}/sonLib.a ${sonLibPath}/stPinchesAndCacti.a src/allTests.c
 extraAPI = src/cString.c ../include/sharedMaf.o ../external/CuTest.a ../include/common.o src/comparatorRandom.o src/comparatorAPI.o ${sonLibPath}/sonLib.a src/buildVersion.o
 testAPI = src/cString.c test/sharedMaf.o ../external/CuTest.a test/common.o test/comparatorRandom.o test/comparatorAPI.o ${sonLibPath}/sonLib.a test/buildVersion.o
 progs =  $(foreach f, mafComparator mafPairCounter, ${binPath}/$f)
 testObjects = test/test.comparatorAPI.o test/test.comparatorRandom.o
+sources = $(foreach f, comparatorAPI cString comparatorRandom test.comparatorAPI test.comparatorRandom, src/$f.c src/$f.h) src/allTests.c src/mafComparator.c src/mafPairCounter.c src/testRand.c
 
 .PHONY: all clean test buildVersion
 
 all: buildVersion ${progs}
-buildVersion:
+buildVersion: src/buildVersion.c
+src/buildVersion.c: ${sources} ${dependecies}
 	@python ../include/createVersionSources.py
 
 ${binPath}/%: src/%.c ${extraAPI} $(wildcard src/*.h)
