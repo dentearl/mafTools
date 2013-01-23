@@ -25,19 +25,8 @@ else
 	TransitiveClosure = mafTransitiveClosure
 endif # sonlib
 endif # pinches
-ifeq (0, $(shell python -c 'import numpy;' >> /dev/null 2>&1 && echo $$?))
-ifeq (0, $(shell python -c 'import scipy;' >> /dev/null 2>&1 && echo $$?))
-	CoveragePickles = mafCoveragePickles
-else
-	CoveragePickles = 
-$(warning Because dependency python: scipy is missing mafCoveragePickles will not be built / tested / cleaned. See README.md for information about dependencies.)
-endif # scipy
-else
-	CoveragePickles = 
-$(warning Because dependency python: numpy is missing mafCoveragePickles will not be built / tested / cleaned. See README.md for information about dependencies.)
-endif # numpy
 ##############################
-dependentModules= ${Comparator} ${TransitiveClosure} ${CoveragePickles} ${Stats}
+dependentModules= ${Comparator} ${TransitiveClosure} ${Stats}
 
 modules = include ${dependentModules} mafValidator mafPositionFinder mafExtractor mafSorter mafDuplicateFilter mafFilter mafStrander mafRowOrderer mafToFastaStitcher
 
