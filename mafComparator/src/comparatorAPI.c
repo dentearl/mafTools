@@ -483,9 +483,9 @@ uint64_t countPairsInMaf(const char *filename, stSet *legitSequences) {
 }
 static uint64_t uint64Key(const void *k) {
     uint64_t p = *(uint64_t*)k;
-    if (p > INT32_MAX) {
-        while (p > INT32_MAX) {
-            p -= INT32_MAX;
+    if (p > INT64_MAX) {
+        while (p > INT64_MAX) {
+            p -= INT64_MAX;
         }
     }
     return p;
@@ -571,7 +571,7 @@ void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs,
     stSet *set = stSet_construct3(uint64Key, uint64EqualKey, free);
     uint64_t *randPair = st_malloc(sizeof(*randPair));
     uint64_t numPairsToSample = 0;
-    int offset = 0; // used when numPairs > INT32_MAX, offset is the number of times to multiply by INT32_MAX
+    int offset = 0; // used when numPairs > INT64_MAX, offset is the number of times to multiply by INT64_MAX
     (void) offset;
     if (((double) n > numPairs / 2.0) && (numPairs > n)) {
         // sample (numSeqs - n) many pairs
@@ -601,7 +601,7 @@ void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs,
                 ++i;
             }
         }
-    } else if (numPairs > INT32_MAX){
+    } else if (numPairs > INT64_MAX){
         // sample straight away using st_randomInt64()
         while (i < numPairsToSample) {
             *randPair = st_randomInt64(0, numPairs);
@@ -899,7 +899,7 @@ bool inInterval(stHash *intervalsHash, char *seq, uint64_t pos) {
     if (intervals == NULL) {
         return false;
     }
-    stIntTuple *i = stIntTuple_construct2( pos, INT32_MAX);
+    stIntTuple *i = stIntTuple_construct2( pos, INT64_MAX);
     stIntTuple *j = stSortedSet_searchLessThanOrEqual(intervals, i);
     stIntTuple_destruct(i);
     if (j == NULL) {

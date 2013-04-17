@@ -97,7 +97,7 @@ static void test_rbinom_one_4(CuTest *testCase) {
     // large n*p means using the btpe algorithm
     uint64_t a;
     uint64_t N = 100000;
-    uint64_t n = INT32_MAX;
+    uint64_t n = INT64_MAX;
     n *= 2;
     for (uint64_t i = 0; i < N; ++i) {
         a = rbinom(n, 1.0);
@@ -161,7 +161,7 @@ static void test_rbinom_ranges_2(CuTest *testCase) {
 static void test_rbinom_ranges_3(CuTest *testCase) {
     // ranges for large n*p
     uint64_t N = 1000000;
-    uint64_t n = INT32_MAX;
+    uint64_t n = INT64_MAX;
     n *= 3;
     uint64_t *array = (uint64_t*) st_malloc(sizeof(*array) * N);
     for (uint64_t i = 0; i < N; ++i) {
@@ -173,7 +173,7 @@ static void test_rbinom_ranges_3(CuTest *testCase) {
 static void test_rbinom_ranges_4(CuTest *testCase) {
     // ranges for large n*p
     uint64_t N = 1000000;
-    uint64_t n = INT32_MAX;
+    uint64_t n = INT64_MAX;
     uint64_t m = n * 2.5; // we must be careful of overflowing constant expressions here
     n *=  3;
     uint64_t *array = (uint64_t*) st_malloc(sizeof(*array) * N);
