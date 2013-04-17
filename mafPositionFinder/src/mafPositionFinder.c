@@ -43,9 +43,9 @@ const char *g_version = "version 0.1 September 2012";
 
 void version(void);
 void usage(void);
-void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t *position);
-void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start, 
-                 uint32_t length, uint32_t sourceLength, char strand);
+void parseOptions(int argc, char **argv, char *filename, char *seqName, uint64_t *position);
+void checkRegion(unsigned lineno, char *fullname, uint64_t pos, uint64_t start, 
+                 uint64_t length, uint64_t sourceLength, char strand);
 void searchInput(mafFileApi_t *mfa, char *fullname, unsigned long pos);
 
 void version(void) {
@@ -70,12 +70,12 @@ void usage(void) {
     usageMessage('v', "help", "turns on verbose output.");
     exit(EXIT_FAILURE);
 }
-void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t *position) {
+void parseOptions(int argc, char **argv, char *filename, char *seqName, uint64_t *position) {
     extern int g_debug_flag;
     extern int g_verbose_flag;
     int c;
     int setMName = 0, setSName = 0, setPos = 0;
-    int32_t tempPos = 0;
+    int64_t tempPos = 0;
     while (1) {
         static struct option long_options[] = {
             {"debug", no_argument, &g_debug_flag, 1},
@@ -145,7 +145,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t
         usage();
     }
 }
-void getAbsStartEnd(mafLine_t *ml, uint32_t *absStart, uint32_t *absEnd) {
+void getAbsStartEnd(mafLine_t *ml, uint64_t *absStart, uint64_t *absEnd) {
     if (maf_mafLine_getStrand(ml) == '-') {
         *absStart =  maf_mafLine_getSourceLength(ml) - (maf_mafLine_getStart(ml) + maf_mafLine_getLength(ml));
         *absEnd = maf_mafLine_getSourceLength(ml) - maf_mafLine_getStart(ml) - 1;
@@ -154,15 +154,15 @@ void getAbsStartEnd(mafLine_t *ml, uint32_t *absStart, uint32_t *absEnd) {
         *absEnd = maf_mafLine_getStart(ml) + maf_mafLine_getLength(ml) - 1;
     }
 }
-bool insideLine(mafLine_t *ml, uint32_t pos) {
+bool insideLine(mafLine_t *ml, uint64_t pos) {
     // check to see if pos is inside of the maf line
-    uint32_t absStart, absEnd;
+    uint64_t absStart, absEnd;
     getAbsStartEnd(ml, &absStart, &absEnd);
     if ((absStart <= pos) && (absEnd >= pos))
         return true;
     return false;
 }
-char* extractVignette(mafLine_t *ml, uint32_t targetPos) {
+char* extractVignette(mafLine_t *ml, uint64_t targetPos) {
     // produce a pretty picture of the targetPos in question and surrounding sequence region, a la
     // ...ACGTT --> A <-- GGCCA...
     char *vig = NULL;
@@ -174,8 +174,8 @@ char* extractVignette(mafLine_t *ml, uint32_t targetPos) {
     memset(right, '\0', 6);
     memset(base, '\0', 2);
     unsigned leftIndex = 0, rightIndex = 0;
-    uint32_t absStart, absEnd;
-    uint32_t start, end, pos;
+    uint64_t absStart, absEnd;
+    uint64_t start, end, pos;
     getAbsStartEnd(ml, &absStart, &absEnd);
     int strand = 0;
     if (maf_mafLine_getStrand(ml) == '+') {
@@ -230,7 +230,7 @@ char* extractVignette(mafLine_t *ml, uint32_t targetPos) {
     free(base);
     return vig;
 }
-void checkBlock(mafBlock_t *mb, char *fullname, uint32_t pos) {
+void checkBlock(mafBlock_t *mb, char *fullname, uint64_t pos) {
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     char *vignette = NULL;
     while (ml != NULL) {
@@ -244,7 +244,7 @@ void checkBlock(mafBlock_t *mb, char *fullname, uint32_t pos) {
         }
         if (insideLine(ml, pos)) {
             vignette = extractVignette(ml, pos);
-            printf("block %" PRIu32 ", line %" PRIu32 ": s %s %" PRIu32 " %" PRIu32 " %c %" PRIu32 
+            printf("block %" PRIu64 ", line %" PRIu64 ": s %s %" PRIu64 " %" PRIu64 " %c %" PRIu64 
                    " %s\n", maf_mafBlock_getLineNumber(mb), maf_mafLine_getLineNumber(ml), fullname, 
                    maf_mafLine_getStart(ml), maf_mafLine_getLength(ml), maf_mafLine_getStrand(ml), 
                    maf_mafLine_getSourceLength(ml), vignette);
@@ -264,7 +264,7 @@ void searchInput(mafFileApi_t *mfa, char *fullname, unsigned long pos) {
 int main(int argc, char **argv) {
     char filename[kMaxStringLength];
     char targetName[kMaxStringLength];
-    uint32_t targetPos;
+    uint64_t targetPos;
     parseOptions(argc, argv,  filename, targetName, &targetPos);
     mafFileApi_t *mfa = maf_newMfa(filename, "r");
 

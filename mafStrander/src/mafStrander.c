@@ -48,7 +48,7 @@ typedef struct duplicate {
     scoredMafLine_t *tailScoredMaf; // last element in ll
     bool reported; // whether or not this duplicate has been reported yet
     struct duplicate *next;
-    uint32_t numSequences; // number of elements in the headScoredMaf ll
+    uint64_t numSequences; // number of elements in the headScoredMaf ll
 } duplicate_t;
 
 void usage(void);

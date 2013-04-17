@@ -50,11 +50,11 @@ void* de_malloc(size_t n) {
     }
     return i;
 }
-int32_t de_getline(char **s, int32_t *n, FILE *f) {
-    register int32_t nMinus1 = ((*n) - 1), i = 0;
+int64_t de_getline(char **s, int64_t *n, FILE *f) {
+    register int64_t nMinus1 = ((*n) - 1), i = 0;
     char *s2 = *s;
     while (1) {
-        register int32_t ch = (char) getc(f);
+        register int64_t ch = (char) getc(f);
         if (ch == '\r') {
             ch = getc(f);
         }

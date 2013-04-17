@@ -39,7 +39,7 @@ struct mafFileApi {
     // a mafFileApi struct provides an interface into a maf file.
     // Allows for easy reading of files in entirety or block by block via
     // functions
-    uint32_t lineNumber; // last read line / wrote
+    uint64_t lineNumber; // last read line / wrote
     FILE *mfp; // maf file pointer
     char *filename; // filename of the maf
     char *lastLine; /* a temporary cache in case the header fails to have a blank 
@@ -49,15 +49,15 @@ struct mafFileApi {
 struct mafLine {
     // a mafLine struct is a single line of a mafBlock
     char *line; // the entire line, unparsed
-    uint32_t lineNumber; // line number in the maf file
+    uint64_t lineNumber; // line number in the maf file
     char type; // either a, s, i, q, e, h, f where h is header (an internal code)
     char *species; // species name
-    uint32_t start;
-    uint32_t length;
+    uint64_t start;
+    uint64_t length;
     char strand;
-    uint32_t sourceLength;
+    uint64_t sourceLength;
     char *sequence; // sequence field
-    uint32_t sequenceFieldLength;
+    uint64_t sequenceFieldLength;
     struct mafLine *next;
 };
 struct mafBlock {
@@ -65,10 +65,10 @@ struct mafBlock {
     // and itself can be part of a mafBlock linked list.
     mafLine_t *headLine;
     mafLine_t *tailLine;
-    uint32_t lineNumber; // line number of start of the block (i.e. the `a' line)
-    uint32_t numberOfLines; // number of mafLine_t structures in the *headLine list
-    uint32_t numberOfSequences;
-    uint32_t sequenceFieldLength;
+    uint64_t lineNumber; // line number of start of the block (i.e. the `a' line)
+    uint64_t numberOfLines; // number of mafLine_t structures in the *headLine list
+    uint64_t numberOfSequences;
+    uint64_t sequenceFieldLength;
     struct mafBlock *next;
 };
 static bool maf_isBlankLine(char *s) {
@@ -89,8 +89,8 @@ static void maf_checkForPrematureMafEnd(char *filename, int status, char *line) 
         exit(EXIT_FAILURE);
     }
 }
-static void maf_failBadFormat(uint32_t lineNumber, char *errorMessage) {
-    fprintf(stderr, "The maf sequence at line %u is incorrectly formatted: %s\n", 
+static void maf_failBadFormat(uint64_t lineNumber, char *errorMessage) {
+    fprintf(stderr, "The maf sequence at line %" PRIi64 " is incorrectly formatted: %s\n",
             lineNumber, errorMessage);
     exit(EXIT_FAILURE);
 }
@@ -153,7 +153,7 @@ mafLine_t* maf_copyMafLine(mafLine_t *orig) {
     ml->sequenceFieldLength = orig->sequenceFieldLength;
     return ml;
 }
-mafBlock_t* maf_newMafBlockListFromString(const char *s, uint32_t lineNumber) {
+mafBlock_t* maf_newMafBlockListFromString(const char *s, uint64_t lineNumber) {
     // given a string, walk through and create a mafBlock_t linked list 
     // for all maf blocks in the string
     mafBlock_t *head = NULL, *mb = NULL, *tmp = NULL;
@@ -193,7 +193,7 @@ mafBlock_t* maf_newMafBlockListFromString(const char *s, uint32_t lineNumber) {
     block_s = NULL;
     return head;
 }
-mafBlock_t* maf_newMafBlockFromString(const char *s, uint32_t lineNumber) {
+mafBlock_t* maf_newMafBlockFromString(const char *s, uint64_t lineNumber) {
     if (s[0] != 'a') {
         char *error = de_malloc(kMaxStringLength);
         sprintf(error, 
@@ -235,7 +235,7 @@ mafBlock_t* maf_newMafBlockFromString(const char *s, uint32_t lineNumber) {
     cline_orig = NULL;
     return mb;
 }
-mafLine_t* maf_newMafLineFromString(const char *s, uint32_t lineNumber) {
+mafLine_t* maf_newMafLineFromString(const char *s, uint64_t lineNumber) {
     extern const int kMaxStringLength;
     mafLine_t *ml = (mafLine_t *) de_malloc(sizeof(*ml));
     char *copy = (char *) de_malloc(strlen(s) + 1);
@@ -437,7 +437,7 @@ void maf_destroyMfa(mafFileApi_t *mfa) {
 char* maf_mafFileApi_getFilename(mafFileApi_t *mfa) {
     return mfa->filename;
 }
-uint32_t maf_mafFileApi_getLineNumber(mafFileApi_t *mfa) {
+uint64_t maf_mafFileApi_getLineNumber(mafFileApi_t *mfa) {
     return mfa->lineNumber;
 }
 mafLine_t* maf_mafBlock_getHeadLine(mafBlock_t *mb) {
@@ -446,10 +446,10 @@ mafLine_t* maf_mafBlock_getHeadLine(mafBlock_t *mb) {
 mafLine_t* maf_mafBlock_getTailLine(mafBlock_t *mb) {
     return mb->tailLine;
 }
-uint32_t maf_mafBlock_getLineNumber(mafBlock_t *mb) {
+uint64_t maf_mafBlock_getLineNumber(mafBlock_t *mb) {
     return mb->lineNumber;
 }
-unsigned maf_mafBlock_getNumberOfSequences(mafBlock_t *mb) {
+uint64_t maf_mafBlock_getNumberOfSequences(mafBlock_t *mb) {
     return mb->numberOfSequences;
 }
 mafBlock_t* maf_mafBlock_getNext(mafBlock_t *mb) {
@@ -539,11 +539,11 @@ int* maf_mafBlock_getStrandIntArray(mafBlock_t *mb) {
     }
     return a;
 }
-uint32_t* maf_mafBlock_getStartArray(mafBlock_t *mb) {
+uint64_t* maf_mafBlock_getStartArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
-    // should return a uint32_t array containing an in-order list of source lengths 
+    // should return a uint64_t array containing an in-order list of source lengths 
     // for all sequence lines. 
-    uint32_t *a = (uint32_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
+    uint64_t *a = (uint64_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     unsigned i = 0;
     while (ml != NULL) {
@@ -554,11 +554,11 @@ uint32_t* maf_mafBlock_getStartArray(mafBlock_t *mb) {
     }
     return a;
 }
-uint32_t* maf_mafBlock_getPosCoordStartArray(mafBlock_t *mb) {
+uint64_t* maf_mafBlock_getPosCoordStartArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
-    // should return a uint32_t array containing an in-order list of the start position in
+    // should return a uint64_t array containing an in-order list of the start position in
     // positive coordinates.
-    uint32_t *a = (uint32_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
+    uint64_t *a = (uint64_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     unsigned i = 0;
     while (ml != NULL) {
@@ -572,11 +572,11 @@ uint32_t* maf_mafBlock_getPosCoordStartArray(mafBlock_t *mb) {
     }
     return a;
 }
-uint32_t* maf_mafBlock_getPosCoordLeftArray(mafBlock_t *mb) {
+uint64_t* maf_mafBlock_getPosCoordLeftArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
-    // should return a uint32_t array containing an in-order list of the left-most positon 
+    // should return a uint64_t array containing an in-order list of the left-most positon 
     // of the block in positive coordinates.
-    uint32_t *a = (uint32_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
+    uint64_t *a = (uint64_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     unsigned i = 0;
     while (ml != NULL) {
@@ -590,11 +590,11 @@ uint32_t* maf_mafBlock_getPosCoordLeftArray(mafBlock_t *mb) {
     }
     return a;
 }
-uint32_t* maf_mafBlock_getSourceLengthArray(mafBlock_t *mb) {
+uint64_t* maf_mafBlock_getSourceLengthArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
-    // should return a uint32_t array containing an in-order list of positive 
+    // should return a uint64_t array containing an in-order list of positive 
     // coordinate start positions for all sequence lines. 
-    uint32_t *a = (uint32_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
+    uint64_t *a = (uint64_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     unsigned i = 0;
     while (ml != NULL) {
@@ -605,11 +605,11 @@ uint32_t* maf_mafBlock_getSourceLengthArray(mafBlock_t *mb) {
     }
     return a;
 }
-uint32_t* maf_mafBlock_getSequenceLengthArray(mafBlock_t *mb) {
+uint64_t* maf_mafBlock_getSequenceLengthArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
-    // should return a uint32_t array containing an in-order list of 
+    // should return a uint64_t array containing an in-order list of 
     // sequence length field values
-    uint32_t *a = (uint32_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
+    uint64_t *a = (uint64_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     unsigned i = 0;
     while (ml != NULL) {
@@ -638,7 +638,7 @@ char** maf_mafBlock_getSpeciesArray(mafBlock_t *mb) {
 char* maf_mafLine_getLine(mafLine_t *ml) {
     return ml->line;
 }
-uint32_t maf_mafLine_getLineNumber(mafLine_t *ml) {
+uint64_t maf_mafLine_getLineNumber(mafLine_t *ml) {
     return ml->lineNumber;
 }
 char maf_mafLine_getType(mafLine_t *ml) {
@@ -647,28 +647,28 @@ char maf_mafLine_getType(mafLine_t *ml) {
 char* maf_mafLine_getSpecies(mafLine_t *ml) {
     return ml->species;
 }
-uint32_t maf_mafLine_getStart(mafLine_t *ml) {
+uint64_t maf_mafLine_getStart(mafLine_t *ml) {
     return ml->start;
 }
-uint32_t maf_mafLine_getLength(mafLine_t *ml) {
+uint64_t maf_mafLine_getLength(mafLine_t *ml) {
     return ml->length;
 }
 char maf_mafLine_getStrand(mafLine_t *ml) {
     return ml->strand;
 }
-uint32_t maf_mafLine_getSourceLength(mafLine_t *ml) {
+uint64_t maf_mafLine_getSourceLength(mafLine_t *ml) {
     return ml->sourceLength;
 }
 char* maf_mafLine_getSequence(mafLine_t *ml) {
     return ml->sequence;
 }
-uint32_t maf_mafLine_getSequenceFieldLength(mafLine_t *ml) {
+uint64_t maf_mafLine_getSequenceFieldLength(mafLine_t *ml) {
     return ml->sequenceFieldLength;
 }
 mafLine_t* maf_mafLine_getNext(mafLine_t *ml) {
     return ml->next;
 }
-uint32_t maf_mafBlock_getSequenceFieldLength(mafBlock_t *mb) {
+uint64_t maf_mafBlock_getSequenceFieldLength(mafBlock_t *mb) {
     return mb->sequenceFieldLength;
 }
 unsigned maf_mafBlock_getNumberOfBlocks(mafBlock_t *b) {
@@ -689,13 +689,13 @@ bool maf_mafBlock_containsSequence(mafBlock_t *mb) {
         return false;
     }
 }
-uint32_t maf_mafBlock_getNumberOfLines(mafBlock_t *mb) {
+uint64_t maf_mafBlock_getNumberOfLines(mafBlock_t *mb) {
     // count the number of mafLine_t lines in a headLine list
     return mb->numberOfLines;
 }
-uint32_t maf_mafLine_getNumberOfSequences(mafLine_t *ml) {
+uint64_t maf_mafLine_getNumberOfSequences(mafLine_t *ml) {
     // count the number of actual sequence lines in a mafLine_t list
-    uint32_t s = 0;
+    uint64_t s = 0;
     while (ml != NULL) {
         if (ml->type == 's')
             ++s;
@@ -703,7 +703,7 @@ uint32_t maf_mafLine_getNumberOfSequences(mafLine_t *ml) {
     }
     return s;
 }
-uint32_t maf_mafLine_getPositiveCoord(mafLine_t *ml) {
+uint64_t maf_mafLine_getPositiveCoord(mafLine_t *ml) {
     // return the start field coordinate in postive zero based coordinates.
     // NOTE THAT FOR - STRANDS, THIS COORDINATE WILL BE THE RIGHT-MOST (END POINT)
     // OF THE SEQUENCE. TO GET THE LEFT-MOST (START POINT) YOU WOULD NEED TO SUBTRACT
@@ -714,7 +714,7 @@ uint32_t maf_mafLine_getPositiveCoord(mafLine_t *ml) {
         return ml->sourceLength - (ml->start + 1);
     }
 }
-uint32_t maf_mafLine_getPositiveLeftCoord(mafLine_t *ml) {
+uint64_t maf_mafLine_getPositiveLeftCoord(mafLine_t *ml) {
     // return the left most coordinate in postive zero based coordinates.
     // for - strands this includes the length of the sequence.
     if (ml->strand == '+') {
@@ -729,7 +729,7 @@ void maf_mafBlock_setHeadLine(mafBlock_t *mb, mafLine_t *ml) {
 void maf_mafBlock_setTailLine(mafBlock_t *mb, mafLine_t *ml) {
     mb->tailLine = ml;
 }
-void maf_mafBlock_setNumberOfSequences(mafBlock_t *mb, uint32_t n) {
+void maf_mafBlock_setNumberOfSequences(mafBlock_t *mb, uint64_t n) {
     mb->numberOfSequences = n;
 }
 void maf_mafBlock_incrementNumberOfSequences(mafBlock_t *mb) {
@@ -738,7 +738,7 @@ void maf_mafBlock_incrementNumberOfSequences(mafBlock_t *mb) {
 void maf_mafBlock_decrementNumberOfSequences(mafBlock_t *mb) {
     --(mb->numberOfSequences);
 }
-void maf_mafBlock_setNumberOfLines(mafBlock_t *mb, uint32_t n) {
+void maf_mafBlock_setNumberOfLines(mafBlock_t *mb, uint64_t n) {
     mb->numberOfLines = n;
 }
 void maf_mafBlock_incrementNumberOfLines(mafBlock_t *mb) {
@@ -747,7 +747,7 @@ void maf_mafBlock_incrementNumberOfLines(mafBlock_t *mb) {
 void maf_mafBlock_decrementNumberOfLines(mafBlock_t *mb) {
     --(mb->numberOfLines);
 }
-void maf_mafBlock_setLineNumber(mafBlock_t *mb, uint32_t n) {
+void maf_mafBlock_setLineNumber(mafBlock_t *mb, uint64_t n) {
     mb->lineNumber = n;
 }
 void maf_mafBlock_incrementLineNumber(mafBlock_t *mb) {
@@ -756,7 +756,7 @@ void maf_mafBlock_incrementLineNumber(mafBlock_t *mb) {
 void maf_mafBlock_decrementLineNumber(mafBlock_t *mb) {
     --(mb->lineNumber);
 }
-void maf_mafBlock_setSequenceFieldLength(mafBlock_t *mb, uint32_t sfl) {
+void maf_mafBlock_setSequenceFieldLength(mafBlock_t *mb, uint64_t sfl) {
     mb->sequenceFieldLength = sfl;
 }
 void maf_mafBlock_setNext(mafBlock_t *mb, mafBlock_t *next) {
@@ -765,7 +765,7 @@ void maf_mafBlock_setNext(mafBlock_t *mb, mafBlock_t *next) {
 void maf_mafLine_setLine(mafLine_t *ml, char *line) {
     ml->line = line;
 }
-void maf_mafLine_setLineNumber(mafLine_t *ml, uint32_t n) {
+void maf_mafLine_setLineNumber(mafLine_t *ml, uint64_t n) {
     ml->lineNumber = n;
 }
 void maf_mafLine_setType(mafLine_t *ml, char c) {
@@ -777,13 +777,13 @@ void maf_mafLine_setSpecies(mafLine_t *ml, char *s) {
 void maf_mafLine_setStrand(mafLine_t *ml, char c) {
     ml->strand = c;
 }
-void maf_mafLine_setStart(mafLine_t *ml, uint32_t n) {
+void maf_mafLine_setStart(mafLine_t *ml, uint64_t n) {
     ml->start = n;
 }
-void maf_mafLine_setLength(mafLine_t *ml, uint32_t n) {
+void maf_mafLine_setLength(mafLine_t *ml, uint64_t n) {
     ml->length = n;
 }
-void maf_mafLine_setSourceLength(mafLine_t *ml, uint32_t n) {
+void maf_mafLine_setSourceLength(mafLine_t *ml, uint64_t n) {
     ml->sourceLength = n;
 }
 void maf_mafLine_setSequence(mafLine_t *ml, char *s) {
@@ -795,7 +795,7 @@ void maf_mafLine_setNext(mafLine_t *ml, mafLine_t *next) {
 }
 mafBlock_t* maf_readBlockHeader(mafFileApi_t *mfa) {
     extern const int kMaxStringLength;
-    int32_t n = kMaxStringLength;
+    int64_t n = kMaxStringLength;
     char *line = (char*) de_malloc(n);
     mafBlock_t *header = maf_newMafBlock();
     int status = de_getline(&line, &n, mfa->mfp);
@@ -891,7 +891,7 @@ mafBlock_t* maf_readBlockBody(mafFileApi_t *mfa) {
         free(mfa->lastLine);
         mfa->lastLine = NULL;
     }
-    int32_t n = kMaxStringLength;
+    int64_t n = kMaxStringLength;
     char *line = (char*) de_malloc(n);
     thisBlock->lineNumber = mfa->lineNumber;
     while(de_getline(&line, &n, mfa->mfp) != -1) {
@@ -1004,7 +1004,7 @@ void maf_mafBlock_print(mafBlock_t *m) {
     }
     mafLine_t* ml = maf_mafBlock_getHeadLine(m);
     char *line = NULL;
-    uint32_t maxName = 1, maxStart = 1, maxLen = 1, maxSource = 1;
+    uint64_t maxName = 1, maxStart = 1, maxLen = 1, maxSource = 1;
     char fmtName[10] = "\0", fmtStart[32] = "\0", fmtLen[32] = "\0", fmtSource[32] = "\0", fmtLine[256] = "\0";
     while (ml != NULL) {
         line = maf_mafLine_getLine(ml);
@@ -1031,10 +1031,10 @@ void maf_mafBlock_print(mafBlock_t *m) {
     }
     ml = maf_mafBlock_getHeadLine(m);
     if (ml != NULL) {
-        sprintf(fmtName, " %%-%"PRIu32"s", maxName + 2);
-        sprintf(fmtStart, " %%%d"PRIu32, (int)log10(maxStart) + 2);
-        sprintf(fmtLen, " %%%d"PRIu32, (int)log10(maxLen) + 2);
-        sprintf(fmtSource, " %%%d"PRIu32, (int)log10(maxSource) + 2);
+        sprintf(fmtName, " %%-%"PRIu64"s", maxName + 2);
+        sprintf(fmtStart, " %%%d"PRIu64, (int)log10(maxStart) + 2);
+        sprintf(fmtLen, " %%%d"PRIu64, (int)log10(maxLen) + 2);
+        sprintf(fmtSource, " %%%d"PRIu64, (int)log10(maxSource) + 2);
         strcat(fmtLine, "s");
         strcat(fmtLine, fmtName);
         strcat(fmtLine, fmtStart);
@@ -1077,7 +1077,7 @@ char* maf_mafLine_imputeLine(mafLine_t* ml) {
     char *s = (char*) de_malloc(2 + intmax(strlen(maf_mafLine_getSpecies(ml)), 15) + 
                                 15 + 15 + 3 + 15 + maf_mafLine_getSequenceFieldLength(ml) + 
                                 1 + 32); // extra 32 for possbile overflow from formatting
-    sprintf(s, "s %-15s %10" PRIu32 " %10" PRIu32 " %c %10" PRIu32 " %s", 
+    sprintf(s, "s %-15s %10" PRIu64 " %10" PRIu64 " %c %10" PRIu64 " %s",
             maf_mafLine_getSpecies(ml),
             maf_mafLine_getStart(ml),
             maf_mafLine_getLength(ml),
@@ -1086,10 +1086,10 @@ char* maf_mafLine_imputeLine(mafLine_t* ml) {
             maf_mafLine_getSequence(ml));
     return s;
 }
-uint32_t countNonGaps(char *seq) {
-    uint32_t n = strlen(seq);
-    uint32_t m = 0;
-    for (uint32_t i = 0; i < n; ++i) {
+uint64_t countNonGaps(char *seq) {
+    uint64_t n = strlen(seq);
+    uint64_t m = 0;
+    for (uint64_t i = 0; i < n; ++i) {
         if (seq[i] != '-') {
             ++m;
         }

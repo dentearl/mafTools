@@ -58,13 +58,13 @@ void usage(void) {
     usageMessage('v', "verbose", "turns on verbose output.");
     exit(EXIT_FAILURE);
 }
-void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t *start, 
-                  uint32_t *stop, bool *isSoft) {
+void parseOptions(int argc, char **argv, char *filename, char *seqName, uint64_t *start, 
+                  uint64_t *stop, bool *isSoft) {
     extern int g_debug_flag;
     extern int g_verbose_flag;
     int c;
     bool setSName = false, setStart = false, setStop = false, setMName = false;
-    int32_t value = 0;
+    int64_t value = 0;
     while (1) {
         static struct option longOptions[] = {
             {"debug", no_argument, 0, 'd'},
@@ -135,7 +135,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t
         usage();
     }
     if (*start > *stop) {
-        uint32_t t = *start;
+        uint64_t t = *start;
         *start = *stop;
         *stop = t;
     }
@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
     extern const int kMaxStringLength;
     char seq[kMaxSeqName];
     char filename[kMaxStringLength];
-    uint32_t start, stop;
+    uint64_t start, stop;
     bool isSoft = false;
     parseOptions(argc, argv, filename, seq, &start, &stop, &isSoft);
     mafFileApi_t *mfa = maf_newMfa(filename, "r");

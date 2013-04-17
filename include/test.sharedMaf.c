@@ -46,7 +46,7 @@ void writeStringToTmpFile(char *s) {
 }
 bool filesAreIdentical(char *fileA, char *fileB) {
     extern const int kMaxStringLength;
-    int32_t n = kMaxStringLength;
+    int64_t n = kMaxStringLength;
     FILE *ifpA = fopen(fileA, "r");
     FILE *ifpB = fopen(fileB, "r");
     char *lineA = (char*) de_malloc(n);
@@ -449,7 +449,7 @@ static bool mafLinesAreEqual(mafLine_t* ml1, mafLine_t *ml2) {
         return false;
     }
     if (maf_mafLine_getStart(ml1) != maf_mafLine_getStart(ml2)) {
-        fprintf(stderr, "mafLines differ in start: ml1: %" PRIu32 " ml2: %" PRIu32 "\n",
+        fprintf(stderr, "mafLines differ in start: ml1: %" PRIu64 " ml2: %" PRIu64 "\n",
                 maf_mafLine_getStart(ml1), maf_mafLine_getStart(ml2));
         return false;
     }
@@ -496,12 +496,12 @@ static bool mafLinesAreEqual(mafLine_t* ml1, mafLine_t *ml2) {
 }
 static bool mafBlocksAreEqual(mafBlock_t *mb1, mafBlock_t *mb2) {
     if (maf_mafBlock_getLineNumber(mb1) != maf_mafBlock_getLineNumber(mb2)) {
-        fprintf(stderr, "mafBlocks differ in lineNumber, %" PRIu32 " vs %" PRIu32 "\n", 
+        fprintf(stderr, "mafBlocks differ in lineNumber, %" PRIu64 " vs %" PRIu64 "\n", 
                 maf_mafBlock_getLineNumber(mb1), maf_mafBlock_getLineNumber(mb2));
         return false;
     }
     if (maf_mafBlock_getNumberOfLines(mb1) != maf_mafBlock_getNumberOfLines(mb2)) {
-        fprintf(stderr, "mafBlocks differ in number of lines, %"PRIu32" vs %"PRIu32"\n",
+        fprintf(stderr, "mafBlocks differ in number of lines, %"PRIu64" vs %"PRIu64"\n",
                 maf_mafBlock_getNumberOfLines(mb1), maf_mafBlock_getNumberOfLines(mb2));
         return false;
     }

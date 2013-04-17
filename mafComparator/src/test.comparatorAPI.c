@@ -165,11 +165,11 @@ static void test_pairCounting_0(CuTest *testCase) {
              legitPairs);
     stSet_destruct(legitPairs);
 }
-static char** createRandomColumn(uint32_t n, uint32_t colLength, double gapProb) {
+static char** createRandomColumn(uint64_t n, uint64_t colLength, double gapProb) {
     char **mat = (char**) st_malloc(sizeof(*mat) * n);
-    for (uint32_t i = 0; i < n; ++i) {
+    for (uint64_t i = 0; i < n; ++i) {
         mat[i] = st_malloc(sizeof(char) * colLength + 1);
-        for (uint32_t j = 0; j < colLength; ++j) {
+        for (uint64_t j = 0; j < colLength; ++j) {
             if (st_random() <= gapProb) {
                 mat[i][j] = '-';
             } else {
@@ -180,9 +180,9 @@ static char** createRandomColumn(uint32_t n, uint32_t colLength, double gapProb)
     }
     return mat;
 }
-static bool* createRandomLegitRow(uint32_t n, double alpha) {
+static bool* createRandomLegitRow(uint64_t n, double alpha) {
     bool *legitRow = (bool*) st_malloc(sizeof(*legitRow) * n);
-    for (uint32_t i = 0; i < n; ++i) {
+    for (uint64_t i = 0; i < n; ++i) {
         if (st_random() <= alpha) {
             legitRow[i] = true;
         } else {
@@ -191,10 +191,10 @@ static bool* createRandomLegitRow(uint32_t n, double alpha) {
     }
     return legitRow;
 }
-static char* randomName(uint32_t n) {
+static char* randomName(uint64_t n) {
     char *s = (char*) st_malloc(sizeof(*s) * (n + 9));
     strcpy(s, "species_");
-    for (uint32_t i = 8; i < n + 8; ++i) {
+    for (uint64_t i = 8; i < n + 8; ++i) {
         if (st_random() < 0.5) {
             // upper case
             s[i] = st_randomInt(65, 91);
@@ -206,28 +206,28 @@ static char* randomName(uint32_t n) {
     s[n] = '\0';
     return s;
 }
-static mafLine_t** createMlArray(uint32_t n) {
+static mafLine_t** createMlArray(uint64_t n) {
     mafLine_t **mlArray = (mafLine_t**) st_malloc(sizeof(*mlArray) * n);
-    for (uint32_t i = 0; i < n; ++i) {
+    for (uint64_t i = 0; i < n; ++i) {
         mlArray[i] = maf_newMafLine();
         maf_mafLine_setSpecies(mlArray[i], randomName(20));
     }
     return mlArray;
 }
-static char** createNameArray(uint32_t n) {
+static char** createNameArray(uint64_t n) {
     char **nameArray = (char**) st_malloc(sizeof(*nameArray) * n);
-    for (uint32_t i = 0; i < n; ++i) {
+    for (uint64_t i = 0; i < n; ++i) {
         nameArray[i] = randomName(20); // this now needs to be free'd
     }
     return nameArray;
 }
-static void u32set(uint32_t *a, uint64_t v, uint32_t n) {
-    for (uint32_t i = 0; i < n; ++i) {
+static void u32set(uint64_t *a, uint64_t v, uint64_t n) {
+    for (uint64_t i = 0; i < n; ++i) {
         a[i] = v;
     }
 }
-static void intset(int *a, int v, uint32_t n) {
-    for (uint32_t i = 0; i < n; ++i) {
+static void intset(int *a, int v, uint64_t n) {
+    for (uint64_t i = 0; i < n; ++i) {
         a[i] = v;
     }
 }
@@ -236,17 +236,17 @@ static void test_columnSampling_timing_0(CuTest *testCase) {
     (void) (createMlArray);
     char **mat = NULL;
     bool *legitRows = NULL;
-    uint32_t n, m;
-    uint32_t *positions = NULL;
+    uint64_t n, m;
+    uint64_t *positions = NULL;
     int *strandInts = NULL;
     uint64_t *chooseTwoArray = buildChooseTwoArray();
     double timeClever, timeNaive, p;
     time_t t1;
-    uint32_t colLength = 2000;
+    uint64_t colLength = 2000;
     stSortedSet *pairs = NULL;
     char **nameArray = NULL;
     printf("#Rows        p      n*p clever naive\n");
-    for (uint32_t i = 0; i < 9; ++i) {
+    for (uint64_t i = 0; i < 9; ++i) {
         pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction, 
                                        (void(*)(void *)) aPair_destruct);
         n = 2 << i;
@@ -254,7 +254,7 @@ static void test_columnSampling_timing_0(CuTest *testCase) {
         mat = createRandomColumn(n, colLength, 0.1);
         legitRows = createRandomLegitRow(n, 0.9);
         m = sumBoolArray(legitRows, n);
-        positions = (uint32_t*) st_malloc(sizeof(*positions) * n);
+        positions = (uint64_t*) st_malloc(sizeof(*positions) * n);
         u32set(positions, 0, n);
         strandInts = (int*) st_malloc(sizeof(*strandInts) * n);
         intset(strandInts, 1, n);
@@ -262,27 +262,27 @@ static void test_columnSampling_timing_0(CuTest *testCase) {
         timeClever = 0.0;
         timeNaive = 0.0;
         t1 = time(NULL);
-        for (uint32_t c = 0; c < colLength; ++c) {
+        for (uint64_t c = 0; c < colLength; ++c) {
             samplePairsFromColumn(0.01, pairs, m, chooseTwoArray, nameArray, positions);
             updatePositions(mat, c, positions, strandInts, n);
         }
         timeClever = difftime(time(NULL), t1);
         free(positions);
         stSortedSet_destruct(pairs);
-        positions = (uint32_t*) st_malloc(sizeof(*positions) * n);
+        positions = (uint64_t*) st_malloc(sizeof(*positions) * n);
         memset(positions, 0, sizeof(*positions) * n);
         pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction, 
                                        (void(*)(void *)) aPair_destruct);
         t1 = time(NULL);
-        for (uint32_t c = 0; c < colLength; ++c) {
+        for (uint64_t c = 0; c < colLength; ++c) {
             samplePairsFromColumnNaive(mat, c, legitRows, 0.01, pairs, chooseTwoArray, 
                                        nameArray, positions, n, chooseTwo(n));
             updatePositions(mat, c, positions, strandInts, n);
         }
         timeNaive = difftime(time(NULL), t1);
-        printf("%5" PRIu32 " %6.2e %6f %4.0fs %4.0fs\n", n, p, p * n, timeClever, timeNaive);
+        printf("%5" PRIu64 " %6.2e %6f %4.0fs %4.0fs\n", n, p, p * n, timeClever, timeNaive);
         // clean up
-        for (uint32_t j = 0; j < n; ++j) {
+        for (uint64_t j = 0; j < n; ++j) {
             free(mat[j]);
             free(nameArray[j]); // we ONLY do this in this test example, not in production code.
         }
@@ -306,13 +306,13 @@ static void test_chooseTwoValues_0(CuTest *testCase) {
     CuAssertTrue(testCase, chooseTwo(1000) == 499500);
     CuAssertTrue(testCase, chooseTwo(4623824) == 10689871879576);
     uint64_t *cta = buildChooseTwoArray();
-    for (uint32_t i = 0; i < 101; ++i) {
+    for (uint64_t i = 0; i < 101; ++i) {
         CuAssertTrue(testCase, chooseTwo(i) == cta[i]);
     }
     // clean up
     free(cta);
 }
-static void checkPair(CuTest *testCase, stSortedSetIterator *sit, const char *a, const char *b, uint32_t i) {
+static void checkPair(CuTest *testCase, stSortedSetIterator *sit, const char *a, const char *b, uint64_t i) {
     APair *p = NULL;
     p = stSortedSet_getNext(sit);
     CuAssertTrue(testCase, p != NULL);
@@ -321,7 +321,7 @@ static void checkPair(CuTest *testCase, stSortedSetIterator *sit, const char *a,
     CuAssertTrue(testCase, p->pos1 == i);
     CuAssertTrue(testCase, p->pos2 == i);
 }
-static void createAndInsertPair(stSortedSet *pairs, const char *a, const char *b, uint32_t i) {
+static void createAndInsertPair(stSortedSet *pairs, const char *a, const char *b, uint64_t i) {
     APair *p = aPair_construct(stString_copy(a), stString_copy(b), i, i);
     stSortedSet_insert(pairs, aPair_copyConstruct(p));
     aPair_destruct(p);
@@ -329,7 +329,7 @@ static void createAndInsertPair(stSortedSet *pairs, const char *a, const char *b
 static void test_pairSortComparison_0(CuTest *testCase) {
     stSortedSet *pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction, (void(*)(void *)) aPair_destruct);
     APair *p = NULL;
-    for (uint32_t i = 0; i < 5; ++i) {
+    for (uint64_t i = 0; i < 5; ++i) {
         createAndInsertPair(pairs, "C", "D", i);
         createAndInsertPair(pairs, "B", "D", i);
         createAndInsertPair(pairs, "B", "C", i);
@@ -339,19 +339,19 @@ static void test_pairSortComparison_0(CuTest *testCase) {
         createAndInsertPair(pairs, ".", "z", i);
     }
     stSortedSetIterator *sit = stSortedSet_getIterator(pairs);
-    for (uint32_t i = 0; i < 5; ++i) {
+    for (uint64_t i = 0; i < 5; ++i) {
         checkPair(testCase, sit, ".", "z", i);
     }
-    for (uint32_t i = 0; i < 5; ++i) {
+    for (uint64_t i = 0; i < 5; ++i) {
         checkPair(testCase, sit, "A", "B", i);
         checkPair(testCase, sit, "A", "C", i);
         checkPair(testCase, sit, "A", "D", i);
     }
-    for (uint32_t i = 0; i < 5; ++i) {
+    for (uint64_t i = 0; i < 5; ++i) {
         checkPair(testCase, sit, "B", "C", i);
         checkPair(testCase, sit, "B", "D", i);
     }
-    for (uint32_t i = 0; i < 5; ++i) {
+    for (uint64_t i = 0; i < 5; ++i) {
         checkPair(testCase, sit, "C", "D", i);
     }
     stSortedSet_destructIterator(sit);
@@ -361,7 +361,7 @@ static void test_pairSortComparison_0(CuTest *testCase) {
     p = stSortedSet_searchGreaterThanOrEqual(pairs, q);
     CuAssertTrue(testCase, p != NULL);
     sit = stSortedSet_getIteratorFrom(pairs, p);
-    for (uint32_t i = 1; i < 5; ++i) {
+    for (uint64_t i = 1; i < 5; ++i) {
         checkPair(testCase, sit, "A", "B", i);
         checkPair(testCase, sit, "A", "C", i);
         checkPair(testCase, sit, "A", "D", i);
@@ -374,11 +374,11 @@ static void test_pairSortComparison_0(CuTest *testCase) {
     p = stSortedSet_searchGreaterThanOrEqual(pairs, q);
     CuAssertTrue(testCase, p != NULL);
     sit = stSortedSet_getIteratorFrom(pairs, p);
-    for (uint32_t i = 2; i < 5; ++i) {
+    for (uint64_t i = 2; i < 5; ++i) {
         checkPair(testCase, sit, "B", "C", i);
         checkPair(testCase, sit, "B", "D", i);
     }
-    for (uint32_t i = 0; i < 5; ++i) {
+    for (uint64_t i = 0; i < 5; ++i) {
         checkPair(testCase, sit, "C", "D", i);
     }
     aPair_destruct(q);
@@ -389,7 +389,7 @@ static void test_pairSortComparison_0(CuTest *testCase) {
     p = stSortedSet_searchGreaterThanOrEqual(pairs, q);
     CuAssertTrue(testCase, p != NULL);
     sit = stSortedSet_getIteratorFrom(pairs, p);
-    for (uint32_t i = 3; i < 5; ++i) {
+    for (uint64_t i = 3; i < 5; ++i) {
         checkPair(testCase, sit, "C", "D", i);
     }
     aPair_destruct(q);

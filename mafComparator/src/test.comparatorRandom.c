@@ -38,7 +38,7 @@ static void test_rbinom_zero_0(CuTest *testCase) {
     uint64_t a;
     uint64_t N = 100000;
     uint64_t n = 10;
-    for (uint32_t i = 0; i < N; ++i) {
+    for (uint64_t i = 0; i < N; ++i) {
         a = rbinom(n, 0.0);
         CuAssertTrue(testCase, a == 0);
     }
@@ -48,7 +48,7 @@ static void test_rbinom_zero_1(CuTest *testCase) {
     uint64_t a;
     uint64_t N = 100000;
     uint64_t n = 100;
-    for (uint32_t i = 0; i < N; ++i) {
+    for (uint64_t i = 0; i < N; ++i) {
         a = rbinom(n, 0.0);
         CuAssertTrue(testCase, a == 0);
     }

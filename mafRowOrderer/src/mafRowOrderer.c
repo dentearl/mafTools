@@ -43,8 +43,8 @@ const char *g_version = "version 0.1 October 2012";
 void version(void);
 void usage(void);
 void parseOptions(int argc, char **argv, char *filename, char *orderlist);
-void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start, 
-                 uint32_t length, uint32_t sourceLength, char strand);
+void checkRegion(unsigned lineno, char *fullname, uint64_t pos, uint64_t start, 
+                 uint64_t length, uint64_t sourceLength, char strand);
 void printHeader(void);
 
 void version(void) {

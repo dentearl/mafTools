@@ -95,13 +95,13 @@ void parseOptions(int argc, char **argv, options_t *options) {
             }
             if (strcmp("breakpointPenalty", long_options[option_index].name) == 0) {
                 setBreakpointPenalty = true;
-                i = sscanf(optarg, "%" PRIu32, &(options->breakpointPenalty));
+                i = sscanf(optarg, "%" PRIu64, &(options->breakpointPenalty));
                 assert(i == 1);
                 break;
             }
             if (strcmp("interstitialSequence", long_options[option_index].name) == 0) {
                 setInterstitialSequence = true;
-                i = sscanf(optarg, "%" PRIu32, &(options->interstitialSequence));
+                i = sscanf(optarg, "%" PRIu64, &(options->interstitialSequence));
                 assert(i == 1);
                 break;
             }

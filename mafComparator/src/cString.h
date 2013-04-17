@@ -63,7 +63,7 @@ void cStr_upperCase(char *string);
  */
 int cStr_startsWith(char *string, char *query, int ignorecase);
 
-int32_t cStr_getIntLength(int32_t n);
+int64_t cStr_getIntLength(int64_t n);
 
 void cStr_reverse(char *s);
 
@@ -71,6 +71,6 @@ void cStr_itoa(int n, char *s);
 
 void cStr_appendChar(char *s, char c);
 
-char *cStr_getStringFromIntArray(int32_t *array, int32_t size, const char sep);
+char *cStr_getStringFromIntArray(int64_t *array, int64_t size, const char sep);
 
 #endif /* CSTRING_H_ */

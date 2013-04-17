@@ -32,7 +32,7 @@
 
 void version(void);
 void usage(void);
-void parseOptions(int argc, char **argv, char *filename, char *seqName, uint32_t *start, 
-                  uint32_t *stop, bool *isSoft);
+void parseOptions(int argc, char **argv, char *filename, char *seqName, uint64_t *start, 
+                  uint64_t *stop, bool *isSoft);
 
 #endif // _BLOCK_EXTRACTOR_H_

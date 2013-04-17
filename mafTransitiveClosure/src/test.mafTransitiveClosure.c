@@ -34,7 +34,7 @@
 
 static void printRegionList(mafTcRegion_t *reg, FILE *ofp) {
     while (reg != NULL) {
-        fprintf(ofp, "[%" PRIu32 ", %" PRIu32 "], ", reg->start, reg->end);
+        fprintf(ofp, "[%" PRIu64 ", %" PRIu64 "], ", reg->start, reg->end);
         reg = reg->next;
     }
     fprintf(ofp, "\n");
@@ -46,7 +46,7 @@ static bool regionListsAreEqual(mafTcRegion_t *expected, mafTcRegion_t *obs, boo
     while (expected != NULL && obs != NULL) {
         if (expected->start != obs->start) {
             if (verbose) {
-                fprintf(stderr, "    expected->start %" PRIu32" != obs->start %" PRIu32"\n", 
+                fprintf(stderr, "    expected->start %" PRIu64" != obs->start %" PRIu64"\n", 
                         expected->start, obs->start);
                 fprintf(stderr, "    expected: ");
                 printRegionList(expected, stderr);
@@ -57,7 +57,7 @@ static bool regionListsAreEqual(mafTcRegion_t *expected, mafTcRegion_t *obs, boo
         }
         if (expected->end != obs->end) {
             if (verbose) {
-                fprintf(stderr, "    expected->end %" PRIu32 " != obs->end %" PRIu32 "\n", 
+                fprintf(stderr, "    expected->end %" PRIu64 " != obs->end %" PRIu64 "\n", 
                         expected->end, obs->end);
                 fprintf(stderr, "    expected: ");
                 printRegionList(expected, stderr);
@@ -89,7 +89,7 @@ static bool regionListsAreEqual(mafTcRegion_t *expected, mafTcRegion_t *obs, boo
 static void printTestComparisonOrder(mafTcComparisonOrder_t *co) {
     fprintf(stderr, "printTestComparisonOrder()\n");
     while (co != NULL) {
-        fprintf(stderr, " ref: %2" PRIu32 " \n", co->ref);
+        fprintf(stderr, " ref: %2" PRIu64 " \n", co->ref);
         printRegionList(co->region, stderr);
         co = co->next;
     }
@@ -105,7 +105,7 @@ static bool comparisonOrdersAreEqual(mafTcComparisonOrder_t *eo, mafTcComparison
     while (eo != NULL && oo != NULL) {
         if (eo->ref != oo->ref) {
             if (verbose) {
-                fprintf(stderr, "expected->ref %d != obs->ref %d\n", eo->ref, oo->ref);
+                fprintf(stderr, "expected->ref %" PRIu64 " != obs->ref %" PRIu64 "\n", eo->ref, oo->ref);
             }
             return false;
         }
@@ -162,7 +162,7 @@ static bool mafBlocksAreEqual(mafBlock_t *input, mafBlock_t *expected, bool verb
         }
         if (maf_mafBlock_getNumberOfLines(input) != maf_mafBlock_getNumberOfLines(expected)) {
             if (verbose) {
-                printf("Number of lines differ:\n  input:%" PRIu32 "\n  expected:%" PRIu32 "\n", 
+                printf("Number of lines differ:\n  input:%" PRIu64 "\n  expected:%" PRIu64 "\n", 
                        maf_mafBlock_getNumberOfLines(input), maf_mafBlock_getNumberOfLines(expected));
             }
             return false;
@@ -188,14 +188,14 @@ static bool mafBlocksAreEqual(mafBlock_t *input, mafBlock_t *expected, bool verb
         }
         if (maf_mafLine_getStart(m1) != maf_mafLine_getStart(m2)) {
             if (verbose) {
-                printf("Starts differ:\n  input:%" PRIu32 "\n  expected:%" PRIu32"\n", 
+                printf("Starts differ:\n  input:%" PRIu64 "\n  expected:%" PRIu64"\n", 
                        maf_mafLine_getStart(m1), maf_mafLine_getStart(m2));
             }
             return false;
         }
         if (maf_mafLine_getLength(m1) != maf_mafLine_getLength(m2)) {
             if (verbose) {
-                printf("Lengths differ:\n  input:%" PRIu32 "\n  expected:%" PRIu32"\n", 
+                printf("Lengths differ:\n  input:%" PRIu64 "\n  expected:%" PRIu64"\n", 
                        maf_mafLine_getLength(m1), maf_mafLine_getLength(m2));
             }
             return false;
@@ -209,7 +209,7 @@ static bool mafBlocksAreEqual(mafBlock_t *input, mafBlock_t *expected, bool verb
         }
         if (maf_mafLine_getSourceLength(m1) != maf_mafLine_getSourceLength(m2)) {
             if (verbose) {
-                printf("Source lengths differ:\n  input:%" PRIu32 "\n  expected:%" PRIu32"\n", 
+                printf("Source lengths differ:\n  input:%" PRIu64 "\n  expected:%" PRIu64"\n", 
                        maf_mafLine_getSourceLength(m1), maf_mafLine_getSourceLength(m2));
             }
             return false;
@@ -365,7 +365,7 @@ static void test_rowAlignmentBlockComparisonOrdering_3(CuTest *testCase) {
 static void test_matrixAlignmentBlockComparisonOrdering_0(CuTest *testCase) {
     // test that with known input that known output is generated.
     char **input = (char**) de_malloc(sizeof(char*) * 2);
-    uint32_t *lengths = de_malloc(sizeof(uint32_t) * 2);
+    uint64_t *lengths = de_malloc(sizeof(uint64_t) * 2);
     input[0] = de_strdup("AC---ACG-G");
     input[1] = de_strdup("ACTG--CGGG");
     lengths[0] = 6;
@@ -407,7 +407,7 @@ static void test_matrixAlignmentBlockComparisonOrdering_0(CuTest *testCase) {
 static void test_matrixAlignmentBlockComparisonOrdering_1(CuTest *testCase) {
     // test that with known input that known output is generated.
     char **input = (char**) de_malloc(sizeof(char*) * 4);
-    uint32_t *lengths = de_malloc(sizeof(uint32_t) * 4);
+    uint64_t *lengths = de_malloc(sizeof(uint64_t) * 4);
     input[0] = de_strdup("acgcccag--------------ctcgcgaaatcgttc-------------------------ccggcattccgtccaggccgaagcgccaactgcagctccatctgtggcgtctctgttgcagcatcggagtgtgcaaatcatcccgacggccatcgtggtactcgtggtacacaggaaccaacaaataggagacgggtgccctgatcgacccgtgctccccggtgggcaccatcgatagattgctcgctgcggcgttccgtctcccc-----------------------ggtctgttcggcgactataaggtcacggacaggtaccttcaaaatcgacatggtgcttaaggtcag---------------------ccctaacttctccatgccttagctgacgatgttcgcgctaggtttaacgatatccgtcttgctgatgaacagtttcatcacccggcgacgatatccctggtgttgggctctgacgtttatcgtgatgtcatccaacccgggttcttaaatttggatga-gggctgcctgtcgcacaaagcac--tgtttggctggattatctcgggatcatgTAGACAATCTTAAGGCGCTAGACGTGTGGAAAATGTTGTTGCTTCGTTTGTCGTTGCA");
     input[1] = de_strdup("ccgctcggctttcaaggtcagtctcccggtttccttcaccatcggcaaggcaagcgcgtacaccggtatgacgtcc-------agcttcagtggcaaccccatc-------tcccgacggc-------------------------------catcgtgatgctggagt----ctggggccaccaccttcgagacggccgcgttgatcgacccgtgcactcccgtcagcaccatcgacagctccctggcaactgcattcaagttacccacgacgacagtgagaggtgaagaagtctgctcgtcgacgatccggtcaagaacgggtgatttccAGATCGACGTGCTCCTAAAGATAAA----------------------------------GCGCGCTTAGTGAAACTATGCGAGCCCAATTCAACGACATCCGTCTTGCCGATGAGCAGTTCCATCGCCCATATACAGTCTCGCTGGTGTTGGGCTCGGACGTATACCCCGACGTAATCCGGCCCGGGTTCCTAAATATACGTGATGGGCTGTCCGTCGCACAGGGCATG-TATTTGGTTGGGTAGTGTCTGGAGCATGCAGACACGCCTAAGG-GTTAATC-------------CGTTGTTACGCTCGCATTCGCA");
     input[2] = de_strdup("CCGCCCACATACCAGCAGTAGTCTCCCGGTCTCCTTCGCCAA------GGCAAGCGCTTACGCTGGTACGAcgtcc-------agcttcagcagcaaccccataagtagcttcgctactgc-------------------------------catcgtgttgctagagt----ctaggaccaccaactttgagacggcggcgttgatcgacccgtgcacttccgtcagcaccatagacagctccctggcagctgcgttcaagttacccacgacgacagtgagatgcgaagaagtctgttcgacgaccatccagtcaagaagaggcgatttccaaatcgacgtgctcctgaatattagccgaagtctacgcatccggaccc------------------------------------------------------------------------------------------------------------------------------gatccggcCCGGGCTCCTAAATATACGTGATACAT--------ATACAGGGCACGGTATTTGGATGAATCGTGTGTGGAGCACGCAGACACGCCTAAGG-ATTAGTC-------------CTTTGCTACGCTCGCCCTCGCA");
@@ -502,7 +502,7 @@ static void test_matrixAlignmentBlockComparisonOrdering_1(CuTest *testCase) {
 static void test_matrixAlignmentBlockComparisonOrdering_2(CuTest *testCase) {
     // test that with known input that known output is generated.
     char **input = (char**) de_malloc(sizeof(char*) * 4);
-    uint32_t *lengths = de_malloc(sizeof(uint32_t) * 4);
+    uint64_t *lengths = de_malloc(sizeof(uint64_t) * 4);
     input[0] = de_strdup("acgcccag--------------ctcgc---aatcgtt");
     input[1] = de_strdup("ccgctc--------------ctttcaag-tcagtctc");
     input[2] = de_strdup("CCGC--------CAGCAGTAGTCTCCC---CTCCTTC");
@@ -572,7 +572,7 @@ static void test_matrixAlignmentBlockComparisonOrdering_2(CuTest *testCase) {
 static void test_matrixAlignmentBlockComparisonOrdering_3(CuTest *testCase) {
     // test that with known input that known output is generated.
     char **input = (char**) de_malloc(sizeof(char*) * 5);
-    uint32_t *lengths = de_malloc(sizeof(uint32_t) * 5);
+    uint64_t *lengths = de_malloc(sizeof(uint64_t) * 5);
     input[0] = de_strdup("AATTG-----TCTCTCCCC--CTTTTT");
     input[1] = de_strdup("AATTGTC-----TCTGGCC--TTAATT");
     input[2] = de_strdup("CCCGGAGAG-----ACAAC--CTAATT");
@@ -634,7 +634,7 @@ static void test_matrixAlignmentBlockComparisonOrdering_3(CuTest *testCase) {
 static void test_matrixAlignmentBlockComparisonOrdering_4(CuTest *testCase) {
     // test that with known input that known output is generated.
     char **input = (char**) de_malloc(sizeof(char*) * 5);
-    uint32_t *lengths = de_malloc(sizeof(uint32_t) * 5);
+    uint64_t *lengths = de_malloc(sizeof(uint64_t) * 5);
     input[0] = de_strdup("AATTG-----TCTCTCC-CC--CT---T-TTT");
     input[1] = de_strdup("AATTGTC-----TCTG-GCC--TTA-AT---T");
     input[2] = de_strdup("CCCGGAGAG-----ACA-AC--CTA--A--TT");
@@ -900,7 +900,7 @@ static void test_localSeqCoordsToGlobalPositiveStartCoords_0(CuTest *testCase) {
 static void test_coordinateTransforms_0(CuTest *testCase) {
     char *input = de_strdup("-AA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG");
     mafCoordinatePair_t mcp;
-    uint32_t start = 0, sourceLength = 100, seqLength = 37, localStart = 1;
+    uint64_t start = 0, sourceLength = 100, seqLength = 37, localStart = 1;
     int64_t expectation = 0;
     char strand = '+';
     bool containsGaps = true;
@@ -964,7 +964,7 @@ static void test_coordinateTransforms_0(CuTest *testCase) {
 static void test_coordinateTransforms_1(CuTest *testCase) {
     char *input = de_strdup("CGTCCGCAGATCGTTAACTTAATTGTTCCGCTTGAAATCCGAAAACT---------GCCAA-CGCTATTGTTGCGACTGATAGTCGTGAATGGCCGTGACCACGCCCCCAATCCC----CTAAGCCCCCCTTT--------------TGGCAAA---------------------------------------CGGC---GCCTATGG--CTGG-----g-aa---------acag-------------------------------------------------------------------------------ga------------------------------------------acaga-----------------------------------------------------------------------------------------aacaggaacagGAATGCAATAAAA---TTGGCGTGACTAACTCAGCACTGGGATGCGAT---------GCGAGCATTG--CAG---------------------ATGAGCTGAG------GATTGGAG--CTTGAAAGTGGAGGAGGA---------T------TGGGGGGG-----GATGAAGGGGT----------------------------------------TC-----TGGGATTGGATGCC------CCAA---TGTGGCAGC---------CACAGAAGGGC--------------GCAAGTCGTGCGTGC---------CTCGGCGAAAC------------GTTGACGC------T-----------------GTCATGCAATCAGCAAATAGGCGACCGCAGCAAAAGTCGCGTAATTAACGC");
     mafCoordinatePair_t mcp;
-    uint32_t start = 47275, localStart = 566, sourceLength = 47773, seqLength = 1, localCoord = 234;
+    uint64_t start = 47275, localStart = 566, sourceLength = 47773, seqLength = 1, localCoord = 234;
     int64_t expectation = 263;
     char strand = '-';
     bool containsGaps = true;
