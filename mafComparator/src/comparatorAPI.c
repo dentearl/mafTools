@@ -906,7 +906,7 @@ bool inInterval(stHash *intervalsHash, char *seq, uint64_t pos) {
         return false;
     }
     assert(stIntTuple_length(j) == 2);
-    return stIntTuple_getPosition(j, 0) <= pos && pos < stIntTuple_getPosition(j, 1);
+    return stIntTuple_get(j, 0) <= pos && pos < stIntTuple_get(j, 1);
 }
 uint64_t findLowerBound(uint64_t pos, uint64_t near) {
     // since we have unsigned values we must be careful about subtracting 

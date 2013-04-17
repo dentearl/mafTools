@@ -129,24 +129,24 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
             stIntTuple *k = stSortedSet_searchLessThanOrEqual(intervals,
                     j);
             if (k != NULL) {
-                if (stIntTuple_getPosition(k, 1) > start) {
+                if (stIntTuple_get(k, 1) > start) {
                     st_errAbort(
                             "Found an overlapping interval in the bed file: %s %" PRIi64 " "
                             "%" PRIi64 " overlaps %s %" PRIi64 " %" PRIi64 "",
                             cA3, start, stop, cA2,
-                            stIntTuple_getPosition(k, 0),
-                            stIntTuple_getPosition(k, 1));
+                            stIntTuple_get(k, 0),
+                            stIntTuple_get(k, 1));
                 }
             }
             k = stSortedSet_searchGreaterThanOrEqual(intervals, j);
             if (k != NULL) {
-                if (stIntTuple_getPosition(k, 1) < stop) {
+                if (stIntTuple_get(k, 1) < stop) {
                     st_errAbort(
                             "Found an overlapping interval in the bed file: %s %" PRIi64 " "
                             "%" PRIi64 " overlaps %s %" PRIi64 " %" PRIi64 "",
                             cA3, start, stop, cA2,
-                            stIntTuple_getPosition(k, 0),
-                            stIntTuple_getPosition(k, 1));
+                            stIntTuple_get(k, 0),
+                            stIntTuple_get(k, 1));
                 }
             }
             assert(stSortedSet_search(intervals, j) == NULL);
