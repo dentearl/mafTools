@@ -38,10 +38,10 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Usage: %s numberOfSamples n p [optional: randomSeed]\n", argv[0]);
         return EXIT_FAILURE;
     }
-    uint32_t numSamples = atoi(argv[1]);
-    uint32_t n = atoi(argv[2]);
+    uint64_t numSamples = atoi(argv[1]);
+    uint64_t n = atoi(argv[2]);
     double p = atof(argv[3]);
-    for (uint32_t i = 0; i < numSamples; ++i) {
+    for (uint64_t i = 0; i < numSamples; ++i) {
         printf("%" PRIu64 "\n", rbinom(n, p));
     }
     return EXIT_SUCCESS;

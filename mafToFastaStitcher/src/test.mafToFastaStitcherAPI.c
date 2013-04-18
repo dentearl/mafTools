@@ -42,7 +42,7 @@ static void printBlockHash(stHash *hash, const char *title) {
     printf("%s:\n", title);
     while ((key = stHash_getNext(hit)) != NULL) {
         r = stHash_search(hash, key);
-        printf("%20s %6"PRIu32" %6"PRIu32" %c %9"PRIu32" %s\n", r->name ,r->start, r->length, 
+        printf("%20s %6"PRIu64" %6"PRIu64" %c %9"PRIu64" %s\n", r->name ,r->start, r->length, 
                r->strand, r->sourceLength, r->sequence);
     }
     stHash_destructIterator(hit);
@@ -50,7 +50,7 @@ static void printBlockHash(stHash *hash, const char *title) {
 static void printList(stList *list, const char *title) {
     char *key = NULL;
     printf("%s:\n", title);
-    for (int32_t i = 0; i < stList_length(list); ++i) {
+    for (int64_t i = 0; i < stList_length(list); ++i) {
         key = (char*)stList_get(list, i);
         printf("%s ", key);
     }
@@ -80,16 +80,16 @@ static bool rowsAreEqual(row_t *a, row_t *b) {
         return false;
     }
     if (a->start != b->start) {
-        fprintf(stderr, "%s rows differ: start: %"PRIu32" %"PRIu32"\n", a->name, a->start, b->start);
+        fprintf(stderr, "%s rows differ: start: %"PRIu64" %"PRIu64"\n", a->name, a->start, b->start);
         return false;
     }
     if (a->length != b->length) {
-        fprintf(stderr, "%s rows differ: length: %"PRIu32" %"PRIu32"\n"
+        fprintf(stderr, "%s rows differ: length: %"PRIu64" %"PRIu64"\n"
                 "    %s\n    %s\n", a->name, a->length, b->length, a->sequence, b->sequence);
         return false;
     }
     if (a->prevRightPos != b->prevRightPos) {
-        fprintf(stderr, "%s rows differ: prevRightPos: %"PRIu32" %"PRIu32"\n", 
+        fprintf(stderr, "%s rows differ: prevRightPos: %"PRIu64" %"PRIu64"\n", 
                 a->name, a->prevRightPos, b->prevRightPos);
         return false;
     }
@@ -102,17 +102,17 @@ static bool rowsAreEqual(row_t *a, row_t *b) {
         return false;
     }
     if (a->sourceLength != b->sourceLength) {
-        fprintf(stderr, "%s rows differ: sourceLength: %"PRIu32" %"PRIu32"\n", a->name, 
+        fprintf(stderr, "%s rows differ: sourceLength: %"PRIu64" %"PRIu64"\n", a->name, 
                 a->sourceLength, b->sourceLength);
         return false;
     }
     if (a->memLength != b->memLength) {
-        fprintf(stderr, "%s rows differ: memLength: %"PRIu32" %"PRIu32"\n", a->name, 
+        fprintf(stderr, "%s rows differ: memLength: %"PRIu64" %"PRIu64"\n", a->name, 
                 a->memLength, b->memLength);
         return false;
     }
     if (a->index != b->index) {
-        fprintf(stderr, "%s rows differ: index: %"PRIu32" %"PRIu32"\n", a->name, 
+        fprintf(stderr, "%s rows differ: index: %"PRIu64" %"PRIu64"\n", a->name, 
                 a->index, b->index);
         return false;
     }
@@ -152,15 +152,15 @@ static bool hashesAreEqual(stHash *observedHash, stHash *expectedHash) {
 }
 static bool listsAreEqual(stList *observedList, stList *expectedList) {
     if (stList_length(observedList) != stList_length(expectedList)) {
-        fprintf(stderr, "stList lengths are not equal: %"PRIu32" %"PRIu32"\n", 
+        fprintf(stderr, "stList lengths are not equal: %"PRIu64" %"PRIu64"\n", 
                 stList_length(observedList), stList_length(expectedList));
         printList(observedList, "observed");
         printList(expectedList, "expected");
         return false;
     }
-    for (int32_t i = 0; i < stList_length(observedList); ++i) {
+    for (int64_t i = 0; i < stList_length(observedList); ++i) {
         if (strcmp(stList_get(observedList, i), stList_get(expectedList, i)) != 0) {
-            fprintf(stderr, "stList elements are not equal at index %"PRIu32": %s %s\n", 
+            fprintf(stderr, "stList elements are not equal at index %"PRIu64": %s %s\n", 
                     i, (char *)stList_get(observedList, i), (char *)stList_get(expectedList, i));
             return false;
         }

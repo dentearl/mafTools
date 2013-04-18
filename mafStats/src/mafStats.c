@@ -254,11 +254,11 @@ int cmp_seq(const void *a, const void *b) {
     return ((*ia)->count < (*ib)->count);
 }
 void reportHash(stHash *hash) {
-    int32_t n = stHash_size(hash);
+    int64_t n = stHash_size(hash);
     seq_t **order = (seq_t **) st_malloc(sizeof(*order) * n);
     stHashIterator *hit = stHash_getIterator(hash);
     char *key = NULL;
-    int32_t i = 0;
+    int64_t i = 0;
     uint64_t total = 0;
     while ((key = stHash_getNext(hit)) != NULL) {
         order[i] = (seq_t*) st_malloc(sizeof(seq_t));
@@ -304,7 +304,7 @@ void reportStats(stats_t *stats) {
     printf("Max block degree:       %10" PRIu64 "\n", stats->maxNumSpeciesInBlock);
     printf("Ave seq field length:   %10.2f\n", (double) stats->sumSeqField / stats->numSeqLines);
     printf("Max seq field length:   %10" PRIu64 "\n\n", stats->maxSeqField);
-    printf("%" PRIi32 " unique sequences, ordered by # bases present:\n", stHash_size(stats->seqHash));
+    printf("%" PRIi64 " unique sequences, ordered by # bases present:\n", stHash_size(stats->seqHash));
     reportHash(stats->seqHash);
     printf("\n");
 }

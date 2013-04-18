@@ -34,12 +34,12 @@ typedef struct mafTcSeq {
     // maf tc (trasitive closure) sequence
     char *name;
     char *sequence;
-    uint32_t length;
+    uint64_t length;
 } mafTcSeq_t;
 typedef struct mafTcRegion {
     // region or interval
-    uint32_t start;
-    uint32_t end;
+    uint64_t start;
+    uint64_t end;
     struct mafTcRegion *next;
 } mafTcRegion_t;
 typedef struct mafTcComparisonOrder {
@@ -58,7 +58,7 @@ typedef struct mafTcComparisonOrder {
        and ends at column 1. The second block to process uses 1 as its reference and it
        starts at column 2 and ends at column 2 (it is only one column), etc.
      */
-    uint32_t ref; // 
+    uint64_t ref; // 
     mafTcRegion_t *region;
     struct mafTcComparisonOrder *next;
 } mafTcComparisonOrder_t;
@@ -76,53 +76,53 @@ typedef struct mafBlockSort {
 } mafBlockSort_t;
 
 void usage(void);
-mafTcSeq_t* newMafTcSeq(char *name, unsigned length);
+mafTcSeq_t* newMafTcSeq(char *name, uint64_t length);
 mafTcComparisonOrder_t* newMafTcComparisonOrder(void);
-mafTcRegion_t* newMafTcRegion(uint32_t start, uint32_t end);
-mafCoordinatePair_t* newCoordinatePairArray(uint32_t numSeqs, char **seqs);
+mafTcRegion_t* newMafTcRegion(uint64_t start, uint64_t end);
+mafCoordinatePair_t* newCoordinatePairArray(uint64_t numSeqs, char **seqs);
 void destroyMafTcSeq(void *p);
 void destroyMafTcRegionList(mafTcRegion_t *r);
 void destroyMafTcRegion(mafTcRegion_t *r);
 void destroyMafTcComparisonOrder(mafTcComparisonOrder_t *c);
 void destroyCoordinatePairArray(mafCoordinatePair_t *cp);
-uint32_t hashMafTcSeq(const mafTcSeq_t *mtcs);
+uint64_t hashMafTcSeq(const mafTcSeq_t *mtcs);
 int hashCompareMafTcSeq(const mafTcSeq_t *m1, const mafTcSeq_t *m2);
-char* createNSequence(unsigned length);
+char* createNSequence(uint64_t length);
 void addSequenceValuesToMtcSeq(mafLine_t *ml, mafTcSeq_t *mtcs);
 void parseOptions(int argc, char **argv, char *filename);
 stPinchThreadSet* buildThreadSet(stHash *hash);
 void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet);
 void addAlignmentsToThreadSet(mafFileApi_t *mfa, stPinchThreadSet *threadSet);
 void createSequenceHash(mafFileApi_t *mfa, stHash **hash, stHash **nameHash);
-mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint32_t row, mafTcComparisonOrder_t **done, 
+mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint64_t row, mafTcComparisonOrder_t **done, 
                                          mafTcRegion_t *todo, int containsGaps);
-mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint32_t rowLength, uint32_t colLength, 
-                                                     uint32_t *lengths, int **vizMat);
-void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint32_t aGlobalStart, 
-                            uint32_t aGlobalLength, int aStrand, 
-                            char *aSeq, stPinchThread *b, uint32_t bGlobalStart, uint32_t bGlobalLength,
-                            int bStrand, char *bSeq, uint32_t regionStart, uint32_t regionEnd,
+mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint64_t rowLength, uint64_t colLength, 
+                                                     uint64_t *lengths, int **vizMat);
+void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint64_t aGlobalStart, 
+                            uint64_t aGlobalLength, int aStrand, 
+                            char *aSeq, stPinchThread *b, uint64_t bGlobalStart, uint64_t bGlobalLength,
+                            int bStrand, char *bSeq, uint64_t regionStart, uint64_t regionEnd,
                             mafCoordinatePair_t aBookmark, mafCoordinatePair_t bBookmark, 
                             int aContainsGaps, int bContainsGaps,
                             void (*pinchFunction)(stPinchThread *, stPinchThread *, int64_t, int64_t, int64_t, bool));
-int64_t localSeqCoords(uint32_t p, char *s, mafCoordinatePair_t *bookmark, int containsGaps);
-int64_t localSeqCoordsToGlobalPositiveCoords(int64_t c, uint32_t start, uint32_t sourceLength, char strand);
-int64_t localSeqCoordsToGlobalPositiveStartCoords(int64_t c, uint32_t start, uint32_t sourceLength, 
-                                                  char strand, uint32_t length);
+int64_t localSeqCoords(uint64_t p, char *s, mafCoordinatePair_t *bookmark, int containsGaps);
+int64_t localSeqCoordsToGlobalPositiveCoords(int64_t c, uint64_t start, uint64_t sourceLength, char strand);
+int64_t localSeqCoordsToGlobalPositiveStartCoords(int64_t c, uint64_t start, uint64_t sourceLength, 
+                                                  char strand, uint64_t length);
 void mafBlock_sortBlockByIncreasingGap(mafBlock_t *mb);
 void walkBlockAddingSequence(mafBlock_t *mb, stHash *hash, stHash *nameHash);
 void reportSequenceHash(stHash *hash, stHash *nameHash);
 void destroyVizMatrix(int **mat, unsigned n);
 int cmp_by_gaps(const void *a, const void *b);
-uint32_t getMaxNameLength(stHash *hash);
-void getMaxFieldLengths(stHash *hash, stHash *nameHash, stPinchBlock *block, uint32_t *maxStart, 
-                        uint32_t *maxLength, uint32_t *maxSource);
+uint64_t getMaxNameLength(stHash *hash);
+void getMaxFieldLengths(stHash *hash, stHash *nameHash, stPinchBlock *block, uint64_t *maxStart, 
+                        uint64_t *maxLength, uint64_t *maxSource);
 char* getSequenceSubset(char *seq, int64_t start, char strand, int64_t length);
 void reportTransitiveClosure(stPinchThreadSet *threadSet, stHash *hash, stHash *nameHash);
 // debugging tools
 int** getVizMatrix(mafBlock_t *mb, unsigned n, unsigned m);
 void updateVizMatrix(int **mat, mafTcComparisonOrder_t *co);
-void printVizMatrix(int **mat, uint32_t n, uint32_t m);
+void printVizMatrix(int **mat, uint64_t n, uint64_t m);
 void printTodoArray(mafTcRegion_t *reg, unsigned max);
 // test suite
 CuSuite* mafTransitiveClosure_TestSuite(void);

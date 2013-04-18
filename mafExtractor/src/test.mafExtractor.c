@@ -35,16 +35,16 @@
 #include "sharedMaf.h"
 #include "mafExtractorAPI.h"
 
-static bool boolArraysAreEqual(bool *b1, bool *b2, uint32_t n) {
-    for (uint32_t i = 0; i < n; ++i) {
+static bool boolArraysAreEqual(bool *b1, bool *b2, uint64_t n) {
+    for (uint64_t i = 0; i < n; ++i) {
         if (b1[i] != b2[i]) {
             return false;
         }
     }
     return true;
 }
-static void printBoolArray(bool *b, uint32_t n) {
-    for (uint32_t i = 0; i < n; ++i) {
+static void printBoolArray(bool *b, uint64_t n) {
+    for (uint64_t i = 0; i < n; ++i) {
         if (b[i]) {
             printf("1");
         } else {
@@ -66,7 +66,7 @@ static bool mafLinesAreEqual(mafLine_t* ml1, mafLine_t *ml2) {
         }
     }
     if (maf_mafLine_getLineNumber(ml1) != maf_mafLine_getLineNumber(ml2)) {
-        fprintf(stderr, "mafLines differ in lineNumber:\n %3"PRIu32" %s\n %3"PRIu32" %s\n",
+        fprintf(stderr, "mafLines differ in lineNumber:\n %3"PRIu64" %s\n %3"PRIu64" %s\n",
                 maf_mafLine_getLineNumber(ml1),
                 maf_mafLine_getLine(ml1), 
                 maf_mafLine_getLineNumber(ml2),
@@ -78,7 +78,7 @@ static bool mafLinesAreEqual(mafLine_t* ml1, mafLine_t *ml2) {
         return false;
     }
     if (maf_mafLine_getStart(ml1) != maf_mafLine_getStart(ml2)) {
-        fprintf(stderr, "mafLines differ in start:\n %3" PRIu32 ":%s\n %3" PRIu32 ":%s\n",
+        fprintf(stderr, "mafLines differ in start:\n %3" PRIu64 ":%s\n %3" PRIu64 ":%s\n",
                 maf_mafLine_getStart(ml1), 
                 maf_mafLine_getLine(ml1), 
                 maf_mafLine_getStart(ml2),
@@ -86,7 +86,7 @@ static bool mafLinesAreEqual(mafLine_t* ml1, mafLine_t *ml2) {
         return false;
     }
     if (maf_mafLine_getLength(ml1) != maf_mafLine_getLength(ml2)) {
-        fprintf(stderr, "mafLines differ in length:\n  %3" PRIu32 ":%s\n  %3" PRIu32 ":%s\n",
+        fprintf(stderr, "mafLines differ in length:\n  %3" PRIu64 ":%s\n  %3" PRIu64 ":%s\n",
                 maf_mafLine_getLength(ml1),
                 maf_mafLine_getSequence(ml1),
                 maf_mafLine_getLength(ml2),
@@ -151,7 +151,7 @@ static bool mafBlocksAreEqual(mafBlock_t *mb1, mafBlock_t *mb2) {
         }
     }
     if (maf_mafBlock_getLineNumber(mb1) != maf_mafBlock_getLineNumber(mb2)) {
-        fprintf(stderr, "mafBlocks differ in lineNumber, %3" PRIu32 " vs %3" PRIu32 ".\n",
+        fprintf(stderr, "mafBlocks differ in lineNumber, %3" PRIu64 " vs %3" PRIu64 ".\n",
                 maf_mafBlock_getLineNumber(mb1), maf_mafBlock_getLineNumber(mb2));
         printf("mb1:\n");
         maf_mafBlock_print(mb1);
@@ -160,7 +160,7 @@ static bool mafBlocksAreEqual(mafBlock_t *mb1, mafBlock_t *mb2) {
         return false;
     }
     if (maf_mafBlock_getNumberOfLines(mb1) != maf_mafBlock_getNumberOfLines(mb2)) {
-        fprintf(stderr, "mafBlocks differ in number of lines, %3"PRIu32" vs %3"PRIu32"\n",
+        fprintf(stderr, "mafBlocks differ in number of lines, %3"PRIu64" vs %3"PRIu64"\n",
                 maf_mafBlock_getNumberOfLines(mb1), maf_mafBlock_getNumberOfLines(mb2));
         return false;
     }
@@ -169,7 +169,7 @@ static bool mafBlocksAreEqual(mafBlock_t *mb1, mafBlock_t *mb2) {
         return false;
     }
     if (maf_mafBlock_getSequenceFieldLength(mb1) != maf_mafBlock_getSequenceFieldLength(mb2)) {
-        fprintf(stderr, "mafBlocks differ in sequence field lengths, %3"PRIu32" vs %3"PRIu32"\n",
+        fprintf(stderr, "mafBlocks differ in sequence field lengths, %3"PRIu64" vs %3"PRIu64"\n",
                 maf_mafBlock_getSequenceFieldLength(mb1), maf_mafBlock_getSequenceFieldLength(mb2));
         fprintf(stderr, "mb1:\n");
         maf_mafBlock_print(mb1);
@@ -204,18 +204,18 @@ static bool mafBlockListsAreEqual(mafBlock_t *head1, mafBlock_t *head2) {
             return false;
         }
     }
-    uint32_t count1 = 0;
+    uint64_t count1 = 0;
     while (mb1 != NULL) {
         mb1 = maf_mafBlock_getNext(mb1);
         ++count1;
     }
-    uint32_t count2 = 0;
+    uint64_t count2 = 0;
     while (mb2 != NULL) {
         mb2 = maf_mafBlock_getNext(mb2);
         ++count2;
     }
     if (count1 != count2) {
-        fprintf(stderr, "mafBlock lists have different lengths!, mb1:%"PRIu32" mb2:%"PRIu32"\n", 
+        fprintf(stderr, "mafBlock lists have different lengths!, mb1:%"PRIu64" mb2:%"PRIu64"\n", 
                 count1, count2);
         printf("block list1:\n");
         maf_mafBlock_printList(head1);
@@ -234,11 +234,11 @@ static bool mafBlockListsAreEqual(mafBlock_t *head1, mafBlock_t *head2) {
     }
     return true;
 }
-static void targetColumnTest(CuTest *testCase, const char *mafString, uint32_t start, 
-                             uint32_t stop, uint32_t expectedLen, bool expected[]) {
+static void targetColumnTest(CuTest *testCase, const char *mafString, uint64_t start, 
+                             uint64_t stop, uint64_t expectedLen, bool expected[]) {
     mafBlock_t *ib = maf_newMafBlockFromString(mafString, 3);
     bool *targetColumns = NULL;
-    uint32_t len = 0;
+    uint64_t len = 0;
     getTargetColumns(&targetColumns, &len, ib, "theTarget.chr0", start, stop);
     CuAssertTrue(testCase, len == expectedLen);
     CuAssertTrue(testCase, boolArraysAreEqual(targetColumns, expected, len));
@@ -297,8 +297,8 @@ static void test_getTargetColumn_0(CuTest *testCase) {
                      "s name2.chr1     0 10 -       100 ATGT---ATGCCG\n",
                      158545507, 158545517, 13, test5);
 }
-static void spliceTest(CuTest *testCase, const char *input, const char *expected, uint32_t l, 
-                       uint32_t r, int32_t **offs) {
+static void spliceTest(CuTest *testCase, const char *input, const char *expected, uint64_t l, 
+                       uint64_t r, int64_t **offs) {
     mafBlock_t *ib = maf_newMafBlockFromString(input, 3);
     mafBlock_t *eb = maf_newMafBlockFromString(expected, 3);
     bool cleanOffs = false;
@@ -321,14 +321,14 @@ static void spliceTest(CuTest *testCase, const char *input, const char *expected
     maf_destroyMafBlockList(eb);
 }
 static void test_splice_0(CuTest *testCase) {
-    int32_t **offs = NULL;
+    int64_t **offs = NULL;
     // int testcount = 0;
     // test 0
     // printf("test %d\n", testcount++);
     offs = createOffsets(3);
-    /* for (uint32_t i = 0; i < 3; ++i) { */
-    /*     printf("offs[%"PRIu32"][0] = %"PRIu32"\n", i, offs[i][0]); */
-    /*     printf("offs[%"PRIu32"][1] = %"PRIu32"\n", i, offs[i][1]); */
+    /* for (uint64_t i = 0; i < 3; ++i) { */
+    /*     printf("offs[%"PRIu64"][0] = %"PRIu64"\n", i, offs[i][0]); */
+    /*     printf("offs[%"PRIu64"][1] = %"PRIu64"\n", i, offs[i][1]); */
     /* } */
     spliceTest(testCase, 
                "a score=0\n"
@@ -341,13 +341,13 @@ static void test_splice_0(CuTest *testCase) {
                "s name2.chr1     2  8 +       100 GT---ATGCCG\n",
                2, 12, offs);
     /* printf("##########\n"); */
-    /* for (uint32_t i = 0; i < 3; ++i) { */
-    /*     printf("offs[%"PRIu32"][0] = %"PRIu32"\n", i, offs[i][0]); */
-    /*     printf("offs[%"PRIu32"][1] = %"PRIu32"\n", i, offs[i][1]); */
+    /* for (uint64_t i = 0; i < 3; ++i) { */
+    /*     printf("offs[%"PRIu64"][0] = %"PRIu64"\n", i, offs[i][0]); */
+    /*     printf("offs[%"PRIu64"][1] = %"PRIu64"\n", i, offs[i][1]); */
     /* } */
     CuAssertTrue(testCase, offs[0][0] == 12); // seq field coord
     CuAssertTrue(testCase, offs[0][1] == 12); // non-gap offset
-    for (uint32_t i = 1; i < 3; ++i) {
+    for (uint64_t i = 1; i < 3; ++i) {
         CuAssertTrue(testCase, offs[i][0] == 12);
         CuAssertTrue(testCase, offs[i][1] == 9);
     }
@@ -438,7 +438,7 @@ static void test_splice_0(CuTest *testCase) {
                4, 14, offs);
     CuAssertTrue(testCase, offs[0][0] == 14); // seq field coord
     CuAssertTrue(testCase, offs[0][1] == 12); // non-gap offset
-    for (uint32_t i = 1; i < 3; ++i) {
+    for (uint64_t i = 1; i < 3; ++i) {
         CuAssertTrue(testCase, offs[i][0] == 14);
         CuAssertTrue(testCase, offs[i][1] == 14);
     }
@@ -468,7 +468,7 @@ static void test_splice_0(CuTest *testCase) {
                "s name.chr1      0 13 +       100 ATGTATTATGCCG\n"
                "s name2.chr1     0 13 +       100 ATGTATAATGCCG\n",
                0, 12, offs);
-    for (uint32_t i = 0; i < 3; ++i) {
+    for (uint64_t i = 0; i < 3; ++i) {
         // SPECIAL CASE! 
         // since the block is passed back directly, since no splice is performed,
         // there is no update made to the offset array. This makes sense because 
@@ -485,7 +485,7 @@ struct blockRecord {
     struct blockRecord *next;
 };
 typedef struct blockRecord blockRecord_t;
-static void processSpliceTest(CuTest *testCase, const char *seq, uint32_t start, uint32_t stop, 
+static void processSpliceTest(CuTest *testCase, const char *seq, uint64_t start, uint64_t stop, 
                               const char *input, int numExpectedBlocks, ...) {
     // varargs that come in are a variable number of const char * items that should be built
     // into a mafBlock_t list.

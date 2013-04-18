@@ -34,7 +34,7 @@
 
 const unsigned kChooseTwoCacheLength = 101;
 
-void aPair_fillOut(APair *aPair, char *seq1, char *seq2, uint32_t pos1, uint32_t pos2) {
+void aPair_fillOut(APair *aPair, char *seq1, char *seq2, uint64_t pos1, uint64_t pos2) {
     int i = strcmp(seq1, seq2);
     if (i > 0 || (i == 0 && pos1 > pos2)) { 
         // we construct the sequence so that seq1 < seq2 || seq1 == seq2 and pos1 < pos2
@@ -88,7 +88,7 @@ Options* options_construct(void) {
     o->wiggleBinLength = 100000; // by default have bins of length 100,000 
     return o;
 }
-APair* aPair_construct(const char *seq1, const char *seq2, uint32_t pos1, uint32_t pos2) {
+APair* aPair_construct(const char *seq1, const char *seq2, uint64_t pos1, uint64_t pos2) {
     APair *aPair = aPair_init();
     aPair_fillOut(aPair, (char *) seq1, (char *) seq2, pos1, pos2);
     aPair->seq1 = stString_copy(aPair->seq1);
@@ -119,7 +119,7 @@ WiggleContainer* wiggleContainer_construct(char *ref, char *partner, uint64_t re
     wc->absentBtoA = st_calloc(wc->numBins, sizeof(uint64_t));
     return wc;
 }
-void aPosition_fillOut(APosition *aPosition, char *name, uint32_t pos) {
+void aPosition_fillOut(APosition *aPosition, char *name, uint64_t pos) {
     aPosition->name = name;
     aPosition->pos = pos;
 }
@@ -129,7 +129,7 @@ APosition* aPosition_init(void) {
     aPosition->pos = 0;
     return aPosition;
 }
-APosition* aPosition_construct(const char *name, uint32_t pos) {
+APosition* aPosition_construct(const char *name, uint64_t pos) {
     APosition *aPosition = st_malloc(sizeof(*aPosition));
     aPosition_fillOut(aPosition, (char *) name, pos);
     return aPosition;
@@ -259,7 +259,7 @@ int aPair_cmpFunction(APair *p1, APair *p2) {
     }
     return i;
 }
-uint32_t aPositionKey(const void *p) {
+uint64_t aPositionKey(const void *p) {
     // maybe not the best composite hash function,
     APosition *pos = (APosition*) p;
     return stHash_stringKey((const void*) pos->name) + pos->pos;
@@ -275,7 +275,7 @@ int aPositionEqualKey(const void *k1, const void *k2) {
     } 
     return 0;
 }
-bool closeEnough(uint32_t p1, uint32_t p2, uint32_t near) {
+bool closeEnough(uint64_t p1, uint64_t p2, uint64_t near) {
     if (p1 == p2) {
         return true;
     } else if (p1 < p2 ) {
@@ -293,8 +293,8 @@ bool closeEnough(uint32_t p1, uint32_t p2, uint32_t near) {
         }
     }
 }
-int32_t* buildInt(int32_t n) {
-    int32_t *p = (int32_t*) st_malloc(sizeof(*p));
+int64_t* buildInt(int64_t n) {
+    int64_t *p = (int64_t*) st_malloc(sizeof(*p));
     *p = n;
     return p;
 }
@@ -397,9 +397,9 @@ void arrayIndexToPairIndices(uint64_t i, uint64_t n, uint64_t *r, uint64_t *c) {
     assert((*r) < n);
     assert((*c) < n);
 }
-bool* getLegitRows(char **names, uint32_t numSeqs, stSet *legitSequences) {
+bool* getLegitRows(char **names, uint64_t numSeqs, stSet *legitSequences) {
     bool *legitRows = (bool *) st_malloc(sizeof(*legitRows) * numSeqs);
-    for (uint32_t i = 0; i < numSeqs; ++i) {
+    for (uint64_t i = 0; i < numSeqs; ++i) {
         if (legitSequences != NULL) {
             if (stSet_search(legitSequences, names[i]) != NULL) {
                 legitRows[i] = true;
@@ -412,10 +412,10 @@ bool* getLegitRows(char **names, uint32_t numSeqs, stSet *legitSequences) {
     }
     return legitRows;
 }
-uint64_t countPairsInColumn(char **mat, uint32_t c, uint32_t numSeqs, 
+uint64_t countPairsInColumn(char **mat, uint64_t c, uint64_t numSeqs, 
                             bool *legitRows, uint64_t *chooseTwoArray) {
     uint64_t possiblePartners = 0;
-    for (uint32_t r = 0; r < numSeqs; ++r) {
+    for (uint64_t r = 0; r < numSeqs; ++r) {
         if (!legitRows[r]) {
             continue;
         }
@@ -432,19 +432,19 @@ uint64_t countPairsInColumn(char **mat, uint32_t c, uint32_t numSeqs,
 uint64_t walkBlockCountingPairs(mafBlock_t *mb, stSet *legitSequences, uint64_t *chooseTwoArray) {
     // size is the MAXIMUM INDEX of the chooseTwo array
     uint64_t count = 0;
-    uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
+    uint64_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
     if (numSeqs < 1) {
         return 0;
     }
-    uint32_t seqFieldLength = maf_mafBlock_getSequenceFieldLength(mb);
+    uint64_t seqFieldLength = maf_mafBlock_getSequenceFieldLength(mb);
     char **names = maf_mafBlock_getSpeciesArray(mb);
     char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
     bool *legitRows = getLegitRows(names, numSeqs, legitSequences);
-    for (uint32_t c = 0; c < seqFieldLength; ++c) {
+    for (uint64_t c = 0; c < seqFieldLength; ++c) {
         count += countPairsInColumn(mat, c, numSeqs, legitRows, chooseTwoArray);
     }
     // clean up
-    for (uint32_t i = 0; i < numSeqs; ++i) {
+    for (uint64_t i = 0; i < numSeqs; ++i) {
         free(names[i]);
     }
     free(names);
@@ -481,11 +481,11 @@ uint64_t countPairsInMaf(const char *filename, stSet *legitSequences) {
     maf_destroyMfa(mfa);
     return counter;
 }
-static uint32_t uint64Key(const void *k) {
+static uint64_t uint64Key(const void *k) {
     uint64_t p = *(uint64_t*)k;
-    if (p > INT32_MAX) {
-        while (p > INT32_MAX) {
-            p -= INT32_MAX;
+    if (p > INT64_MAX) {
+        while (p > INT64_MAX) {
+            p -= INT64_MAX;
         }
     }
     return p;
@@ -498,15 +498,15 @@ uint64_t* uint64Copy(uint64_t *i) {
 static int uint64EqualKey(const void *key1, const void *key2) {
     return *((uint64_t *) key1) == *((uint64_t*) key2);
 }
-void printmlarray(mafLine_t **mlArray, uint32_t n) {
-    for (uint32_t i = 0; i < n; ++i) {
-        printf("%" PRIu32 ":%s, ", i, maf_mafLine_getSpecies(mlArray[i]));
+void printmlarray(mafLine_t **mlArray, uint64_t n) {
+    for (uint64_t i = 0; i < n; ++i) {
+        printf("%" PRIu64 ":%s, ", i, maf_mafLine_getSpecies(mlArray[i]));
     }
     printf("\n");
 }
-uint32_t countLegitGaplessPositions(char **mat, uint32_t c, uint32_t numRows, bool *legitRows) {
-    uint32_t a = 0;
-    for (uint32_t r = 0; r < numRows; ++r) {
+uint64_t countLegitGaplessPositions(char **mat, uint64_t c, uint64_t numRows, bool *legitRows) {
+    uint64_t a = 0;
+    for (uint64_t r = 0; r < numRows; ++r) {
         if (!legitRows[r]) {
             continue;
         }
@@ -517,8 +517,8 @@ uint32_t countLegitGaplessPositions(char **mat, uint32_t c, uint32_t numRows, bo
     return a;
 }
 void samplePairsFromColumn(double acceptProbability, 
-                           stSortedSet *pairs, uint32_t numSeqs, uint64_t *chooseTwoArray, 
-                           char **nameArray, uint32_t *columnPositions) {
+                           stSortedSet *pairs, uint64_t numSeqs, uint64_t *chooseTwoArray, 
+                           char **nameArray, uint64_t *columnPositions) {
     // acceptProbability is the per base accept probability, pairs is where we store pairs, 
     // numSeqs is the number of sequences in either array, columnMlArray is an array that contains
     // pointers to mafLine_t's and columnPositions is an array that contains the current position
@@ -546,7 +546,7 @@ void samplePairsFromColumn(double acceptProbability,
 }
 void samplePairsFromColumnBruteForce(double acceptProbability, stSortedSet *pairs, 
                                      uint64_t *chooseTwoArray,
-                                     char **nameArray, uint32_t *positions, uint32_t numSeqs, 
+                                     char **nameArray, uint64_t *positions, uint64_t numSeqs, 
                                      uint64_t numPairs) {
     uint64_t p1, p2;
     for (uint64_t i = 0; i < numPairs; ++i) {
@@ -562,7 +562,7 @@ void samplePairsFromColumnBruteForce(double acceptProbability, stSortedSet *pair
 }
 void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs, 
                                    uint64_t *chooseTwoArray,
-                                   char **nameArray, uint32_t *positions, uint32_t numSeqs, 
+                                   char **nameArray, uint64_t *positions, uint64_t numSeqs, 
                                    uint64_t numPairs) {
     uint64_t n = rbinom(numPairs, acceptProbability);
     if (n == 0) {
@@ -571,7 +571,7 @@ void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs,
     stSet *set = stSet_construct3(uint64Key, uint64EqualKey, free);
     uint64_t *randPair = st_malloc(sizeof(*randPair));
     uint64_t numPairsToSample = 0;
-    int offset = 0; // used when numPairs > INT32_MAX, offset is the number of times to multiply by INT32_MAX
+    int offset = 0; // used when numPairs > INT64_MAX, offset is the number of times to multiply by INT64_MAX
     (void) offset;
     if (((double) n > numPairs / 2.0) && (numPairs > n)) {
         // sample (numSeqs - n) many pairs
@@ -601,7 +601,7 @@ void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs,
                 ++i;
             }
         }
-    } else if (numPairs > INT32_MAX){
+    } else if (numPairs > INT64_MAX){
         // sample straight away using st_randomInt64()
         while (i < numPairsToSample) {
             *randPair = st_randomInt64(0, numPairs);
@@ -651,10 +651,10 @@ void samplePairsFromColumnAnalytic(double acceptProbability, stSortedSet *pairs,
     stSet_destruct(set);
     free(randPair);
 }
-void samplePairsFromColumnNaive(char **mat, uint32_t c, bool *legitRows, double acceptProbability, 
+void samplePairsFromColumnNaive(char **mat, uint64_t c, bool *legitRows, double acceptProbability, 
                                 stSortedSet *pairs, 
                                 uint64_t *chooseTwoArray, 
-                                char **nameArray, uint32_t *positions, uint32_t numSeqs,
+                                char **nameArray, uint64_t *positions, uint64_t numSeqs,
                                 uint64_t numPairs) {
     // mat is the matrix of characters representing the alignment, c is the current column,
     // legtRows is a boolean array with true for a legit sequence, acceptProbability is the per
@@ -677,12 +677,12 @@ void samplePairsFromColumnNaive(char **mat, uint32_t c, bool *legitRows, double 
         }
     }
 }
-mafLine_t** createMafLineArray(mafBlock_t *mb, uint32_t numLegit, bool *legitRows) {
+mafLine_t** createMafLineArray(mafBlock_t *mb, uint64_t numLegit, bool *legitRows) {
     if (numLegit == 0) {
         return NULL;
     }
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
-    uint32_t i = 0, j = 0;
+    uint64_t i = 0, j = 0;
     mafLine_t **mlArray = (mafLine_t**) st_malloc(sizeof(*mlArray) * numLegit);
     while (ml != NULL) {
         if (maf_mafLine_getType(ml) == 's') {
@@ -695,69 +695,69 @@ mafLine_t** createMafLineArray(mafBlock_t *mb, uint32_t numLegit, bool *legitRow
     }
     return mlArray;
 }
-void updatePositions(char **mat, uint32_t c, uint32_t *allPositions, int *allStrandInts, uint32_t numSeqs) {
-    for (uint32_t i = 0; i < numSeqs; ++i) {
+void updatePositions(char **mat, uint64_t c, uint64_t *allPositions, int *allStrandInts, uint64_t numSeqs) {
+    for (uint64_t i = 0; i < numSeqs; ++i) {
         if (mat[i][c] != '-') {
             allPositions[i] += allStrandInts[i];
         }
     }
 }
-uint32_t* cullPositions(uint32_t *allPositions, uint32_t numSeqs, bool *legitRows, uint32_t numLegit) {
-    uint32_t *positions = (uint32_t*) st_malloc(sizeof(*positions) * numLegit);
-    uint32_t j = 0;
-    for (uint32_t i = 0; i < numSeqs; ++i) {
+uint64_t* cullPositions(uint64_t *allPositions, uint64_t numSeqs, bool *legitRows, uint64_t numLegit) {
+    uint64_t *positions = (uint64_t*) st_malloc(sizeof(*positions) * numLegit);
+    uint64_t j = 0;
+    for (uint64_t i = 0; i < numSeqs; ++i) {
         if (legitRows[i]) {
             positions[j++] = allPositions[i];
         }
     }
     return positions;
 }
-int* cullStrandInts(int *allStrandInts, uint32_t numSeqs, bool *legitRows, uint32_t numLegit) {
+int* cullStrandInts(int *allStrandInts, uint64_t numSeqs, bool *legitRows, uint64_t numLegit) {
     int *strandInts = (int*) st_malloc(sizeof(*strandInts) * numLegit);
-    uint32_t j = 0;
-    for (uint32_t i = 0; i < numSeqs; ++i) {
+    uint64_t j = 0;
+    for (uint64_t i = 0; i < numSeqs; ++i) {
         if (legitRows[i]) {
             strandInts[j++] = allStrandInts[i];
         }
     }
     return strandInts;
 }
-uint32_t sumBoolArray(bool *legitRows, uint32_t numSeqs) {
-    uint32_t a = 0;
-    for (uint32_t i = 0; i < numSeqs; ++i) {
+uint64_t sumBoolArray(bool *legitRows, uint64_t numSeqs) {
+    uint64_t a = 0;
+    for (uint64_t i = 0; i < numSeqs; ++i) {
         if (legitRows[i])
             ++a;
     }
     return a;
 }
-uint32_t countLegitPositions(char **mat, uint32_t c, uint32_t numRows) {
-    uint32_t n = 0;
-    for (uint32_t r = 0; r < numRows; ++r) {
+uint64_t countLegitPositions(char **mat, uint64_t c, uint64_t numRows) {
+    uint64_t n = 0;
+    for (uint64_t r = 0; r < numRows; ++r) {
         if (mat[r][c] != '-') {
             ++n;
         }
     }
     return n;
 }
-mafLine_t** cullMlArrayByColumn(char **mat, uint32_t c, mafLine_t **mlArray, bool *legitRows, 
-                                uint32_t numRows, uint32_t numLegitGaplessPositions) {
+mafLine_t** cullMlArrayByColumn(char **mat, uint64_t c, mafLine_t **mlArray, bool *legitRows, 
+                                uint64_t numRows, uint64_t numLegitGaplessPositions) {
     // create an array of mafLine_t for a given column, excluding all sequences that contain gaps 
     mafLine_t **colMlArray = (mafLine_t**) st_malloc(sizeof(*mlArray) * numLegitGaplessPositions);
-    uint32_t j = 0;
-    for (uint32_t r = 0; r < numRows; ++r) {
+    uint64_t j = 0;
+    for (uint64_t r = 0; r < numRows; ++r) {
         if (legitRows[r] && mat[r][c] != '-') {
             colMlArray[j++] = mlArray[r];
         }
     }
     return colMlArray;
 }
-char** extractLegitGaplessNamesFromMlArrayByColumn(char **mat, uint32_t c, mafLine_t **mlArray, bool *legitRows, 
-                                                   uint32_t numRows, uint32_t numLegitGaplessPositions) {
+char** extractLegitGaplessNamesFromMlArrayByColumn(char **mat, uint64_t c, mafLine_t **mlArray, bool *legitRows, 
+                                                   uint64_t numRows, uint64_t numLegitGaplessPositions) {
     // winner of longest function name award
     // create an array of mafLine_t for a given column, excluding all sequences that contain gaps 
     char **nameArray = (char **) st_malloc(sizeof(*nameArray) * numLegitGaplessPositions);
-    uint32_t j = 0;
-    for (uint32_t r = 0; r < numRows; ++r) {
+    uint64_t j = 0;
+    for (uint64_t r = 0; r < numRows; ++r) {
         if (legitRows[r] && mat[r][c] != '-') {
             // NOTE THAT THIS IS NOT MAKING A COPY, 
             // ELEMENTS OF nameArray SHOULD NOT BE MODIFIED.
@@ -766,12 +766,12 @@ char** extractLegitGaplessNamesFromMlArrayByColumn(char **mat, uint32_t c, mafLi
     }
     return nameArray;
 }
-uint32_t* cullPositionsByColumn(char **mat, uint32_t c, uint32_t *positions, bool *legitRows,
-                                uint32_t numRows, uint32_t numLegitGaplessPositions) {
+uint64_t* cullPositionsByColumn(char **mat, uint64_t c, uint64_t *positions, bool *legitRows,
+                                uint64_t numRows, uint64_t numLegitGaplessPositions) {
     // create an array of positive coordinate position values that excludes all sequences that contain gaps
-    uint32_t *colPositions = (uint32_t*) st_malloc(sizeof(*positions) * numLegitGaplessPositions);
-    uint32_t j = 0;
-    for (uint32_t r = 0; r < numRows; ++r) {
+    uint64_t *colPositions = (uint64_t*) st_malloc(sizeof(*positions) * numLegitGaplessPositions);
+    uint64_t j = 0;
+    for (uint64_t r = 0; r < numRows; ++r) {
         if (!legitRows[r]) {
             continue;
         }
@@ -791,7 +791,7 @@ void validateMafBlockSourceLengths(const char *filename, mafBlock_t *mb, stHash 
             if (len != NULL) {
                 if ((uint64_t)maf_mafLine_getSourceLength(ml) != *len) {
                     fprintf(stderr, "Error, conflicting source length information for sequence in maf. "
-                            "%s source length was first %" PRIu64 " but on line %" PRIu32 " of %s the value "
+                            "%s source length was first %" PRIu64 " but on line %" PRIu64 " of %s the value "
                             "is %" PRIu64 ".\n",
                             maf_mafLine_getSpecies(ml), *len, maf_mafLine_getLineNumber(ml), filename, 
                             (uint64_t)maf_mafLine_getSourceLength(ml));
@@ -805,28 +805,28 @@ void validateMafBlockSourceLengths(const char *filename, mafBlock_t *mb, stHash 
 void walkBlockSamplingPairs(const char *filename, mafBlock_t *mb, stSortedSet *sampledPairs, 
                             double acceptProbability, stSet *legitSequences,
                             uint64_t *chooseTwoArray, uint64_t *numPairs, stHash *sequenceLengthHash) {
-    uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
-    uint32_t numLegitGaplessPositions; // number of legit gapless sequences in the given column
+    uint64_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
+    uint64_t numLegitGaplessPositions; // number of legit gapless sequences in the given column
     if (numSeqs < 2) {
         return;
     }
     validateMafBlockSourceLengths(filename, mb, sequenceLengthHash);    
     
-    uint32_t seqFieldLength = maf_mafBlock_getSequenceFieldLength(mb);
+    uint64_t seqFieldLength = maf_mafBlock_getSequenceFieldLength(mb);
     char **names = maf_mafBlock_getSpeciesArray(mb);
     char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
     bool *legitRows = getLegitRows(names, numSeqs, legitSequences);
-    uint32_t numLegit = sumBoolArray(legitRows, numSeqs);
+    uint64_t numLegit = sumBoolArray(legitRows, numSeqs);
     if (numLegit < 2) {
         return;
     }
     mafLine_t **mlArray = maf_mafBlock_getMafLineArray_seqOnly(mb);
-    uint32_t *allPositions = maf_mafBlock_getPosCoordStartArray(mb);
+    uint64_t *allPositions = maf_mafBlock_getPosCoordStartArray(mb);
     int *allStrandInts = maf_mafBlock_getStrandIntArray(mb);
     char **gaplessNameArray = NULL;
-    uint32_t *gaplessPositions = NULL;
+    uint64_t *gaplessPositions = NULL;
     // walk over each column in the block
-    for (uint32_t c = 0; c < seqFieldLength; ++c) {
+    for (uint64_t c = 0; c < seqFieldLength; ++c) {
         numLegitGaplessPositions = countLegitGaplessPositions(mat, c, numSeqs, legitRows);
         // create arrays that contain *only* the valid (legit and non gap) sequences for this column
         gaplessNameArray = extractLegitGaplessNamesFromMlArrayByColumn(mat, c, mlArray, legitRows, 
@@ -847,7 +847,7 @@ void walkBlockSamplingPairs(const char *filename, mafBlock_t *mb, stSortedSet *s
     free(mlArray);
     free(allPositions);
     free(allStrandInts);
-    for (uint32_t i = 0; i < numSeqs; ++i) {
+    for (uint64_t i = 0; i < numSeqs; ++i) {
          free(names[i]);
     }
     free(names);
@@ -869,7 +869,7 @@ void samplePairsFromMaf(const char *filename, stSortedSet *pairs, double acceptP
     maf_destroyMfa(mfa);
 }
 void countPairs(APair *pair, stHash *intervalsHash, int64_t *counter, 
-                stSortedSet *legitPairs, void *a, uint32_t near) {
+                stSortedSet *legitPairs, void *a, uint64_t near) {
     /*
      * Counts the number of pairs in the MAF file.
      */
@@ -882,7 +882,7 @@ void countPairs(APair *pair, stHash *intervalsHash, int64_t *counter,
     }
 }
 void samplePairs(APair *thisPair, stHash *intervalsHash, stSortedSet *pairs, 
-                 double *acceptProbability, stHash *legitPairs, uint32_t near) {
+                 double *acceptProbability, stHash *legitPairs, uint64_t near) {
     /*
      * Adds *thisPair to *pairs with a given probability.
      */
@@ -891,7 +891,7 @@ void samplePairs(APair *thisPair, stHash *intervalsHash, stSortedSet *pairs,
             if (st_random() <= *acceptProbability)
                 stSortedSet_insert(pairs, aPair_copyConstruct(thisPair));
 }
-bool inInterval(stHash *intervalsHash, char *seq, uint32_t pos) {
+bool inInterval(stHash *intervalsHash, char *seq, uint64_t pos) {
     /* 
      * check to see if the sequence and position are within the intervals hash.
      */
@@ -899,16 +899,16 @@ bool inInterval(stHash *intervalsHash, char *seq, uint32_t pos) {
     if (intervals == NULL) {
         return false;
     }
-    stIntTuple *i = stIntTuple_construct(2, pos, INT32_MAX);
+    stIntTuple *i = stIntTuple_construct2( pos, INT64_MAX);
     stIntTuple *j = stSortedSet_searchLessThanOrEqual(intervals, i);
     stIntTuple_destruct(i);
     if (j == NULL) {
         return false;
     }
     assert(stIntTuple_length(j) == 2);
-    return stIntTuple_getPosition(j, 0) <= pos && pos < stIntTuple_getPosition(j, 1);
+    return stIntTuple_get(j, 0) <= pos && pos < stIntTuple_get(j, 1);
 }
-uint32_t findLowerBound(uint32_t pos, uint32_t near) {
+uint64_t findLowerBound(uint64_t pos, uint64_t near) {
     // since we have unsigned values we must be careful about subtracting 
     // the "near" value willy-nilly.
     if (near >= pos) {
@@ -917,13 +917,13 @@ uint32_t findLowerBound(uint32_t pos, uint32_t near) {
         return pos - near;
     }
 }
-void recordNearPair(APair *thisPair, stSortedSet *sampledPairs, uint32_t near, stSet *positivePairs) {
+void recordNearPair(APair *thisPair, stSortedSet *sampledPairs, uint64_t near, stSet *positivePairs) {
     /* given thisPair, if thisPair is in the table `sampledPairs' then record it in the positivePairs set.
      * if the `near' option is set, do this not only for thisPair but for all pairs within +- `near'.
      * if near = 0 this will just look at thisPair->pos1 and thisPair->pos2 and record those values.
      */
     APair *aPair;
-    uint32_t i = thisPair->pos1;
+    uint64_t i = thisPair->pos1;
     // Try modifying position 1
     for (thisPair->pos1 = findLowerBound(thisPair->pos1, near); thisPair->pos1 < i + near + 1; thisPair->pos1++) {
         if ((aPair = stSortedSet_search(sampledPairs, thisPair)) != NULL) {
@@ -952,18 +952,18 @@ void recordNearPair(APair *thisPair, stSortedSet *sampledPairs, uint32_t near, s
     }
     thisPair->pos2 = i; // reset pos 2
 }
-stHash* constructPositionHash(char **mat, uint32_t c, char **names, uint32_t numSeqs, 
-                              uint32_t *allPositions, bool *legitRows) {
+stHash* constructPositionHash(char **mat, uint64_t c, char **names, uint64_t numSeqs, 
+                              uint64_t *allPositions, bool *legitRows) {
     stHash *posHash = stHash_construct3(aPositionKey, aPositionEqualKey, aPosition_destruct, free);
     APosition *pos = NULL;
-    // printf("constructing position hash on col %"PRIu32", numseqs: %"PRIu32"\n", c, numSeqs);
-    for (uint32_t r = 0; r < numSeqs; ++r) {
+    // printf("constructing position hash on col %"PRIu64", numseqs: %"PRIu64"\n", c, numSeqs);
+    for (uint64_t r = 0; r < numSeqs; ++r) {
         if (!legitRows[r]) {
-            // printf("row %"PRIu32" not legit.\n", r);
+            // printf("row %"PRIu64" not legit.\n", r);
             continue;
         }
         if (mat[r][c] == '-') {
-            // printf("row %"PRIu32" col %"PRIu32" is gap.\n", r, c);
+            // printf("row %"PRIu64" col %"PRIu64" is gap.\n", r, c);
             continue;
         }
         pos = aPosition_construct(stString_copy(names[r]), allPositions[r]);
@@ -998,7 +998,7 @@ void printSortedSet(stSortedSet *pairs) {
     APair *pair;
     printf("printSortedSet()\n");
     while ((pair = stSortedSet_getNext(sit)) != NULL) {
-        printf("pair: (%s %u, %s %u)\n", 
+        printf("pair: (%s %" PRIu64", %s %" PRIu64 ")\n",
                pair->seq1, pair->pos1, pair->seq2, pair->pos2);
     }
 }
@@ -1008,14 +1008,14 @@ void printHash(stHash *hash) {
     APosition *key = NULL;
     printf("Position hash: ");
     while ((key = stHash_getNext(hit)) != NULL) {
-        printf("(%s %u), ", key->name, key->pos);
+        printf("(%s %" PRIi64 "), ", key->name, key->pos);
     }
     printf("\n");
     stHash_destructIterator(hit);
 }
-void testHomologyOnColumn(char **mat, uint32_t c, uint32_t numSeqs, bool *legitRows, char **names, 
+void testHomologyOnColumn(char **mat, uint64_t c, uint64_t numSeqs, bool *legitRows, char **names, 
                           stSortedSet *sampledPairs, stSet *positivePairs, mafLine_t **mlArray, 
-                          uint32_t *allPositions, stHash *intervalsHash, uint32_t near) {
+                          uint64_t *allPositions, stHash *intervalsHash, uint64_t near) {
     /* For a given column, 
        1) hash all the positions in the column
        2) For each position in the hash:
@@ -1077,38 +1077,38 @@ void testHomologyOnColumn(char **mat, uint32_t c, uint32_t numSeqs, bool *legitR
     stHash_destructIterator(hit);
     stHash_destruct(positionHash);
 }
-void printAllPositions(uint32_t *allPositions, mafBlock_t *mb) {
+void printAllPositions(uint64_t *allPositions, mafBlock_t *mb) {
     printf("allPositions: [");
-    for (uint32_t i = 0; i < maf_mafBlock_getNumberOfSequences(mb); ++i) {
-        printf("%"PRIu32", ", allPositions[i]);
+    for (uint64_t i = 0; i < maf_mafBlock_getNumberOfSequences(mb); ++i) {
+        printf("%"PRIu64", ", allPositions[i]);
     }
     printf("]\n");
 }
 void printAllStrandInts(int *allStrandInts, mafBlock_t *mb) {
     printf("allStrandInts: [");
-    for (uint32_t i = 0; i < maf_mafBlock_getNumberOfSequences(mb); ++i) {
+    for (uint64_t i = 0; i < maf_mafBlock_getNumberOfSequences(mb); ++i) {
         printf("%+i, ", allStrandInts[i]);
     }
     printf("]\n");
 }
 void walkBlockTestingHomology(mafBlock_t *mb, stSortedSet *sampledPairs, stSet *positivePairs, 
-                              stSet *legitSequences, stHash *intervalsHash, uint32_t near) {
-    uint32_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
+                              stSet *legitSequences, stHash *intervalsHash, uint64_t near) {
+    uint64_t numSeqs = maf_mafBlock_getNumberOfSequences(mb);
     if (numSeqs < 2) {
         return;
     }
-    uint32_t seqFieldLength = maf_mafBlock_getSequenceFieldLength(mb);
+    uint64_t seqFieldLength = maf_mafBlock_getSequenceFieldLength(mb);
     char **names = maf_mafBlock_getSpeciesArray(mb);
     char **mat = maf_mafBlock_getSequenceMatrix(mb, numSeqs, seqFieldLength);
     bool *legitRows = getLegitRows(names, numSeqs, legitSequences);
-    uint32_t numLegit = sumBoolArray(legitRows, numSeqs);
+    uint64_t numLegit = sumBoolArray(legitRows, numSeqs);
     if (numLegit < 2) {
         return;
     }
     mafLine_t **mlArray = createMafLineArray(mb, numLegit, legitRows);
-    uint32_t *allPositions = maf_mafBlock_getPosCoordStartArray(mb);
+    uint64_t *allPositions = maf_mafBlock_getPosCoordStartArray(mb);
     int *allStrandInts = maf_mafBlock_getStrandIntArray(mb);
-    for (uint32_t c = 0; c < seqFieldLength; ++c) {
+    for (uint64_t c = 0; c < seqFieldLength; ++c) {
         testHomologyOnColumn(mat, c, numSeqs, legitRows, names, sampledPairs, positivePairs, 
                              mlArray, allPositions, intervalsHash, near);
         updatePositions(mat, c, allPositions, allStrandInts, numSeqs);
@@ -1117,7 +1117,7 @@ void walkBlockTestingHomology(mafBlock_t *mb, stSortedSet *sampledPairs, stSet *
     free(mlArray);
     free(allPositions);
     free(allStrandInts);
-    for (uint32_t i = 0; i < numSeqs; ++i) {
+    for (uint64_t i = 0; i < numSeqs; ++i) {
          free(names[i]);
     }
     free(names);
@@ -1125,7 +1125,7 @@ void walkBlockTestingHomology(mafBlock_t *mb, stSortedSet *sampledPairs, stSet *
     free(legitRows);
 }
 void performHomologyTests(const char *filename, stSortedSet *sampledPairs, stSet *positivePairs, 
-                          stSet *legitSequences, stHash *intervalsHash, uint32_t near) {
+                          stSet *legitSequences, stHash *intervalsHash, uint64_t near) {
     mafFileApi_t *mfa = maf_newMfa(filename, "r");
     mafBlock_t *mb = NULL;
     while ((mb = maf_readBlock(mfa)) != NULL) {
@@ -1136,7 +1136,7 @@ void performHomologyTests(const char *filename, stSortedSet *sampledPairs, stSet
     maf_destroyMfa(mfa);
 }
 void homologyTests1(APair *thisPair, stHash *intervalsHash, stSortedSet *pairs, 
-                    stSet *positivePairs, stSet *legitPairs, int32_t near) {
+                    stSet *positivePairs, stSet *legitPairs, int64_t near) {
     /*
      * If both members of *thisPair are in the intersection of maf1 and maf2,
      * and *thisPair is in the set *pairs then adds to the result pair a positive result.
@@ -1249,7 +1249,7 @@ void enumerateHomologyResults(stSortedSet *sampledPairs, stSortedSet *resultPair
             }
         } else {
            if (g_isVerboseFailures){
-              fprintf(stderr, "sampled pair not present in comparison: (%s, %" PRIu32 "):(%s, %" PRIu32 ")\n", 
+              fprintf(stderr, "sampled pair not present in comparison: (%s, %" PRIu64 "):(%s, %" PRIu64 ")\n",
                       pair->seq1, pair->pos1, pair->seq2, pair->pos2);
            }
         }
@@ -1356,7 +1356,7 @@ void addReferencesAndDups(stSortedSet *results_AB, stSet *legitSequences) {
                                             species, species, "aggregate"));
     }
     stSet_destructIterator(speciesIt);
-    for(int32_t i = 0; i < stList_length(list); i++) {
+    for(int64_t i = 0; i < stList_length(list); i++) {
         stSortedSet_insert(results_AB, stList_get(list, i));
     }
     stList_destruct(list);
@@ -1384,7 +1384,7 @@ void reportResultsForWigglesArrays(FILE *fileHandle, WiggleContainer *wc) {
     findentprintf(fileHandle, 2, "<presentMaf1ToMaf2 description=\"Binned data, counts. "
                   "Values are the number of samples drawn from maf1 that are present in maf2 and "
                   "whose position on the reference sequence coincides with the given bin.\">");
-    for (uint32_t i = 0; i < wc->numBins; ++i) {
+    for (uint64_t i = 0; i < wc->numBins; ++i) {
         fprintf(fileHandle, "%" PRIu64 "%s", wc->presentAtoB[i], (i == wc->numBins - 1) ? "" : ",");
     }
     fprintf(fileHandle, "</presentMaf1ToMaf2>\n");
@@ -1392,7 +1392,7 @@ void reportResultsForWigglesArrays(FILE *fileHandle, WiggleContainer *wc) {
     findentprintf(fileHandle, 2, "<presentMaf2ToMaf1 description=\"Binned data, counts. "
                   "Values are the number of samples drawn from maf2 that are present in maf1 and "
                   "whose position on the reference sequence coincides with the given bin.\">");
-    for (uint32_t i = 0; i < wc->numBins; ++i) {
+    for (uint64_t i = 0; i < wc->numBins; ++i) {
         fprintf(fileHandle, "%" PRIu64 "%s", wc->presentBtoA[i], (i == wc->numBins - 1) ? "" : ",");
     }
     fprintf(fileHandle, "</presentMaf2ToMaf1>\n");
@@ -1400,7 +1400,7 @@ void reportResultsForWigglesArrays(FILE *fileHandle, WiggleContainer *wc) {
     findentprintf(fileHandle, 2, "<absentMaf1ToMaf2 description=\"Binned data, counts. "
                   "Values are the number of samples drawn from maf1 that are absent in maf2 and "
                   "whose position on the reference sequence coincides with the given bin.\">");
-    for (uint32_t i = 0; i < wc->numBins; ++i) {
+    for (uint64_t i = 0; i < wc->numBins; ++i) {
         fprintf(fileHandle, "%" PRIu64 "%s", wc->absentAtoB[i], (i == wc->numBins - 1) ? "" : ",");
     }
     fprintf(fileHandle, "</absentMaf1ToMaf2>\n");
@@ -1408,7 +1408,7 @@ void reportResultsForWigglesArrays(FILE *fileHandle, WiggleContainer *wc) {
     findentprintf(fileHandle, 2, "<absentMaf2ToMaf1 description=\"Binned data, counts. "
                   "Values are the number of samples drawn from maf2 that are absent in maf1 and "
                   "whose position on the reference sequence coincides with the given bin.\">");
-    for (uint32_t i = 0; i < wc->numBins; ++i) {
+    for (uint64_t i = 0; i < wc->numBins; ++i) {
         fprintf(fileHandle, "%" PRIu64 "%s", wc->absentBtoA[i], (i == wc->numBins - 1) ? "" : ",");
     }
     fprintf(fileHandle, "</absentMaf2ToMaf1>\n");
@@ -1435,13 +1435,13 @@ void reportResultsForWiggles(stHash *wigglePairHash, FILE *fileHandle) {
 }
 void reportResult(const char *tagName, double total, double totalTrue, FILE *fileHandle, unsigned tabLevel) {
     assert(total >= totalTrue);
-    findentprintf(fileHandle, tabLevel, "<%s totalTests=\"%" PRIu32 "\" totalTrue=\"%" PRIu32 "\" "
-                  "totalFalse=\"%" PRIu32 "\" average=\"%f\"/>\n",
-                  tagName, (uint32_t) total, (uint32_t) totalTrue, 
-                  (uint32_t) (total - totalTrue), total == 0 ? 0.0 : totalTrue / total);
+    findentprintf(fileHandle, tabLevel, "<%s totalTests=\"%" PRIu64 "\" totalTrue=\"%" PRIu64 "\" "
+                  "totalFalse=\"%" PRIu64 "\" average=\"%f\"/>\n",
+                  tagName, (uint64_t) total, (uint64_t) totalTrue, 
+                  (uint64_t) (total - totalTrue), total == 0 ? 0.0 : totalTrue / total);
 }
 void reportResults(stSortedSet *results_AB, const char *mafFileA, const char *mafFileB, FILE *fileHandle,
-                   uint32_t near, stSet *legitSequences, const char *bedFiles) {
+                   uint64_t near, stSet *legitSequences, const char *bedFiles) {
     /*
      * Report results in an XML formatted document.
      */
@@ -1517,7 +1517,7 @@ void populateNames(const char *filename, stSet *set, stHash *sequenceLengthHash)
                 } else {
                     if (*(int64_t*)stHash_search(sequenceLengthHash, name) != maf_mafLine_getSourceLength(ml)) {
                         fprintf(stderr, "Inconsistency detected in a maf. Previous source length for sequence "
-                                "%s was %" PRIu32 " but changed to %" PRIu64 " on line %" PRIu32 "\n", 
+                                "%s was %" PRIu64 " but changed to %" PRIu64 " on line %" PRIu64 "\n",
                                 name, maf_mafLine_getSourceLength(ml), 
                                 *(int64_t*)stHash_search(sequenceLengthHash, name), 
                                 maf_mafLine_getLineNumber(ml));
@@ -1570,7 +1570,7 @@ void buildWigglePairHash(stHash *sequenceLengthHash, stList *wigglePairPatternLi
     char *name = NULL;
     WiggleContainer *wc = NULL;
     uint64_t regionLength = 0;
-    for (int32_t i = 0; i < stList_length(wigglePairPatternList) - 1; i = i + 2) {
+    for (int64_t i = 0; i < stList_length(wigglePairPatternList) - 1; i = i + 2) {
         // for every wiggle pair
         hit1 = stHash_getIterator(sequenceLengthHash);
         while ((key1 = stHash_getNext(hit1)) != NULL) {

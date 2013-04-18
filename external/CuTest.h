@@ -75,7 +75,7 @@ void CuAssertPtrEquals_LineMsg(CuTest* tc,
 // added by dent earl, dent.earl (a) gmail com
 void CuAssertUInt32Equals_LineMsg(CuTest* tc, 
 	const char* file, int line, const char* message, 
-	uint32_t expected, uint32_t actual);
+	uint64_t expected, uint64_t actual);
 //////////////////////////////////////////////////
 
 /* public assert functions */

@@ -109,14 +109,14 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
             fprintf(stderr, "ERROR, unable to open %s\n", filepath);
         exit(EXIT_FAILURE);
     }
-    int nBytes = 100;
+    int64_t nBytes = 100;
     char *cA2 = st_malloc(nBytes + 1);
-    int32_t bytesRead = benLine(&cA2, &nBytes, fileHandle);
+    int64_t bytesRead = benLine(&cA2, &nBytes, fileHandle);
     while (bytesRead != -1) {
         if (bytesRead > 0) {
-            int32_t start, stop;
+            int64_t start, stop;
             char *cA3 = stString_copy(cA2);
-            int32_t i = sscanf(cA2, "%s %" PRIi32 " %" PRIi32 "", cA3, &start, &stop);
+            int64_t i = sscanf(cA2, "%s %" PRIi64 " %" PRIi64 "", cA3, &start, &stop);
             assert(i == 3);
             stSortedSet *intervals = stHash_search(intervalsHash, cA3);
             if (intervals == NULL) {
@@ -125,32 +125,32 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
                         (void(*)(void *)) stIntTuple_destruct);
                 stHash_insert(intervalsHash, stString_copy(cA3), intervals);
             }
-            stIntTuple *j = stIntTuple_construct(2, start, stop);
+            stIntTuple *j = stIntTuple_construct2( start, stop);
             stIntTuple *k = stSortedSet_searchLessThanOrEqual(intervals,
                     j);
             if (k != NULL) {
-                if (stIntTuple_getPosition(k, 1) > start) {
+                if (stIntTuple_get(k, 1) > start) {
                     st_errAbort(
-                            "Found an overlapping interval in the bed file: %s %" PRIi32 " "
-                            "%" PRIi32 " overlaps %s %" PRIi32 " %" PRIi32 "",
+                            "Found an overlapping interval in the bed file: %s %" PRIi64 " "
+                            "%" PRIi64 " overlaps %s %" PRIi64 " %" PRIi64 "",
                             cA3, start, stop, cA2,
-                            stIntTuple_getPosition(k, 0),
-                            stIntTuple_getPosition(k, 1));
+                            stIntTuple_get(k, 0),
+                            stIntTuple_get(k, 1));
                 }
             }
             k = stSortedSet_searchGreaterThanOrEqual(intervals, j);
             if (k != NULL) {
-                if (stIntTuple_getPosition(k, 1) < stop) {
+                if (stIntTuple_get(k, 1) < stop) {
                     st_errAbort(
-                            "Found an overlapping interval in the bed file: %s %" PRIi32 " "
-                            "%" PRIi32 " overlaps %s %" PRIi32 " %" PRIi32 "",
+                            "Found an overlapping interval in the bed file: %s %" PRIi64 " "
+                            "%" PRIi64 " overlaps %s %" PRIi64 " %" PRIi64 "",
                             cA3, start, stop, cA2,
-                            stIntTuple_getPosition(k, 0),
-                            stIntTuple_getPosition(k, 1));
+                            stIntTuple_get(k, 0),
+                            stIntTuple_get(k, 1));
                 }
             }
             assert(stSortedSet_search(intervals, j) == NULL);
-            st_logDebug("Adding in an interval: %s %" PRIi32 " %" PRIi32 "\n", cA3, start, stop);
+            st_logDebug("Adding in an interval: %s %" PRIi64 " %" PRIi64 "\n", cA3, start, stop);
             stSortedSet_insert(intervals, j);
             free(cA3);
         }
@@ -210,7 +210,7 @@ void hashifercateList(stList *list, stHash *hash) {
     char *b = NULL;
     char *tmp = NULL;
     WiggleContainer *wc = NULL;
-    for (int32_t i = 0; i < stList_length(list); i = i + 2) {
+    for (int64_t i = 0; i < stList_length(list); i = i + 2) {
         a = stString_copy(stList_get(list, i));
         b = stString_copy(stList_get(list, i + 1));
         tmp = (char *) st_malloc(kMaxStringLength);
@@ -347,12 +347,12 @@ int parseOptions(int argc, char **argv, Options* options) {
                 break;
             }
             if (strcmp("samples", longOptions[longIndex].name) == 0) {
-                i = sscanf(optarg, "%" PRIu32, &(options->numberOfSamples));
+                i = sscanf(optarg, "%" PRIu64, &(options->numberOfSamples));
                 assert(i == 1);
                 break;
             }
             if (strcmp("sampleNumber", longOptions[longIndex].name) == 0) {
-                i = sscanf(optarg, "%" PRIu32, &(options->numberOfSamples));
+                i = sscanf(optarg, "%" PRIu64, &(options->numberOfSamples));
                 assert(i == 1);
                 break;
             }
@@ -398,11 +398,11 @@ int parseOptions(int argc, char **argv, Options* options) {
             g_isVerboseFailures = true;
             break;
         case 'e':
-            i = sscanf(optarg, "%" PRIu32, &(options->numberOfSamples));
+            i = sscanf(optarg, "%" PRIu64, &(options->numberOfSamples));
             assert(i == 1);
             break;
         case 's':
-            i = sscanf(optarg, "%" PRIu32, &(options->randomSeed));
+            i = sscanf(optarg, "%" PRIu64, &(options->randomSeed));
             assert(i == 1);
             break;
         case 'h':
@@ -413,7 +413,7 @@ int parseOptions(int argc, char **argv, Options* options) {
             options->bedFiles = stString_copy(optarg);
             break;
         case 'g':
-            i = sscanf(optarg, "%" PRIu32, &(options->near));
+            i = sscanf(optarg, "%" PRIu64, &(options->near));
             assert(i == 1);
             break;
         default:
@@ -501,8 +501,8 @@ int main(int argc, char **argv) {
     st_logInfo("MAF file 1 name : %s\n", options->mafFile1);
     st_logInfo("MAF file 2 name : %s\n", options->mafFile2);
     st_logInfo("Output stats file : %s\n", options->outputFile);
-    st_logInfo("Bed files parsed : %" PRIi32 "\n", stHash_size(intervalsHash));
-    st_logInfo("Number of samples %" PRIu32 "\n", options->numberOfSamples);
+    st_logInfo("Bed files parsed : %" PRIi64 "\n", stHash_size(intervalsHash));
+    st_logInfo("Number of samples %" PRIu64 "\n", options->numberOfSamples);
     // note that random seed has already been logged.
     // Create sequence name hashtable from the first MAF file.
     stHash *sequenceLengthHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
@@ -551,8 +551,8 @@ int main(int argc, char **argv) {
     } else {
         wiggleRegionString[0] = '\0';
     }
-    fprintf(fileHandle, "<alignmentComparisons numberOfSamples=\"%" PRIu32 "\" "
-            "near=\"%" PRIu32 "\" seed=\"%" PRIu32 "\" maf1=\"%s\" maf2=\"%s\" "
+    fprintf(fileHandle, "<alignmentComparisons numberOfSamples=\"%" PRIu64 "\" "
+            "near=\"%" PRIu64 "\" seed=\"%" PRIu64 "\" maf1=\"%s\" maf2=\"%s\" "
             "numberOfPairsInMaf1=\"%" PRIu64 "\" "
             "numberOfPairsInMaf2=\"%" PRIu64 "\"%s%s%s version=\"%s\" "
             "buildDate=\"%s\" buildBranch=\"%s\" buildCommit=\"%s\">\n",

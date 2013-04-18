@@ -43,8 +43,8 @@ const char *g_version = "version 0.1 September 2012";
 void version(void);
 void usage(void);
 void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *isInclude, int64_t *blockDegLT, int64_t *blockDegGT);
-void checkRegion(unsigned lineno, char *fullname, uint32_t pos, uint32_t start, 
-                 uint32_t length, uint32_t sourceLength, char strand);
+void checkRegion(unsigned lineno, char *fullname, uint64_t pos, uint64_t start, 
+                 uint64_t length, uint64_t sourceLength, char strand);
 
 void version(void) {
     fprintf(stderr, "mafFilter, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
@@ -218,7 +218,7 @@ void checkBlock(mafBlock_t *mb, char **names, unsigned n, bool isInclude, int64_
             }
         } else {
             // filtering on block degrees
-            uint32_t m = maf_mafBlock_getNumberOfSequences(mb);
+            int64_t m = maf_mafBlock_getNumberOfSequences(mb);
             if (excludeBlockDegreeGT != -1 && excludeBlockDegreeLT != -1) {
                 if (m >= excludeBlockDegreeLT && m <= excludeBlockDegreeGT) {
                     reportBlock(mb, names, n, isInclude);

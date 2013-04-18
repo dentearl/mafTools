@@ -36,7 +36,7 @@ const int kMaxSeqName;
 void de_verbose(char const *fmt, ...);
 void de_debug(char const *fmt, ...);
 void* de_malloc(size_t n);
-int32_t de_getline(char **s, int32_t *n, FILE *f);
+int64_t de_getline(char **s, int64_t *n, FILE *f);
 FILE* de_fopen(const char *s, char const *mode);
 char* de_strdup(const char *s);
 char* de_strndup(const char *s, size_t n);
