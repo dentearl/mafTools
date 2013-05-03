@@ -882,7 +882,7 @@ void reportTransitiveClosure(stPinchThreadSet *threadSet, stHash *hash, stHash *
     while ((thisBlock = stPinchThreadSetBlockIt_getNext(&thisBlockIt)) != NULL) {
         getMaxFieldLengths(hash, nameHash, thisBlock, &maxStartLength,
                            &maxLengthLength, &maxSourceLengthLength);
-        printf("a degree=%" PRIu64 "\n", stPinchBlock_getDegree(thisBlock));
+        printf("a degree=%" PRIu32 "\n", stPinchBlock_getDegree(thisBlock));
         thisSegIt = stPinchBlock_getSegmentIterator(thisBlock);
         while ((thisSeg = stPinchBlockIt_getNext(&thisSegIt)) != NULL) {
             intKey = (int64_t *) st_malloc(sizeof(*intKey));
