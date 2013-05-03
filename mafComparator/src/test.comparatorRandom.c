@@ -97,7 +97,7 @@ static void test_rbinom_one_4(CuTest *testCase) {
     // large n*p means using the btpe algorithm
     uint64_t a;
     uint64_t N = 100000;
-    uint64_t n = INT64_MAX;
+    uint64_t n = INT32_MAX;
     n *= 2;
     for (uint64_t i = 0; i < N; ++i) {
         a = rbinom(n, 1.0);
