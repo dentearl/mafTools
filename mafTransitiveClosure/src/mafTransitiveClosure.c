@@ -39,7 +39,7 @@
 #include "buildVersion.h"
 
 const uint64_t kPinchThreshold = 50000000;
-const char *g_version = "v0.1 June 2012";
+const char *g_version = "v0.2 May 2013";
 bool g_isSort = false;
 
 void version(void);
@@ -260,12 +260,15 @@ void walkBlockAddingSequence(mafBlock_t *mb, stHash *hash, stHash *nameHash) {
         }
     }
 }
+static uint64_t uint64Return(const void *key) {
+    return *((int64_t*) key);
+}
 static int int64EqualKey(const void *key1, const void *key2) {
     return *((int64_t *) key1) == *((int64_t*) key2);
 }
 void createSequenceHash(mafFileApi_t *mfa, stHash **hash, stHash **nameHash) {
     *hash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, destroyMafTcSeq);
-    *nameHash = stHash_construct3(stHash_stringKey, int64EqualKey, free, free);
+    *nameHash = stHash_construct3(uint64Return, int64EqualKey, free, free);
     mafBlock_t *mb = NULL;
     while ((mb = maf_readBlock(mfa)) != NULL) {
         walkBlockAddingSequence(mb, *hash, *nameHash);

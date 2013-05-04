@@ -88,7 +88,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint64_t
             if (strcmp("start", longOptions[longIndex].name) == 0) {
                 value = strtoll(optarg, NULL, 10);
                 if (value < 0) {
-                    fprintf(stderr, "Error, --start %d must be nonnegative.\n", value);
+                    fprintf(stderr, "Error, --start %" PRIi64 " must be nonnegative.\n", value);
                     usage();
                 }
                 *start = value;
@@ -96,7 +96,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint64_t
             } else if (strcmp("stop", longOptions[longIndex].name) == 0) {
                 value = strtoll(optarg, NULL, 10);
                 if (value < 0) {
-                    fprintf(stderr, "Error, --stop %d must be nonnegative.\n", value);
+                    fprintf(stderr, "Error, --stop %" PRIi64 " must be nonnegative.\n", value);
                     usage();
                 }
                 *stop = value;

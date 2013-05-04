@@ -42,7 +42,7 @@
 #include "common.h"
 #include "buildVersion.h"
 
-const char *g_version = "version 0.8 September 2012";
+const char *g_version = "version 0.9 May 2013";
 bool g_isVerboseFailures = false;
 
 /*
