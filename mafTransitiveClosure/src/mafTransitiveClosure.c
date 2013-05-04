@@ -39,7 +39,7 @@
 #include "buildVersion.h"
 
 const uint64_t kPinchThreshold = 50000000;
-const char *g_version = "v0.1 June 2012";
+const char *g_version = "v0.2 May 2013";
 bool g_isSort = false;
 
 void version(void);
