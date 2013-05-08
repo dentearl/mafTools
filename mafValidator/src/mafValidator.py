@@ -9,7 +9,7 @@ files.
 
 """
 ##############################
-# Copyright (C) 2009-2012 by
+# Copyright (C) 2009-2013 by
 # Dent Earl (dearl@soe.ucsc.edu, dent.earl@gmail.com)
 #
 # ... and other members of the Reconstruction Team of David Haussler's

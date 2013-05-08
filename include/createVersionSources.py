@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '../.
 import mafToolsTest as mtt
 
 g_BoilerPlate = '''/* 
- * Copyright (C) 2009-2012 by 
+ * Copyright (C) 2009-2013 by 
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * Benedict Paten (benedict@soe.ucsc.edu, benedictpaten@gmail.com)
  * Mark Diekhans (markd@soe.ucsc.edu)
