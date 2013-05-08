@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2011-2012 by 
+ * Copyright (C) 2011-2013 by 
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * ... and other members of the Reconstruction Team of David Haussler's 
  * lab (BME Dept. UCSC).
@@ -39,7 +39,7 @@
 #include "sharedMaf.h"
 #include "buildVersion.h"
 
-const char *g_version = "version 0.1 September 2012";
+const char *g_version = "version 0.2 May 2013";
 
 void version(void);
 void usage(void);
@@ -114,7 +114,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint64_t
             setPos = 1;
             tempPos = strtoll(optarg, NULL, 10);
             if (tempPos < 0) {
-                fprintf(stderr, "Error, --pos %d must be non-negative.\n", tempPos);
+                fprintf(stderr, "Error, --pos %" PRIi64 " must be non-negative.\n", tempPos);
                 usage();
             }
             *position = tempPos;
