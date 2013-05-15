@@ -33,7 +33,9 @@
 
 void version(void);
 void usage(void);
-void parseOptions(int argc, char **argv, char *filename, char *seq1Name, char *seq2Name);
+void parseOptions(int argc, char **argv, char *filename, char *seq1Name, char *seq2Name, stHash *intervalsHashn);
 void reportResults(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions);
+void reportResultsRegion(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions,
+                   stHash *intervalsHash);
 
 #endif // _PAIR_COVERAGE_H_

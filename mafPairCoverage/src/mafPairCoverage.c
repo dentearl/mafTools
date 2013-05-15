@@ -58,10 +58,11 @@ void usage(void) {
     usageMessage('m', "maf", "path to maf file.");
     usageMessage('\0', "seq1", "sequence name, e.g. `hg19*'. Accepts * wildcard at the end.");
     usageMessage('\0', "seq2", "sequence name, e.g. `mm9.chr9'. Accepts * wildcard at the end.");
+    usageMessage('\0', "bed", "path to 3 column bedfile that will define regions of interest in output.");
     usageMessage('v', "verbose", "turns on verbose output.");
     exit(EXIT_FAILURE);
 }
-void parseOptions(int argc, char **argv, char *filename, char *seq1Name, char *seq2Name) {
+void parseOptions(int argc, char **argv, char *filename, char *seq1Name, char *seq2Name, stHash *intervalsHash) {
     extern int g_debug_flag;
     extern int g_verbose_flag;
     int c;
@@ -75,6 +76,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seq1Name, char *s
             {"maf", required_argument, 0, 'm'},
             {"seq1", required_argument, 0, 0},
             {"seq2", required_argument, 0, 0},
+            {"bed", required_argument, 0, 0},
             {0, 0, 0, 0}
         };
         int longIndex = 0;
@@ -93,6 +95,8 @@ void parseOptions(int argc, char **argv, char *filename, char *seq1Name, char *s
             } else if (strcmp("version", longOptions[longIndex].name) == 0) {
                 version();
                 exit(EXIT_SUCCESS);
+            } else if (strcmp("bed", longOptions[longIndex].name) == 0) {
+                parseBedFile(optarg, intervalsHash);
             }
             break;
         case 'm':
@@ -129,6 +133,112 @@ void parseOptions(int argc, char **argv, char *filename, char *seq1Name, char *s
         usage();
     }
 }
+uint64_t getRegionSize(char *seq1, stHash *intervalsHash) {
+    // go through intervalsHash and see if seq1 matches any of the keys we pull out. if so, add up the size
+    uint64_t n = 0;
+    stHashIterator *hit = stHash_getIterator(intervalsHash);
+    char *key = NULL;
+    while ((key = stHash_getNext(hit)) != NULL) {
+        stSortedSetIterator *sit = NULL;
+        if (!searchMatched_(key, seq1)) {
+            continue;
+        }
+        sit = stSortedSet_getIterator(stHash_search(intervalsHash, key));
+        stIntTuple *inttup = NULL;
+        while ((inttup = stSortedSet_getNext(sit)) != NULL) {
+            n += stIntTuple_get(inttup, 1)  - stIntTuple_get(inttup, 0);
+        }
+        stSortedSet_destructIterator(sit);
+    }
+    stHash_destructIterator(hit);
+    return n;
+}
+void reportResultsRegion(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions,
+                         stHash *intervalsHash) {
+    /*
+     * If there are results within the intervals hash, report those
+     */
+    if (stHash_size(intervalsHash) == 0) {
+        return;
+    }
+    uint64_t tot1 = 0, tot1in = 0, tot1out = 0;
+    stHashIterator *hit = stHash_getIterator(seq1Hash);
+    mafCoverageCount_t *mcct = NULL;
+    double cov1in = 0., cov1out = 0.;
+    char *key;
+    (void) cov1in;
+    (void) cov1out;
+    (void) mcct;
+    (void) tot1out;
+    // get the total in-region coverage number via the hash
+    if (stHash_size(seq1Hash) > 0) {
+        hit = stHash_getIterator(seq1Hash);
+        while ((key = stHash_getNext(hit)) != NULL) {
+            tot1 += getRegionSize(key, intervalsHash);
+            tot1in += mafCoverageCount_getInRegion(stHash_search(seq1Hash, key));
+            tot1out += mafCoverageCount_getOutRegion(stHash_search(seq1Hash, key));
+        }
+        stHash_destructIterator(hit);
+        if (tot1 == 0) {
+            cov1in = 0.;
+        } else {
+            cov1in = (double) tot1in / (double) tot1;
+        }
+    }
+
+    // print the totals
+    printf("\n# BED Regions\n");
+    printf("#%19s\t%15s\t%15s\t%15s\t%15s\n", "Sequence", 
+           "Region Length", "In Regions", "Out of Regions", "Coverage");
+    printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\n", 
+           seq1, tot1, tot1in, tot1out, cov1in);
+    
+    // print each seq1 on its own
+    if (stHash_size(seq1Hash) > 0) {
+        hit = stHash_getIterator(seq1Hash);
+        while ((key = stHash_getNext(hit)) != NULL) {
+            if (stHash_search(intervalsHash, key) == NULL) {
+                // don't report sequences that do not show up in the bed region file
+                continue;
+            }
+            if ((double) mafCoverageCount_getInRegion(stHash_search(seq1Hash, key)) == 0) {
+                cov1in = 0;
+            } else {
+                cov1in = (double) mafCoverageCount_getInRegion(stHash_search(seq1Hash, key)) /
+                    (double) getRegionSize(key, intervalsHash);
+            }
+            printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\n", 
+                   key, getRegionSize(key, intervalsHash),
+                   mafCoverageCount_getInRegion(stHash_search(seq1Hash, key)), 
+                   mafCoverageCount_getOutRegion(stHash_search(seq1Hash, key)),
+                   cov1in);
+        }
+        stHash_destructIterator(hit);
+    }
+    // print each seq2 on its own
+    if (stHash_size(seq2Hash) > 0) {
+        hit = stHash_getIterator(seq2Hash);
+        while ((key = stHash_getNext(hit)) != NULL) {
+            if (stHash_search(intervalsHash, key) == NULL) {
+                // don't report sequences that do not show up in the bed region file
+                continue;
+            }
+            if ((double) mafCoverageCount_getInRegion(stHash_search(seq2Hash, key)) == 0) {
+                cov1in = 0;
+            } else {
+                cov1in = (double) mafCoverageCount_getInRegion(stHash_search(seq2Hash, key)) / 
+                    (double) getRegionSize(key, intervalsHash);
+                    
+            }
+            printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\n", 
+                   key, getRegionSize(key, intervalsHash),
+                   mafCoverageCount_getInRegion(stHash_search(seq2Hash, key)), 
+                   mafCoverageCount_getOutRegion(stHash_search(seq2Hash, key)),
+                   cov1in);
+        }
+        stHash_destructIterator(hit);
+    }
+}
 void reportResults(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions) {
     uint64_t tot1 = 0, tot2 = 0;
     stHashIterator *hit = stHash_getIterator(seq1Hash);
@@ -160,37 +270,39 @@ void reportResults(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash, u
     }
     stHash_destructIterator(hit);
     // print the totals
-    printf("#%19s\t%20s\t%20s\t%20s\n", "Sequence", "Source Length", "Aligned Positions", "Coverage");
-    printf("%20s\t%20" PRIu64 "\t%20" PRIu64 "\t%20e\n", seq1, tot1, *alignedPositions, cov1);
-    printf("%20s\t%20" PRIu64 "\t%20" PRIu64 "\t%20e\n\n", seq2, tot2, *alignedPositions, cov2);
+    printf("# Overall\n");
+    printf("#%19s\t%15s\t%15s\t%15s\n", "Sequence", "Source Length", "Aligned Pos.", "Coverage");
+    printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\n", seq1, tot1, *alignedPositions, cov1);
+    printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\n\n", seq2, tot2, *alignedPositions, cov2);
     
+    printf("# Individual Sequences\n");
     // print each seq1 on its own
-    if (stHash_size(seq1Hash) > 1) {
+    if (stHash_size(seq1Hash) > 0) {
         hit = stHash_getIterator(seq1Hash);
         while ((key = stHash_getNext(hit)) != NULL) {
             if ((double) mafCoverageCount_getCount(stHash_search(seq1Hash, key)) == 0) {
                 cov1 = 0;
             } else {
-                cov1 = (double) mafCoverageCount_getSourceLength(stHash_search(seq1Hash, key)) /
-                    (double) mafCoverageCount_getCount(stHash_search(seq1Hash, key));
+                cov1 = (double) mafCoverageCount_getCount(stHash_search(seq1Hash, key)) / 
+                    (double) mafCoverageCount_getSourceLength(stHash_search(seq1Hash, key));
             }
-            printf("%20s\t%20" PRIu64 "\t%20" PRIu64 "\t%20e\n", 
+            printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\n", 
                    key, mafCoverageCount_getSourceLength(stHash_search(seq1Hash, key)),
                    mafCoverageCount_getCount(stHash_search(seq1Hash, key)), cov1);
         }
         stHash_destructIterator(hit);
     }
     // print each seq2 on its own
-    if (stHash_size(seq2Hash) > 1) {
+    if (stHash_size(seq2Hash) > 0) {
         hit = stHash_getIterator(seq2Hash);
         while ((key = stHash_getNext(hit)) != NULL) {
             if ((double) mafCoverageCount_getCount(stHash_search(seq2Hash, key)) == 0) {
                 cov2 = 0;
             } else {
-                cov2 = (double) mafCoverageCount_getSourceLength(stHash_search(seq2Hash, key)) /
-                    (double) mafCoverageCount_getCount(stHash_search(seq2Hash, key));
+                cov2 = (double) mafCoverageCount_getCount(stHash_search(seq2Hash, key)) /
+                    (double) mafCoverageCount_getSourceLength(stHash_search(seq2Hash, key));
             }
-            printf("%20s\t%20" PRIu64 "\t%20" PRIu64 "\t%20e\n", 
+            printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\n", 
                    key, mafCoverageCount_getSourceLength(stHash_search(seq2Hash, key)),
                    mafCoverageCount_getCount(stHash_search(seq2Hash, key)), cov2);
         }
@@ -202,15 +314,19 @@ int main(int argc, char **argv) {
     char seq1[kMaxSeqName];
     char seq2[kMaxSeqName];
     char filename[kMaxStringLength];
-    parseOptions(argc, argv, filename, seq1, seq2);
+    stHash *intervalsHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free,
+                                              (void(*)(void *)) stSortedSet_destruct);
+    parseOptions(argc, argv, filename, seq1, seq2, intervalsHash);
     mafFileApi_t *mfa = maf_newMfa(filename, "r");
     stHash *seq1Hash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
     stHash *seq2Hash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
     uint64_t alignedPositions = 0;
-    processBody(mfa, seq1, seq2, seq1Hash, seq2Hash, &alignedPositions);
+    processBody(mfa, seq1, seq2, seq1Hash, seq2Hash, &alignedPositions, intervalsHash);
     reportResults(seq1, seq2, seq1Hash, seq2Hash, &alignedPositions);
+    reportResultsRegion(seq1, seq2, seq1Hash, seq2Hash, &alignedPositions, intervalsHash);
     maf_destroyMfa(mfa);
     stHash_destruct(seq1Hash);
     stHash_destruct(seq2Hash);
+    stHash_destruct(intervalsHash);
     return EXIT_SUCCESS;
 }

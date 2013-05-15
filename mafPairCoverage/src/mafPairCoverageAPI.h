@@ -37,15 +37,23 @@ typedef struct mafCoverageCount mafCoverageCount_t;
 mafCoverageCount_t* createMafCoverageCount(void);
 uint64_t mafCoverageCount_getSourceLength(mafCoverageCount_t *mcct);
 uint64_t mafCoverageCount_getCount(mafCoverageCount_t *mcct);
+uint64_t mafCoverageCount_getInRegion(mafCoverageCount_t *mcct);
+uint64_t mafCoverageCount_getOutRegion(mafCoverageCount_t *mcct);
 void mafCoverageCount_setSourceLength(mafCoverageCount_t *mcct, uint64_t n);
 void mafCoverageCount_setCount(mafCoverageCount_t *mcct, uint64_t n);
+void mafCoverageCount_setInRegion(mafCoverageCount_t *mcct, uint64_t n);
+void mafCoverageCount_setOutRegion(mafCoverageCount_t *mcct, uint64_t n);
 bool is_wild(const char *s);
+bool inInterval(stHash *intervalsHash, char *seq, uint64_t pos);
 bool searchMatched(mafLine_t *ml, const char *seq);
-void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions);
+bool searchMatched_(const char *target, const char *seq);
+void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions,
+                  stHash *intervalsHash);
 void wrapDestroyMafLine(void *p);
 void checkBlock(mafBlock_t *b, const char *seq1, const char *seq2, 
-                stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions);
-void processBody(mafFileApi_t *mfa, char *seq1, char *seq2, stHash *seq1hash, stHash *seq2Hash,
-                 uint64_t *alignedPositions);
-
+                stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions,
+                stHash *intervalsHash);
+void processBody(mafFileApi_t *mfa, char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash,
+                 uint64_t *alignedPositions, stHash *intervalsHash);
+void parseBedFile(const char *filepath, stHash *intervalsHash);
 #endif // _PAIR_COVERAGE_API_H_
