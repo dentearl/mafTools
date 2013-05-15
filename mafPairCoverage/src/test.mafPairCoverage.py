@@ -90,7 +90,14 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 ''', 6),
             ]
 g_coverageLines = set(['target.chr010020', 'target2.chr020020'])
-g_coverageLinesWild = set(['target.*2010020', 'target2.chr020020', 'target.chr010020', 'target.chr3200000'])
+g_coverageLinesWild = set(['target.*2010020', 'target2.chr020020', 'target.chr010020', 'target.chr3200000',
+                           ])
+g_coverageLinesWildBed = set(['#Overall', '#SequenceSourceLengthAlignedPos.Coverage',
+                              'target.*2010020', 'target2.chr020020',
+                              '#IndividualSequences', 'target.chr010020',
+                              'target.chr3200000', 'target2.chr020020', 
+                              '#BEDRegions', '#SequenceRegionLengthInRegionsOutofRegionsCoverage', 
+                              'target.*26416', 'target.chr026416'])
 g_nonOverlappingBlocks = [('''a score=23262.0     
 s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
@@ -249,8 +256,8 @@ class CoverageTest(unittest.TestCase):
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'coverage.txt'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
-            self.assertTrue(coverageIsCorrect(os.path.join(tmpDir, 'coverage.txt'), g_coverageLinesWild))
-            # mtt.removeDir(tmpDir)
+            self.assertTrue(coverageIsCorrect(os.path.join(tmpDir, 'coverage.txt'), g_coverageLinesWildBed))
+            mtt.removeDir(tmpDir)
     def dtestMemory0(self):
         """ If valgrind is installed on the system, check for memory related errors (0).
         """

@@ -334,21 +334,21 @@ bool inInterval(stHash *intervalsHash, char *seq, uint64_t pos) {
      */
     stSortedSet *intervals = stHash_search(intervalsHash, seq);
     if (intervals == NULL) {
-        printf("%s %" PRIu64 " is not in the region, bad seq.\n", seq, pos);
+        // printf("%s %" PRIu64 " is not in the region, bad seq.\n", seq, pos);
         return false;
     }
     stIntTuple *i = stIntTuple_construct2( pos, INT64_MAX);
     stIntTuple *j = stSortedSet_searchLessThanOrEqual(intervals, i);
     stIntTuple_destruct(i);
     if (j == NULL) {
-        printf("%s %" PRIu64 " is not in the region, bad pos.\n", seq, pos);
+        // printf("%s %" PRIu64 " is not in the region, bad pos.\n", seq, pos);
         return false;
     }
     assert(stIntTuple_length(j) == 2);
-    if (stIntTuple_get(j, 0) <= pos && pos < stIntTuple_get(j, 1)) {
-         printf("%s %" PRIu64 " IS in the region.\n", seq, pos);
-    } else {
-        printf("%s %" PRIu64 " IS NOT in the region.\n", seq, pos);
-    }
+    /* if (stIntTuple_get(j, 0) <= pos && pos < stIntTuple_get(j, 1)) { */
+    /*      printf("%s %" PRIu64 " IS in the region.\n", seq, pos); */
+    /* } else { */
+    /*     printf("%s %" PRIu64 " IS NOT in the region.\n", seq, pos); */
+    /* } */
     return stIntTuple_get(j, 0) <= pos && pos < stIntTuple_get(j, 1);
 }
