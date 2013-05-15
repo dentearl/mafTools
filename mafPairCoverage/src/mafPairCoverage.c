@@ -36,6 +36,7 @@
 #include "buildVersion.h"
 
 const char *g_version = "version 0.1 May 2013";
+uint64_t getRegionSize(char *seq1, stHash *intervalsHash);
 
 void version(void) {
     fprintf(stderr, "mafPairCoverage, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
