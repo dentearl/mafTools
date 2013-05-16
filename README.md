@@ -10,7 +10,7 @@ With the exception of the python dependencies, when a component is missing a dep
 * [python 2.7](http://www.python.org/): all modules.
    * [scipy](http://www.scipy.org/)
    * [numpy](http://numpy.scipy.org/)
-* [sonLib](https://github.com/benedictpaten/sonLib/): mafComparator, mafStats, mafTransitiveClosure, mafToFastaStitcher.
+* [sonLib](https://github.com/benedictpaten/sonLib/): mafComparator, mafStats, mafTransitiveClosure, mafToFastaStitcher, mafPairCoverage.
 * [pinchesAndCacti](https://github.com/benedictpaten/pinchesAndCacti): mafTransitiveClosure.
 
 ## Installation
