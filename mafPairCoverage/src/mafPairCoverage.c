@@ -277,6 +277,7 @@ void reportResults(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash, u
     printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\n\n", seq2, tot2, *alignedPositions, cov2);
     
     printf("# Individual Sequences\n");
+    printf("#%19s\t%15s\t%15s\t%15s\n", "Sequence", "Source Length", "Aligned Pos.", "Coverage");
     // print each seq1 on its own
     if (stHash_size(seq1Hash) > 0) {
         hit = stHash_getIterator(seq1Hash);
