@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2009-2012 by 
+ * Copyright (C) 2009-2013 by 
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * Benedict Paten (benedict@soe.ucsc.edu, benedictpaten@gmail.com)
  * Mark Diekhans (markd@soe.ucsc.edu)
@@ -92,8 +92,8 @@ int cStr_startsWith(char *string, char *query, int ignorecase) {
 	}
 }
 
-int32_t cStr_getIntLength(int32_t n) {
-	int32_t count = 0;
+int64_t cStr_getIntLength(int64_t n) {
+	int64_t count = 0;
 	do {
 		count++;
 	} while ((n /= 10) > 0);
@@ -138,8 +138,8 @@ void cStr_appendChar(char *s, char c) {
 	s[len + 1] = '\0';
 }
 
-char *cStr_getStringFromIntArray(int32_t *array, int32_t size, const char sep) {
-	int32_t i;
+char *cStr_getStringFromIntArray(int64_t *array, int64_t size, const char sep) {
+	int64_t i;
 	int numChars = 0;
 	char *string = NULL;
 	char buffer[64];

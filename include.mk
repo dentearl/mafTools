@@ -13,12 +13,14 @@ else
 # -Wno-unused-result
 endif
 
+# subset of JPL suggested flags (removed: -Wtraditional -Wcast-qual -Wconversion)
+jpl_flags = -Wshadow -Wpointer-arith -Wstrict-prototypes -Wmissing-prototypes 
 
 #Release compiler flags
-cflags_opt = -O3 -g -Wall -Werror --pedantic -funroll-loops -lm
+cflags_opt = -O3 -g -Wall -Werror --pedantic -funroll-loops ${jpl_flags} -lm
 
 #Debug flags (slow)
-cflags_dbg = -Wall -Werror --pedantic -g -fno-inline -DBEN_DEBUG -lm
+cflags_dbg = -Wall -Werror --pedantic -g -fno-inline -DBEN_DEBUG ${jpl_flags} -lm
 
 #Ultra Debug flags (really slow)
 cflags_ultraDbg = -Wall -Werror --pedantic -g -fno-inline -DBEN_DEBUG -BEN_ULTRA_DEBUG -lm
@@ -26,26 +28,29 @@ cflags_ultraDbg = -Wall -Werror --pedantic -g -fno-inline -DBEN_DEBUG -BEN_ULTRA
 #Profile flags
 cflags_prof = -Wall -Werror --pedantic -pg -O3 -g -lm
 
+sonLibPath = ../../sonLib/lib
+
 #Flags to use
-cflags = ${cflags_opt} 
+cflags = ${cflags_opt} -I ${sonLibPath} -I ../include -I ../external -lm
+testFlags = -O0 -g -Wall -Werror --pedantic -I ${sonLibPath} -I ../include -I ../external -lm
 #cflags = ${cflags_dbg}
 
 # location of Tokyo cabinet
 ifneq ($(wildcard /hive/groups/recon/local/include/tcbdb.h),)
    # hgwdev hive install
    tcPrefix = /hive/groups/recon/local
-   tokyoCabinetIncl = -I${tcPrefix}/include
+   tokyoCabinetIncl = -I ${tcPrefix}/include
    tokyoCabinetLib = -L${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread -lm
 else ifneq ($(wildcard /opt/local/include/tcbdb.h),)
    # OS/X with TC installed from MacPorts
    tcPrefix = /opt/local
-   tokyoCabinetIncl = -I${tcPrefix}/include
+   tokyoCabinetIncl = -I ${tcPrefix}/include
    tokyoCabinetLib = -L${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread -lm
 else ifneq ($(wildcard /usr/local/include/tcbdb.h),)
    # /usr/local install (FreeBSD, etc)
    tcPrefix = /usr/local
-   tokyoCabinetIncl = -I${tcPrefix}/include
-   tokyoCabinetLib = -L${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread -lm
+   tokyoCabinetIncl = -I ${tcPrefix}/include
+   tokyoCabinetLib = -L ${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread -lm
 else
    # default
    tokyoCabinetIncl = 
@@ -56,21 +61,21 @@ cflags += ${tokyoCabinetIncl}
 
 # location of mysql
 ifneq ($(wildcard /usr/include/mysql/mysql.h),)
-    mysqlIncl = -I/usr/include/mysql -DHAVE_MYSQL=1
+    mysqlIncl = -I /usr/include/mysql -DHAVE_MYSQL=1
 ifneq ($(wildcard /usr/lib64/mysql/libmysqlclient.a),)
     mysqlLibs = /usr/lib64/mysql/libmysqlclient.a
 else
     mysqlLibs = /usr/lib/libmysqlclient.a
 endif
 else ifneq ($(wildcard /usr/local/mysql/include/mysql.h),)
-    mysqlIncl = -I/usr/local/mysql/include -DHAVE_MYSQL=1
+    mysqlIncl = -I /usr/local/mysql/include -DHAVE_MYSQL=1
     mysqlLibs = -L/usr/local/mysql/lib -lmysqlclient
 endif
 
 # location of PostgreSQL
 ifneq ($(wildcard /usr/local/include/libpq-fe.h),)
-    pgsqlIncl = -I/usr/local/include -DHAVE_POSTGRESQL=1
-    pgsqlLibs = -L/usr/local/lib -lpq
+    pgsqlIncl = -I /usr/local/include -DHAVE_POSTGRESQL=1
+    pgsqlLibs = -L /usr/local/lib -lpq
 else ifneq ($(wildcard /usr/include/libpq-fe.h),)
     pgsqlIncl = -DHAVE_POSTGRESQL=1
     pgsqlLibs = /usr/lib64/libpq.a -lkrb5 -lgssapi -lcrypto -lssl -lcrypt -lldap

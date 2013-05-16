@@ -23,26 +23,42 @@
 # THE SOFTWARE. 
 ##################################################
 import os
+import platform
 import random
 import shutil
+import string
 import subprocess
 import xml.etree.ElementTree as ET
 import xml.parsers.expat
 
-def makeTempDir():
+def makeTempDirParent():
     """
-    make the typical directory where all temporary test files will be stored.
+    make the parent temp dir directory
     """
     if not os.path.exists(os.path.join(os.curdir, 'tempTestDir')):
         os.mkdir(os.path.join(os.curdir, 'tempTestDir'))
-    return os.path.join(os.curdir, 'tempTestDir')
-def removeTempDir():
+def makeTempDir(name=None):
     """
-    destroy the typical temporary directory
+    make the typical directory where all temporary test files will be stored.
     """
-    if os.path.exists(os.path.join(os.curdir, 'tempTestDir')):
-        shutil.rmtree(os.path.join(os.curdir, 'tempTestDir'))
-def runCommandsS(cmds, localTempDir, inPipes=[], outPipes=[]):
+    makeTempDirParent()
+    charSet = string.ascii_lowercase + '123456789'
+    if name is None:
+        while True:
+            name = '%s_%s' % (''.join(random.choice(charSet) for x in xrange(4)), 
+                              ''.join(random.choice(charSet) for x in xrange(4)))
+            if not os.path.exists(os.path.join(os.curdir, 'tempTestDir', name)):
+                break
+    if not os.path.exists(os.path.join(os.curdir, 'tempTestDir', name)):
+        os.mkdir(os.path.join(os.curdir, 'tempTestDir', name))
+    return os.path.join(os.curdir, 'tempTestDir', name)
+def removeDir(dirpath):
+    """
+    destroy a directory
+    """
+    if os.path.exists(dirpath):
+        shutil.rmtree(dirpath)
+def runCommandsS(cmds, localTempDir, inPipes=[], outPipes=[], errPipes=[]):
     """ 
     runCommandsS uses the subprocess module
     to issue serial processes from the cmds list.
@@ -51,6 +67,8 @@ def runCommandsS(cmds, localTempDir, inPipes=[], outPipes=[]):
         inPipes = [None] * len(cmds)
     if not len(outPipes):
         outPipes = [None] * len(cmds)
+    if not len(errPipes):
+        errPipes = [None] * len(cmds)
     for i, c in enumerate(cmds, 0):
         if inPipes[i] is None:
             sin = None
@@ -60,8 +78,12 @@ def runCommandsS(cmds, localTempDir, inPipes=[], outPipes=[]):
             sout = None
         else:
             sout = subprocess.PIPE
-        p = subprocess.Popen(c, cwd=localTempDir, stdin=sin, stdout=sout)
-            
+        if errPipes[i] is None:
+            serr = None
+        else:
+            serr = subprocess.PIPE
+        p = subprocess.Popen(c, cwd=localTempDir, stdin=sin, stdout=sout, stderr=serr)
+        
         if inPipes[i] is None:
             sin = None
         else:
@@ -115,6 +137,8 @@ def noMemoryErrors(xml):
     parse the valgrind output xml file looking for any signs of memory errors.
     returns False if memory errors exist, True if no memory errors.
     """
+    if not os.path.exists(xml):
+        raise RuntimeError('Input xml, %s does not exist.' % xml)
     try:
         tree = ET.parse(xml)
     except xml.parsers.expat.ExpatError:
@@ -171,16 +195,52 @@ def extractBlockStr(f, lastLine=None):
         if line == '':
             return block + '\n'
         block += '%s\n' % line
-    return block + '\n'
-def testFile(mafFile, s, headers):
+    if block == '':
+        return None
+    else:
+        return block + '\n'
+def testFile(mafFile, s, headers=None):
     """
     given a path to a maffile, a string containing the desired contents of 
     the file and a list of different possible headers, pick one header at
     random and write the string to the file.
     """
     f = open(mafFile, 'w')
-    header = random.choice(headers)
-    f.write(header)
+    if headers:
+        header = random.choice(headers)
+        f.write(header)
+    else:
+        header = ''
     f.write(s)
     f.close()
     return mafFile, header
+def recordCommands(cmdList, tmpDir, inPipes=None, outPipes=None):
+    """
+    given a path to the tmpDir, and the command list that was executed, record the command(s)
+    """
+    f = open(os.path.join(tmpDir, 'commands'), 'a')
+    if inPipes is None:
+        inPipes = [None] * len(cmdList)
+    if outPipes is None:
+        outPipes = [None] * len(cmdList)
+    for i, c in enumerate(cmdList, 0):
+        pipes = ''
+        if inPipes[i] is not None:
+            pipes += ' < %s' % inPipes[i]
+        if outPipes[i] is not None:
+            pipes += ' > %s' % outPipes[i]
+        f.write('%s%s\n' % (' '.join(c), pipes))
+    f.close()
+def genericValgrind(tmpDir):
+    """ 
+    returns a list (in the subprocess command style) containing
+    a generic call to valgrind.
+    """
+    valgrind = which('valgrind')
+    if platform.mac_ver() == ('', ('', '', ''), ''):
+        return [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', 
+                '--xml=yes', '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
+    else:
+        # --dsymutil is for mac os x builds
+        return [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', 
+                '--dsymutil=yes', '--xml=yes', '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]

@@ -7,6 +7,7 @@
 #include <math.h>
 
 #include "CuTest.h"
+#include <inttypes.h>
 
 /*-------------------------------------------------------------------------*
  * CuStr
@@ -234,11 +235,11 @@ void CuAssertPtrEquals_LineMsg(CuTest* tc, const char* file, int line, const cha
 //////////////////////////////////////////////////
 // added by dent earl, dent.earl (a) gmail com
 void CuAssertUInt32Equals_LineMsg(CuTest* tc, const char* file, int line, const char* message, 
-	uint32_t expected, uint32_t actual)
+	uint64_t expected, uint64_t actual)
 {
 	char buf[STRING_MAX];
 	if (expected == actual) return;
-	sprintf(buf, "expected <%u> but was <%u>", expected, actual);
+	sprintf(buf, "expected <%" PRIu64 "> but was <%" PRIu64 ">", expected, actual);
 	CuFail_Line(tc, file, line, message, buf);
 }
 //////////////////////////////////////////////////
@@ -301,6 +302,7 @@ void CuSuiteRun(CuSuite* testSuite)
 	for (i = 0 ; i < testSuite->count ; ++i)
 	{
 		CuTest* testCase = testSuite->list[i];
+        printf("Running test case %s\n", testCase->name);
 		CuTestRun(testCase);
 		if (testCase->failed) { testSuite->failCount += 1; }
 	}
