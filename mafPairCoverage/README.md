@@ -28,8 +28,5 @@ __BE AWARE!__ The input maf should be transitively closed (if you are unsure you
 
 ## Example
     $ ./mafPairCoverage --seq1 hg19* --seq2 mm9* --maf example.maf 
-
-    DEMO DEMO DEMO DEMO DEMO DEMO DEMO
-    OUTPUT OUTPUT OUTPUT OUTPUT OUTPUT
     ...
 
