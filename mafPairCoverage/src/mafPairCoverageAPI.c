@@ -214,7 +214,7 @@ void checkBlock(mafBlock_t *b, const char *seq1, const char *seq2,
         }
         if (searchMatched(ml1, seq2)) {
             has2 = true;
-           stList_append(seq2List, maf_copyMafLine(ml1));
+            stList_append(seq2List, maf_copyMafLine(ml1));
             // create an item in the hash for this sequence
             mcct2 = NULL;
             if ((mcct2 = stHash_search(seq2Hash, maf_mafLine_getSpecies(ml1))) == NULL) {
