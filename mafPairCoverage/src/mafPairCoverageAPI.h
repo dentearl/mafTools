@@ -36,6 +36,7 @@ typedef struct mafCoverageCount mafCoverageCount_t;
 
 mafCoverageCount_t* createMafCoverageCount(void);
 uint64_t mafCoverageCount_getSourceLength(mafCoverageCount_t *mcct);
+uint64_t mafCoverageCount_getObservedLength(mafCoverageCount_t *mcct);
 uint64_t mafCoverageCount_getCount(mafCoverageCount_t *mcct);
 uint64_t mafCoverageCount_getInRegion(mafCoverageCount_t *mcct);
 uint64_t mafCoverageCount_getOutRegion(mafCoverageCount_t *mcct);

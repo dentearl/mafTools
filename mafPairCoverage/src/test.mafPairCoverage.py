@@ -89,13 +89,13 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
 ''', 6),
             ]
-g_coverageLines = set(['target.chr010020', 'target2.chr020020'])
-g_coverageLinesWild = set(['target.*2010020', 'target2.chr020020', 'target.chr010020', 'target.chr3200000',
+g_coverageLines = set(['target.chr01006220', 'target2.chr02002320'])
+g_coverageLinesWild = set(['target.*2010010220', 'target2.chr02002320', 'target.chr01006220', 'target.chr320000400',
                            ])
 g_coverageLinesWildBed = set(['#Overall', '#SequenceSourceLengthAlignedPos.Coverage',
-                              'target.*2010020', 'target2.chr020020',
-                              '#IndividualSequences', 'target.chr010020',
-                              'target.chr3200000', 'target2.chr020020', 
+                              'target.*2010010220', 'target2.chr02002320',
+                              '#IndividualSequences', 'target.chr01006220',
+                              'target.chr320000400', 'target2.chr02002320', 
                               '#BEDRegions', '#SequenceRegionLengthInRegionsOutofRegionsCoverage', 
                               'target.*26416', 'target.chr026416'])
 g_nonOverlappingBlocks = [('''a score=23262.0     
@@ -149,7 +149,9 @@ def coverageIsCorrect(filename, lineSet):
             continue
         line = line.split()
         if len(line):
-            line.pop() # throw away the coverage number
+            line.pop() # throw away the first coverage number
+            if len(line) == 5:
+                line.pop() # throw away the second coverage number
         line = ''.join(line)
         if line not in lineSet:
             print '%s not in lineSet' % line

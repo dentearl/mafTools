@@ -241,20 +241,26 @@ void reportResultsRegion(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2H
     }
 }
 void reportResults(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions) {
-    uint64_t tot1 = 0, tot2 = 0;
+    uint64_t tot1 = 0, tot2 = 0, obstot1 = 0, obstot2 = 0;
     stHashIterator *hit = stHash_getIterator(seq1Hash);
     mafCoverageCount_t *mcct = NULL;
-    double cov1 = 0., cov2 = 0.;
+    double cov1 = 0., cov2 = 0., obscov1 = 0., obscov2 = 0.;
     char *key;
     while ((key = stHash_getNext(hit)) != NULL) {
         mcct = stHash_search(seq1Hash, key);
         assert(mcct != NULL);
         tot1 += mafCoverageCount_getSourceLength(mcct);
+        obstot1 += mafCoverageCount_getObservedLength(mcct);
     }
     if (tot1 == 0) {
         cov1 = 0.0;
     } else {
         cov1 = *alignedPositions / (double) tot1;
+    }
+    if (obstot1 == 0) {
+        obscov1 = 0.0;
+    } else {
+        obscov1 = *alignedPositions / (double) obstot1;
     }
     stHash_destructIterator(hit);
     hit = stHash_getIterator(seq2Hash);
@@ -263,34 +269,51 @@ void reportResults(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash, u
         mcct = (mafCoverageCount_t *) stHash_search(seq2Hash, key);
         assert(mcct != NULL);
         tot2 += mafCoverageCount_getSourceLength(mcct);
+        obstot2 += mafCoverageCount_getObservedLength(mcct);
     }
     if (tot2 == 0) {
         cov2 = 0.0;
     } else {
         cov2 = *alignedPositions / (double) tot2;
     }
+    if (obstot2 == 0) {
+        obscov2 = 0.0;
+    } else {
+        obscov2 = *alignedPositions / (double) obstot2;
+    }
     stHash_destructIterator(hit);
     // print the totals
     printf("# Overall\n");
-    printf("#%19s\t%15s\t%15s\t%15s\n", "Sequence", "Source Length", "Aligned Pos.", "Coverage");
-    printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\n", seq1, tot1, *alignedPositions, cov1);
-    printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\n\n", seq2, tot2, *alignedPositions, cov2);
+    printf("#%19s\t%15s\t%15s\t%15s\t%15s\t%15s\n", "Sequence", "Source Length", "Obs Length", 
+           "Aligned Pos.", "Coverage", "Obs Coverage");
+    printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\t%15e\n", 
+           seq1, tot1, obstot1, *alignedPositions, cov1, obscov1);
+    printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\t%15e\n\n", 
+           seq2, tot2, obstot2, *alignedPositions, cov2, obscov2);
     
     printf("# Individual Sequences\n");
-    printf("#%19s\t%15s\t%15s\t%15s\n", "Sequence", "Source Length", "Aligned Pos.", "Coverage");
+    printf("#%19s\t%15s\t%15s\t%15s\t%15s\t%15s\n", "Sequence", "Source Length", "Obs Length", 
+           "Aligned Pos.", "Coverage", "Obs Coverage");
     // print each seq1 on its own
     if (stHash_size(seq1Hash) > 0) {
         hit = stHash_getIterator(seq1Hash);
         while ((key = stHash_getNext(hit)) != NULL) {
-            if ((double) mafCoverageCount_getCount(stHash_search(seq1Hash, key)) == 0) {
-                cov1 = 0;
+            if  (mafCoverageCount_getSourceLength(stHash_search(seq1Hash, key))) {
+                cov1 = 0.;
             } else {
                 cov1 = (double) mafCoverageCount_getCount(stHash_search(seq1Hash, key)) / 
                     (double) mafCoverageCount_getSourceLength(stHash_search(seq1Hash, key));
             }
-            printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\n", 
+            if  (mafCoverageCount_getObservedLength(stHash_search(seq1Hash, key))) {
+                obscov1 = 0.;
+            } else {
+                obscov1 = (double) mafCoverageCount_getCount(stHash_search(seq1Hash, key)) / 
+                    (double) mafCoverageCount_getObservedLength(stHash_search(seq1Hash, key));
+            }
+            printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\t%15e\n", 
                    key, mafCoverageCount_getSourceLength(stHash_search(seq1Hash, key)),
-                   mafCoverageCount_getCount(stHash_search(seq1Hash, key)), cov1);
+                   mafCoverageCount_getObservedLength(stHash_search(seq1Hash, key)),
+                   mafCoverageCount_getCount(stHash_search(seq1Hash, key)), cov1, obscov1);
         }
         stHash_destructIterator(hit);
     }
@@ -298,15 +321,22 @@ void reportResults(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash, u
     if (stHash_size(seq2Hash) > 0) {
         hit = stHash_getIterator(seq2Hash);
         while ((key = stHash_getNext(hit)) != NULL) {
-            if ((double) mafCoverageCount_getCount(stHash_search(seq2Hash, key)) == 0) {
-                cov2 = 0;
+            if  (mafCoverageCount_getSourceLength(stHash_search(seq2Hash, key))){
+                cov2 = 0.;
             } else {
                 cov2 = (double) mafCoverageCount_getCount(stHash_search(seq2Hash, key)) /
                     (double) mafCoverageCount_getSourceLength(stHash_search(seq2Hash, key));
             }
-            printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\n", 
+            if  (mafCoverageCount_getObservedLength(stHash_search(seq2Hash, key))){
+                obscov2 = 0.;
+            } else {
+                obscov2 = (double) mafCoverageCount_getCount(stHash_search(seq2Hash, key)) /
+                    (double) mafCoverageCount_getObservedLength(stHash_search(seq2Hash, key));
+            }
+            printf("%20s\t%15" PRIu64 "\t%15" PRIu64 "\t%15" PRIu64 "\t%15e\t%15e\n", 
                    key, mafCoverageCount_getSourceLength(stHash_search(seq2Hash, key)),
-                   mafCoverageCount_getCount(stHash_search(seq2Hash, key)), cov2);
+                   mafCoverageCount_getObservedLength(stHash_search(seq2Hash, key)),
+                   mafCoverageCount_getCount(stHash_search(seq2Hash, key)), cov2, obscov2);
         }
         stHash_destructIterator(hit);
     }

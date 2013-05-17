@@ -39,6 +39,7 @@
 struct mafCoverageCount {
     // used to slice the coverage data down to the sequence level
     uint64_t sourceLength; // length of the genome / chromosme / sequence in question
+    uint64_t observedLength; // Number of residues actually observed in the alignment file
     uint64_t count;
     uint64_t inRegion;
     uint64_t outRegion;
@@ -46,6 +47,7 @@ struct mafCoverageCount {
 mafCoverageCount_t* createMafCoverageCount(void) {
     mafCoverageCount_t *mcct = (mafCoverageCount_t *)st_malloc(sizeof(*mcct));
     mcct->sourceLength = 0; // sequence source length
+    mcct->observedLength = 0; // sequence source length
     mcct->count = 0; // number of aligned positions 
     mcct->inRegion = 0; // number of aligned positions inside of bed specified region,
     mcct->outRegion = 0; // number of aligned positions outside of bed specified region,
@@ -53,6 +55,9 @@ mafCoverageCount_t* createMafCoverageCount(void) {
 }
 uint64_t mafCoverageCount_getSourceLength(mafCoverageCount_t *mcct) {
     return mcct->sourceLength;
+}
+uint64_t mafCoverageCount_getObservedLength(mafCoverageCount_t *mcct) {
+    return mcct->observedLength;
 }
 uint64_t mafCoverageCount_getCount(mafCoverageCount_t *mcct) {
     return mcct->count;
@@ -200,9 +205,11 @@ void checkBlock(mafBlock_t *b, const char *seq1, const char *seq2,
                 // new sequence, add to the hash
                 mcct1 = createMafCoverageCount();
                 mcct1->sourceLength = maf_mafLine_getSourceLength(ml1);
+                mcct1->observedLength = maf_mafLine_getLength(ml1);
                 stHash_insert(seq1Hash, stString_copy(maf_mafLine_getSpecies(ml1)), mcct1);
             } else {
                 assert(mcct1->sourceLength == maf_mafLine_getSourceLength(ml1));
+                mcct1->observedLength += maf_mafLine_getLength(ml1);
             }
         }
         if (searchMatched(ml1, seq2)) {
@@ -214,9 +221,11 @@ void checkBlock(mafBlock_t *b, const char *seq1, const char *seq2,
                 // new sequence, add to the hash
                 mcct2 = createMafCoverageCount();
                 mcct2->sourceLength = maf_mafLine_getSourceLength(ml1);
+                mcct2->observedLength = maf_mafLine_getLength(ml1);
                 stHash_insert(seq2Hash, stString_copy(maf_mafLine_getSpecies(ml1)), mcct2);
             } else {
                 assert(mcct2->sourceLength == maf_mafLine_getSourceLength(ml1));
+                mcct2->observedLength += maf_mafLine_getLength(ml1);
             }
         }
         ml1 = maf_mafLine_getNext(ml1);
