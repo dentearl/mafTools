@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2013 by 
+/* 
+ * Copyright (C) 2011-2013 by 
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * ... and other members of the Reconstruction Team of David Haussler's 
  * lab (BME Dept. UCSC).
@@ -22,35 +22,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
+#ifndef _PAIR_COVERAGE_H_
+#define _PAIR_COVERAGE_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include "CuTest.h"
-#include "comparatorAPI.h"
-#include "test.comparatorAPI.h"
-#include "test.comparatorRandom.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include "common.h"
+#include "sharedMaf.h"
+#include "sonLib.h"
 
-CuSuite* comparatorAPI_TestSuite(void);
-CuSuite* comparatorRandom_TestSuite(void);
+void version(void);
+void usage(void);
+void parseOptions(int argc, char **argv, char *filename, char *seq1Name, char *seq2Name, stHash *intervalsHashn);
+void reportResults(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions);
+void reportResultsRegion(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions,
+                   stHash *intervalsHash);
 
-int comparator_RunAllTests(void) {
-    CuString *output = CuStringNew();
-    CuSuite *suite = CuSuiteNew();
-    CuSuite *comparatorAPI_s = comparatorAPI_TestSuite();
-    CuSuite *comparatorRandom_s = comparatorRandom_TestSuite();
-    CuSuiteAddSuite(suite, comparatorAPI_s);
-    CuSuiteAddSuite(suite, comparatorRandom_s);
-    CuSuiteRun(suite);
-    CuSuiteSummary(suite, output);
-    CuSuiteDetails(suite, output);
-    printf("%s\n", output->buffer);
-    CuStringDelete(output);
-    int status = (suite->failCount > 0);
-    free(comparatorAPI_s);
-    free(comparatorRandom_s);
-    CuSuiteDelete(suite);
-    return status;
-}
-int main(void) {
-    return comparator_RunAllTests();
-}
+#endif // _PAIR_COVERAGE_H_

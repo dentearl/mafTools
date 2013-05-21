@@ -199,15 +199,18 @@ def extractBlockStr(f, lastLine=None):
         return None
     else:
         return block + '\n'
-def testFile(mafFile, s, headers):
+def testFile(mafFile, s, headers=None):
     """
     given a path to a maffile, a string containing the desired contents of 
     the file and a list of different possible headers, pick one header at
     random and write the string to the file.
     """
     f = open(mafFile, 'w')
-    header = random.choice(headers)
-    f.write(header)
+    if headers:
+        header = random.choice(headers)
+        f.write(header)
+    else:
+        header = ''
     f.write(s)
     f.close()
     return mafFile, header

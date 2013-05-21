@@ -26,31 +26,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "CuTest.h"
-#include "comparatorAPI.h"
-#include "test.comparatorAPI.h"
-#include "test.comparatorRandom.h"
+#include "mafPairCoverageAPI.h"
+#include "test.mafPairCoverageAPI.h"
 
-CuSuite* comparatorAPI_TestSuite(void);
-CuSuite* comparatorRandom_TestSuite(void);
+CuSuite* pairCoverage_TestSuite(void);
 
-int comparator_RunAllTests(void) {
+int pairCoverage_RunAllTests(void) {
     CuString *output = CuStringNew();
     CuSuite *suite = CuSuiteNew();
-    CuSuite *comparatorAPI_s = comparatorAPI_TestSuite();
-    CuSuite *comparatorRandom_s = comparatorRandom_TestSuite();
-    CuSuiteAddSuite(suite, comparatorAPI_s);
-    CuSuiteAddSuite(suite, comparatorRandom_s);
+    CuSuite *pairCoverage_s = pairCoverage_TestSuite();
+    CuSuiteAddSuite(suite, pairCoverage_s);
     CuSuiteRun(suite);
     CuSuiteSummary(suite, output);
     CuSuiteDetails(suite, output);
     printf("%s\n", output->buffer);
     CuStringDelete(output);
     int status = (suite->failCount > 0);
-    free(comparatorAPI_s);
-    free(comparatorRandom_s);
+    free(pairCoverage_s);
     CuSuiteDelete(suite);
     return status;
 }
 int main(void) {
-    return comparator_RunAllTests();
+    return pairCoverage_RunAllTests();
 }

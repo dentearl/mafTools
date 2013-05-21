@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright (C) 2013 by 
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * ... and other members of the Reconstruction Team of David Haussler's 
@@ -22,35 +22,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. 
  */
-
+#ifndef TEST_PAIR_COVERAGE_API_H_
+#define TEST_PAIR_COVERAGE_API_H_
+#include <assert.h>
+#include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "CuTest.h"
-#include "comparatorAPI.h"
-#include "test.comparatorAPI.h"
-#include "test.comparatorRandom.h"
+#include "common.h"
+#include "sharedMaf.h"
+#include "mafPairCoverageAPI.h"
 
-CuSuite* comparatorAPI_TestSuite(void);
-CuSuite* comparatorRandom_TestSuite(void);
+CuSuite* extractor_TestSuite(void);
 
-int comparator_RunAllTests(void) {
-    CuString *output = CuStringNew();
-    CuSuite *suite = CuSuiteNew();
-    CuSuite *comparatorAPI_s = comparatorAPI_TestSuite();
-    CuSuite *comparatorRandom_s = comparatorRandom_TestSuite();
-    CuSuiteAddSuite(suite, comparatorAPI_s);
-    CuSuiteAddSuite(suite, comparatorRandom_s);
-    CuSuiteRun(suite);
-    CuSuiteSummary(suite, output);
-    CuSuiteDetails(suite, output);
-    printf("%s\n", output->buffer);
-    CuStringDelete(output);
-    int status = (suite->failCount > 0);
-    free(comparatorAPI_s);
-    free(comparatorRandom_s);
-    CuSuiteDelete(suite);
-    return status;
-}
-int main(void) {
-    return comparator_RunAllTests();
-}
+#endif // TEST_PAIR_COVERAGE_API_H_

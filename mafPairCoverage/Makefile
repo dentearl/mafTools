@@ -26,12 +26,12 @@
 include ../include.mk
 SHELL:=/bin/bash
 bin = ../bin
-PROGS = mafToFastaStitcher
+PROGS = mafPairCoverage
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*) $(wildcard ${sonLibPath}/*) ${sonLibPath}/sonLib.a src/allTests.c
-extraAPI := ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/mafToFastaStitcherAPI.o ${sonLibPath}/sonLib.a src/buildVersion.o 
-testAPI := test/sharedMaf.o test/common.o ../external/CuTest.a test/mafToFastaStitcherAPI.o ${sonLibPath}/sonLib.a test/buildVersion.o
-testObjects := test/test.mafToFastaStitcherAPI.o 
-sources := src/mafToFastaStitcher.c src/mafToFastaStitcher.h
+extraAPI := ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/mafPairCoverageAPI.o ${sonLibPath}/sonLib.a src/buildVersion.o 
+testAPI := test/sharedMaf.o test/common.o ../external/CuTest.a test/mafPairCoverageAPI.o ${sonLibPath}/sonLib.a test/buildVersion.o
+testObjects := test/test.mafPairCoverageAPI.o 
+sources := src/mafPairCoverage.c src/mafPairCoverage.h
 
 .PHONY: all clean test buildVersion
 
@@ -40,24 +40,24 @@ buildVersion: src/buildVersion.c
 src/buildVersion.c: ${sources} ${dependencies}
 	@python ../include/createVersionSources.py
 
-${bin}/mafToFastaStitcher: src/mafToFastaStitcher.c ${dependencies} ${extraAPI}
+${bin}/mafPairCoverage: src/mafPairCoverage.c ${dependencies} ${extraAPI}
 	mkdir -p $(dir $@)
 	${cxx} $< ${extraAPI} -o $@.tmp ${cflags}
 	mv $@.tmp $@
 %.o: %.c %.h
 	${cxx} -c $< -o $@.tmp ${cflags}
 	mv $@.tmp $@
-%/mafToFastaStitcherAPI.o: src/mafToFastaStitcherAPI.c src/mafToFastaStitcherAPI.h
+%/mafPairCoverageAPI.o: src/mafPairCoverageAPI.c src/mafPairCoverageAPI.h
 	${cxx} -c $< -o $@.tmp ${cflags}
 	mv $@.tmp $@
 
-test: buildVersion test/allTests test/mafToFastaStitcher
-	./test/allTests && python2.7 src/test.mafToFastaStitcher.py --verbose && rm -rf ./test/ && rmdir ./tempTestDir
+test: buildVersion test/allTests test/mafPairCoverage
+	./test/allTests && python2.7 src/test.mafPairCoverage.py --verbose && rm -rf ./test/ && rmdir ./tempTestDir
 test/allTests: src/allTests.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
 	${cxx} $^ -o $@.tmp ${testFlags}
 	mv $@.tmp $@
-test/mafToFastaStitcher: src/mafToFastaStitcher.c ${dependencies} ${testAPI}
+test/mafPairCoverage: src/mafPairCoverage.c ${dependencies} ${testAPI}
 	mkdir -p $(dir $@)
 	${cxx} $< ${testAPI} -o $@.tmp ${testFlags}
 	mv $@.tmp $@
@@ -65,7 +65,7 @@ test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags}
 	mv $@.tmp $@
-test/test.mafToFastaStitcherAPI.o: src/test.mafToFastaStitcherAPI.c src/test.mafToFastaStitcherAPI.h test/mafToFastaStitcherAPI.o
+test/test.mafPairCoverageAPI.o: src/test.mafPairCoverageAPI.c src/test.mafPairCoverageAPI.h test/mafPairCoverageAPI.o
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags}
 	mv $@.tmp $@
