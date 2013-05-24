@@ -298,13 +298,14 @@ void reportResults(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash, u
     if (stHash_size(seq1Hash) > 0) {
         hit = stHash_getIterator(seq1Hash);
         while ((key = stHash_getNext(hit)) != NULL) {
-            if  (mafCoverageCount_getSourceLength(stHash_search(seq1Hash, key))) {
+            if  (mafCoverageCount_getSourceLength(stHash_search(seq1Hash, key)) == 0) {
                 cov1 = 0.;
             } else {
                 cov1 = (double) mafCoverageCount_getCount(stHash_search(seq1Hash, key)) / 
                     (double) mafCoverageCount_getSourceLength(stHash_search(seq1Hash, key));
             }
-            if  (mafCoverageCount_getObservedLength(stHash_search(seq1Hash, key))) {
+            if (mafCoverageCount_getObservedLength(stHash_search(seq1Hash, key)) == 0) {
+                printf("%s has an observed length of 0!\n", key);
                 obscov1 = 0.;
             } else {
                 obscov1 = (double) mafCoverageCount_getCount(stHash_search(seq1Hash, key)) / 
@@ -321,13 +322,13 @@ void reportResults(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash, u
     if (stHash_size(seq2Hash) > 0) {
         hit = stHash_getIterator(seq2Hash);
         while ((key = stHash_getNext(hit)) != NULL) {
-            if  (mafCoverageCount_getSourceLength(stHash_search(seq2Hash, key))){
+            if  (mafCoverageCount_getSourceLength(stHash_search(seq2Hash, key)) == 0){
                 cov2 = 0.;
             } else {
                 cov2 = (double) mafCoverageCount_getCount(stHash_search(seq2Hash, key)) /
                     (double) mafCoverageCount_getSourceLength(stHash_search(seq2Hash, key));
             }
-            if  (mafCoverageCount_getObservedLength(stHash_search(seq2Hash, key))){
+            if (mafCoverageCount_getObservedLength(stHash_search(seq2Hash, key)) == 0){
                 obscov2 = 0.;
             } else {
                 obscov2 = (double) mafCoverageCount_getCount(stHash_search(seq2Hash, key)) /
