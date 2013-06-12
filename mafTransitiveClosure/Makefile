@@ -2,9 +2,9 @@ include ../include.mk
 SHELL:=/bin/bash
 bin = ../bin
 PROGS = mafTransitiveClosure
-dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*) $(wildcard ${sonLibPath}/*) ${sonLibPath}/sonLib.a ${sonLibPath}/stPinchesAndCacti.a src/allTests.c
-objects := ../include/common.o ../include/sharedMaf.o ${sonLibPath}/sonLib.a ../external/CuTest.a ${sonLibPath}/stPinchesAndCacti.a src/test.mafTransitiveClosure.o src/buildVersion.o
-testObjects := test/sharedMaf.o test/common.o ${sonLibPath}/sonLib.a ../external/CuTest.a ${sonLibPath}/stPinchesAndCacti.a src/test.mafTransitiveClosure.o test/buildVersion.o
+dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*) $(wildcard ${sonLibPath}/*) ${sonLibPath}/stPinchesAndCacti.a ${sonLibPath}/sonLib.a src/allTests.c
+objects := ../include/common.o ../include/sharedMaf.o ${sonLibPath}/stPinchesAndCacti.a  ${sonLibPath}/sonLib.a ../external/CuTest.a src/test.mafTransitiveClosure.o src/buildVersion.o
+testObjects := test/sharedMaf.o test/common.o ${sonLibPath}/stPinchesAndCacti.a  ${sonLibPath}/sonLib.a ../external/CuTest.a src/test.mafTransitiveClosure.o test/buildVersion.o
 sources := src/mafTransitiveClosure.c src/mafTransitiveClosure.h
 
 .PHONY: all clean test buildVersion
