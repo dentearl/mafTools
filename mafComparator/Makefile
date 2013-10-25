@@ -1,27 +1,27 @@
-# Copyright (C) 2009-2013 by 
+# Copyright (C) 2009-2013 by
 # Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
 # Benedict Paten (benedict@soe.ucsc.edu, benedictpaten@gmail.com)
 # Mark Diekhans (markd@soe.ucsc.edu)
-# ... and other members of the Reconstruction Team of David Haussler's 
+# ... and other members of the Reconstruction Team of David Haussler's
 # lab (BME Dept. UCSC).
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE. 
+# THE SOFTWARE.
 
 include ../include.mk
 binPath = ../bin
@@ -30,7 +30,7 @@ extraAPI = src/cString.c ../include/sharedMaf.o ../external/CuTest.a ../include/
 testAPI = src/cString.c test/sharedMaf.o ../external/CuTest.a test/common.o test/comparatorRandom.o test/comparatorAPI.o ${sonLibPath}/sonLib.a test/buildVersion.o
 progs =  $(foreach f, mafComparator mafPairCounter, ${binPath}/$f)
 testObjects = test/test.comparatorAPI.o test/test.comparatorRandom.o
-sources = $(foreach f, comparatorAPI cString comparatorRandom test.comparatorAPI test.comparatorRandom, src/$f.c src/$f.h) src/allTests.c src/mafComparator.c src/mafPairCounter.c src/testRand.c
+sources = $(foreach f, comparatorAPI cString comparatorRandom test.comparatorAPI test.comparatorRandom, src/$f.c) src/allTests.c src/mafComparator.c src/mafPairCounter.c src/testRand.c
 
 .PHONY: all clean test buildVersion
 
@@ -39,7 +39,7 @@ buildVersion: src/buildVersion.c
 src/buildVersion.c: ${sources} ${dependecies}
 	@python ../include/createVersionSources.py
 
-${binPath}/%: src/%.c ${extraAPI} $(wildcard src/*.h)
+${binPath}/%: src/%.c ${extraAPI}
 	@mkdir -p $(dir $@)
 	${cxx} -o $@.tmp $^ ${cflags}
 	mv $@.tmp $@
@@ -86,9 +86,9 @@ test/allTests: src/allTests.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a
 	${cxx} $^ -o $@.tmp ${testFlags}
 	mv $@.tmp $@
 
-# to actually use the testRand program, comment out the rm -rf on the "test:" rule and run "make test", 
-# then you may run test/testRand 
-test/testRand: src/testRand.c ${testAPI} ${sonLibPath}/sonLib.a 
+# to actually use the testRand program, comment out the rm -rf on the "test:" rule and run "make test",
+# then you may run test/testRand
+test/testRand: src/testRand.c ${testAPI} ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
 	${cxx} $^ -o $@.tmp ${testFlags}
 	mv $@.tmp $@
