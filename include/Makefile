@@ -21,7 +21,7 @@ allTests: allTests.c test.sharedMaf.h test.sharedMaf.c ${testObjects}
 	mv $@.tmp $@
 
 sharedMaf.o: sharedMaf.c sharedMaf.h
-	${cc} -O3 -c ${args} sharedMaf.c -o $@.tmp -lm
+	${cc} -O3 -c ${args} sharedMaf.c -o $@.tmp ${lm}
 	mv $@.tmp $@
 
 test/%.o: %.c %.h
@@ -30,7 +30,7 @@ test/%.o: %.c %.h
 	mv $*.tmp $@
 
 test/sharedMaf.o: sharedMaf.c sharedMaf.h
-	${cc} -g -O0 -c ${args} sharedMaf.c -o $@.tmp -lm
+	${cc} -g -O0 -c ${args} sharedMaf.c -o $@.tmp ${lm}
 	mv $@.tmp $@
 
 test: allTests

@@ -5,16 +5,19 @@ SYS =  $(shell uname -s)
 
 #C compiler
 ifeq (${SYS},FreeBSD)
-    # default FreeBSD gcc (4.2.1) has warning bug
-    #cxx = gcc46 -std=c99 -Wno-unused-but-set-variable
-    cxx = gcc34 -std=c99 -Wno-unused-but-set-variable
-    cpp = g++
-else ifeq (${SYS},Darwin) #This is to deal with the Mavericks replacing gcc with clang fully
+# default FreeBSD gcc (4.2.1) has warning bug
+# cxx = gcc46 -std=c99 -Wno-unused-but-set-variable
+	cxx = gcc34 -std=c99 -Wno-unused-but-set-variable
+	cpp = g++
+	lm = -lm
+else ifeq (${SYS},Darwin) # This is to deal with the Mavericks replacing gcc with clang fully
   cxx = clang -std=c99 -stdlib=libstdc++
   cpp = clang++ -stdlib=libstdc++
+	lm =
 else
-    cxx = gcc -std=c99
-    cpp = g++
+	cxx = gcc -std=c99
+	cpp = g++
+	lm = -lm
 endif
 
 # subset of JPL suggested flags (removed: -Wtraditional -Wcast-qual -Wconversion)
