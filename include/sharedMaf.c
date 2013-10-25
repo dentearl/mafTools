@@ -1,26 +1,26 @@
-/* 
- * Copyright (C) 2012 by 
+/*
+ * Copyright (C) 2012 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
- * ... and other members of the Reconstruction Team of David Haussler's 
+ * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE. 
+ * THE SOFTWARE.
  */
 #include <assert.h>
 #include <ctype.h>
@@ -42,8 +42,8 @@ struct mafFileApi {
     uint64_t lineNumber; // last read line / wrote
     FILE *mfp; // maf file pointer
     char *filename; // filename of the maf
-    char *lastLine; /* a temporary cache in case the header fails to have a blank 
-                     * line before the first alignment block. 
+    char *lastLine; /* a temporary cache in case the header fails to have a blank
+                     * line before the first alignment block.
                      */
 };
 struct mafLine {
@@ -154,7 +154,7 @@ mafLine_t* maf_copyMafLine(mafLine_t *orig) {
     return ml;
 }
 mafBlock_t* maf_newMafBlockListFromString(const char *s, uint64_t lineNumber) {
-    // given a string, walk through and create a mafBlock_t linked list 
+    // given a string, walk through and create a mafBlock_t linked list
     // for all maf blocks in the string
     mafBlock_t *head = NULL, *mb = NULL, *tmp = NULL;
     char *block_s = NULL;
@@ -196,7 +196,7 @@ mafBlock_t* maf_newMafBlockListFromString(const char *s, uint64_t lineNumber) {
 mafBlock_t* maf_newMafBlockFromString(const char *s, uint64_t lineNumber) {
     if (s[0] != 'a') {
         char *error = de_malloc(kMaxStringLength);
-        sprintf(error, 
+        sprintf(error,
                 "Unable to create maf block from input, "
                 "first line does not start with 'a': %s", s);
         maf_failBadFormat(lineNumber, error);
@@ -541,8 +541,8 @@ int* maf_mafBlock_getStrandIntArray(mafBlock_t *mb) {
 }
 uint64_t* maf_mafBlock_getStartArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
-    // should return a uint64_t array containing an in-order list of source lengths 
-    // for all sequence lines. 
+    // should return a uint64_t array containing an in-order list of source lengths
+    // for all sequence lines.
     uint64_t *a = (uint64_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     unsigned i = 0;
@@ -574,7 +574,7 @@ uint64_t* maf_mafBlock_getPosCoordStartArray(mafBlock_t *mb) {
 }
 uint64_t* maf_mafBlock_getPosCoordLeftArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
-    // should return a uint64_t array containing an in-order list of the left-most positon 
+    // should return a uint64_t array containing an in-order list of the left-most positon
     // of the block in positive coordinates.
     uint64_t *a = (uint64_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
@@ -592,8 +592,8 @@ uint64_t* maf_mafBlock_getPosCoordLeftArray(mafBlock_t *mb) {
 }
 uint64_t* maf_mafBlock_getSourceLengthArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
-    // should return a uint64_t array containing an in-order list of positive 
-    // coordinate start positions for all sequence lines. 
+    // should return a uint64_t array containing an in-order list of positive
+    // coordinate start positions for all sequence lines.
     uint64_t *a = (uint64_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     unsigned i = 0;
@@ -607,7 +607,7 @@ uint64_t* maf_mafBlock_getSourceLengthArray(mafBlock_t *mb) {
 }
 uint64_t* maf_mafBlock_getSequenceLengthArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
-    // should return a uint64_t array containing an in-order list of 
+    // should return a uint64_t array containing an in-order list of
     // sequence length field values
     uint64_t *a = (uint64_t*) de_malloc(sizeof(*a) * maf_mafBlock_getNumberOfSequences(mb));
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
@@ -622,7 +622,7 @@ uint64_t* maf_mafBlock_getSequenceLengthArray(mafBlock_t *mb) {
 }
 char** maf_mafBlock_getSpeciesArray(mafBlock_t *mb) {
     // currently this is not stored and must be built
-    // should return an array of char pointers containing an in-order list of 
+    // should return an array of char pointers containing an in-order list of
     // sequence name fields for all sequences.
     char** m = NULL;
     m = (char**) de_malloc(sizeof(char*) * maf_mafBlock_getNumberOfSequences(mb));
@@ -707,7 +707,7 @@ uint64_t maf_mafLine_getPositiveCoord(mafLine_t *ml) {
     // return the start field coordinate in postive zero based coordinates.
     // NOTE THAT FOR - STRANDS, THIS COORDINATE WILL BE THE RIGHT-MOST (END POINT)
     // OF THE SEQUENCE. TO GET THE LEFT-MOST (START POINT) YOU WOULD NEED TO SUBTRACT
-    // 
+    //
     if (ml->strand == '+') {
         return ml->start;
     } else {
@@ -1074,8 +1074,8 @@ char* maf_mafLine_imputeLine(mafLine_t* ml) {
     // that represents a pretty print of the maf line.
     // i.e. it could be printed directly into a .maf file
     // uint32max = 4294967296 which is ~ 5 * 10^10
-    char *s = (char*) de_malloc(2 + intmax(strlen(maf_mafLine_getSpecies(ml)), 15) + 
-                                15 + 15 + 3 + 15 + maf_mafLine_getSequenceFieldLength(ml) + 
+    char *s = (char*) de_malloc(2 + intmax(strlen(maf_mafLine_getSpecies(ml)), 15) +
+                                15 + 15 + 3 + 15 + maf_mafLine_getSequenceFieldLength(ml) +
                                 1 + 32); // extra 32 for possbile overflow from formatting
     sprintf(s, "s %-15s %10" PRIu64 " %10" PRIu64 " %c %10" PRIu64 " %s",
             maf_mafLine_getSpecies(ml),
@@ -1108,12 +1108,12 @@ void maf_mafBlock_flipStrand(mafBlock_t *mb) {
         // rc sequence
         reverseComplementSequence(maf_mafLine_getSequence(ml), maf_mafBlock_getSequenceFieldLength(mb));
         // coordinate transform
-        maf_mafLine_setStart(ml, maf_mafLine_getSourceLength(ml) - 
+        maf_mafLine_setStart(ml, maf_mafLine_getSourceLength(ml) -
                              (maf_mafLine_getStart(ml) + maf_mafLine_getLength(ml)));
         // strand flip
         if (maf_mafLine_getStrand(ml) == '+') {
             maf_mafLine_setStrand(ml, '-');
-        } else { 
+        } else {
             maf_mafLine_setStrand(ml, '+');
         }
         ml = maf_mafLine_getNext(ml);
@@ -1142,7 +1142,7 @@ char complementChar(char c) {
         wasUpper = true;
     }
     switch (toupper(c)) {
-    case 'A': 
+    case 'A':
         a = 't';
         break;
     case 'C':

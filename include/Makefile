@@ -19,10 +19,19 @@ allTests: allTests.c test.sharedMaf.h test.sharedMaf.c ${testObjects}
 %.o: %.c %.h
 	${cc} -O3 -c ${args} $< -o $@.tmp
 	mv $@.tmp $@
-test/%.o: ./%.c ./%.h
+
+sharedMaf.o: sharedMaf.c sharedMaf.h
+	${cc} -O3 -c ${args} sharedMaf.c -o $@.tmp -lm
+	mv $@.tmp $@
+
+test/%.o: %.c %.h
 	mkdir -p $(dir $@)
 	${cc} -g -O0 -c ${args} $< -o $*.tmp
 	mv $*.tmp $@
+
+test/sharedMaf.o: sharedMaf.c sharedMaf.h
+	${cc} -g -O0 -c ${args} sharedMaf.c -o $@.tmp -lm
+	mv $@.tmp $@
 
 test: allTests
 	./allTests && python2.7 test.sharedMaf.py --verbose && rm -rf ./allTests ./test && rmdir ./tempTestDir

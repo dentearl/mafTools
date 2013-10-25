@@ -17,12 +17,12 @@ src/buildVersion.c: ${sources} ${dependencies}
 
 ${bin}/mafFilter: src/mafFilter.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
-	${cc} ${args} -O3 $< ${objects} -o $@.tmp
+	${cc} ${args} -O3 $< ${objects} -o $@.tmp -lm
 	mv $@.tmp $@
 
 test/mafFilter: src/mafFilter.c ${dependencies} ${testObjects}
 	mkdir -p $(dir $@)
-	${cc} ${args} -g -O0 $< ${testObjects} -o $@.tmp
+	${cc} ${args} -g -O0 $< ${testObjects} -o $@.tmp -lm
 	mv $@.tmp $@
 
 %.o: %.c %.h
