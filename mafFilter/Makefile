@@ -26,15 +26,15 @@ test/mafFilter: src/mafFilter.c ${dependencies} ${testObjects}
 	mv $@.tmp $@
 
 %.o: %.c %.h
-	${cc} -O3 -c ${args} $< -o $@.tmp -lm
+	${cc} -O3 -c ${args} $< -o $@.tmp
 	mv $@.tmp $@
 test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
-	${cc} -g -O0 -c ${args} $< -o $@.tmp -lm
+	${cc} -g -O0 -c ${args} $< -o $@.tmp
 	mv $@.tmp $@
 test/%.o: src/%.c src/%.h
 	mkdir -p $(dir $@)
-	${cc} -g -O0 -c ${args} $< -o $@.tmp -lm
+	${cc} -g -O0 -c ${args} $< -o $@.tmp
 	mv $@.tmp $@
 
 clean:

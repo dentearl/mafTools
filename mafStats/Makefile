@@ -16,12 +16,12 @@ src/buildVersion.c: ${sources} ${dependencies}
 
 ${bin}/mafStats: src/mafStats.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
-	${cxx} $< ${objects} -o $@.tmp ${cflags}
+	${cxx} $< ${objects} -o $@.tmp ${cflags} -lm
 	mv $@.tmp $@
 
 test/mafStats: src/mafStats.c ${dependencies} ${testObjects}
 	mkdir -p $(dir $@)
-	${cxx} $< src/allTests.c ${testObjects} -o $@.tmp ${testFlags}
+	${cxx} $< src/allTests.c ${testObjects} -o $@.tmp ${testFlags} -lm
 	mv $@.tmp $@
 %.o: %.c %.h
 	${cxx} -c $< -o $@.tmp ${cflags}
@@ -36,7 +36,7 @@ test/%.o: src/%.c src/%.h
 	mv $@.tmp $@
 
 clean:
-	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/ 
+	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
 
 test: buildVersion test/allTests
 	test/allTests && rm -rf ./test/

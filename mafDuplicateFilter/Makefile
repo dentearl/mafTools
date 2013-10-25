@@ -26,15 +26,15 @@ test/mafDuplicateFilter: src/mafDuplicateFilter.c ${dependencies} ${testObjects}
 	mv $@.tmp $@
 
 %.o: %.c %.h
-	${cc} -c ${args} $< -o $@.tmp -lm
+	${cc} -c ${args} $< -o $@.tmp
 	mv $@.tmp $@
 test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
-	${cc} -g -O0 -c ${args} $< -o $@.tmp -lm
+	${cc} -g -O0 -c ${args} $< -o $@.tmp
 	mv $@.tmp $@
 test/%.o: src/%.c src/%.h
 	mkdir -p $(dir $@)
-	${cc} -g -O0 -c ${args} $< -o $@.tmp -lm
+	${cc} -g -O0 -c ${args} $< -o $@.tmp
 	mv $@.tmp $@
 
 clean:

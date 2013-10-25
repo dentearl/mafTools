@@ -5,34 +5,41 @@ SYS =  $(shell uname -s)
 
 #C compiler
 ifeq (${SYS},FreeBSD)
-    # default FreeBSD gcc (4.2.1) has warning bug
-    #cxx = gcc46 -std=c99 -Wno-unused-but-set-variable
-    cxx = gcc34 -std=c99 -Wno-unused-but-set-variable
+# default FreeBSD gcc (4.2.1) has warning bug
+# cxx = gcc46 -std=c99 -Wno-unused-but-set-variable
+	cxx = gcc34 -std=c99 -Wno-unused-but-set-variable
+	cpp = g++
+	lm = -lm
+else ifeq (${SYS},Darwin) # This is to deal with the Mavericks replacing gcc with clang fully
+  cxx = clang -std=c99 -stdlib=libstdc++
+  cpp = clang++ -stdlib=libstdc++
+	lm =
 else
-    cxx = gcc -std=c99
-# -Wno-unused-result
+	cxx = gcc -std=c99
+	cpp = g++
+	lm = -lm
 endif
 
 # subset of JPL suggested flags (removed: -Wtraditional -Wcast-qual -Wconversion)
-jpl_flags = -Wshadow -Wpointer-arith -Wstrict-prototypes -Wmissing-prototypes 
+jpl_flags = -Wshadow -Wpointer-arith -Wstrict-prototypes -Wmissing-prototypes
 
 #Release compiler flags
-cflags_opt = -O3 -g -Wall -Werror --pedantic -funroll-loops ${jpl_flags} -lm
+cflags_opt = -O3 -Wall -Werror --pedantic -funroll-loops ${jpl_flags}
 
 #Debug flags (slow)
-cflags_dbg = -Wall -Werror --pedantic -g -fno-inline -DBEN_DEBUG ${jpl_flags} -lm
+cflags_dbg = -Wall -Werror --pedantic -g -fno-inline -DBEN_DEBUG ${jpl_flags}
 
 #Ultra Debug flags (really slow)
-cflags_ultraDbg = -Wall -Werror --pedantic -g -fno-inline -DBEN_DEBUG -BEN_ULTRA_DEBUG -lm
+cflags_ultraDbg = -Wall -Werror --pedantic -g -fno-inline -DBEN_DEBUG -BEN_ULTRA_DEBUG
 
 #Profile flags
-cflags_prof = -Wall -Werror --pedantic -pg -O3 -g -lm
+cflags_prof = -Wall -Werror --pedantic -pg -O3 -g
 
 sonLibPath = ../../sonLib/lib
 
 #Flags to use
-cflags = ${cflags_opt} -I ${sonLibPath} -I ../include -I ../external -lm
-testFlags = -O0 -g -Wall -Werror --pedantic -I ${sonLibPath} -I ../include -I ../external -lm
+cflags = ${cflags_opt} -I ${sonLibPath} -I ../include -I ../external
+testFlags = -O0 -Wall -Werror --pedantic -I ${sonLibPath} -I ../include -I ../external
 #cflags = ${cflags_dbg}
 
 # location of Tokyo cabinet
@@ -40,21 +47,21 @@ ifneq ($(wildcard /hive/groups/recon/local/include/tcbdb.h),)
    # hgwdev hive install
    tcPrefix = /hive/groups/recon/local
    tokyoCabinetIncl = -I ${tcPrefix}/include
-   tokyoCabinetLib = -L${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread -lm
+   tokyoCabinetLib = -L${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread
 else ifneq ($(wildcard /opt/local/include/tcbdb.h),)
    # OS/X with TC installed from MacPorts
    tcPrefix = /opt/local
    tokyoCabinetIncl = -I ${tcPrefix}/include
-   tokyoCabinetLib = -L${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread -lm
+   tokyoCabinetLib = -L${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread
 else ifneq ($(wildcard /usr/local/include/tcbdb.h),)
    # /usr/local install (FreeBSD, etc)
    tcPrefix = /usr/local
    tokyoCabinetIncl = -I ${tcPrefix}/include
-   tokyoCabinetLib = -L ${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread -lm
+   tokyoCabinetLib = -L ${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread
 else
    # default
-   tokyoCabinetIncl = 
-   tokyoCabinetLib = -ltokyocabinet -lz -lbz2 -lpthread -lm
+   tokyoCabinetIncl =
+   tokyoCabinetLib = -ltokyocabinet -lz -lbz2 -lpthread
 endif
 
 cflags += ${tokyoCabinetIncl}
@@ -82,4 +89,3 @@ else ifneq ($(wildcard /usr/include/libpq-fe.h),)
 endif
 
 dblibs = ${tokyoCabinetLib} ${mysqlLibs} ${pgsqlLibs}
-
