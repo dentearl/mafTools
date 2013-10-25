@@ -41,12 +41,12 @@ src/buildVersion.c: ${sources} ${dependecies}
 
 ${binPath}/%: src/%.c ${extraAPI}
 	@mkdir -p $(dir $@)
-	${cxx} -o $@.tmp $^ ${cflags}
+	${cxx} -o $@.tmp $^ ${cflags} -lm
 	mv $@.tmp $@
 
 test/%: src/%.c ${testAPI} $(wildcard src/*.h)
 	@mkdir -p $(dir $@)
-	${cxx} -o $@.tmp $^ ${testFlags}
+	${cxx} -o $@.tmp $^ ${testFlags} -lm
 	mv $@.tmp $@
 
 ${binPath}/%.py: src/%.py

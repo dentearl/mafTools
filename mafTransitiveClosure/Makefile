@@ -16,12 +16,12 @@ src/buildVersion.c: ${sources} ${dependencies}
 
 ${bin}/mafTransitiveClosure: src/mafTransitiveClosure.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
-	${cxx} $< src/allTests.c ${objects} -o $@.tmp ${cflags}
+	${cxx} $< src/allTests.c ${objects} -o $@.tmp ${cflags} -lm
 	mv $@.tmp $@
 
 test/mafTransitiveClosure: src/mafTransitiveClosure.c ${dependencies} ${testObjects}
 	mkdir -p $(dir $@)
-	${cxx} $< src/allTests.c ${testObjects} -o $@.tmp ${testFlags}
+	${cxx} $< src/allTests.c ${testObjects} -o $@.tmp ${testFlags} -lm
 	mv $@.tmp $@
 %.o: %.c %.h
 	${cxx} -c $< -o $@.tmp ${cflags}
@@ -30,13 +30,13 @@ test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags}
 	mv $@.tmp $@
-test/%.o: src/%.c src/%.h 
+test/%.o: src/%.c src/%.h
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags}
 	mv $@.tmp $@
 
 clean:
-	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/ 
+	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
 
 test: buildVersion test/mafTransitiveClosure
 	test/mafTransitiveClosure --test && python2.7 src/test.mafTransitiveClosure.py --verbose && rm -rf ./test/ && rmdir ./tempTestDir
