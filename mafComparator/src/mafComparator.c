@@ -1,28 +1,28 @@
-/* 
- * Copyright (C) 2009-2013 by 
+/*
+ * Copyright (C) 2009-2013 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * Benedict Paten (benedict@soe.ucsc.edu, benedictpaten@gmail.com)
  * Mark Diekhans (markd@soe.ucsc.edu)
- * ... and other members of the Reconstruction Team of David Haussler's 
+ * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE. 
+ * THE SOFTWARE.
  */
 
 #include <assert.h>
@@ -46,27 +46,27 @@ const char *g_version = "version 0.9 May 2013";
 bool g_isVerboseFailures = false;
 
 /*
- * The script takes two MAF files and for each ordered pair of sequences 
- * in the MAFS calculates a predefined number of sample homology tests 
+ * The script takes two MAF files and for each ordered pair of sequences
+ * in the MAFS calculates a predefined number of sample homology tests
  * (see below), then reports the statistics in an XML formatted file.
- * It is suitable for running over very large numbers of alignments, 
- * because it does not attempt to hold everything in memory, and instead 
+ * It is suitable for running over very large numbers of alignments,
+ * because it does not attempt to hold everything in memory, and instead
  * takes a sampling approach.
  *
- * For two sets of pairwise alignments, A and B, a homology test is 
- * defined as follows. Pick a pair of aligned positions in A, called a 
- * homology pair - the AB homology test returns true if the pair is in B, 
- * otherwise it returns false. The set of possible homology tests for the 
- * ordered pair (A, B) is not necessarily equivalent to the set of 
- * possible (B, A) homology tests. We call the proportion of true tests 
- * as a percentage of the total of a set of homology tests C from 
+ * For two sets of pairwise alignments, A and B, a homology test is
+ * defined as follows. Pick a pair of aligned positions in A, called a
+ * homology pair - the AB homology test returns true if the pair is in B,
+ * otherwise it returns false. The set of possible homology tests for the
+ * ordered pair (A, B) is not necessarily equivalent to the set of
+ * possible (B, A) homology tests. We call the proportion of true tests
+ * as a percentage of the total of a set of homology tests C from
  * (A, B)  A~B.
  *
- * If A is the set of true pairwise alignments and B the predicted set of 
- * alignments then A~B (over large enough  C), is a proxy to sensitivity 
- * of B in predicted the set of correctly aligned pairs in A. Conversely 
- * B~A (over large enough C) is a proxy to the specificity of the 
- * aligned pairs in B with respect to the set of correctly aligned pairs 
+ * If A is the set of true pairwise alignments and B the predicted set of
+ * alignments then A~B (over large enough  C), is a proxy to sensitivity
+ * of B in predicted the set of correctly aligned pairs in A. Conversely
+ * B~A (over large enough C) is a proxy to the specificity of the
+ * aligned pairs in B with respect to the set of correctly aligned pairs
  * in A.
  */
 
@@ -96,7 +96,7 @@ void parseBedFiles(const char *commaSepFiles, stHash *bedFileHash) {
     st_logDebug("Done parsing bed files\n");
 }
 void parseBedFile(const char *filepath, stHash *intervalsHash) {
-    /* 
+    /*
      * takes a filepath and the intervalsHash, opens and reads the file,
      * adding intervals taken from each bed line to the intervalsHash.
      */
@@ -225,7 +225,7 @@ void hashifercateList(stList *list, stHash *hash) {
     }
 }
 void version(void) {
-    fprintf(stderr, "mafComparator, %s\nbuild: %s, %s, %s\n", g_version, g_build_date, 
+    fprintf(stderr, "mafComparator, %s\nbuild: %s, %s, %s\n", g_version, g_build_date,
             g_build_git_branch, g_build_git_sha);
 }
 void usage(void) {
@@ -509,7 +509,7 @@ int main(int argc, char **argv) {
     stSet *seqNamesSet = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
     buildSeqNamesSet(options, seqNamesSet, sequenceLengthHash);
     // build final wiggle things
-    stHash *wigglePairHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, 
+    stHash *wigglePairHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey,
                                                free, (void(*)(void *))wiggleContainer_destruct);
     buildWigglePairHash(sequenceLengthHash, wigglePairPatternList, wigglePairHash, options->wiggleBinLength,
                         options->wiggleRegionStart, options->wiggleRegionStop);
@@ -518,20 +518,20 @@ int main(int argc, char **argv) {
         fprintf(stderr, "# Sampling from %s, comparing to %s\n", options->mafFile1, options->mafFile2);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    stSortedSet *results_12 = compareMAFs_AB(options->mafFile1, options->mafFile2, &(options->numPairs1), 
+    stSortedSet *results_12 = compareMAFs_AB(options->mafFile1, options->mafFile2, &(options->numPairs1),
                                              seqNamesSet, intervalsHash, wigglePairHash, true, options,
                                              sequenceLengthHash);
     if (g_isVerboseFailures) {
         fprintf(stderr, "# Sampling from %s, comparing to %s\n", options->mafFile2, options->mafFile1);
         fprintf(stderr, "# seq1\tabsPos1\torigPos1\tseq2\tabsPos2\torigPos2\n");
     }
-    stSortedSet *results_21 = compareMAFs_AB(options->mafFile2, options->mafFile1, &(options->numPairs2), 
+    stSortedSet *results_21 = compareMAFs_AB(options->mafFile2, options->mafFile1, &(options->numPairs2),
                                              seqNamesSet, intervalsHash, wigglePairHash, false, options,
                                              sequenceLengthHash);
     fileHandle = de_fopen(options->outputFile, "w");
     // Report results.
     writeXMLHeader(fileHandle);
-    char bedString[kMaxStringLength];    
+    char bedString[kMaxStringLength];
     if (options->bedFiles != NULL) {
         sprintf(bedString, " bedFiles=\"%s\"", options->bedFiles);
     } else {
@@ -539,14 +539,14 @@ int main(int argc, char **argv) {
     }
     char wiggleString[kMaxStringLength];
     if (options->wigglePairs != NULL) {
-        sprintf(wiggleString, " wigglePairs=\"%s\" wiggleBinLength=\"%" PRIu64 "\"", 
+        sprintf(wiggleString, " wigglePairs=\"%s\" wiggleBinLength=\"%" PRIu64 "\"",
                 options->wigglePairs, options->wiggleBinLength);
     } else {
         wiggleString[0] = '\0';
     }
     char wiggleRegionString[kMaxStringLength];
     if (options->wiggleRegionStop != 0) {
-        sprintf(wiggleRegionString, " wiggleRegionStart=\"%" PRIu64 "\" wiggleRegionStop=\"%" PRIu64 "\"", 
+        sprintf(wiggleRegionString, " wiggleRegionStart=\"%" PRIu64 "\" wiggleRegionStop=\"%" PRIu64 "\"",
                 options->wiggleRegionStart, options->wiggleRegionStop);
     } else {
         wiggleRegionString[0] = '\0';
@@ -556,12 +556,12 @@ int main(int argc, char **argv) {
             "numberOfPairsInMaf1=\"%" PRIu64 "\" "
             "numberOfPairsInMaf2=\"%" PRIu64 "\"%s%s%s version=\"%s\" "
             "buildDate=\"%s\" buildBranch=\"%s\" buildCommit=\"%s\">\n",
-            options->numberOfSamples, options->near, options->randomSeed, options->mafFile1, options->mafFile2, 
+            options->numberOfSamples, options->near, options->randomSeed, options->mafFile1, options->mafFile2,
             options->numPairs1, options->numPairs2, bedString, wiggleString, wiggleRegionString,
             g_version, g_build_date, g_build_git_branch, g_build_git_sha);
-    reportResults(results_12, options->mafFile1, options->mafFile2, fileHandle, options->near, 
+    reportResults(results_12, options->mafFile1, options->mafFile2, fileHandle, options->near,
                   seqNamesSet, options->bedFiles);
-    reportResults(results_21, options->mafFile2, options->mafFile1, fileHandle, options->near, 
+    reportResults(results_21, options->mafFile2, options->mafFile1, fileHandle, options->near,
                   seqNamesSet, options->bedFiles);
     reportResultsForWiggles(wigglePairHash, fileHandle);
     fprintf(fileHandle, "</alignmentComparisons>\n");

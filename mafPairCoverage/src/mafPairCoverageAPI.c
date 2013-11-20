@@ -1,26 +1,26 @@
-/* 
- * Copyright (C) 2011-2013 by 
+/*
+ * Copyright (C) 2011-2013 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
- * ... and other members of the Reconstruction Team of David Haussler's 
+ * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE. 
+ * THE SOFTWARE.
  */
 #include <assert.h>
 #include <errno.h> // file existence via ENOENT, errno
@@ -48,7 +48,7 @@ mafCoverageCount_t* createMafCoverageCount(void) {
     mafCoverageCount_t *mcct = (mafCoverageCount_t *)st_malloc(sizeof(*mcct));
     mcct->sourceLength = 0; // sequence source length
     mcct->observedLength = 0; // sequence source length
-    mcct->count = 0; // number of aligned positions 
+    mcct->count = 0; // number of aligned positions
     mcct->inRegion = 0; // number of aligned positions inside of bed specified region,
     mcct->outRegion = 0; // number of aligned positions outside of bed specified region,
     return mcct;
@@ -105,8 +105,8 @@ bool searchMatched_(const char *target, const char *seq) {
     }
     return true;
 }
-static void quickSetup(mafLine_t *ml1, mafLine_t *ml2, uint64_t *pos1, uint64_t *pos2, 
-                       int *strand1, int *strand2) { 
+static void quickSetup(mafLine_t *ml1, mafLine_t *ml2, uint64_t *pos1, uint64_t *pos2,
+                       int *strand1, int *strand2) {
     // pulling this cruft into its own function
     if (maf_mafLine_getStrand(ml1) == '+') {
             *strand1 = 1;
@@ -123,7 +123,7 @@ static void quickSetup(mafLine_t *ml1, mafLine_t *ml2, uint64_t *pos1, uint64_t 
 }
 void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions,
                   stHash *intervalsHash) {
-    // look through the sequences position by position and count the number of places where the two 
+    // look through the sequences position by position and count the number of places where the two
     // sequences contained aligned residues, i.e. neither position contains a gap character.
     char *s1 = maf_mafLine_getSequence(ml1);
     char *s2 = maf_mafLine_getSequence(ml2);
@@ -182,14 +182,14 @@ void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash, stHash *seq2
 void wrapDestroyMafLine(void *p) {
     maf_destroyMafLineList((mafLine_t *) p);
 }
-void checkBlock(mafBlock_t *b, const char *seq1, const char *seq2, 
+void checkBlock(mafBlock_t *b, const char *seq1, const char *seq2,
                 stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions,
-                stHash *intervalsHash) {
-    // read through each line of a mafBlock and if the sequence matches the region
-    // we're looking for, report the block.
+                stHash *intervalsHash, BinContainer *bin_container) {
+    // read through each line of a mafBlock and if the sequence matches the
+    // region we're looking for, report the block.
     mafLine_t *ml1 = maf_mafBlock_getHeadLine(b);
     // do a quick scan for either seq before doing the full n^2 comparison
-    // im doing this because i know there are some transitively closed mafs that 
+    // im doing this because i know there are some transitively closed mafs that
     // contain upwards of tens of millions of rows... :/
     bool has1 = false, has2 = false;
     stList *seq1List = stList_construct3(0, wrapDestroyMafLine);
@@ -243,32 +243,40 @@ void checkBlock(mafBlock_t *b, const char *seq1, const char *seq2,
     while ((ml1 = stList_getNext(slit1)) != NULL) {
         slit2 = stList_getIterator(seq2List);
         while ((ml2 = stList_getNext(slit2)) != NULL) {
-            compareLines(ml1, ml2, seq1Hash, seq2Hash, alignedPositions, intervalsHash);
+            compareLines(ml1, ml2, seq1Hash, seq2Hash,
+                         alignedPositions, intervalsHash);
         }
         stList_destructIterator(slit2);
-    } 
+    }
     stList_destructIterator(slit1);
     stList_destruct(seq1List);
     stList_destruct(seq2List);
 }
-void processBody(mafFileApi_t *mfa, char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash,
-                 uint64_t *alignedPositions, stHash *intervalsHash) {
+
+
+void processBody(mafFileApi_t *mfa, char *seq1, char *seq2, stHash *seq1Hash,
+                 stHash *seq2Hash,
+                 uint64_t *alignedPositions, stHash *intervalsHash,
+                 BinContainer *bin_container) {
     mafBlock_t *thisBlock = NULL;
     *alignedPositions = 0;
     while ((thisBlock = maf_readBlock(mfa)) != NULL) {
-        checkBlock(thisBlock, seq1, seq2, seq1Hash, seq2Hash, alignedPositions, intervalsHash);
+        checkBlock(thisBlock, seq1, seq2, seq1Hash, seq2Hash,
+                   alignedPositions, intervalsHash, bin_container);
         maf_destroyMafBlockList(thisBlock);
     }
 }
+
+
 void parseBedFile(const char *filepath, stHash *intervalsHash) {
-    /* 
-     * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING 
+    /*
+     * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
      * This function is near copy-pasta from mafComparator.c
-     * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING 
+     * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
      * takes a filepath and the intervalsHash, opens and reads the file,
      * adding intervals taken from each bed line to the intervalsHash.
      * intervals hash is keyed with the name of the sequence and valued with
-     * a st_sortedset 
+     * a st_sortedset
      */
     FILE *fileHandle = fopen(filepath, "r");
     st_logDebug("Parsing the bed file: %s\n", filepath);
@@ -333,11 +341,13 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
     fclose(fileHandle);
     st_logDebug("Finished parsing the bed file: %s\n", filepath);
 }
+
+
 bool inInterval(stHash *intervalsHash, char *seq, uint64_t pos) {
-    /* 
-     * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING 
+    /*
+     * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
      * This function is copy pasta from mafComparatator/src/comparatorAPI.c
-     * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING 
+     * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
      * check to see if the sequence and position are within the intervals hash.
      *
      */

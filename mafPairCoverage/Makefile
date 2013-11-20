@@ -55,7 +55,7 @@ test: buildVersion test/allTests test/mafPairCoverage
 	./test/allTests && python2.7 src/test.mafPairCoverage.py --verbose && rm -rf ./test/ && rmdir ./tempTestDir
 test/allTests: src/allTests.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
-	${cxx} $^ -o $@.tmp ${testFlags}
+	${cxx} $^ -o $@.tmp ${testFlags} -lm
 	mv $@.tmp $@
 test/mafPairCoverage: src/mafPairCoverage.c ${dependencies} ${testAPI}
 	mkdir -p $(dir $@)
