@@ -193,7 +193,10 @@ void binContainer_destruct(BinContainer *bc) {
   if (bc == NULL) {
     return;
   }
-  free(bc->bins);
+  if (bc->bins != NULL) {
+    free(bc->bins);
+    bc->bins = NULL;
+  }
   free(bc);
   bc = NULL;
 }
@@ -232,13 +235,8 @@ void reportResultsRegion(char *seq1, char *seq2, stHash *seq1Hash,
   }
   uint64_t tot1 = 0, tot1in = 0, tot1out = 0;
   stHashIterator *hit = stHash_getIterator(seq1Hash);
-  mafCoverageCount_t *mcct = NULL;
-  double cov1in = 0., cov1out = 0.;
+  double cov1in = 0.;
   char *key;
-  (void) cov1in;
-  (void) cov1out;
-  (void) mcct;
-  (void) tot1out;
   // get the total in-region coverage number via the hash
   if (stHash_size(seq1Hash) > 0) {
     hit = stHash_getIterator(seq1Hash);
@@ -418,8 +416,16 @@ void reportResults(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash,
 
 
 void reportResultsBins(char *seq1, char *seq2, BinContainer *bc) {
+  if (bc == NULL) {
+    return;
+  }
   printf("# Bins\n# Ref_Bin_Starting_Pos\tCoverage\n");
-
+  int64_t cur_pos = bc->bin_start;
+  assert(bc->bin_length > 0);
+  for (int64_t i = 0; i < bc->num_bins; ++i) {
+    printf("%" PRIi64 "\t%15e\n", cur_pos,
+           bc->bins[i] / (double)bc->bin_length);
+  }
 }
 
 
@@ -428,8 +434,8 @@ int main(int argc, char **argv) {
   char seq1[kMaxSeqName];
   char seq2[kMaxSeqName];
   char filename[kMaxStringLength];
-  int64_t bin_start = -1;  // sentinel value. values > 0
-  int64_t bin_end = -1;  // sentinel value. values > 0
+  int64_t bin_start = -1;  // sentinel value. real values > 0
+  int64_t bin_end = -1;  // sentinel value. real values > 0
   int64_t bin_length = 1000;
   BinContainer *bin_container = NULL;
   stHash *intervalsHash = stHash_construct3(stHash_stringKey,
@@ -441,6 +447,11 @@ int main(int argc, char **argv) {
   if ((bin_start > 0) && (bin_end > 0) && (bin_length > 0)) {
     bin_container = binContainer_construct(bin_start, bin_end,
                                                          bin_length);
+    if (is_wild(seq1)) {
+      fprintf(stderr, "--seq1 may not contain a wild card character, *, if "
+              "the binning options are used.\n");
+      usage();
+    }
   } else {
     bin_container = NULL;
   }
