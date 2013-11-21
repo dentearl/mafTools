@@ -55,11 +55,11 @@ test: buildVersion test/allTests test/mafToFastaStitcher
 	./test/allTests && python2.7 src/test.mafToFastaStitcher.py --verbose && rm -rf ./test/ && rmdir ./tempTestDir
 test/allTests: src/allTests.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
-	${cxx} $^ -o $@.tmp ${testFlags}
+	${cxx} $^ -o $@.tmp ${testFlags} -lm
 	mv $@.tmp $@
 test/mafToFastaStitcher: src/mafToFastaStitcher.c ${dependencies} ${testAPI}
 	mkdir -p $(dir $@)
-	${cxx} $< ${testAPI} -o $@.tmp ${testFlags}
+	${cxx} $< ${testAPI} -o $@.tmp ${testFlags} -lm
 	mv $@.tmp $@
 test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
