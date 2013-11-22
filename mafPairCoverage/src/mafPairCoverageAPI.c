@@ -90,6 +90,60 @@ void mafCoverageCount_setInRegion(mafCoverageCount_t *mcct, uint64_t n) {
 void mafCoverageCount_setOutRegion(mafCoverageCount_t *mcct, uint64_t n) {
   mcct->outRegion = n;
 }
+int64_t binContainer_getBinStart(BinContainer *bc) {
+  return bc->bin_start;
+}
+int64_t binContainer_getBinEnd(BinContainer *bc) {
+  return bc->bin_end;
+}
+int64_t binContainer_getBinLength(BinContainer *bc) {
+  return bc->bin_length;
+}
+int64_t binContainer_getNumBins(BinContainer *bc) {
+  return bc->num_bins;
+}
+uint64_t* binContainer_getBins(BinContainer *bc) {
+  return bc->bins;
+}
+uint64_t binContainer_accessBin(BinContainer *bc, int64_t i) {
+  assert (bc->num_bins > i);
+  return bc->bins[i];
+}
+void binContainer_setBinStart(BinContainer *bc, int64_t i) {
+  bc->bin_start = i;
+}
+void binContainer_setBinEnd(BinContainer *bc, int64_t i) {
+  bc->bin_end = i;
+}
+void binContainer_setBinLength(BinContainer *bc, int64_t i) {
+  bc->bin_length = i;
+}
+void binContainer_incrementPosition(BinContainer *bc, int64_t pos) {
+  // given a genomic position, figure out the local position relative
+  // to the bin_start value, then figure out the proper bin index,
+  // then request that bin index to increment.
+  if (bc == NULL) {
+    // this container has not even been initialized
+    return;
+  }
+  if (binContainer_getBins(bc) == NULL) {
+    // this container has only been initialized, not created.
+    return;
+  }
+  int64_t local_pos = pos - binContainer_getBinStart(bc);
+  int64_t i = (int)floor(local_pos / binContainer_getBinLength(bc));
+  binContainer_incrementBin(bc, i);
+}
+void binContainer_incrementBin(BinContainer *bc, int64_t i) {
+  // increment a bin at an index
+  assert (bc->num_bins > i);
+  ++(bc->bins[i]);
+}
+void binContainer_setBinValue(BinContainer *bc, int64_t i, int64_t v) {
+  // set the value of a bin at an index.
+  assert (bc->num_bins > i);
+  bc->bins[i] = v;
+}
 bool is_wild(const char *s) {
   // return true if char array ends in *, false otherwise
   if (s[strlen(s) - 1] == '*')
@@ -156,6 +210,7 @@ void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash,
   }
   assert(mcct1 != NULL);
   assert(mcct2 != NULL);
+  uint64_t s1_start = maf_mafLine_getStart(ml1);
   if (stHash_size(intervalsHash) == 0) {
     // no intervals: yay, life is simple! :D
     for (uint64_t i = 0; i < n; ++i) {
@@ -163,6 +218,7 @@ void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash,
         ++(*alignedPositions);
         ++(mcct1->count);
         ++(mcct2->count);
+        binContainer_incrementPosition(bin_container, s1_start + i);
       }
     }
   } else {
@@ -177,6 +233,7 @@ void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash,
         ++(*alignedPositions);
         ++(mcct1->count);
         ++(mcct2->count);
+        binContainer_incrementPosition(bin_container, s1_start + i);
         if (inInterval(intervalsHash, seqName1, pos1)) {
           // seq 1 is in the interval
           ++(mcct1->inRegion);
@@ -419,7 +476,8 @@ BinContainer* binContainer_construct(int64_t bin_start, int64_t bin_end,
   bc->bin_start = bin_start;
   bc->bin_end = bin_end;
   bc->bin_length = bin_length;
-  bc->num_bins = (int64_t)ceil((double) (bin_end - bin_start) / bin_length);
+  bc->num_bins = (int64_t)ceil((double) ((bin_end + 1) - bin_start) /
+                               bin_length);
   bc->bins = st_calloc(bc->num_bins, sizeof(uint64_t));
   return bc;
 }
@@ -438,6 +496,9 @@ void binContainer_destruct(BinContainer *bc) {
 
 void reportResultsBins(char *seq1, char *seq2, BinContainer *bc) {
   if (bc == NULL) {
+    return;
+  }
+  if (binContainer_getBins(bc) == NULL) {
     return;
   }
   printf("# Bins\n# Ref_Bin_Starting_Pos\tCoverage\n");

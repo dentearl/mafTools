@@ -1,26 +1,26 @@
 ##################################################
-# Copyright (C) 2013 by 
+# Copyright (C) 2013 by
 # Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
-# ... and other members of the Reconstruction Team of David Haussler's 
+# ... and other members of the Reconstruction Team of David Haussler's
 # lab (BME Dept. UCSC).
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE. 
+# THE SOFTWARE.
 ##################################################
 import os
 import random
@@ -59,7 +59,7 @@ s name3.chr9         50 10 +       100 ATGTA---TGCCG
 s name4.chr&         50 10 +       100 ATG---TATGCCG
 s name5              50 10 +       100 ATGT---ATGCCG
 
-''', 13), 
+''', 13),
             ('''a score=0
 s name                0 10 +       100 ATGTATGC---CG
 s target2.chr0        0  1 -       200 A------------
@@ -71,7 +71,7 @@ s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon         249182 13 +   4622798 gcagctgaaaaca
 s target.chr0         5 10 -       100 ATGTATG---CCG
 
-''', 1), 
+''', 1),
             ('''a score=0
 s name               10 10 +       100 ATGTAT---GCCG
 s name2.chr1         50 10 +       100 ATGTAT---GCCG
@@ -95,10 +95,10 @@ g_coverageLinesWild = set(['target.*2010010220', 'target2.chr02002320', 'target.
 g_coverageLinesWildBed = set(['#Overall', '#SequenceSourceLengthAlignedPos.Coverage',
                               'target.*2010010220', 'target2.chr02002320',
                               '#IndividualSequences', 'target.chr01006220',
-                              'target.chr320000400', 'target2.chr02002320', 
-                              '#BEDRegions', '#SequenceRegionLengthInRegionsOutofRegionsCoverage', 
+                              'target.chr320000400', 'target2.chr02002320',
+                              '#BEDRegions', '#SequenceRegionLengthInRegionsOutofRegionsCoverage',
                               'target.*26416', 'target.chr026416'])
-g_nonOverlappingBlocks = [('''a score=23262.0     
+g_nonOverlappingBlocks = [('''a score=23262.0
 s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s baboon         116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
@@ -106,7 +106,7 @@ s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGT
 s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
 
 ''', 0),
-                          ('''a score=23262.0     
+                          ('''a score=23262.0
 s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s baboon         116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG
@@ -115,10 +115,10 @@ s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGT
 s target.chr3      1234 40 +     20000 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
 
 ''', 0),
-                          ('''a score=5062.0                    
+                          ('''a score=5062.0
 s hg18.chr7    27699739 6 + 158545518 TAAAGA
 s panTro1.chr6 28862317 6 + 161576975 TAAAGA
-s baboon         241163 6 +   4622798 TAAAGA 
+s baboon         241163 6 +   4622798 TAAAGA
 s mm4.chr6     53303881 6 + 151104725 TAAAGA
 s rn3.chr4     81444246 6 + 187371129 taagga
 
@@ -231,7 +231,7 @@ class CoverageTest(unittest.TestCase):
         for i in xrange(0, 10):
             shuffledBlocks = []
             tmpDir = os.path.abspath(mtt.makeTempDir('bed_0'))
-            
+
             order = [1] * len(g_overlappingBlocks) + [0] * len(g_nonOverlappingBlocks)
             random.shuffle(order)
             random.shuffle(g_overlappingBlocks)
