@@ -34,6 +34,7 @@
 #include "mafPairCoverage.h"
 
 typedef struct mafCoverageCount mafCoverageCount_t;
+typedef struct _BinContainer BinContainer;
 
 mafCoverageCount_t* createMafCoverageCount(void);
 uint64_t mafCoverageCount_getSourceLength(mafCoverageCount_t *mcct);
@@ -49,8 +50,9 @@ bool is_wild(const char *s);
 bool inInterval(stHash *intervalsHash, char *seq, uint64_t pos);
 bool searchMatched(mafLine_t *ml, const char *seq);
 bool searchMatched_(const char *target, const char *seq);
-void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions,
-                  stHash *intervalsHash);
+void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash,
+                  stHash *seq2Hash, uint64_t *alignedPositions,
+                  stHash *intervalsHash, BinContainer *bc);
 void wrapDestroyMafLine(void *p);
 void checkBlock(mafBlock_t *b, const char *seq1, const char *seq2,
                 stHash *seq1Hash, stHash *seq2Hash, uint64_t *alignedPositions,
@@ -60,4 +62,10 @@ void processBody(mafFileApi_t *mfa, char *seq1, char *seq2, stHash *seq1Hash,
                  uint64_t *alignedPositions, stHash *intervalsHash,
                  BinContainer *bc);
 void parseBedFile(const char *filepath, stHash *intervalsHash);
+void reportResultsBins(char *seq1, char *seq2, BinContainer *bin_container);
+BinContainer* binContainer_init(void);
+BinContainer* binContainer_construct(int64_t bin_start, int64_t bin_end,
+                                     int64_t bin_length);
+void binContainer_destruct(BinContainer *bc);
+
 #endif // _PAIR_COVERAGE_API_H_

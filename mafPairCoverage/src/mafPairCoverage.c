@@ -167,40 +167,6 @@ void parseOptions(int argc, char **argv, char *filename, char *seq1Name,
   }
 }
 
-
-BinContainer* binContainer_init(void) {
-  BinContainer *bc = st_malloc(sizeof(*bc));
-  bc->bin_start = 0;
-  bc->bin_end = 0;
-  bc->bin_length = 0;
-  bc->num_bins = 0;
-  bc->bins = NULL;
-  return bc;
-}
-
-BinContainer* binContainer_construct(int64_t bin_start, int64_t bin_end,
-                                     int64_t bin_length) {
-  BinContainer *bc = binContainer_init();
-  bc->bin_start = bin_start;
-  bc->bin_end = bin_end;
-  bc->bin_length = bin_length;
-  bc->num_bins = (int64_t)ceil((double) (bin_end - bin_start) / bin_length);
-  bc->bins = st_calloc(bc->num_bins, sizeof(uint64_t));
-  return bc;
-}
-
-void binContainer_destruct(BinContainer *bc) {
-  if (bc == NULL) {
-    return;
-  }
-  if (bc->bins != NULL) {
-    free(bc->bins);
-    bc->bins = NULL;
-  }
-  free(bc);
-  bc = NULL;
-}
-
 uint64_t getRegionSize(char *seq1, stHash *intervalsHash) {
   // go through intervalsHash and see if seq1 matches any of the keys we pull
   // out. if so, add up the size
@@ -411,20 +377,6 @@ void reportResults(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash,
              mafCoverageCount_getCount(stHash_search(seq2Hash, key)), cov2, obscov2);
     }
     stHash_destructIterator(hit);
-  }
-}
-
-
-void reportResultsBins(char *seq1, char *seq2, BinContainer *bc) {
-  if (bc == NULL) {
-    return;
-  }
-  printf("# Bins\n# Ref_Bin_Starting_Pos\tCoverage\n");
-  int64_t cur_pos = bc->bin_start;
-  assert(bc->bin_length > 0);
-  for (int64_t i = 0; i < bc->num_bins; ++i) {
-    printf("%" PRIi64 "\t%15e\n", cur_pos,
-           bc->bins[i] / (double)bc->bin_length);
   }
 }
 

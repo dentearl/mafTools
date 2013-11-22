@@ -31,15 +31,6 @@
 #include "sharedMaf.h"
 #include "sonLib.h"
 
-typedef struct _BinContainer {
-  // contains arrays of counts, used by the --bin* options
-  int64_t bin_start; // starting base. i.e. --bin_start
-  int64_t bin_end; // starting base. i.e. --bin_start
-  int64_t bin_length;
-  int64_t num_bins;
-  uint64_t *bins;
-} BinContainer;
-
 void version(void);
 void usage(void);
 void parseOptions(int argc, char **argv, char *filename, char *seq1Name,
@@ -50,10 +41,5 @@ void reportResults(char *seq1, char *seq2, stHash *seq1Hash, stHash *seq2Hash,
 void reportResultsRegion(char *seq1, char *seq2, stHash *seq1Hash,
                          stHash *seq2Hash, uint64_t *alignedPositions,
                          stHash *intervalsHash);
-void reportResultsBins(char *seq1, char *seq2, BinContainer *bin_container);
-BinContainer* binContainer_init(void);
-BinContainer* binContainer_construct(int64_t bin_start, int64_t bin_end,
-                                     int64_t bin_length);
-void binContainer_destruct(BinContainer *bc);
 
 #endif // _PAIR_COVERAGE_H_
