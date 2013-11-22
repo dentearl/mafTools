@@ -136,7 +136,7 @@ static void test_compareLines_1(CuTest *testCase) {
 static void test_intervalCheck_0(CuTest *testCase) {
   // make sure that the hash is being correctly populated
   // test case 0
-  stHash *intervalsHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
+  stHash *intervalsHash = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, (void(*)(void *)) stSortedSet_destruct);
   stSortedSet *intervals = stSortedSet_construct3((int(*)(const void *, const void*)) stIntTuple_cmpFn,
                                                   (void(*)(void *)) stIntTuple_destruct);
   stHash_insert(intervalsHash, stString_copy("hg19.chr19"), intervals);
@@ -149,7 +149,7 @@ static void test_intervalCheck_0(CuTest *testCase) {
   CuAssertTrue(testCase, inInterval(intervalsHash, "hg19.chr19", 123486) == false);
   CuAssertTrue(testCase, inInterval(intervalsHash, "hg19.chr1", 123482) == false);
   CuAssertTrue(testCase, inInterval(intervalsHash, "hg19", 123482) == false);
-  stSortedSet_destruct(intervals);
+  stHash_destruct(intervalsHash);
 }
 static void displayIntTuple(stIntTuple *t) {
   if (t != NULL) {
@@ -179,7 +179,7 @@ static void test_compareLines_region_0(CuTest *testCase) {
                                        stHash_stringEqualKey, free, free);
   stHash *intervalsHash = stHash_construct3(stHash_stringKey,
                                             stHash_stringEqualKey,
-                                            free, free);
+                                            free, (void(*)(void *)) stSortedSet_destruct);
   stSortedSet *intervals = stSortedSet_construct3((int(*)(const void *, const void*)) stIntTuple_cmpFn,
                                                   (void(*)(void *)) stIntTuple_destruct);
   stHash_insert(intervalsHash, stString_copy("hg19.chr19"), intervals);
@@ -212,7 +212,7 @@ static void test_compareLines_region_0(CuTest *testCase) {
   maf_destroyMafLineList(ml2);
   stHash_destruct(seq1Hash);
   stHash_destruct(seq2Hash);
-  stSortedSet_destruct(intervals);
+  stHash_destruct(intervalsHash);
   binContainer_destruct(bc);
   // test case 1
 }
@@ -231,7 +231,7 @@ static void test_binning_0(CuTest *testCase) {
                                        stHash_stringEqualKey, free, free);
   stHash *intervalsHash = stHash_construct3(stHash_stringKey,
                                             stHash_stringEqualKey,
-                                            free, free);
+                                            free, (void(*)(void *)) stSortedSet_destruct);
   stSortedSet *intervals = stSortedSet_construct3((int(*)(const void *, const void*)) stIntTuple_cmpFn,
                                                   (void(*)(void *)) stIntTuple_destruct);
   stHash_insert(intervalsHash, stString_copy("hg19.chr19"), intervals);
@@ -253,6 +253,7 @@ static void test_binning_0(CuTest *testCase) {
   CuAssertTrue(testCase, binContainer_getBinEnd(bc) == 123500);
   CuAssertTrue(testCase, binContainer_getBins(bc) != NULL);
   fprintf(stderr, "num bins: %" PRIi64 "\n", binContainer_getNumBins(bc));
+  fprintf(stderr, "bin contents: ");
   for (int i = 0; i < binContainer_getNumBins(bc); ++i) {
     if ((i != 0) && !(i % 5)) {
       fprintf(stderr, " ");
@@ -272,10 +273,65 @@ static void test_binning_0(CuTest *testCase) {
   maf_destroyMafLineList(ml2);
   stHash_destruct(seq1Hash);
   stHash_destruct(seq2Hash);
-  stSortedSet_destruct(intervals);
+  stHash_destruct(intervalsHash);
   binContainer_destruct(bc);
-  // test case 1
 }
+static void test_binning_1(CuTest *testCase) {
+  // make sure that the binning is working corretly
+  // test case 0
+  fprintf(stderr, "testing Binning\n");
+  mafLine_t *ml1 = maf_newMafLineFromString("s hg19.chr19      "
+                                            "123480 13 + 1234870098734 "
+                                            "ACGTACGTACGTA", 1);
+  mafLine_t *ml2 = maf_newMafLineFromString("s mm9.chr1        123480 13 + "
+                                            "1234870098734 ACGTACGTACGTA", 1);
+  stHash *seq1Hash = stHash_construct3(stHash_stringKey,
+                                       stHash_stringEqualKey, free, free);
+  stHash *seq2Hash = stHash_construct3(stHash_stringKey,
+                                       stHash_stringEqualKey, free, free);
+  stHash *intervalsHash = stHash_construct3(stHash_stringKey,
+                                            stHash_stringEqualKey,
+                                            free, (void(*)(void *)) stSortedSet_destruct);
+  stSortedSet *intervals = stSortedSet_construct3((int(*)(const void *, const void*)) stIntTuple_cmpFn,
+                                                  (void(*)(void *)) stIntTuple_destruct);
+  stHash_insert(intervalsHash, stString_copy("hg19.chr19"), intervals);
+  stIntTuple *t = stIntTuple_construct2(123480, 123485);
+  stSortedSet_insert(intervals, t);
+  uint64_t alignedPositions = 0;
+  mafCoverageCount_t *mcct1 = createMafCoverageCount();
+  mafCoverageCount_t *mcct2 = createMafCoverageCount();
+  BinContainer *bc = binContainer_construct(123480, 123500, 1000);
+  mafCoverageCount_setSourceLength(mcct1, 1234870098734);
+  mafCoverageCount_setSourceLength(mcct2, 1234870098734);
+  stHash_insert(seq1Hash, stString_copy("hg19.chr19"), mcct1);
+  stHash_insert(seq2Hash, stString_copy("mm9.chr1"), mcct2);
+  fprintf(stderr, "about to compare lines...\n");
+  compareLines(ml1, ml2, seq1Hash, seq2Hash, &alignedPositions,
+               intervalsHash, bc);
+  fprintf(stderr, "lines compared.\n");
+  CuAssertTrue(testCase, binContainer_getBinStart(bc) == 123480);
+  CuAssertTrue(testCase, binContainer_getBinEnd(bc) == 123500);
+  CuAssertTrue(testCase, binContainer_getBins(bc) != NULL);
+  fprintf(stderr, "num bins: %" PRIi64 "\n", binContainer_getNumBins(bc));
+  fprintf(stderr, "bin contents: ");
+  for (int i = 0; i < binContainer_getNumBins(bc); ++i) {
+    if ((i != 0) && !(i % 5)) {
+      fprintf(stderr, " ");
+    }
+    fprintf(stderr, "%" PRIu64 " ", binContainer_accessBin(bc, i));
+  }
+  fprintf(stderr, "\n");
+  CuAssertTrue(testCase, binContainer_getNumBins(bc) == 1);
+  CuAssertTrue(testCase, binContainer_accessBin(bc, 0) == 13);
+  fprintf(stderr, "cleanning up.\n");
+  maf_destroyMafLineList(ml1);
+  maf_destroyMafLineList(ml2);
+  stHash_destruct(seq1Hash);
+  stHash_destruct(seq2Hash);
+  stHash_destruct(intervalsHash);
+  binContainer_destruct(bc);
+}
+
 CuSuite* pairCoverage_TestSuite(void) {
   CuSuite* suite = CuSuiteNew();
   (void) displaySortedSet;
@@ -286,6 +342,7 @@ CuSuite* pairCoverage_TestSuite(void) {
   (void) test_compareLines_region_0;
   (void) test_intervalCheck_0;
   (void) test_binning_0;
+  (void) test_binning_1;
   SUITE_ADD_TEST(suite, test_is_wild_0);
   SUITE_ADD_TEST(suite, test_searchMatched_0);
   SUITE_ADD_TEST(suite, test_compareLines_0);
@@ -293,5 +350,6 @@ CuSuite* pairCoverage_TestSuite(void) {
   SUITE_ADD_TEST(suite, test_intervalCheck_0);
   SUITE_ADD_TEST(suite, test_compareLines_region_0);
   SUITE_ADD_TEST(suite, test_binning_0);
+  SUITE_ADD_TEST(suite, test_binning_1);
   return suite;
 }

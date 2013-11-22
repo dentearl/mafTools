@@ -260,7 +260,7 @@ class CoverageTest(unittest.TestCase):
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(coverageIsCorrect(os.path.join(tmpDir, 'coverage.txt'), g_coverageLinesWildBed))
             mtt.removeDir(tmpDir)
-    def dtestMemory0(self):
+    def _testMemory0(self):
         """ If valgrind is installed on the system, check for memory related errors (0).
         """
         valgrind = mtt.which('valgrind')
@@ -295,7 +295,7 @@ class CoverageTest(unittest.TestCase):
             mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)
-    def dtestMemory1(self):
+    def _testMemory1(self):
         """ If valgrind is installed on the system, check for memory related errors (0).
         """
         valgrind = mtt.which('valgrind')
@@ -331,7 +331,7 @@ class CoverageTest(unittest.TestCase):
             self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
             mtt.removeDir(tmpDir)
 class CuTestMemory(unittest.TestCase):
-    def dtest_CuTestMemory(self):
+    def test_CuTestMemory(self):
         """ If valgrind is installed on the system, check for memory related errors in CuTests.
         """
         mtt.makeTempDirParent()
