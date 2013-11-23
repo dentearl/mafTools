@@ -130,8 +130,15 @@ void binContainer_incrementPosition(BinContainer *bc, int64_t pos) {
     // this container has only been initialized, not created.
     return;
   }
+  if ((pos < binContainer_getBinStart(bc)) ||
+      (pos > binContainer_getBinEnd(bc))) {
+    // this position is outside of the range of the binning.
+    return;
+  }
   int64_t local_pos = pos - binContainer_getBinStart(bc);
   int64_t i = (int)floor(local_pos / binContainer_getBinLength(bc));
+  // fprintf(stderr, "incrementing pos %" PRIi64", local_pos %" PRIi64 ", "
+  //         "bin %" PRIi64 "\n", pos, local_pos, i);
   binContainer_incrementBin(bc, i);
 }
 void binContainer_incrementBin(BinContainer *bc, int64_t i) {
