@@ -396,7 +396,7 @@ int main(int argc, char **argv) {
                                             stSortedSet_destruct);
   parseOptions(argc, argv, filename, seq1, seq2, intervalsHash,
                &bin_start, &bin_end, &bin_length);
-  if ((bin_start > 0) && (bin_end > 0) && (bin_length > 0)) {
+  if ((bin_start != -1) && (bin_end != -1) && (bin_length > 0)) {
     bin_container = binContainer_construct(bin_start, bin_end,
                                                          bin_length);
     if (is_wild(seq1)) {

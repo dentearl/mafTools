@@ -658,6 +658,55 @@ static void test_binning_8(CuTest *testCase) {
   stHash_destruct(intervalsHash);
   binContainer_destruct(bc);
 }
+static void test_binning_9(CuTest *testCase) {
+  // make sure that the binning is working correctly with Negative alignments!
+  // test case 0
+  mafLine_t *ml1 = maf_newMafLineFromString("s hg19.chr19      "
+                                            "0 13 - 100 "
+                                            "ACGTACGTACGTA", 1);
+  mafLine_t *ml2 = maf_newMafLineFromString("s mm9.chr1        123480 13 + "
+                                            "1234870098734 ACGTACGTACGTA", 1);
+  stHash *seq1Hash = stHash_construct3(stHash_stringKey,
+                                       stHash_stringEqualKey, free, free);
+  stHash *seq2Hash = stHash_construct3(stHash_stringKey,
+                                       stHash_stringEqualKey, free, free);
+  stHash *intervalsHash = stHash_construct3(stHash_stringKey,
+                                            stHash_stringEqualKey,
+                                            free, (void(*)(void *)) stSortedSet_destruct);
+  stSortedSet *intervals = stSortedSet_construct3((int(*)(const void *, const void*)) stIntTuple_cmpFn,
+                                                  (void(*)(void *)) stIntTuple_destruct);
+  stHash_insert(intervalsHash, stString_copy("hg19.chr19"), intervals);
+  stIntTuple *t = stIntTuple_construct2(123480, 123485);
+  stSortedSet_insert(intervals, t);
+  uint64_t alignedPositions = 0;
+  mafCoverageCount_t *mcct1 = createMafCoverageCount();
+  mafCoverageCount_t *mcct2 = createMafCoverageCount();
+  BinContainer *bc = binContainer_construct(80, 100, 1);
+  mafCoverageCount_setSourceLength(mcct1, 1234870098734);
+  mafCoverageCount_setSourceLength(mcct2, 1234870098734);
+  stHash_insert(seq1Hash, stString_copy("hg19.chr19"), mcct1);
+  stHash_insert(seq2Hash, stString_copy("mm9.chr1"), mcct2);
+  compareLines(ml1, ml2, seq1Hash, seq2Hash, &alignedPositions,
+               intervalsHash, bc);
+  CuAssertTrue(testCase, binContainer_getBinStart(bc) == 80);
+  CuAssertTrue(testCase, binContainer_getBinEnd(bc) == 100);
+  CuAssertTrue(testCase, binContainer_getBins(bc) != NULL);
+  // BinContents(bc);
+  CuAssertTrue(testCase, binContainer_getNumBins(bc) == 21);
+  for (int i = 0; i < 7; ++i) {
+    CuAssertTrue(testCase, binContainer_accessBin(bc, i) == 0);
+  }
+  for (int i = 7; i < 20; ++i) {
+    CuAssertTrue(testCase, binContainer_accessBin(bc, i) == 1);
+  }
+  CuAssertTrue(testCase, binContainer_accessBin(bc, 20) == 0);
+  maf_destroyMafLineList(ml1);
+  maf_destroyMafLineList(ml2);
+  stHash_destruct(seq1Hash);
+  stHash_destruct(seq2Hash);
+  stHash_destruct(intervalsHash);
+  binContainer_destruct(bc);
+}
 
 CuSuite* pairCoverage_TestSuite(void) {
   CuSuite* suite = CuSuiteNew();
@@ -678,6 +727,7 @@ CuSuite* pairCoverage_TestSuite(void) {
   (void) test_binning_6;
   (void) test_binning_7;
   (void) test_binning_8;
+  (void) test_binning_9;
   SUITE_ADD_TEST(suite, test_is_wild_0);
   SUITE_ADD_TEST(suite, test_searchMatched_0);
   SUITE_ADD_TEST(suite, test_compareLines_0);
@@ -693,5 +743,6 @@ CuSuite* pairCoverage_TestSuite(void) {
   SUITE_ADD_TEST(suite, test_binning_6);
   SUITE_ADD_TEST(suite, test_binning_7);
   SUITE_ADD_TEST(suite, test_binning_8);
+  SUITE_ADD_TEST(suite, test_binning_9);
   return suite;
 }

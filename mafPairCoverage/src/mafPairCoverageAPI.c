@@ -218,6 +218,11 @@ void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash,
   assert(mcct1 != NULL);
   assert(mcct2 != NULL);
   uint64_t s1_start = maf_mafLine_getStart(ml1);
+  int strand = 1;
+  if (maf_mafLine_getStrand(ml1) == '-') {
+    s1_start = maf_mafLine_getSourceLength(ml1) - s1_start - 1;
+    strand = -1;
+  }
   if (stHash_size(intervalsHash) == 0) {
     // no intervals: yay, life is simple! :D
     for (uint64_t i = 0; i < n; ++i) {
@@ -225,7 +230,7 @@ void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash,
         ++(*alignedPositions);
         ++(mcct1->count);
         ++(mcct2->count);
-        binContainer_incrementPosition(bin_container, s1_start + i);
+        binContainer_incrementPosition(bin_container, s1_start + i * strand);
       }
     }
   } else {
@@ -240,7 +245,7 @@ void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash,
         ++(*alignedPositions);
         ++(mcct1->count);
         ++(mcct2->count);
-        binContainer_incrementPosition(bin_container, s1_start + i);
+        binContainer_incrementPosition(bin_container, s1_start + i * strand);
         if (inInterval(intervalsHash, seqName1, pos1)) {
           // seq 1 is in the interval
           ++(mcct1->inRegion);
@@ -508,11 +513,14 @@ void reportResultsBins(char *seq1, char *seq2, BinContainer *bc) {
   if (binContainer_getBins(bc) == NULL) {
     return;
   }
+  printf("##############################\n");
   printf("# Bins\n# Ref_Bin_Starting_Pos\tCoverage\n");
-  int64_t cur_pos = bc->bin_start;
-  assert(bc->bin_length > 0);
-  for (int64_t i = 0; i < bc->num_bins; ++i) {
-    printf("%" PRIi64 "\t%15e\n", cur_pos,
-           bc->bins[i] / (double)bc->bin_length);
+  int64_t cur_pos = binContainer_getBinStart(bc);
+  assert(binContainer_getBinLength(bc) > 0);
+  for (int64_t i = 0; i < binContainer_getNumBins(bc); ++i) {
+    printf("%22" PRIi64 "\t%12e\n", cur_pos,
+           binContainer_accessBin(bc, i) /
+           (double)binContainer_getBinLength(bc));
+    cur_pos += binContainer_getBinLength(bc);
   }
 }
