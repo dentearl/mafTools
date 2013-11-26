@@ -112,9 +112,9 @@ s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
          0, 0, 1, 1, 1, 0, 0, 0, 1, 1,
          1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
          0, 0, 0, 0, 0, 0, 0, 0, 0, 0,]),
             ]
@@ -172,19 +172,60 @@ s target.chr0     0 30 - 100 AAAAAAAAAAAAAAAAAAAAAAAAAAAAA----------------------
 def coverageIsCorrect(filename, lineSet):
   f = open(filename, 'r')
   for line in f:
-    if line.startswith('#'):
-        continue
     line = line.strip()
+    if line.startswith('#'):
+      if line == '# Bins':
+        # This function does not test bin values
+        return True
+      continue
     if not line:
-        continue
+      continue
     line = line.split()
     if len(line):
-        line.pop() # throw away the first coverage number
-        if len(line) == 5:
-            line.pop() # throw away the second coverage number
+      line.pop() # throw away the first coverage number
+      if len(line) == 5:
+        line.pop() # throw away the second coverage number
     line = ''.join(line)
     if line not in lineSet:
-        print '%s not in lineSet' % line
+      print '%s not in lineSet' % line
+      return False
+  return True
+
+
+def binningIsCorrect(filename, true_array):
+  """given an outputfile name and the expected array, verify the output
+  is correct
+  """
+  f = open(filename, 'r')
+  is_bin_section = False
+  obs_array = []
+  for line in f:
+    line = line.strip()
+    if line.startswith('#'):
+      if line == '# Bins':
+        is_bin_section = True
+      continue
+    if not line:
+      continue
+    if not is_bin_section:
+      continue
+    data = line.split()
+    assert(len(data) == 2)
+    obs_array.append(float(data[1]))
+  obs_array = np.array(obs_array)
+  if len(obs_array) != len(true_array):
+    print 'len(obs_array) %d != len(true_array) %d' % (len(obs_array),
+                                                       len(true_array))
+    print 'obs:  ', obs_array
+    print 'true: ', true_array
+    return False
+  if not np.allclose(obs_array, true_array):
+    for i in xrange(0, len(obs_array)):
+      if obs_array[i] != true_array[i]:
+        print 'obs_array[%d] %e != true_array[%d] %e' % (i, obs_array[i],
+                                                         i, true_array[i])
+        print 'obs:  ', obs_array
+        print 'true: ', true_array
         return False
   return True
 
@@ -194,11 +235,13 @@ def compressList(a_list, bin_length):
   to be ceil(len(a_list) / bin_length) and sums all the values from
   a_list to go in the new list's larger buckets.
   """
-  b_list = np.zeros(mathceil(a_list / float(bin_length)))
-  cur_bin = 0
+  b_list = np.zeros(math.ceil(len(a_list) / float(bin_length)))
+  cur_bin = -1
   for i in xrange(0, len(a_list)):
-    cur_bin = i % bin_length
+    if not (i % bin_length):
+      cur_bin += 1
     b_list[cur_bin] +=  a_list[i]
+  b_list /= bin_length
   return b_list
 
 class CoverageTest(unittest.TestCase):
@@ -306,6 +349,130 @@ class CoverageTest(unittest.TestCase):
       mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
       self.assertTrue(coverageIsCorrect(os.path.join(tmpDir, 'coverage.txt'), g_coverageLinesWildBed))
       mtt.removeDir(tmpDir)
+
+  def testCoverageBinning_0(self):
+    """ mafPairCoverage should output bin values that accurately reflect the coverage between sequences.
+    """
+    mtt.makeTempDirParent()
+    for i in xrange(0, 10):
+      shuffledBlocks = []
+      true_array = np.zeros(100)
+      tmpDir = os.path.abspath(mtt.makeTempDir('binning_0'))
+      order = [1] * len(g_overlappingBlocks) + [0] * len(g_nonOverlappingBlocks)
+      random.shuffle(order)
+      random.shuffle(g_overlappingBlocks)
+      random.shuffle(g_nonOverlappingBlocks)
+      j, k = 0, 0
+      total = 0
+      for isOverlapping in order:
+        if isOverlapping:
+          shuffledBlocks.append(g_overlappingBlocks[j][0])
+          total += g_overlappingBlocks[j][1]
+          true_array = np.add(true_array, g_overlappingBlocks[j][2])
+          j += 1
+        else:
+          shuffledBlocks.append(g_nonOverlappingBlocks[k][0])
+          k += 1
+      testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
+                             ''.join(shuffledBlocks), g_headers)
+      parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+      cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafPairCoverage'))]
+      cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
+              '--seq1', g_targetSeq1, '--seq2', g_targetSeq2, '--bin_start=0',
+              '--bin_end=99', '--bin_length=1',
+              ]
+      outpipes = [os.path.abspath(os.path.join(tmpDir, 'coverage.txt'))]
+      mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
+      mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+      self.assertTrue(
+        coverageIsCorrect(os.path.join(tmpDir, 'coverage.txt'), g_coverageLines))
+      self.assertTrue(
+        binningIsCorrect(os.path.join(tmpDir, 'coverage.txt'), true_array))
+      mtt.removeDir(tmpDir)
+
+  def testCoverageBinning_1(self):
+    """ mafPairCoverage should output bin values that accurately reflect the coverage between sequences.
+    """
+    mtt.makeTempDirParent()
+    for i in xrange(0, 10):
+      shuffledBlocks = []
+      true_array = np.zeros(100)
+      tmpDir = os.path.abspath(mtt.makeTempDir('binning_0'))
+      order = [1] * len(g_overlappingBlocks) + [0] * len(g_nonOverlappingBlocks)
+      random.shuffle(order)
+      random.shuffle(g_overlappingBlocks)
+      random.shuffle(g_nonOverlappingBlocks)
+      j, k = 0, 0
+      total = 0
+      for isOverlapping in order:
+        if isOverlapping:
+          shuffledBlocks.append(g_overlappingBlocks[j][0])
+          total += g_overlappingBlocks[j][1]
+          true_array = np.add(true_array, g_overlappingBlocks[j][2])
+          j += 1
+        else:
+          shuffledBlocks.append(g_nonOverlappingBlocks[k][0])
+          k += 1
+      testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
+                             ''.join(shuffledBlocks), g_headers)
+      parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+      cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafPairCoverage'))]
+      cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
+              '--seq1', g_targetSeq1, '--seq2', g_targetSeq2, '--bin_start=0',
+              '--bin_end=99', '--bin_length=2',
+              ]
+      outpipes = [os.path.abspath(os.path.join(tmpDir, 'coverage.txt'))]
+      mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
+      mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+      self.assertTrue(
+        coverageIsCorrect(os.path.join(tmpDir, 'coverage.txt'), g_coverageLines))
+      self.assertTrue(
+        binningIsCorrect(os.path.join(tmpDir, 'coverage.txt'),
+                         compressList(true_array, 2)))
+      mtt.removeDir(tmpDir)
+
+  def testCoverageBinning_2(self):
+    """ mafPairCoverage should output bin values that accurately reflect the coverage between sequences, TEST A HUGE NUMBER OF BINS.
+    """
+    mtt.makeTempDirParent()
+    for j in xrange(1, 100):  # bin lengths
+      for i in xrange(0, 10):
+        shuffledBlocks = []
+        true_array = np.zeros(100)
+        tmpDir = os.path.abspath(mtt.makeTempDir('binning_0'))
+        order = [1] * len(g_overlappingBlocks) + [0] * len(g_nonOverlappingBlocks)
+        random.shuffle(order)
+        random.shuffle(g_overlappingBlocks)
+        random.shuffle(g_nonOverlappingBlocks)
+        j, k = 0, 0
+        total = 0
+        for isOverlapping in order:
+          if isOverlapping:
+            shuffledBlocks.append(g_overlappingBlocks[j][0])
+            total += g_overlappingBlocks[j][1]
+            true_array = np.add(true_array, g_overlappingBlocks[j][2])
+            j += 1
+          else:
+            shuffledBlocks.append(g_nonOverlappingBlocks[k][0])
+            k += 1
+        testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
+                               ''.join(shuffledBlocks), g_headers)
+        parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafPairCoverage'))]
+        cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test_%d.maf' % i)),
+                '--seq1', g_targetSeq1, '--seq2', g_targetSeq2, '--bin_start=0',
+                '--bin_end=99', '--bin_length=%d' % j,
+                ]
+        outpipes = [os.path.abspath(os.path.join(tmpDir, 'coverage.txt'))]
+        mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
+        mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+        self.assertTrue(
+          coverageIsCorrect(os.path.join(tmpDir, 'coverage.txt'), g_coverageLines))
+        self.assertTrue(
+          binningIsCorrect(os.path.join(tmpDir, 'coverage.txt'),
+                           compressList(true_array, j)))
+        mtt.removeDir(tmpDir)
+
   def _testMemory0(self):
     """ If valgrind is installed on the system, check for memory related errors (0).
     """

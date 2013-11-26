@@ -137,8 +137,8 @@ void binContainer_incrementPosition(BinContainer *bc, int64_t pos) {
   }
   int64_t local_pos = pos - binContainer_getBinStart(bc);
   int64_t i = (int)floor(local_pos / binContainer_getBinLength(bc));
-  // fprintf(stderr, "incrementing pos %" PRIi64", local_pos %" PRIi64 ", "
-  //         "bin %" PRIi64 "\n", pos, local_pos, i);
+  /* fprintf(stderr, "incrementing pos %" PRIi64", local_pos %" PRIi64 ", " */
+  /*         "bin %" PRIi64 "\n", pos, local_pos, i); */
   binContainer_incrementBin(bc, i);
 }
 void binContainer_incrementBin(BinContainer *bc, int64_t i) {
@@ -225,12 +225,23 @@ void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash,
   }
   if (stHash_size(intervalsHash) == 0) {
     // no intervals: yay, life is simple! :D
+    uint64_t offset = 0;  // accounts for gaps in sequence 1
     for (uint64_t i = 0; i < n; ++i) {
       if ((s1[i] != '-') && (s2[i] != '-')) {
         ++(*alignedPositions);
         ++(mcct1->count);
         ++(mcct2->count);
-        binContainer_incrementPosition(bin_container, s1_start + i * strand);
+        binContainer_incrementPosition(bin_container,
+                                       s1_start + offset * strand);
+      }
+      if (s1[i] != '-') {
+        /* printf("\noffset: %" PRIu64"\n", offset); */
+        /* for (int k=0; k < i; ++k) */
+        /*   printf(" "); */
+        /* printf("*\n"); */
+        /* printf("1: %s\n", maf_mafLine_getSequence(ml1)); */
+        /* printf("2: %s\n", maf_mafLine_getSequence(ml2)); */
+        ++offset;
       }
     }
   } else {
@@ -238,6 +249,7 @@ void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash,
     uint64_t pos1, pos2;
     int strand1, strand2;
     quickSetup(ml1, ml2, &pos1, &pos2, &strand1, &strand2);
+    uint64_t offset = 0;
     for (uint64_t i = 0; i < n; ++i) {
       pos1 += strand1;
       pos2 += strand2;
@@ -245,7 +257,8 @@ void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash,
         ++(*alignedPositions);
         ++(mcct1->count);
         ++(mcct2->count);
-        binContainer_incrementPosition(bin_container, s1_start + i * strand);
+        binContainer_incrementPosition(bin_container,
+                                       s1_start + offset * strand);
         if (inInterval(intervalsHash, seqName1, pos1)) {
           // seq 1 is in the interval
           ++(mcct1->inRegion);
@@ -260,6 +273,15 @@ void compareLines(mafLine_t *ml1, mafLine_t *ml2, stHash *seq1Hash,
           // seq2 is not in the interval
           ++(mcct2->outRegion);
         }
+      }
+      if (s1[i] != '-') {
+        /* printf("\noffset: %" PRIu64"\n   ", offset); */
+        /* for (int k=0; k < i; ++k) */
+        /*   printf(" "); */
+        /* printf("*\n"); */
+        /* printf("1: %s\n", maf_mafLine_getSequence(ml1)); */
+        /* printf("2: %s\n", maf_mafLine_getSequence(ml2)); */
+        ++offset;
       }
     }
   }
