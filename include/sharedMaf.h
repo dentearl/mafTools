@@ -123,7 +123,8 @@ void maf_mafBlock_flipStrand(mafBlock_t *mb);
 void reverseComplementSequence(char *s, size_t n); // in-place reverse complement
 void complementSequence(char *s, size_t n);
 char complementChar(char c);
-char *copySpeciesName(char *s); // hg18.chr1 -> hg18
+char *copySpeciesName(const char *s); // hg18.chr1 -> hg18
+char *copyChromosomeName(const char *s); // hg18.chr1 -> chr1
 // print
 void maf_mafBlock_printList(mafBlock_t *m);
 void maf_mafBlock_print(mafBlock_t *m);

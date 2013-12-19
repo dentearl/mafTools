@@ -1,4 +1,5 @@
 SHELL=/bin/bash
+.SECONDARY:
 .PHONY: all clean test
 
 cc = gcc
@@ -36,7 +37,7 @@ test/sharedMaf.o: sharedMaf.c sharedMaf.h
 	mv $@.tmp $@
 
 test: allTests
-	./allTests && python2.7 test.sharedMaf.py --verbose && rm -rf ./allTests ./test && rmdir ./tempTestDir
+	./allTests && python2.7 test.sharedMaf.py --verbose && rm -rf ./allTests ./test && rmdir ./tempTestDir ./test_tmp
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
 	${cc} -c ${args} $<
