@@ -28,9 +28,9 @@ SHELL:=/bin/bash
 bin = ../bin
 PROGS = mafCoverage
 dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*) $(wildcard ${sonLibPath}/*) ${sonLibPath}/sonLib.a src/allTests.c
-# extraAPI := ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/mafCoverageAPI.o ${sonLibPath}/sonLib.a src/buildVersion.o
-# testAPI := test/sharedMaf.o test/common.o ../external/CuTest.a test/mafCoverageAPI.o ${sonLibPath}/sonLib.a test/buildVersion.o
-# testObjects := test/test.mafCoverageAPI.o
+extraAPI := ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/mafCoverageAPI.o ${sonLibPath}/sonLib.a src/buildVersion.o
+testAPI := test/sharedMaf.o test/common.o ../external/CuTest.a test/mafCoverageAPI.o ${sonLibPath}/sonLib.a test/buildVersion.o
+testObjects := test/test.mafCoverageAPI.o
 sources := src/mafCoverage.c src/mafCoverage.h
 
 .PHONY: all clean test buildVersion
@@ -47,12 +47,12 @@ ${bin}/mafCoverage: src/mafCoverage.c ${dependencies} ${extraAPI}
 %.o: %.c %.h
 	${cxx} -c $< -o $@.tmp ${cflags}
 	mv $@.tmp $@
-# %/mafCoverageAPI.o: src/mafCoverageAPI.c src/mafCoverageAPI.h
-# 	${cxx} -c $< -o $@.tmp ${cflags}
-# 	mv $@.tmp $@
+%/mafCoverageAPI.o: src/mafCoverageAPI.c src/mafCoverageAPI.h
+	${cxx} -c $< -o $@.tmp ${cflags}
+	mv $@.tmp $@
 
 test: buildVersion test/allTests test/mafCoverage
-	./test/allTests && python2.7 src/test.mafCoverage.py --verbose # && rm -rf ./test/ && rmdir ./tempTestDir
+	./test/allTests && python2.7 src/test.mafCoverage.py --verbose  && rm -rf ./test/ && rmdir ./tempTestDir
 test/allTests: src/allTests.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
 	${cxx} $^ -o $@.tmp ${testFlags} -lm
@@ -65,10 +65,10 @@ test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags}
 	mv $@.tmp $@
-# test/test.mafCoverageAPI.o: src/test.mafCoverageAPI.c src/test.mafCoverageAPI.h test/mafCoverageAPI.o
-# 	mkdir -p $(dir $@)
-# 	${cxx} -c $< -o $@.tmp ${testFlags}
-# 	mv $@.tmp $@
+test/test.mafCoverageAPI.o: src/test.mafCoverageAPI.c src/test.mafCoverageAPI.h test/mafCoverageAPI.o
+	mkdir -p $(dir $@)
+	${cxx} -c $< -o $@.tmp ${testFlags}
+	mv $@.tmp $@
 test/%.o: src/%.c src/%.h ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags}
