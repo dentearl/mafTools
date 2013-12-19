@@ -13,7 +13,7 @@ ifeq ($(wildcard ../sonLib/Makefile),)
 	ToFasta =
 	PairCoverage =
 	Coverage =
-$(warning Because dependency ../sonLib is missing mafComparator and mafTransitiveClosure will not be built / tested / cleaned. See README.md for information about dependencies.)
+$(warning Because dependency ../sonLib is missing mafComparator, mafTransitiveClosure, mafStats, mafToFastaStitcher, mafPairCoverage, mafCoverage will not be built / tested / cleaned. See README.md for information about dependencies.)
 else
 	Comparator = mafComparator
 	Stats = mafStats
