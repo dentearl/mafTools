@@ -82,12 +82,13 @@ stHash *getMapOfSequenceNamesToSizesFromMaf(char *mafFileName) {
     while ((thisBlock = maf_readBlock(mfa)) != NULL) {
         mafLine_t *ml = maf_mafBlock_getHeadLine(thisBlock);
         while (ml != NULL) {
-            char *sequenceName = copySpeciesName(maf_mafLine_getSpecies(ml));
-            if (stHash_search(sequenceNamesToSequenceSizes, sequenceName) == NULL) {
-                stHash_insert(sequenceNamesToSequenceSizes, sequenceName, stIntTuple_construct1(maf_mafLine_getSourceLength(ml)));
-            } else {
-                assert(stIntTuple_get(stHash_search(sequenceNamesToSequenceSizes, sequenceName), 0) == maf_mafLine_getSourceLength(ml));
-                free(sequenceName);
+            if (maf_mafLine_getType(ml) == 's') {
+                char *sequenceName = maf_mafLine_getSpecies(ml);
+                if (stHash_search(sequenceNamesToSequenceSizes, sequenceName) == NULL) {
+                    stHash_insert(sequenceNamesToSequenceSizes, stString_copy(sequenceName), stIntTuple_construct1(maf_mafLine_getSourceLength(ml)));
+                } else {
+                    assert(stIntTuple_get(stHash_search(sequenceNamesToSequenceSizes, sequenceName), 0) == maf_mafLine_getSourceLength(ml));
+                }
             }
             ml = maf_mafLine_getNext(ml);
         }
@@ -116,9 +117,11 @@ stHash *getMapOfSequenceNamesToSequenceSizesForGivenSpecies(stHash *sequenceName
     stHashIterator *it = stHash_getIterator(sequenceNamesToSequenceSizes);
     char *sequenceName;
     while ((sequenceName = stHash_getNext(it)) != NULL) {
-        if (stString_eq(speciesName, copySpeciesName(sequenceName))) {
+        char *speciesNameOfSequence = copySpeciesName(sequenceName);
+        if (stString_eq(speciesName, speciesNameOfSequence)) {
             stHash_insert(sequenceNamesToSequenceSizeForGivenSpecies, sequenceName, stHash_search(sequenceNamesToSequenceSizes, sequenceName));
         }
+        free(speciesNameOfSequence);
     }
     stHash_destructIterator(it);
     return sequenceNamesToSequenceSizeForGivenSpecies;
@@ -152,7 +155,7 @@ PairwiseCoverage *pairwiseCoverage_construct(const stHash *sequenceNamesToSequen
     stHashIterator *it = stHash_getIterator((stHash *)pC->sequenceNamesToSequenceSizeForGivenSpecies);
     char *sequenceName;
     while ((sequenceName = stHash_getNext(it)) != NULL) {
-        stHash_insert(pC->sequenceCoverages, sequenceName,
+        stHash_insert(pC->sequenceCoverages, stString_copy(sequenceName),
                 st_calloc(stIntTuple_get(stHash_search((stHash *)pC->sequenceNamesToSequenceSizeForGivenSpecies, sequenceName), 0), sizeof(char)));
     }
     stHash_destructIterator(it);
@@ -185,7 +188,7 @@ double *pairwiseCoverage_calculateNCoverages(PairwiseCoverage *pC) {
         int64_t chromosomeLength = stIntTuple_get(stHash_search((stHash *)pC->sequenceNamesToSequenceSizeForGivenSpecies, sequenceName), 0);
         char *chromosomeCoverage = stHash_search(pC->sequenceCoverages, sequenceName);
         for (int64_t i = 0; i < chromosomeLength; i++) {
-            for (int64_t j = chromosomeCoverage[i]; j > 0; j--) {
+            for (int64_t j = chromosomeCoverage[i]; j >= 0; j--) {
                 nCoverages[j]++;
             }
         }
@@ -227,7 +230,7 @@ NGenomeCoverage *nGenomeCoverage_construct(stHash *sequenceNamesToSequenceSizes,
     stSetIterator *it = stSet_getIterator(speciesNames);
     char *speciesName2;
     while ((speciesName2 = stSet_getNext(it)) != NULL) {
-        stHash_insert(nGC->pairwiseCoverages, speciesName2, pairwiseCoverage_construct(nGC->sequenceNamesToSequenceSizeForGivenSpecies));
+        stHash_insert(nGC->pairwiseCoverages, stString_copy(speciesName2), pairwiseCoverage_construct(nGC->sequenceNamesToSequenceSizeForGivenSpecies));
     }
     //Cleanup
     stSet_destructIterator(it);
@@ -250,10 +253,9 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
                 char *lineSpeciesName = copySpeciesName(maf_mafLine_getSpecies(ml));
                 if (stString_eq(nGC->speciesName, lineSpeciesName)) {
                     stList_append(querySpeciesLines, ml);
-                } else {
-                    stList_append(targetSpeciesLines, ml);
-                    stList_append(targetSpeciesPairwiseCoverages, stHash_search(nGC->pairwiseCoverages, lineSpeciesName));
                 }
+                stList_append(targetSpeciesLines, ml);
+                stList_append(targetSpeciesPairwiseCoverages, stHash_search(nGC->pairwiseCoverages, lineSpeciesName));
                 free(lineSpeciesName);
             }
             ml = maf_mafLine_getNext(ml);
@@ -263,20 +265,23 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
             char *querySequence = maf_mafLine_getSequence(qML);
             char *querySequenceName = maf_mafLine_getSpecies(qML);
             for (int64_t j = 0; j < stList_length(targetSpeciesLines); j++) {
-                PairwiseCoverage *pC = stList_get(targetSpeciesPairwiseCoverages, j);
-                assert(pC != NULL);
-                char *coverageArray = pairwiseCoverage_getCoverageArrayForSequence(pC, querySequenceName);
                 mafLine_t *tML = stList_get(targetSpeciesLines, j);
-                char *targetSequence = maf_mafLine_getSequence(tML);
-                int64_t position = maf_mafLine_getPositiveCoord(qML);
-                assert(maf_mafLine_getLength(qML) == maf_mafLine_getLength(tML));
-                assert(strlen(querySequence) == strlen(targetSequence));
-                assert(strlen(querySequence) == maf_mafLine_getLength(qML));
-                for (int64_t k = 0; k < maf_mafLine_getLength(qML); k++) {
-                    if (querySequence[k] != '-' && targetSequence[k] != '-') {
-                        if(!requireIdentityForMatch || (toupper(querySequence[k]) != 'N' && toupper(querySequence[k]) == toupper(targetSequence[k]))) {
-                            pairwiseCoverageArray_increase(coverageArray, position);
-                            position += maf_mafLine_getStrand(qML) ? 1 : -1;
+                if(qML != tML) { //To allow self alignments we must ignore identity alignments
+                    PairwiseCoverage *pC = stList_get(targetSpeciesPairwiseCoverages, j);
+                    assert(pC != NULL);
+                    char *coverageArray = pairwiseCoverage_getCoverageArrayForSequence(pC, querySequenceName);
+                    assert(coverageArray != NULL);
+                    char *targetSequence = maf_mafLine_getSequence(tML);
+                    int64_t position = maf_mafLine_getPositiveCoord(qML);
+                    assert(maf_mafLine_getSequenceFieldLength(qML) == maf_mafLine_getSequenceFieldLength(tML));
+                    assert(strlen(querySequence) == strlen(targetSequence));
+                    assert(strlen(querySequence) == maf_mafLine_getSequenceFieldLength(qML));
+                    for (int64_t k = 0; k < maf_mafLine_getLength(qML); k++) {
+                        if (querySequence[k] != '-' && targetSequence[k] != '-') {
+                            if(!requireIdentityForMatch || (toupper(querySequence[k]) != 'N' && toupper(querySequence[k]) == toupper(targetSequence[k]))) {
+                                pairwiseCoverageArray_increase(coverageArray, position);
+                                position += maf_mafLine_getStrand(qML) ? 1 : -1;
+                            }
                         }
                     }
                 }
@@ -314,12 +319,14 @@ void nGenomeCoverage_report(NGenomeCoverage *nGC, FILE *out, bool includeNCovera
     int64_t speciesGenomeLength = getTotalLengthOfSequences(nGC->sequenceNamesToSequenceSizeForGivenSpecies);
     while ((speciesName = stHash_getNext(it)) != NULL) {
         PairwiseCoverage *pC = stHash_search(nGC->pairwiseCoverages, speciesName);
+        assert(pC != NULL);
         fprintf(out, "%s\t%s\t%" PRId64 "\t%f", nGC->speciesName, speciesName, speciesGenomeLength, pairwiseCoverage_calculateCoverage(pC));
         if (includeNCoverage) {
             double *nCoverages = pairwiseCoverage_calculateNCoverages(pC);
             for (int i = 2; i < SCHAR_MAX; i++) {
                 fprintf(out, "\t%f", nCoverages[i]);
             }
+            free(nCoverages);
         }
         fprintf(out, "\n");
     }

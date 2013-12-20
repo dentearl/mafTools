@@ -62,6 +62,7 @@ void usage(void) {
         "wildcard at the end.");
     usageMessage('n', "nCoverage", "report all n-coverages, for 1 <= n <= 128 instead of just for n=1 (the default).");
     usageMessage('i', "identity", "report coverage of identical bases.");
+    usageMessage('l', "logLevel", "Set logging level, either 'CRITICAL'/'INFO'/'DEBUG'.");
     exit(EXIT_FAILURE);
 }
 
@@ -70,9 +71,9 @@ static void parseOptions(int argc, char **argv) {
     speciesNames = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
     while (1) {
         static struct option longOptions[] = { { "help", no_argument, 0, 'h' }, { "maf", required_argument, 0, 'm' }, { "seq",
-                required_argument, 0, 's' }, { "nCoverage", no_argument, 0, 'n' }, { "identity", no_argument, 0, 'i' }, { 0, 0, 0, 0 } };
+                required_argument, 0, 's' }, { "nCoverage", no_argument, 0, 'n' }, { "identity", no_argument, 0, 'i' }, { "logLevel", required_argument, 0, 'l' }, { 0, 0, 0, 0 } };
         int longIndex = 0;
-        c = getopt_long(argc, argv, "m:s:hn", longOptions, &longIndex);
+        c = getopt_long(argc, argv, "m:s:hnl:", longOptions, &longIndex);
         if (c == -1)
             break;
         switch (c) {
@@ -87,6 +88,9 @@ static void parseOptions(int argc, char **argv) {
                 break;
             case 'i':
                 identity = 1;
+                break;
+            case 'l':
+                st_setLogLevelFromString(optarg);
                 break;
             case 'h':
                 usage();
@@ -111,9 +115,16 @@ int main(int argc, char **argv) {
     parseOptions(argc, argv);
     //Work out the structure of the chromosomes of the query sequence
     stHash *sequenceNamesToSequenceSizes = getMapOfSequenceNamesToSizesFromMaf(mafFileName);
+    stHashIterator *sequenceNameIt = stHash_getIterator(sequenceNamesToSequenceSizes);
+    char *sequenceName;
+    while((sequenceName = stHash_getNext(sequenceNameIt)) != NULL) {
+        st_logDebug("Got a sequence name: %s with length %" PRId64 "\n", sequenceName, stIntTuple_get(stHash_search(sequenceNamesToSequenceSizes, sequenceName), 0));
+    }
+    stHash_destructIterator(sequenceNameIt);
     stList *sequenceNames = stHash_getKeys(sequenceNamesToSequenceSizes);
     //If the species name is not specified then replace with all possible species.
     if(stSet_size(speciesNames) == 0) {
+        st_logInfo("As no species name was specified, using all possible species names\n");
         stSet_destruct(speciesNames);
         speciesNames = getSpeciesNames(sequenceNames);
     }
@@ -123,6 +134,7 @@ int main(int argc, char **argv) {
     stSetIterator *speciesNamesIt = stSet_getIterator(speciesNames);
     char *speciesName;
     while((speciesName = stSet_getNext(speciesNamesIt)) != NULL) {
+        st_logInfo("Computing the coverages for species: %s\n", speciesName);
         //Build the coverage data structure
         NGenomeCoverage *nGC = nGenomeCoverage_construct(sequenceNamesToSequenceSizes, speciesName);
         nGenomeCoverage_populate(nGC, mafFileName, identity);
