@@ -215,7 +215,7 @@ struct _nGenomeCoverage {
     stHash *sequenceNamesToSequenceSizeForGivenSpecies;
 };
 
-NGenomeCoverage *nGenomeCoverage_construct(stHash *sequenceNamesToSequenceSizes, char *speciesName, bool nCoverage) {
+NGenomeCoverage *nGenomeCoverage_construct(stHash *sequenceNamesToSequenceSizes, char *speciesName) {
     NGenomeCoverage *nGC = st_malloc(sizeof(NGenomeCoverage));
     nGC->speciesName = stString_copy(speciesName);
     //The subset of sequence names and species we care about.
