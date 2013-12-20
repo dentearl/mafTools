@@ -16,7 +16,7 @@ clean:
 
 allTests: allTests.c test.sharedMaf.h test.sharedMaf.c ${testObjects}
 	mkdir -p test
-	${cc} -g -O0 ${args} $^ -o $@.tmp ${lm}
+	${cc} -g -O0 ${args} allTests.c test.sharedMaf.c ${testObjects} -o $@.tmp ${lm}
 	mv $@.tmp $@
 
 %.o: %.c %.h
@@ -38,7 +38,7 @@ test/sharedMaf.o: sharedMaf.c sharedMaf.h
 	mv $@.tmp $@
 
 test: allTests
-	./allTests && python2.7 test.sharedMaf.py --verbose && rm -rf ./allTests ./test && rmdir ./tempTestDir ./test_tmp
+	./allTests && python2.7 test.sharedMaf.py --verbose && rm -rf ./allTests ./test ./tempTestDir ./test_tmp
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
 	${cc} -c ${args} $<
