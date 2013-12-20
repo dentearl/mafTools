@@ -46,45 +46,58 @@ g_headers = ['''##maf version=1 scoring=tba.v8
 # known good : tuples (target species name, maf sequence,
 #   dictionary key: species value: coverage)
 g_knownGood = [('target', '''a score=0.0 status=test.input
-s target.chr1 10 10 + 20 ACGTACGTAC
-s seqB.chr1    0 10 + 20 ACGTACGTAC
-s seqC.chr1    0  5 + 20 A----CGT-C
+s target.chr1  0 10 + 10 ACGTACGTAC
+s seqB.chr1    0 10 + 10 ACGTACGTAC
+s seqC.chr1    0  5 + 10 A----CGT-C
 
 a score=0.0 status=test.input
-s seqA.chr2 10 10 + 20 ACGTACGTAC
-s seqB.chr3  0 10 - 20 ACGTACGTAC
-s seqC.chr4  0  5 + 20 A----CGT-C
+s seqA.chr2  0 10 + 10 ACGTACGTAC
+s seqB.chr3  0 10 - 10 ACGTACGTAC
+s seqC.chr4  0  5 + 10 A----CGT-C
+
 ''',
-                {'seqA' : 0.0,
-                 'seqB' : 1.0,
-                 'seqC' : 0.5,}),
+                {'seqA': 0.0,
+                 'seqB': 1.0,
+                 'seqC': 0.5,
+                 'target': 0.0,}),
                ('target',
                 '''a score=0.0 status=test.input
-s target.chr1 10 10 + 20 ACGTACGTAC
-s seqB.chr1    0 10 + 20 ACGTACGTAC
-s seqC.chr1    0  5 + 20 A-GT-CCGTC
-s seqA.chr2    0  2 + 20 A--------C
+s target.chr1  0 10 + 10 ACGTACGTAC
+s seqB.chr1    0 10 + 10 ACGTACGTAC
+s seqC.chr1    0  8 + 10 A-GT-CCGTC
+s seqA.chr2    0  2 + 10 A--------C
 
 a score=0.0 status=test.input
-s seqA.chr2 10 10 + 20 ACGTACGTAC
-s seqB.chr3  0 10 - 20 ACGTACGTAC
-s seqC.chr4  0 10 + 20 ACGTACGTAC
+s seqA.chr2  0 10 + 10 ACGTACGTAC
+s seqB.chr3  0 10 - 10 ACGTACGTAC
+s seqC.chr4  0 10 + 10 ACGTACGTAC
+
 ''',
-                {'seqA' : 0.2,
-                 'seqB' : 1.0,
-                 'seqC' : 0.8,}),
+                {'seqA': 0.2,
+                 'seqB': 1.0,
+                 'seqC': 0.8,
+                 'target': 0.0,}),
               ]
 
-def createPredctionDict(path):
+def createPredictionDict(path):
   f = open(path, 'r')
   predDict = {}
   # file format columns:
   # querySpecies - Target Species - length of Q genome - coverage - nCoverage
   for line in f:
     line = line.strip()
+    if line.startswith('#') or line.startswith('querySpecies'):
+      continue
     tabs = line.split()
-    predDict[tabs[0]] = float(tabs[3])
+    predDict[tabs[1]] = float(tabs[3])
   return predDict
+
+
+def AlmostEqual(a, b):
+  ''' returns true of a and b are within tolerance of one another
+  '''
+  tolerance = 0.00001
+  return abs(a - b) < tolerance
 
 
 def dictionariesAreIdentical(dict_a, dict_b):
@@ -92,22 +105,27 @@ def dictionariesAreIdentical(dict_a, dict_b):
   '''
   for a in dict_a:
     if a not in dict_b:
+      print 'a not in dict_b: %s, ' % (a, str(dict_b))
       return False
-    if dict_a[a] != dict_b[a]:
+    if not AlmostEqual(dict_a[a], dict_b[a]):
+      print 'dict_a[%s] %f != dict_b[%s] %f' % (a, dict_a[a], a, dict_b[a])
       return False
   for b in dict_b:
     if b not in dict_a:
+      print 'b not in dict_a: %s, %s' % (b, str(dict_a))
       return False
-    if dict_b[b] != dict_a[b]:
+    if not AlmostEqual(dict_b[b], dict_a[b]):
+      print 'dict_b[%s] %f != dict_a[%s] %f' % (b, dict_b[b], b, dict_a[b])
       return False
+  return True
 
 
-def solutionIsCorrect(predictionPath, solutionDict):
+def coverageIsCorrect(predictionPath, solutionDict):
   ''' read the predictionPath file, create a prediction dictionary,
   check that solution dictionary and prediction dictionary are identical
   '''
-  predctionDict = createPredictionDict(predcitionPath)
-  if dictionariesAreIdentical(predctionDict, solutionDict):
+  predictionDict = createPredictionDict(predictionPath)
+  if dictionariesAreIdentical(predictionDict, solutionDict):
     return True
   return False
 
