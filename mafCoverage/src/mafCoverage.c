@@ -70,7 +70,7 @@ static void parseOptions(int argc, char **argv) {
     int c;
     speciesNames = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
     while (1) {
-        static struct option longOptions[] = { { "help", no_argument, 0, 'h' }, { "maf", required_argument, 0, 'm' }, { "seq",
+        static struct option longOptions[] = { { "help", no_argument, 0, 'h' }, { "maf", required_argument, 0, 'm' }, { "species",
                 required_argument, 0, 's' }, { "nCoverage", no_argument, 0, 'n' }, { "identity", no_argument, 0, 'i' }, { "logLevel", required_argument, 0, 'l' }, { 0, 0, 0, 0 } };
         int longIndex = 0;
         c = getopt_long(argc, argv, "m:s:hnl:", longOptions, &longIndex);
