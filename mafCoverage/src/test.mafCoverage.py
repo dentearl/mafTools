@@ -78,10 +78,12 @@ s seqC.chr4  0 10 + 20 ACGTACGTAC
 def createPredctionDict(path):
   f = open(path, 'r')
   predDict = {}
+  # file format columns:
+  # querySpecies - Target Species - length of Q genome - coverage - nCoverage
   for line in f:
     line = line.strip()
     tabs = line.split()
-    predDict[tabs[0]] = float(tabs[1])
+    predDict[tabs[0]] = float(tabs[3])
   return predDict
 
 
