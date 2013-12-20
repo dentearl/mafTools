@@ -39,6 +39,10 @@
 #include "bioioC.h" // benLine()
 #include "sonLib.h"
 
+/*
+ * The following functions are not currently used.
+ */
+
 bool is_wild(const char *s) {
     // return true if char array ends in *, false otherwise
     if (s[strlen(s) - 1] == '*')
@@ -65,8 +69,12 @@ bool searchMatched_(const char *target, const char *seq) {
     return true;
 }
 
-stHash *getSequenceSizes(char *mafFileName) {
-    stHash *sequenceSizes = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, (void(*)(void *)) stIntTuple_destruct);
+/*
+ * These functions are used to gather and sift the sequence names and the lengths of the sequences in mafs.
+ */
+
+stHash *getMapOfSequenceNamesToSizesFromMaf(char *mafFileName) {
+    stHash *sequenceNamesToSequenceSizes = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, (void(*)(void *)) stIntTuple_destruct);
 
     //Walk through the MAF
     mafFileApi_t *mfa = maf_newMfa(mafFileName, "r");
@@ -75,10 +83,10 @@ stHash *getSequenceSizes(char *mafFileName) {
         mafLine_t *ml = maf_mafBlock_getHeadLine(thisBlock);
         while (ml != NULL) {
             char *sequenceName = copySpeciesName(maf_mafLine_getSpecies(ml));
-            if (stHash_search(sequenceSizes, sequenceName) == NULL) {
-                stHash_insert(sequenceSizes, sequenceName, stIntTuple_construct1(maf_mafLine_getSourceLength(ml)));
+            if (stHash_search(sequenceNamesToSequenceSizes, sequenceName) == NULL) {
+                stHash_insert(sequenceNamesToSequenceSizes, sequenceName, stIntTuple_construct1(maf_mafLine_getSourceLength(ml)));
             } else {
-                assert(stIntTuple_get(stHash_search(sequenceSizes, sequenceName), 0) == maf_mafLine_getSourceLength(ml));
+                assert(stIntTuple_get(stHash_search(sequenceNamesToSequenceSizes, sequenceName), 0) == maf_mafLine_getSourceLength(ml));
                 free(sequenceName);
             }
             ml = maf_mafLine_getNext(ml);
@@ -87,44 +95,41 @@ stHash *getSequenceSizes(char *mafFileName) {
     }
     maf_destroyMfa(mfa);
 
-    return sequenceSizes;
+    return sequenceNamesToSequenceSizes;
 }
 
-stSet *getSpecies(stHash *sequenceSizes) {
+stSet *getSpeciesNames(stList *sequenceNames) {
     stSet *speciesNames = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
-    stHashIterator *it = stHash_getIterator(sequenceSizes);
-    char *sequenceName;
-    while ((sequenceName = stHash_getNext(it)) != NULL) {
-        char *speciesName = copySpeciesName(sequenceName);
+    for(int64_t i=0; i<stList_length(sequenceNames); i++) {
+        char *speciesName = copySpeciesName(stList_get(sequenceNames, i));
         if (stSet_search(speciesNames, speciesName) == NULL) {
             stSet_insert(speciesNames, speciesName);
         } else {
             free(speciesName);
         }
     }
-    stHash_destructIterator(it);
     return speciesNames;
 }
 
-stHash *getSequenceSizesForGivenSpecies(stHash *allSequenceSizes, char *speciesName) {
-    stHash *sequenceSizes = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, NULL, NULL);
-    stHashIterator *it = stHash_getIterator(allSequenceSizes);
+stHash *getMapOfSequenceNamesToSequenceSizesForGivenSpecies(stHash *sequenceNamesToSequenceSizes, char *speciesName) {
+    stHash *sequenceNamesToSequenceSizeForGivenSpecies = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, NULL, NULL);
+    stHashIterator *it = stHash_getIterator(sequenceNamesToSequenceSizes);
     char *sequenceName;
     while ((sequenceName = stHash_getNext(it)) != NULL) {
         if (stString_eq(speciesName, copySpeciesName(sequenceName))) {
-            stHash_insert(sequenceSizes, sequenceName, stHash_search(allSequenceSizes, sequenceName));
+            stHash_insert(sequenceNamesToSequenceSizeForGivenSpecies, sequenceName, stHash_search(sequenceNamesToSequenceSizes, sequenceName));
         }
     }
     stHash_destructIterator(it);
-    return sequenceSizes;
+    return sequenceNamesToSequenceSizeForGivenSpecies;
 }
 
-int64_t getTotalLength(stHash *sequenceSizes) {
+int64_t getTotalLengthOfSequences(stHash *sequenceNamesToSequenceSizes) {
     int64_t length = 0;
-    stHashIterator *it = stHash_getIterator(sequenceSizes);
+    stHashIterator *it = stHash_getIterator(sequenceNamesToSequenceSizes);
     char *sequenceName;
     while ((sequenceName = stHash_getNext(it)) != NULL) {
-        length += stIntTuple_get(stHash_search(sequenceSizes, sequenceName), 0);
+        length += stIntTuple_get(stHash_search(sequenceNamesToSequenceSizes, sequenceName), 0);
     }
     stHash_destructIterator(it);
     return length;
@@ -136,20 +141,19 @@ int64_t getTotalLength(stHash *sequenceSizes) {
 
 struct _pairwiseCoverage {
     stHash *sequenceCoverages; //A hash of sequence names to char arrays describing the coverage of each base of the given species.
-    char *speciesName; //The name of species.
-    stHash *sequenceSizes; //A hash of sequence names to their lengths.
+    const stHash *sequenceNamesToSequenceSizeForGivenSpecies; //A hash of sequence names to their lengths, memory not owned by the object.
 };
 
-PairwiseCoverage *pairwiseCoverage_construct(stHash *allSequenceSizes, char *speciesName) {
+PairwiseCoverage *pairwiseCoverage_construct(const stHash *sequenceNamesToSequenceSizeForGivenSpecies) {
     PairwiseCoverage *pC = st_malloc(sizeof(PairwiseCoverage));
     pC->sequenceCoverages = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, free);
-    pC->speciesName = stString_copy(speciesName);
-    pC->sequenceSizes = getSequenceSizesForGivenSpecies(allSequenceSizes, speciesName);
-    stHashIterator *it = stHash_getIterator(pC->sequenceSizes);
+    pC->sequenceNamesToSequenceSizeForGivenSpecies = sequenceNamesToSequenceSizeForGivenSpecies;
+    //Now build the sequence coverage arrays.
+    stHashIterator *it = stHash_getIterator((stHash *)pC->sequenceNamesToSequenceSizeForGivenSpecies);
     char *sequenceName;
     while ((sequenceName = stHash_getNext(it)) != NULL) {
         stHash_insert(pC->sequenceCoverages, sequenceName,
-                st_calloc(stIntTuple_get(stHash_search(pC->sequenceSizes, sequenceName), 0), sizeof(char)));
+                st_calloc(stIntTuple_get(stHash_search((stHash *)pC->sequenceNamesToSequenceSizeForGivenSpecies, sequenceName), 0), sizeof(char)));
     }
     stHash_destructIterator(it);
     return pC;
@@ -157,8 +161,6 @@ PairwiseCoverage *pairwiseCoverage_construct(stHash *allSequenceSizes, char *spe
 
 void pairwiseCoverage_destruct(PairwiseCoverage *pC) {
     stHash_destruct(pC->sequenceCoverages);
-    free(pC->speciesName);
-    stHash_destruct(pC->sequenceSizes);
     free(pC);
 }
 
@@ -176,12 +178,11 @@ void pairwiseCoverageArray_increase(char *sequenceCoverageArray, int64_t positio
 }
 
 double *pairwiseCoverage_calculateNCoverages(PairwiseCoverage *pC) {
-    int64_t length = getTotalLength(pC->sequenceSizes);
-    stHashIterator *it = stHash_getIterator(pC->sequenceSizes);
+    stHashIterator *it = stHash_getIterator((stHash *)pC->sequenceNamesToSequenceSizeForGivenSpecies);
     double *nCoverages = st_calloc(SCHAR_MAX + 1, sizeof(double));
     char *sequenceName;
     while ((sequenceName = stHash_getNext(it)) != NULL) {
-        int64_t chromosomeLength = stIntTuple_get(stHash_search(pC->sequenceSizes, sequenceName), 0);
+        int64_t chromosomeLength = stIntTuple_get(stHash_search((stHash *)pC->sequenceNamesToSequenceSizeForGivenSpecies, sequenceName), 0);
         char *chromosomeCoverage = stHash_search(pC->sequenceCoverages, sequenceName);
         for (int64_t i = 0; i < chromosomeLength; i++) {
             for (int64_t j = chromosomeCoverage[i]; j > 0; j--) {
@@ -189,8 +190,9 @@ double *pairwiseCoverage_calculateNCoverages(PairwiseCoverage *pC) {
             }
         }
     }
+    int64_t genomeLength = getTotalLengthOfSequences((stHash *)pC->sequenceNamesToSequenceSizeForGivenSpecies);
     for (int64_t i = 0; i <= SCHAR_MAX; i++) {
-        nCoverages[i] /= length;
+        nCoverages[i] /= genomeLength;
     }
     return nCoverages;
 }
@@ -202,29 +204,34 @@ double pairwiseCoverage_calculateCoverage(PairwiseCoverage *pC) {
     return coverage;
 }
 
+/*
+ * The one-species-to-all-other-species structure.
+ */
+
 struct _nGenomeCoverage {
     //Top level hash is hash of other species names to pairwise coverage structs.
     char *speciesName;
-    int64_t speciesLength;
     stHash *pairwiseCoverages;
+    stHash *sequenceNamesToSequenceSizeForGivenSpecies;
 };
 
-NGenomeCoverage *nGenomeCoverage_construct(stHash *sequenceSizes, char *speciesName, bool nCoverage) {
+NGenomeCoverage *nGenomeCoverage_construct(stHash *sequenceNamesToSequenceSizes, char *speciesName, bool nCoverage) {
     NGenomeCoverage *nGC = st_malloc(sizeof(NGenomeCoverage));
     nGC->speciesName = stString_copy(speciesName);
-    stHash *sequencesForSpecies = getSequenceSizesForGivenSpecies(sequenceSizes, speciesName);
-    nGC->speciesLength = getTotalLength(sequencesForSpecies);
-    stHash_destruct(sequencesForSpecies);
-    nGC->pairwiseCoverages = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, (void(*)(void *)) pairwiseCoverage_destruct);
+    //The subset of sequence names and species we care about.
+    nGC->sequenceNamesToSequenceSizeForGivenSpecies = getMapOfSequenceNamesToSequenceSizesForGivenSpecies(sequenceNamesToSequenceSizes, speciesName);
     //Build the N different pairwise coverage structures.
-    stSet *speciesNames = getSpecies(sequenceSizes);
+    nGC->pairwiseCoverages = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, (void(*)(void *)) pairwiseCoverage_destruct);
+    stList *sequenceNames = stHash_getKeys(sequenceNamesToSequenceSizes);
+    stSet *speciesNames = getSpeciesNames(sequenceNames);
     stSetIterator *it = stSet_getIterator(speciesNames);
     char *speciesName2;
     while ((speciesName2 = stSet_getNext(it)) != NULL) {
-        stHash_insert(nGC->pairwiseCoverages, speciesName2, pairwiseCoverage_construct(sequenceSizes, speciesName));
+        stHash_insert(nGC->pairwiseCoverages, speciesName2, pairwiseCoverage_construct(nGC->sequenceNamesToSequenceSizeForGivenSpecies));
     }
-    stSet_destructIterator(it);
     //Cleanup
+    stSet_destructIterator(it);
+    stList_destruct(sequenceNames);
     stSet_destruct(speciesNames);
     return nGC;
 }
@@ -285,13 +292,14 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
 }
 
 void nGenomeCoverage_destruct(NGenomeCoverage *nGC) {
-    free(nGC->speciesName);
     stHash_destruct(nGC->pairwiseCoverages);
+    stHash_destruct(nGC->sequenceNamesToSequenceSizeForGivenSpecies);
+    free(nGC->speciesName);
     free(nGC);
 }
 
 void nGenomeCoverage_reportHeader(FILE *out, bool includeNCoverage) {
-    fprintf(out, "querySpecies\ttargetSpecies\tlength\tcoverage\t");
+    fprintf(out, "querySpecies\ttargetSpecies\tlengthOfQueryGenome\tcoverage\t");
     if (includeNCoverage) {
         for (int i = 2; i < SCHAR_MAX; i++) {
             fprintf(out, "\t%i-coverage", i);
@@ -303,9 +311,10 @@ void nGenomeCoverage_reportHeader(FILE *out, bool includeNCoverage) {
 void nGenomeCoverage_report(NGenomeCoverage *nGC, FILE *out, bool includeNCoverage) {
     stHashIterator *it = stHash_getIterator(nGC->pairwiseCoverages);
     char *speciesName;
+    int64_t speciesGenomeLength = getTotalLengthOfSequences(nGC->sequenceNamesToSequenceSizeForGivenSpecies);
     while ((speciesName = stHash_getNext(it)) != NULL) {
         PairwiseCoverage *pC = stHash_search(nGC->pairwiseCoverages, speciesName);
-        fprintf(out, "%s\t%s\t%" PRId64 "\t%f", nGC->speciesName, speciesName, getTotalLength(pC->sequenceSizes), pairwiseCoverage_calculateCoverage(pC));
+        fprintf(out, "%s\t%s\t%" PRId64 "\t%f", nGC->speciesName, speciesName, speciesGenomeLength, pairwiseCoverage_calculateCoverage(pC));
         if (includeNCoverage) {
             double *nCoverages = pairwiseCoverage_calculateNCoverages(pC);
             for (int i = 2; i < SCHAR_MAX; i++) {

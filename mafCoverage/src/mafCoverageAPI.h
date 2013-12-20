@@ -41,23 +41,23 @@ bool searchMatched_(const char *target, const char *seq);
  * Iterates through the maf and builds a hash of sequence names to coordinates.
  * Lengths are specified by an stIntTuple.
  */
-stHash *getSequenceSizes(char *mafFileName);
+stHash *getMapOfSequenceNamesToSizesFromMaf(char *mafFileName);
 
 /*
  * Each sequence name is comprised of two fields separated by a period. The first is the species field, the second is the
- * chromosome field. This function returns the set of distinct species names.
+ * chromosome field. This function returns the set of distinct species names from the set of sequence names.
  */
-stSet *getSpecies(stHash *sequenceSizes);
+stSet *getSpeciesNames(stList *sequenceNames);
 
 /*
  * Gets the subset of the hash for all sequences involving the given species.
  */
-stHash *getSequenceSizesForGivenSpecies(stHash *allSequenceSizes, char *speciesName);
+stHash *getMapOfSequenceNamesToSequenceSizesForGivenSpecies(stHash *sequenceNamesToSequenceSizes, char *speciesName);
 
 /*
  * Returns the combined length of all the sequences in the set.
  */
-int64_t getTotalLength(stHash *sequenceSizes);
+int64_t getTotalLengthOfSequences(stHash *sequenceSizes);
 
 /*
  * The pairwise coverage object.
@@ -65,11 +65,9 @@ int64_t getTotalLength(stHash *sequenceSizes);
 
 typedef struct _pairwiseCoverage PairwiseCoverage;
 
-PairwiseCoverage *pairwiseCoverage_construct(stHash *allSequenceSizes, char *speciesName);
+PairwiseCoverage *pairwiseCoverage_construct(const stHash *sequenceNamesToSequenceSizeForGivenSpecies);
 
 void pairwiseCoverage_destruct(PairwiseCoverage *pC);
-
-
 
 /*
  * Returns the coverage of the target genome on query species, that is the proportion of bases in the query aligned to one

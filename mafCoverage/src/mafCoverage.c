@@ -52,6 +52,7 @@ void usage(void) {
     version();
     fprintf(stderr, "Usage: mafCoverage --maf [maf file] \n\n"
         "Reports the pairwise (n-)coverage between a specified genome and all other genomes in the given maf, using a tab delimited format.\n"
+        "Output table format has fields: querySpecies\ttargetSpecies\tlengthOfQueryGenome\tcoverage\tn-coverages (if specified)\n"
         "For a pair of genomes A and B, the coverage of B on A is the proportion of sites in A that align to a base in B.\n"
         "The n-coverage of B on A is the proportion of sites in A that align to n or more sites in B.\n");
     fprintf(stderr, "Options: \n");
@@ -109,11 +110,12 @@ static void parseOptions(int argc, char **argv) {
 int main(int argc, char **argv) {
     parseOptions(argc, argv);
     //Work out the structure of the chromosomes of the query sequence
-    stHash *sequenceSizes = getSequenceSizes(mafFileName);
+    stHash *sequenceNamesToSequenceSizes = getMapOfSequenceNamesToSizesFromMaf(mafFileName);
+    stList *sequenceNames = stHash_getKeys(sequenceNamesToSequenceSizes);
     //If the species name is not specified then replace with all possible species.
     if(stSet_size(speciesNames) == 0) {
         stSet_destruct(speciesNames);
-        speciesNames = getSpecies(sequenceSizes);
+        speciesNames = getSpeciesNames(sequenceNames);
     }
     //Print header
     nGenomeCoverage_reportHeader(stdout, nCoverage);
@@ -122,7 +124,7 @@ int main(int argc, char **argv) {
     char *speciesName;
     while((speciesName = stSet_getNext(speciesNamesIt)) != NULL) {
         //Build the coverage data structure
-        NGenomeCoverage *nGC = nGenomeCoverage_construct(sequenceSizes, speciesName, nCoverage);
+        NGenomeCoverage *nGC = nGenomeCoverage_construct(sequenceNamesToSequenceSizes, speciesName, nCoverage);
         nGenomeCoverage_populate(nGC, mafFileName, identity);
         //Report
         nGenomeCoverage_report(nGC, stdout, nCoverage);
@@ -130,8 +132,9 @@ int main(int argc, char **argv) {
         nGenomeCoverage_destruct(nGC);
     }
     //Cleanup
+    stList_destruct(sequenceNames);
     stSet_destructIterator(speciesNamesIt);
-    stHash_destruct(sequenceSizes);
+    stHash_destruct(sequenceNamesToSequenceSizes);
     stSet_destruct(speciesNames);
     return EXIT_SUCCESS;
 }
