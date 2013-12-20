@@ -171,5 +171,7 @@ int main(int argc, char **argv) {
     stSet_destructIterator(speciesOrChrNamesIt);
     stHash_destruct(sequenceNamesToSequenceSizes);
     stSet_destruct(speciesOrChromosomeNames);
+
+    while(1);
     return EXIT_SUCCESS;
 }

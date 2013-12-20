@@ -197,6 +197,7 @@ double *pairwiseCoverage_calculateNCoverages(PairwiseCoverage *pC) {
             }
         }
     }
+    stHash_destructIterator(it);
     int64_t genomeLength = getTotalLengthOfSequences((stHash *)pC->sequenceNamesToSequenceSizeForGivenSpecies);
     for (int64_t i = 0; i <= SCHAR_MAX; i++) {
         nCoverages[i] /= genomeLength;
