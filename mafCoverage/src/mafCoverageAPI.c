@@ -99,10 +99,14 @@ stHash *getMapOfSequenceNamesToSizesFromMaf(char *mafFileName) {
     return sequenceNamesToSequenceSizes;
 }
 
-stSet *getSpeciesNames(stList *sequenceNames) {
+static char *copySpeciesName2(const char *sequenceName, bool ignoreSpeciesNames) {
+    return ignoreSpeciesNames ? stString_copy(sequenceName) : copySpeciesName(sequenceName);
+}
+
+stSet *getSpeciesNames(stList *sequenceNames, bool ignoreSpeciesNames) {
     stSet *speciesNames = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
     for(int64_t i=0; i<stList_length(sequenceNames); i++) {
-        char *speciesName = copySpeciesName(stList_get(sequenceNames, i));
+        char *speciesName = copySpeciesName2(stList_get(sequenceNames, i), ignoreSpeciesNames);
         if (stSet_search(speciesNames, speciesName) == NULL) {
             stSet_insert(speciesNames, speciesName);
         } else {
@@ -112,13 +116,13 @@ stSet *getSpeciesNames(stList *sequenceNames) {
     return speciesNames;
 }
 
-stHash *getMapOfSequenceNamesToSequenceSizesForGivenSpecies(stHash *sequenceNamesToSequenceSizes, char *speciesName) {
+stHash *getMapOfSequenceNamesToSequenceSizesForGivenSpeciesOrChr(stHash *sequenceNamesToSequenceSizes, char *speciesOrChrName, bool ignoreSpeciesNames) {
     stHash *sequenceNamesToSequenceSizeForGivenSpecies = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, NULL, NULL);
     stHashIterator *it = stHash_getIterator(sequenceNamesToSequenceSizes);
     char *sequenceName;
     while ((sequenceName = stHash_getNext(it)) != NULL) {
-        char *speciesNameOfSequence = copySpeciesName(sequenceName);
-        if (stString_eq(speciesName, speciesNameOfSequence)) {
+        char *speciesNameOfSequence = copySpeciesName2(sequenceName, ignoreSpeciesNames);
+        if (stString_eq(speciesOrChrName, speciesNameOfSequence) || stString_eq(speciesOrChrName, sequenceName)) {
             stHash_insert(sequenceNamesToSequenceSizeForGivenSpecies, sequenceName, stHash_search(sequenceNamesToSequenceSizes, sequenceName));
         }
         free(speciesNameOfSequence);
@@ -213,25 +217,27 @@ double pairwiseCoverage_calculateCoverage(PairwiseCoverage *pC) {
 
 struct _nGenomeCoverage {
     //Top level hash is hash of other species names to pairwise coverage structs.
-    char *speciesName;
+    char *speciesOrChrName;
     stHash *pairwiseCoverages;
-    stHash *sequenceNamesToSequenceSizeForGivenSpecies;
+    stHash *sequenceNamesToSequenceSizeForGivenSpeciesOrChr;
+    bool ignoreSpeciesNames;
 };
 
-NGenomeCoverage *nGenomeCoverage_construct(stHash *sequenceNamesToSequenceSizes, char *speciesName) {
+NGenomeCoverage *nGenomeCoverage_construct(stHash *sequenceNamesToSequenceSizes, char *speciesOrChrName, bool ignoreSpeciesNames) {
     NGenomeCoverage *nGC = st_malloc(sizeof(NGenomeCoverage));
-    nGC->speciesName = stString_copy(speciesName);
+    nGC->speciesOrChrName = stString_copy(speciesOrChrName);
     //The subset of sequence names and species we care about.
-    nGC->sequenceNamesToSequenceSizeForGivenSpecies = getMapOfSequenceNamesToSequenceSizesForGivenSpecies(sequenceNamesToSequenceSizes, speciesName);
+    nGC->sequenceNamesToSequenceSizeForGivenSpeciesOrChr = getMapOfSequenceNamesToSequenceSizesForGivenSpeciesOrChr(sequenceNamesToSequenceSizes, speciesOrChrName, ignoreSpeciesNames);
     //Build the N different pairwise coverage structures.
     nGC->pairwiseCoverages = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, (void(*)(void *)) pairwiseCoverage_destruct);
     stList *sequenceNames = stHash_getKeys(sequenceNamesToSequenceSizes);
-    stSet *speciesNames = getSpeciesNames(sequenceNames);
+    stSet *speciesNames = getSpeciesNames(sequenceNames, ignoreSpeciesNames);
     stSetIterator *it = stSet_getIterator(speciesNames);
     char *speciesName2;
     while ((speciesName2 = stSet_getNext(it)) != NULL) {
-        stHash_insert(nGC->pairwiseCoverages, stString_copy(speciesName2), pairwiseCoverage_construct(nGC->sequenceNamesToSequenceSizeForGivenSpecies));
+        stHash_insert(nGC->pairwiseCoverages, stString_copy(speciesName2), pairwiseCoverage_construct(nGC->sequenceNamesToSequenceSizeForGivenSpeciesOrChr));
     }
+    nGC->ignoreSpeciesNames = ignoreSpeciesNames;
     //Cleanup
     stSet_destructIterator(it);
     stList_destruct(sequenceNames);
@@ -250,8 +256,8 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
         stList *targetSpeciesPairwiseCoverages = stList_construct();
         while (ml != NULL) {
             if (maf_mafLine_getType(ml) == 's') {
-                char *lineSpeciesName = copySpeciesName(maf_mafLine_getSpecies(ml));
-                if (stString_eq(nGC->speciesName, lineSpeciesName)) {
+                char *lineSpeciesName = copySpeciesName2(maf_mafLine_getSpecies(ml), nGC->ignoreSpeciesNames);
+                if (stString_eq(nGC->speciesOrChrName, lineSpeciesName) || stString_eq(nGC->speciesOrChrName, maf_mafLine_getSpecies(ml))) {
                     stList_append(querySpeciesLines, ml);
                 }
                 stList_append(targetSpeciesLines, ml);
@@ -280,7 +286,7 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
                         if (querySequence[k] != '-' && targetSequence[k] != '-') {
                             if(!requireIdentityForMatch || (toupper(querySequence[k]) != 'N' && toupper(querySequence[k]) == toupper(targetSequence[k]))) {
                                 assert(position >= 0);
-                                assert(position < stIntTuple_get(stHash_search(nGC->sequenceNamesToSequenceSizeForGivenSpecies, querySequenceName), 0));
+                                assert(position < stIntTuple_get(stHash_search(nGC->sequenceNamesToSequenceSizeForGivenSpeciesOrChr, querySequenceName), 0));
                                 pairwiseCoverageArray_increase(coverageArray, position);
                                 position += maf_mafLine_getStrand(qML) ? 1 : -1;
                             }
@@ -300,13 +306,13 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
 
 void nGenomeCoverage_destruct(NGenomeCoverage *nGC) {
     stHash_destruct(nGC->pairwiseCoverages);
-    stHash_destruct(nGC->sequenceNamesToSequenceSizeForGivenSpecies);
-    free(nGC->speciesName);
+    stHash_destruct(nGC->sequenceNamesToSequenceSizeForGivenSpeciesOrChr);
+    free(nGC->speciesOrChrName);
     free(nGC);
 }
 
 void nGenomeCoverage_reportHeader(FILE *out, bool includeNCoverage) {
-    fprintf(out, "querySpecies\ttargetSpecies\tlengthOfQueryGenome\tcoverage\t");
+    fprintf(out, "querySpecies/Chr\ttargetSpecies/Chr\tlengthOfQueryGenome\tcoverage\t");
     if (includeNCoverage) {
         for (int i = 2; i < SCHAR_MAX; i++) {
             fprintf(out, "\t%i-coverage", i);
@@ -318,11 +324,11 @@ void nGenomeCoverage_reportHeader(FILE *out, bool includeNCoverage) {
 void nGenomeCoverage_report(NGenomeCoverage *nGC, FILE *out, bool includeNCoverage) {
     stHashIterator *it = stHash_getIterator(nGC->pairwiseCoverages);
     char *speciesName;
-    int64_t speciesGenomeLength = getTotalLengthOfSequences(nGC->sequenceNamesToSequenceSizeForGivenSpecies);
+    int64_t speciesGenomeLength = getTotalLengthOfSequences(nGC->sequenceNamesToSequenceSizeForGivenSpeciesOrChr);
     while ((speciesName = stHash_getNext(it)) != NULL) {
         PairwiseCoverage *pC = stHash_search(nGC->pairwiseCoverages, speciesName);
         assert(pC != NULL);
-        fprintf(out, "%s\t%s\t%" PRId64 "\t%f", nGC->speciesName, speciesName, speciesGenomeLength, pairwiseCoverage_calculateCoverage(pC));
+        fprintf(out, "%s\t%s\t%" PRId64 "\t%f", nGC->speciesOrChrName, speciesName, speciesGenomeLength, pairwiseCoverage_calculateCoverage(pC));
         if (includeNCoverage) {
             double *nCoverages = pairwiseCoverage_calculateNCoverages(pC);
             for (int i = 2; i < SCHAR_MAX; i++) {

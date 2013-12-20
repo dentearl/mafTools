@@ -74,7 +74,7 @@ static void test_searchMatched_0(CuTest *testCase) {
 static void test_getSpeciesNames(CuTest *testCase) {
     setup();
     stList *sequenceNames = stHash_getKeys(sequenceNamesToSequenceSizes);
-    stSet *speciesNames = getSpeciesNames(sequenceNames);
+    stSet *speciesNames = getSpeciesNames(sequenceNames, 0);
     CuAssertIntEquals(testCase, 4, stSet_size(speciesNames));
     CuAssertTrue(testCase, stSet_search(speciesNames, "bat") != NULL);
     CuAssertTrue(testCase, stSet_search(speciesNames, "spider") != NULL);
@@ -87,8 +87,8 @@ static void test_getSpeciesNames(CuTest *testCase) {
 
 static void test_getMapOfSequenceNamesToSequenceSizesForGivenSpecies(CuTest *testCase) {
     setup();
-    stHash *sequenceNamesToSequenceSizeForGivenSpecies = getMapOfSequenceNamesToSequenceSizesForGivenSpecies(sequenceNamesToSequenceSizes,
-            "bat");
+    stHash *sequenceNamesToSequenceSizeForGivenSpecies = getMapOfSequenceNamesToSequenceSizesForGivenSpeciesOrChr(sequenceNamesToSequenceSizes,
+            "bat", 0);
     CuAssertIntEquals(testCase, 2, stHash_size(sequenceNamesToSequenceSizeForGivenSpecies));
     CuAssertIntEquals(testCase, 50, stIntTuple_get(stHash_search(sequenceNamesToSequenceSizeForGivenSpecies, "bat.man"), 0));
     CuAssertIntEquals(testCase, 7, stIntTuple_get(stHash_search(sequenceNamesToSequenceSizeForGivenSpecies, "bat.fink"), 0));
@@ -142,7 +142,7 @@ static void test_pairwiseCoverage(CuTest *testCase) {
 static void test_nGenomeCoverage(CuTest *testCase) {
     setup();
     //Just build a single nGenomeCoverage and check the report functions work as expected.
-    NGenomeCoverage *nGC = nGenomeCoverage_construct(sequenceNamesToSequenceSizes, "bat");
+    NGenomeCoverage *nGC = nGenomeCoverage_construct(sequenceNamesToSequenceSizes, "bat", 0);
     nGenomeCoverage_reportHeader(stderr, 1);
     nGenomeCoverage_report(nGC, stderr, 1);
     nGenomeCoverage_destruct(nGC);

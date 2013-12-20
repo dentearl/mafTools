@@ -38,8 +38,8 @@
 #include "sonLib.h"
 
 static char *mafFileName = NULL;
-static stSet *speciesNames = NULL;
-static bool nCoverage = 0, identity = 0;
+static stSet *speciesOrChromosomeNames = NULL;
+static bool nCoverage = 0, identity = 0, ignoreSpecies = 0;
 
 const char *g_version = "version 0.1 May 2013";
 uint64_t getRegionSize(char *seq1, stHash *intervalsHash);
@@ -58,27 +58,30 @@ void usage(void) {
     fprintf(stderr, "Options: \n");
     usageMessage('h', "help", "show this help message and exit.");
     usageMessage('m', "maf", "path to maf file.");
-    usageMessage('s', "species", "species name, e.g. `hg19', if not specified reports results for every possible species."
-        "wildcard at the end.");
+    usageMessage('s', "speciesOrChr",
+            "species or species.chromosome name, e.g. `hg19' or 'hg19.chr1', if not specified reports results for every possible species."
+                "wildcard at the end.");
     usageMessage('n', "nCoverage", "report all n-coverages, for 1 <= n <= 128 instead of just for n=1 (the default).");
     usageMessage('i', "identity", "report coverage of identical bases.");
     usageMessage('l', "logLevel", "Set logging level, either 'CRITICAL'/'INFO'/'DEBUG'.");
+    usageMessage('a', "ignoreSpecies", "Do all chromosomes-against-all-chromosomes coverage.");
     exit(EXIT_FAILURE);
 }
 
 static void parseOptions(int argc, char **argv) {
     int c;
-    speciesNames = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
+    speciesOrChromosomeNames = stSet_construct3(stHash_stringKey, stHash_stringEqualKey, free);
     while (1) {
-        static struct option longOptions[] = { { "help", no_argument, 0, 'h' }, { "maf", required_argument, 0, 'm' }, { "species",
-                required_argument, 0, 's' }, { "nCoverage", no_argument, 0, 'n' }, { "identity", no_argument, 0, 'i' }, { "logLevel", required_argument, 0, 'l' }, { 0, 0, 0, 0 } };
+        static struct option longOptions[] = { { "help", no_argument, 0, 'h' }, { "maf", required_argument, 0, 'm' }, { "speciesOrChr",
+                required_argument, 0, 's' }, { "nCoverage", no_argument, 0, 'n' }, { "identity", no_argument, 0, 'i' }, { "logLevel",
+                required_argument, 0, 'l' }, { "ignoreSpecies", no_argument, 0, 'a' }, { 0, 0, 0, 0 } };
         int longIndex = 0;
-        c = getopt_long(argc, argv, "m:s:hnl:", longOptions, &longIndex);
+        c = getopt_long(argc, argv, "m:s:hnl:a", longOptions, &longIndex);
         if (c == -1)
             break;
         switch (c) {
             case 's':
-                stSet_insert(speciesNames, stString_copy(optarg));
+                stSet_insert(speciesOrChromosomeNames, stString_copy(optarg));
                 break;
             case 'm':
                 mafFileName = stString_copy(optarg);
@@ -94,6 +97,9 @@ static void parseOptions(int argc, char **argv) {
                 break;
             case 'h':
                 usage();
+                break;
+            case 'a':
+                ignoreSpecies = 1;
                 break;
             default:
                 abort();
@@ -117,26 +123,43 @@ int main(int argc, char **argv) {
     stHash *sequenceNamesToSequenceSizes = getMapOfSequenceNamesToSizesFromMaf(mafFileName);
     stHashIterator *sequenceNameIt = stHash_getIterator(sequenceNamesToSequenceSizes);
     char *sequenceName;
-    while((sequenceName = stHash_getNext(sequenceNameIt)) != NULL) {
+    while ((sequenceName = stHash_getNext(sequenceNameIt)) != NULL) {
         st_logDebug("Got a sequence name: %s with length %" PRId64 "\n", sequenceName, stIntTuple_get(stHash_search(sequenceNamesToSequenceSizes, sequenceName), 0));
     }
     stHash_destructIterator(sequenceNameIt);
     stList *sequenceNames = stHash_getKeys(sequenceNamesToSequenceSizes);
-    //If the species name is not specified then replace with all possible species.
-    if(stSet_size(speciesNames) == 0) {
+    //If the species/chr name is not specified then replace with all possible species name.
+    if (stSet_size(speciesOrChromosomeNames) == 0) {
         st_logInfo("As no species name was specified, using all possible species names\n");
-        stSet_destruct(speciesNames);
-        speciesNames = getSpeciesNames(sequenceNames);
+        stSet_destruct(speciesOrChromosomeNames);
+        speciesOrChromosomeNames = getSpeciesNames(sequenceNames, ignoreSpecies);
+    } else { //Sanity checks on the input species/chr
+        stList *names = stSet_getList(speciesOrChromosomeNames);
+        assert(stList_length(names) == 1);
+        char *speciesOrChrName = stList_get(names, 0);
+        stList_destruct(names);
+        if (ignoreSpecies) {
+            if (stHash_search(sequenceNamesToSequenceSizes, speciesOrChrName) == NULL) {
+                st_errAbort("Chromosome name not recognised (perhaps you gave a species name but have specified --ignoreSpecies?): %s\n",
+                        speciesOrChrName);
+            }
+        } else {
+            stSet *speciesNames = getSpeciesNames(sequenceNames, ignoreSpecies);
+            if (stSet_search(speciesNames, speciesOrChrName) == NULL && stHash_search(sequenceNamesToSequenceSizes, speciesOrChrName)
+                    == NULL) {
+                st_errAbort("Species or chr name name not recognised: %s\n", speciesOrChrName);
+            }
+        }
     }
     //Print header
     nGenomeCoverage_reportHeader(stdout, nCoverage);
     //For each of the chosen species calculate species
-    stSetIterator *speciesNamesIt = stSet_getIterator(speciesNames);
-    char *speciesName;
-    while((speciesName = stSet_getNext(speciesNamesIt)) != NULL) {
-        st_logInfo("Computing the coverages for species: %s\n", speciesName);
+    stSetIterator *speciesOrChrNamesIt = stSet_getIterator(speciesOrChromosomeNames);
+    char *speciesOrChrName;
+    while ((speciesOrChrName = stSet_getNext(speciesOrChrNamesIt)) != NULL) {
+        st_logInfo("Computing the coverages for species/chr: %s\n", speciesOrChrName);
         //Build the coverage data structure
-        NGenomeCoverage *nGC = nGenomeCoverage_construct(sequenceNamesToSequenceSizes, speciesName);
+        NGenomeCoverage *nGC = nGenomeCoverage_construct(sequenceNamesToSequenceSizes, speciesOrChrName, ignoreSpecies);
         nGenomeCoverage_populate(nGC, mafFileName, identity);
         //Report
         nGenomeCoverage_report(nGC, stdout, nCoverage);
@@ -145,8 +168,8 @@ int main(int argc, char **argv) {
     }
     //Cleanup
     stList_destruct(sequenceNames);
-    stSet_destructIterator(speciesNamesIt);
+    stSet_destructIterator(speciesOrChrNamesIt);
     stHash_destruct(sequenceNamesToSequenceSizes);
-    stSet_destruct(speciesNames);
+    stSet_destruct(speciesOrChromosomeNames);
     return EXIT_SUCCESS;
 }

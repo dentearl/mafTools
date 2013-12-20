@@ -45,14 +45,15 @@ stHash *getMapOfSequenceNamesToSizesFromMaf(char *mafFileName);
 
 /*
  * Each sequence name is comprised of two fields separated by a period. The first is the species field, the second is the
- * chromosome field. This function returns the set of distinct species names from the set of sequence names.
+ * chromosome field. This function returns the set of distinct species names from the set of sequence names. If ignoreSpeciesNames
+ * is true then just gets returns set of sequence names.
  */
-stSet *getSpeciesNames(stList *sequenceNames);
+stSet *getSpeciesNames(stList *sequenceNames, bool ignoreSpeciesNames);
 
 /*
  * Gets the subset of the hash for all sequences involving the given species.
  */
-stHash *getMapOfSequenceNamesToSequenceSizesForGivenSpecies(stHash *sequenceNamesToSequenceSizes, char *speciesName);
+stHash *getMapOfSequenceNamesToSequenceSizesForGivenSpeciesOrChr(stHash *sequenceNamesToSequenceSizes, char *speciesOrChrName, bool ignoreSpeciesNames);
 
 /*
  * Returns the combined length of all the sequences in the set.
@@ -95,7 +96,7 @@ typedef struct _nGenomeCoverage NGenomeCoverage;
 
 void nGenomeCoverage_destruct(NGenomeCoverage *nGC);
 
-NGenomeCoverage *nGenomeCoverage_construct(stHash *sequenceSizes, char *speciesName);
+NGenomeCoverage *nGenomeCoverage_construct(stHash *sequenceSizes, char *speciesName, bool ignoreSpeciesNames);
 
 /*
  * Iterate through a maf file and populate the species coverages.
