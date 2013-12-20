@@ -39,11 +39,11 @@ static stHash *sequenceNamesToSequenceSizes = NULL;
 
 static void setup() {
     sequenceNamesToSequenceSizes = stHash_construct3(stHash_stringKey, stHash_stringEqualKey, free, (void(*)(void *)) stIntTuple_destruct);
-    stHash_insert(sequenceNamesToSequenceSizes, stString_copy("bat.man"), stIntTuple_construct(1, 50));
-    stHash_insert(sequenceNamesToSequenceSizes, stString_copy("spider.man"), stIntTuple_construct(1, 1));
-    stHash_insert(sequenceNamesToSequenceSizes, stString_copy("bat.fink"), stIntTuple_construct(1, 7));
-    stHash_insert(sequenceNamesToSequenceSizes, stString_copy("danger.mouse"), stIntTuple_construct(1, 12));
-    stHash_insert(sequenceNamesToSequenceSizes, stString_copy("penfold"), stIntTuple_construct(1, 12));
+    stHash_insert(sequenceNamesToSequenceSizes, stString_copy("bat.man"), stIntTuple_construct1(50));
+    stHash_insert(sequenceNamesToSequenceSizes, stString_copy("spider.man"), stIntTuple_construct1(1));
+    stHash_insert(sequenceNamesToSequenceSizes, stString_copy("bat.fink"), stIntTuple_construct1(7));
+    stHash_insert(sequenceNamesToSequenceSizes, stString_copy("danger.mouse"), stIntTuple_construct1(12));
+    stHash_insert(sequenceNamesToSequenceSizes, stString_copy("penfold"), stIntTuple_construct1(12));
 }
 
 static void teardown() {
