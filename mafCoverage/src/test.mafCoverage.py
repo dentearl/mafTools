@@ -141,8 +141,7 @@ class CoverageTest(unittest.TestCase):
     for target, mafSeq, solutionDict in g_knownGood:
       testMaf = mtt.testFile(os.path.join(os.path.abspath(tmpDir), 'test.maf'),
                              mafSeq, g_headers)
-      cmd = mtt.genericValgrind(tmpDir)
-      cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafCoverage')))
+      cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafCoverage'))]
       cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
               '--species', target]
       outpipes = [os.path.join(tmpDir, 'output.txt')]
@@ -154,7 +153,7 @@ class CoverageTest(unittest.TestCase):
                                         solutionDict))
     mtt.removeDir(tmpDir)
 
-  def _testMemory0(self):
+  def testMemory0(self):
     """ If valgrind is installed on the system, check for memory related errors (0).
     """
     valgrind = mtt.which('valgrind')
@@ -163,13 +162,20 @@ class CoverageTest(unittest.TestCase):
     mtt.makeTempDirParent()
     tmpDir = os.path.abspath(mtt.makeTempDir('memory_0'))
     parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    cmd = mtt.genericValgrind(tmpDir)
-    cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafCoverage')))
-    outpipes = [os.path.join('/dev', 'null')]
-    mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
-    mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
-    self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
-    self.assertTrue(False)
+    customOpts = mafval.GenericValidationOptions()
+    for target, mafSeq, solutionDict in g_knownGood:
+      testMaf = mtt.testFile(os.path.join(os.path.abspath(tmpDir), 'test.maf'),
+                             mafSeq, g_headers)
+      cmd = mtt.genericValgrind(tmpDir)
+      cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafCoverage')))
+      cmd += ['--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')),
+              '--species', target]
+      outpipes = [os.path.join('/dev', 'null')]
+      mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
+      mtt.runCommandsS([cmd], tmpDir, outPipes=outpipes)
+      self.assertTrue(mafval.validateMaf(os.path.join(tmpDir, 'test.maf'),
+                                         customOpts))
+      self.assertTrue(mtt.noMemoryErrors(os.path.join(tmpDir, 'valgrind.xml')))
     mtt.removeDir(tmpDir)
 
 
