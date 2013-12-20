@@ -125,6 +125,7 @@ static void test_pairwiseCoverage(CuTest *testCase) {
 
     //Now recalculate the coverages
     CuAssertDblEquals(testCase, 2.0/82.0, pairwiseCoverage_calculateCoverage(pC), 0.0);
+    double *nCoverages = pairwiseCoverage_calculateNCoverages(pC);
     CuAssertDblEquals(testCase, 1.0, nCoverages[0], 0.0);
     CuAssertDblEquals(testCase, 2.0/82.0, nCoverages[1], 0.0);
     CuAssertDblEquals(testCase, 1.0/82.0, nCoverages[2], 0.0);
