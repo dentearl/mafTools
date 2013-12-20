@@ -41,12 +41,12 @@ src/buildVersion.c: ${sources} ${dependecies}
 
 ${binPath}/%: src/%.c ${extraAPI}
 	@mkdir -p $(dir $@)
-	${cxx} -o $@.tmp $^ ${cflags} -lm
+	${cxx} -o $@.tmp $^ ${cflags} ${lm}
 	mv $@.tmp $@
 
 test/%: src/%.c ${testAPI} $(wildcard src/*.h)
 	@mkdir -p $(dir $@)
-	${cxx} -o $@.tmp $^ ${testFlags} -lm
+	${cxx} -o $@.tmp $^ ${testFlags} ${lm}
 	mv $@.tmp $@
 
 ${binPath}/%.py: src/%.py
@@ -60,15 +60,15 @@ ${binPath}/%.py: src/%.py
 	mv $@.tmp $@
 test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
-	${cxx} -c $< -o $@.tmp ${testFlags} -lm
+	${cxx} -c $< -o $@.tmp ${testFlags} ${lm}
 	mv $@.tmp $@
 test/test.comparatorAPI.o: src/test.comparatorAPI.c src/test.comparatorAPI.h test/comparatorAPI.o
 	mkdir -p $(dir $@)
-	${cxx} -c $< -o $@.tmp ${testFlags} -lm
+	${cxx} -c $< -o $@.tmp ${testFlags} ${lm}
 	mv $@.tmp $@
 test/%.o: src/%.c src/%.h ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
-	${cxx} -c $< -o $@.tmp ${testFlags} -lm
+	${cxx} -c $< -o $@.tmp ${testFlags} ${lm}
 	mv $@.tmp $@
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
@@ -83,14 +83,14 @@ test: buildVersion test/allTests test/mafComparator test/testRand
 
 test/allTests: src/allTests.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
-	${cxx} $^ -o $@.tmp ${testFlags} -lm
+	${cxx} $^ -o $@.tmp ${testFlags} ${lm}
 	mv $@.tmp $@
 
 # to actually use the testRand program, comment out the rm -rf on the "test:" rule and run "make test",
 # then you may run test/testRand
 test/testRand: src/testRand.c ${testAPI} ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
-	${cxx} $^ -o $@.tmp ${testFlags} -lm
+	${cxx} $^ -o $@.tmp ${testFlags} ${lm}
 	mv $@.tmp $@
 
 clean:

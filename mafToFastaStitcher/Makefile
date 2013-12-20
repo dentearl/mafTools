@@ -42,24 +42,24 @@ src/buildVersion.c: ${sources} ${dependencies}
 
 ${bin}/mafToFastaStitcher: src/mafToFastaStitcher.c ${dependencies} ${extraAPI}
 	mkdir -p $(dir $@)
-	${cxx} $< ${extraAPI} -o $@.tmp ${cflags} -lm
+	${cxx} $< ${extraAPI} -o $@.tmp ${cflags} ${lm}
 	mv $@.tmp $@
 %.o: %.c %.h
 	${cxx} -c $< -o $@.tmp ${cflags}
 	mv $@.tmp $@
 %/mafToFastaStitcherAPI.o: src/mafToFastaStitcherAPI.c src/mafToFastaStitcherAPI.h
-	${cxx} -c $< -o $@.tmp ${cflags} -lm
+	${cxx} -c $< -o $@.tmp ${cflags} ${lm}
 	mv $@.tmp $@
 
 test: buildVersion test/allTests test/mafToFastaStitcher
 	./test/allTests && python2.7 src/test.mafToFastaStitcher.py --verbose && rm -rf ./test/ && rmdir ./tempTestDir
 test/allTests: src/allTests.c ${testAPI} ${testObjects} ${sonLibPath}/sonLib.a
 	mkdir -p $(dir $@)
-	${cxx} $^ -o $@.tmp ${testFlags} -lm
+	${cxx} $^ -o $@.tmp ${testFlags} ${lm}
 	mv $@.tmp $@
 test/mafToFastaStitcher: src/mafToFastaStitcher.c ${dependencies} ${testAPI}
 	mkdir -p $(dir $@)
-	${cxx} $< ${testAPI} -o $@.tmp ${testFlags} -lm
+	${cxx} $< ${testAPI} -o $@.tmp ${testFlags} ${lm}
 	mv $@.tmp $@
 test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
