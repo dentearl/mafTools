@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
     char *speciesName;
     while((speciesName = stSet_getNext(speciesNamesIt)) != NULL) {
         //Build the coverage data structure
-        NGenomeCoverage *nGC = nGenomeCoverage_construct(sequenceNamesToSequenceSizes, speciesName, nCoverage);
+        NGenomeCoverage *nGC = nGenomeCoverage_construct(sequenceNamesToSequenceSizes, speciesName);
         nGenomeCoverage_populate(nGC, mafFileName, identity);
         //Report
         nGenomeCoverage_report(nGC, stdout, nCoverage);

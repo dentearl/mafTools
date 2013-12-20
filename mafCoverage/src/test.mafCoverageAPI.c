@@ -86,7 +86,8 @@ static void test_getSpeciesNames(CuTest *testCase) {
 
 static void test_getMapOfSequenceNamesToSequenceSizesForGivenSpecies(CuTest *testCase) {
     setup();
-    stHash *sequenceNamesToSequenceSizeForGivenSpecies = getMapOfSequenceNamesToSequenceSizesForGivenSpecies(sequenceNamesToSequenceSizes, "bat");
+    stHash *sequenceNamesToSequenceSizeForGivenSpecies = getMapOfSequenceNamesToSequenceSizesForGivenSpecies(sequenceNamesToSequenceSizes,
+            "bat");
     CuAssertIntEquals(testCase, 2, stHash_size(sequenceNamesToSequenceSizeForGivenSpecies));
     CuAssertIntEquals(testCase, 50, stIntTuple_get(stHash_search(speciesNames, "bat.man"), 0));
     CuAssertIntEquals(testCase, 7, stIntTuple_get(stHash_search(speciesNames, "bat.fink"), 0));
@@ -102,11 +103,48 @@ static void test_getTotalLengthOfSequences(CuTest *testCase) {
 
 static void test_pairwiseCoverage(CuTest *testCase) {
     setup();
+    PairwiseCoverage *pC = pairwiseCoverage_construct(sequenceNamesToSequenceSizes);
+    //Check coverage is 0 when we start
+    CuAssertDblEquals(testCase, 0.0, pairwiseCoverage_calculateCoverage(pC), 0.0);
+    double *nCoverages = pairwiseCoverage_calculateNCoverages(pC);
+    for (int64_t i = 0; i <= SCHAR_MAX; i++) {
+        CuAssertDblEquals(testCase, 0.0, nCoverages[i], 0.0);
+    }
+    free(nCoverages);
+
+    //Add some coverage
+    char *coverageArray = pairwiseCoverage_getCoverageArrayForSequence(pC, "spider.man");
+    CuAssertTrue(testCase, coverageArray != NULL);
+    CuAssertIntEquals(testCase, 1, strlen(coverageArray));
+    pairwiseCoverageArray_increase(coverageArray, 0);
+    coverageArray = pairwiseCoverage_getCoverageArrayForSequence(pC, "penfold");
+    CuAssertTrue(testCase, coverageArray != NULL);
+    CuAssertIntEquals(testCase, 12, strlen(coverageArray));
+    pairwiseCoverageArray_increase(coverageArray, 2);
+    pairwiseCoverageArray_increase(coverageArray, 2);
+
+    //Now recalculate the coverages
+    CuAssertDblEquals(testCase, 2.0/82.0, pairwiseCoverage_calculateCoverage(pC), 0.0);
+    CuAssertDblEquals(testCase, 2.0/82.0, nCoverages[0], 0.0);
+    CuAssertDblEquals(testCase, 2.0/82.0, nCoverages[1], 0.0);
+    CuAssertDblEquals(testCase, 1.0/82.0, nCoverages[2], 0.0);
+    nCoverages = pairwiseCoverage_calculateNCoverages(pC);
+    for (int64_t i = 3; i <= SCHAR_MAX; i++) {
+        CuAssertDblEquals(testCase, 0.0, nCoverages[i], 0.0);
+    }
+    free(nCoverages);
+
+    pairwiseCoverage_destruct(pC);
     teardown();
 }
 
 static void test_nGenomeCoverage(CuTest *testCase) {
     setup();
+    //Just build a single nGenomeCoverage and check the report functions work as expected.
+    NGenomeCoverage *nGC = nGenomeCoverage_construct(sequenceNamesToSequenceSizes, "danger.mouse");
+    nGenomeCoverage_reportHeader(stderr, 1);
+    nGenomeCoverage_report(nGC, stderr, 1);
+    nGenomeCoverage_destruct(nGC);
     teardown();
 }
 

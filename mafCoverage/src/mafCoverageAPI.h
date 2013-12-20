@@ -95,7 +95,7 @@ typedef struct _nGenomeCoverage NGenomeCoverage;
 
 void nGenomeCoverage_destruct(NGenomeCoverage *nGC);
 
-NGenomeCoverage *nGenomeCoverage_construct(stHash *sequenceSizes, char *speciesName, bool nCoverage);
+NGenomeCoverage *nGenomeCoverage_construct(stHash *sequenceSizes, char *speciesName);
 
 /*
  * Iterate through a maf file and populate the species coverages.
