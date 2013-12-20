@@ -276,9 +276,11 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
                     assert(maf_mafLine_getSequenceFieldLength(qML) == maf_mafLine_getSequenceFieldLength(tML));
                     assert(strlen(querySequence) == strlen(targetSequence));
                     assert(strlen(querySequence) == maf_mafLine_getSequenceFieldLength(qML));
-                    for (int64_t k = 0; k < maf_mafLine_getLength(qML); k++) {
+                    for (int64_t k = 0; k < maf_mafLine_getSequenceFieldLength(qML); k++) {
                         if (querySequence[k] != '-' && targetSequence[k] != '-') {
                             if(!requireIdentityForMatch || (toupper(querySequence[k]) != 'N' && toupper(querySequence[k]) == toupper(targetSequence[k]))) {
+                                assert(position >= 0);
+                                assert(position < stIntTuple_get(stHash_search(nGC->sequenceNamesToSequenceSizeForGivenSpecies, querySequenceName), 0));
                                 pairwiseCoverageArray_increase(coverageArray, position);
                                 position += maf_mafLine_getStrand(qML) ? 1 : -1;
                             }
