@@ -1,4 +1,5 @@
 SHELL=/bin/bash
+include ../include.mk
 .SECONDARY:
 .PHONY: all clean test
 
@@ -15,7 +16,7 @@ clean:
 
 allTests: allTests.c test.sharedMaf.h test.sharedMaf.c ${testObjects}
 	mkdir -p test
-	${cc} -g -O0 ${args} $^ -o $@.tmp -lm
+	${cc} -g -O0 ${args} $^ -o $@.tmp ${lm}
 	mv $@.tmp $@
 
 %.o: %.c %.h
@@ -28,7 +29,7 @@ sharedMaf.o: sharedMaf.c sharedMaf.h
 
 test/%.o: %.c %.h
 	mkdir -p $(dir $@)
-	${cc} -g -O0 -c ${args} $< -o $*.tmp -lm
+	${cc} -g -O0 -c ${args} $< -o $*.tmp ${lm}
 	mv $*.tmp $@
 
 test/sharedMaf.o: sharedMaf.c sharedMaf.h
