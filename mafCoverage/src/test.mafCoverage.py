@@ -38,6 +38,8 @@ class CoverageTest(unittest.TestCase):
     coverage between sequences.
     """
     mtt.makeTempDirParent()
+    tmpDir = os.path.abspath(mtt.makeTempDir('testCoverage_0'))
+    parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     cmd = mtt.genericValgrind(tmpDir)
     cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafCoverage')))
     outpipes = [os.path.join('/dev', 'null')]
@@ -55,6 +57,7 @@ class CoverageTest(unittest.TestCase):
       return
     mtt.makeTempDirParent()
     tmpDir = os.path.abspath(mtt.makeTempDir('memory_0'))
+    parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     cmd = mtt.genericValgrind(tmpDir)
     cmd.append(os.path.abspath(os.path.join(parent, 'test', 'mafCoverage')))
     outpipes = [os.path.join('/dev', 'null')]
