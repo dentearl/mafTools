@@ -100,6 +100,24 @@ s seqA.chr5    0  2 + 10 A--------C
                  'seqC': 0.4,
                  'seqD': 0.5,
                  'target': 0.0,}),
+               ('target',
+                '''a score=0.0 status=test.input
+s target.chr1  0 9 +  9 ACGTACGTA
+s seqB.chr1    0 9 + 10 ACGTACGTA
+s seqC.chr1    0 6 + 10 A--TAC-TA
+s seqA.chr1    0 3 + 10 A--T----A
+
+a score=0.0 status=test.input
+s seqA.chr2  0 10 + 10 ACGTACGTAC
+s seqB.chr3  0 10 - 10 ACGTACGTAC
+s seqZ.chr4  0 10 + 10 ACGTACGTAC
+
+''',
+                {'seqA': 1.0 / 3.0,
+                 'seqB': 1.0,
+                 'seqC': 2.0 / 3.0,
+                 'seqZ': 0.0,
+                 'target': 0.0,}),
               ]
 
 def createPredictionDict(path):
