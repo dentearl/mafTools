@@ -313,7 +313,7 @@ void nGenomeCoverage_destruct(NGenomeCoverage *nGC) {
 }
 
 void nGenomeCoverage_reportHeader(FILE *out, bool includeNCoverage) {
-    fprintf(out, "querySpecies/Chr\ttargetSpecies/Chr\tlengthOfQueryGenome\tcoverage\t");
+    fprintf(out, "targetSpecies/Chr\tquerySpecies/Chr\tlengthOfQueryGenome\tcoverage\t");
     if (includeNCoverage) {
         for (int i = 2; i < SCHAR_MAX; i++) {
             fprintf(out, "\t%i-coverage", i);
