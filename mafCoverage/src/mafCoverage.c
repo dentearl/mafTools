@@ -149,6 +149,7 @@ int main(int argc, char **argv) {
                     == NULL) {
                 st_errAbort("Species or chr name name not recognised: %s\n", speciesOrChrName);
             }
+            stSet_destruct(speciesNames);
         }
     }
     //Print header
@@ -171,7 +172,7 @@ int main(int argc, char **argv) {
     stSet_destructIterator(speciesOrChrNamesIt);
     stHash_destruct(sequenceNamesToSequenceSizes);
     stSet_destruct(speciesOrChromosomeNames);
-
-    while(1);
+    free(mafFileName);
+    // while(1);
     return EXIT_SUCCESS;
 }

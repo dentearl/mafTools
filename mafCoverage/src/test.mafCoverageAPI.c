@@ -129,6 +129,7 @@ static void test_pairwiseCoverage(CuTest *testCase) {
     CuAssertDblEquals(testCase, 1.0, nCoverages[0], 0.0);
     CuAssertDblEquals(testCase, 2.0/82.0, nCoverages[1], 0.0);
     CuAssertDblEquals(testCase, 1.0/82.0, nCoverages[2], 0.0);
+    free(nCoverages);
     nCoverages = pairwiseCoverage_calculateNCoverages(pC);
     for (int64_t i = 3; i <= SCHAR_MAX; i++) {
         CuAssertDblEquals(testCase, 0.0, nCoverages[i], 0.0);
