@@ -22,30 +22,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
+#ifndef TEST_MAF_COVERAGE_API_H_
+#define TEST_MAF_COVERAGE_API_H_
+#include <assert.h>
+#include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "CuTest.h"
-#include "mafPairCoverageAPI.h"
-#include "test.mafPairCoverageAPI.h"
+#include "common.h"
+#include "sharedMaf.h"
+#include "mafCoverageAPI.h"
 
-CuSuite* pairCoverage_TestSuite(void);
+CuSuite* coverage_TestSuite(void);
 
-int pairCoverage_RunAllTests(void) {
-    CuString *output = CuStringNew();
-    CuSuite *suite = CuSuiteNew();
-    CuSuite *pairCoverage_s = pairCoverage_TestSuite();
-    CuSuiteAddSuite(suite, pairCoverage_s);
-    CuSuiteRun(suite);
-    CuSuiteSummary(suite, output);
-    CuSuiteDetails(suite, output);
-    printf("%s\n", output->buffer);
-    CuStringDelete(output);
-    int status = (suite->failCount > 0);
-    free(pairCoverage_s);
-    CuSuiteDelete(suite);
-    return status;
-}
-int main(void) {
-    return pairCoverage_RunAllTests();
-}
+#endif // TEST_MAF_COVERAGE_API_H_

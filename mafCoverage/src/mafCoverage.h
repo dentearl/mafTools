@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 by
+ * Copyright (C) 2011-2013 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
  * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
@@ -22,30 +22,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#ifndef _MAF_COVERAGE_H_
+#define _MAF_COVERAGE_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include "CuTest.h"
-#include "mafPairCoverageAPI.h"
-#include "test.mafPairCoverageAPI.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include "common.h"
+#include "sharedMaf.h"
+#include "sonLib.h"
 
-CuSuite* pairCoverage_TestSuite(void);
+void version(void);
+void usage(void);
 
-int pairCoverage_RunAllTests(void) {
-    CuString *output = CuStringNew();
-    CuSuite *suite = CuSuiteNew();
-    CuSuite *pairCoverage_s = pairCoverage_TestSuite();
-    CuSuiteAddSuite(suite, pairCoverage_s);
-    CuSuiteRun(suite);
-    CuSuiteSummary(suite, output);
-    CuSuiteDetails(suite, output);
-    printf("%s\n", output->buffer);
-    CuStringDelete(output);
-    int status = (suite->failCount > 0);
-    free(pairCoverage_s);
-    CuSuiteDelete(suite);
-    return status;
-}
-int main(void) {
-    return pairCoverage_RunAllTests();
-}
+#endif // _MAF_COVERAGE_H_

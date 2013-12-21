@@ -1,26 +1,26 @@
 ##################################################
-# Copyright (C) 2012 by 
+# Copyright (C) 2013 by
 # Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
-# ... and other members of the Reconstruction Team of David Haussler's 
+# ... and other members of the Reconstruction Team of David Haussler's
 # lab (BME Dept. UCSC).
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE. 
+# THE SOFTWARE.
 ##################################################
 import os
 import platform
@@ -45,7 +45,7 @@ def makeTempDir(name=None):
     charSet = string.ascii_lowercase + '123456789'
     if name is None:
         while True:
-            name = '%s_%s' % (''.join(random.choice(charSet) for x in xrange(4)), 
+            name = '%s_%s' % (''.join(random.choice(charSet) for x in xrange(4)),
                               ''.join(random.choice(charSet) for x in xrange(4)))
             if not os.path.exists(os.path.join(os.curdir, 'tempTestDir', name)):
                 break
@@ -59,7 +59,7 @@ def removeDir(dirpath):
     if os.path.exists(dirpath):
         shutil.rmtree(dirpath)
 def runCommandsS(cmds, localTempDir, inPipes=[], outPipes=[], errPipes=[]):
-    """ 
+    """
     runCommandsS uses the subprocess module
     to issue serial processes from the cmds list.
     """
@@ -83,7 +83,7 @@ def runCommandsS(cmds, localTempDir, inPipes=[], outPipes=[], errPipes=[]):
         else:
             serr = subprocess.PIPE
         p = subprocess.Popen(c, cwd=localTempDir, stdin=sin, stdout=sout, stderr=serr)
-        
+
         if inPipes[i] is None:
             sin = None
         else:
@@ -117,7 +117,7 @@ def handleReturnCode(retcode, cmd):
                                '%s retcode:%d' %(' '.join(cmd), retcode))
 def which(program):
     """which() acts like the unix utility which, but is portable between os.
-    If the program does not exist in the PATH then 'None' is returned. 
+    If the program does not exist in the PATH then 'None' is returned.
     """
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)
@@ -201,7 +201,7 @@ def extractBlockStr(f, lastLine=None):
         return block + '\n'
 def testFile(mafFile, s, headers=None):
     """
-    given a path to a maffile, a string containing the desired contents of 
+    given a path to a maffile, a string containing the desired contents of
     the file and a list of different possible headers, pick one header at
     random and write the string to the file.
     """
@@ -232,15 +232,15 @@ def recordCommands(cmdList, tmpDir, inPipes=None, outPipes=None):
         f.write('%s%s\n' % (' '.join(c), pipes))
     f.close()
 def genericValgrind(tmpDir):
-    """ 
+    """
     returns a list (in the subprocess command style) containing
     a generic call to valgrind.
     """
     valgrind = which('valgrind')
     if platform.mac_ver() == ('', ('', '', ''), ''):
-        return [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', 
+        return [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes',
                 '--xml=yes', '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]
     else:
         # --dsymutil is for mac os x builds
-        return [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes', 
+        return [valgrind, '--leak-check=full', '--show-reachable=yes', '--track-origins=yes',
                 '--dsymutil=yes', '--xml=yes', '--xml-file=' + os.path.join(tmpDir, 'valgrind.xml')]

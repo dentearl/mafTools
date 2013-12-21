@@ -26,26 +26,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "CuTest.h"
-#include "mafPairCoverageAPI.h"
-#include "test.mafPairCoverageAPI.h"
+#include "mafCoverageAPI.h"
+#include "test.mafCoverageAPI.h"
 
-CuSuite* pairCoverage_TestSuite(void);
+CuSuite* coverage_TestSuite(void);
 
-int pairCoverage_RunAllTests(void) {
+int coverage_RunAllTests(void) {
     CuString *output = CuStringNew();
     CuSuite *suite = CuSuiteNew();
-    CuSuite *pairCoverage_s = pairCoverage_TestSuite();
-    CuSuiteAddSuite(suite, pairCoverage_s);
+    CuSuite *coverage_s = coverage_TestSuite();
+    CuSuiteAddSuite(suite, coverage_s);
     CuSuiteRun(suite);
     CuSuiteSummary(suite, output);
     CuSuiteDetails(suite, output);
-    printf("%s\n", output->buffer);
+    // printf("%s\n", output->buffer);
     CuStringDelete(output);
     int status = (suite->failCount > 0);
-    free(pairCoverage_s);
+    free(coverage_s);
     CuSuiteDelete(suite);
     return status;
 }
 int main(void) {
-    return pairCoverage_RunAllTests();
+    return coverage_RunAllTests();
 }

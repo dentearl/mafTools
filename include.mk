@@ -39,7 +39,7 @@ sonLibPath = ../../sonLib/lib
 
 #Flags to use
 cflags = ${cflags_opt} -I ${sonLibPath} -I ../include -I ../external
-testFlags = -O0 -Wall -Werror --pedantic -I ${sonLibPath} -I ../include -I ../external
+testFlags = -O0 -g -Wall -Werror --pedantic -I ${sonLibPath} -I ../include -I ../external
 #cflags = ${cflags_dbg}
 
 # location of Tokyo cabinet

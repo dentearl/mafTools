@@ -24,9 +24,13 @@ __BE AWARE!__ The input maf should be transitively closed (if you are unsure you
 * <code>--seq1</code>   sequence _name.chr_ e.g. `hg19*'. May end in * to indicate wildcard.
 * <code>--seq2</code>   sequence _name.chr_ e.g. `mm9.chr2'. May end in * to indicate wildcard.
 * <code>--maf</code>    input maf file.
+* <code>--bed</code>    path to 3 column bedfile that will define regions of interest in output.
+* <code>--bin_start</code>     starting position (inclusive) of the sub-region to analyze.
+* <code>--bin_end</code>       ending position (inclusive) of the sub-region to analyze.
+* <code>--bin_length</code>    the length of each bin within the region. default=1000
 * <code>-v, --verbose</code>   turns on verbose output.
 
 ## Example
-    $ ./mafPairCoverage --seq1 hg19* --seq2 mm9* --maf example.maf 
+    $ ./mafPairCoverage --seq1 hg19* --seq2 mm9* --maf example.maf
     ...
 

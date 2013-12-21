@@ -11,12 +11,15 @@ ifeq ($(wildcard ../sonLib/Makefile),)
 	TransitiveClosure =
 	Stats =
 	ToFasta =
-$(warning Because dependency ../sonLib is missing mafComparator and mafTransitiveClosure will not be built / tested / cleaned. See README.md for information about dependencies.)
+	PairCoverage =
+	Coverage =
+$(warning Because dependency ../sonLib is missing mafComparator, mafTransitiveClosure, mafStats, mafToFastaStitcher, mafPairCoverage, mafCoverage will not be built / tested / cleaned. See README.md for information about dependencies.)
 else
 	Comparator = mafComparator
 	Stats = mafStats
 	ToFasta = mafToFastaStitcher
 	PairCoverage = mafPairCoverage
+	Coverage = mafCoverage
 ifeq ($(wildcard ../sonLib/lib/stPinchesAndCacti.a),)
 	TransitiveClosure =
 $(warning Because dependency ../pinchesAndCacti is missing mafTransitiveClosure will not be built / tested / cleaned. See README.md for information about dependencies.)
@@ -25,9 +28,9 @@ else
 endif # sonlib
 endif # pinches
 ##############################
-dependentModules= ${Comparator} ${TransitiveClosure} ${Stats}
+dependentModules= ${Comparator} ${TransitiveClosure} ${Stats} ${ToFasta} ${PairCoverage} ${Coverage}
 
-modules = include ${dependentModules} mafValidator mafPositionFinder mafExtractor mafSorter mafDuplicateFilter mafFilter mafStrander mafRowOrderer mafToFastaStitcher mafPairCoverage
+modules = include ${dependentModules} mafValidator mafPositionFinder mafExtractor mafSorter mafDuplicateFilter mafFilter mafStrander mafRowOrderer
 
 .PHONY: all %.all clean %.clean test %.test
 .SECONDARY:
