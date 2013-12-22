@@ -120,6 +120,7 @@ s seqZ.chr4  0 10 + 10 ACGTACGTAC
                  'target': 0.0,}),
               ]
 
+
 def createPredictionDict(path):
   f = open(path, 'r')
   predDict = {}
