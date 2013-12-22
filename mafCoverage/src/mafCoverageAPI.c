@@ -277,11 +277,12 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
             assert(querySequenceLength == maf_mafLine_getSourceLength(qML));
             assert(maf_mafLine_getPositiveCoord(qML) >= 0);
             assert(maf_mafLine_getPositiveCoord(qML) < querySequenceLength);
-            if(maf_mafLine_getStrand(qML)) {
-                assert(maf_mafLine_getPositiveCoord(qML) + maf_mafLine_getLength(qML) <= querySequenceLength);
+            if(maf_mafLine_getStrand(qML) == '+') {
+                assert(maf_mafLine_getPositiveCoord(qML) + maf_mafLine_getLength(qML) <= maf_mafLine_getSourceLength(qML));
             }
             else {
-                assert(maf_mafLine_getPositiveCoord(qML) - maf_mafLine_getLength(qML) >= -1);
+                assert(maf_mafLine_getStrand(qML) == '-');
+                assert((int64_t)(maf_mafLine_getPositiveCoord(qML) - maf_mafLine_getLength(qML)) >= -1);
             }
             assert(strlen(querySequenceFragment) == maf_mafLine_getSequenceFieldLength(qML));
             for (int64_t j = 0; j < stList_length(targetSpeciesLines); j++) {
@@ -305,7 +306,7 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
                             if(targetSequenceFragment[k] != '-' && (!requireIdentityForMatch || (toupper(querySequenceFragment[k]) != 'N' && toupper(querySequenceFragment[k]) == toupper(targetSequenceFragment[k])))) {
                                 pairwiseCoverageArray_increase(coverageArray, position);
                             }
-                            position += maf_mafLine_getStrand(qML) ? 1 : -1;
+                            position += maf_mafLine_getStrand(qML) == '+' ? 1 : -1;
                         }
                     }
                 }
