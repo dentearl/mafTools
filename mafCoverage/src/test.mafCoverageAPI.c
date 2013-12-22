@@ -144,8 +144,8 @@ static void test_nGenomeCoverage(CuTest *testCase) {
     setup();
     //Just build a single nGenomeCoverage and check the report functions work as expected.
     NGenomeCoverage *nGC = nGenomeCoverage_construct(sequenceNamesToSequenceSizes, "bat", 0);
-    nGenomeCoverage_reportHeader(stderr, 1);
-    nGenomeCoverage_report(nGC, stderr, 1);
+    // nGenomeCoverage_reportHeader(stderr, 1);
+    // nGenomeCoverage_report(nGC, stderr, 1);
     nGenomeCoverage_destruct(nGC);
     teardown();
 }
