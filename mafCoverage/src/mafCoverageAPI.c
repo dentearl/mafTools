@@ -269,8 +269,19 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
         }
         for (int64_t i = 0; i < stList_length(querySpeciesLines); i++) {
             mafLine_t *qML = stList_get(querySpeciesLines, i);
-            char *querySequence = maf_mafLine_getSequence(qML);
+            char *querySequenceFragment = maf_mafLine_getSequence(qML);
             char *querySequenceName = maf_mafLine_getSpecies(qML);
+            int64_t querySequenceLength = stIntTuple_get(stHash_search(nGC->sequenceNamesToSequenceSizeForGivenSpeciesOrChr, querySequenceName), 0);
+            (void)querySequenceLength;
+            assert(querySequenceLength == maf_mafLine_getSourceLength(qML));
+            assert(maf_mafLine_getPositiveCoord(qML) >= 0);
+            assert(maf_mafLine_getPositiveCoord(qML) < querySequenceLength);
+            if(maf_mafLine_getStrand(qML)) {
+                assert(maf_mafLine_getPositiveCoord(qML) + maf_mafLine_getLength(qML) <= querySequenceLength);
+            }
+            else {
+                assert(maf_mafLine_getPositiveCoord(qML) - maf_mafLine_getLength(qML) >= -1);
+            }
             for (int64_t j = 0; j < stList_length(targetSpeciesLines); j++) {
                 mafLine_t *tML = stList_get(targetSpeciesLines, j);
                 if(qML != tML) { //To allow self alignments we must ignore identity alignments
@@ -278,16 +289,16 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
                     assert(pC != NULL);
                     char *coverageArray = pairwiseCoverage_getCoverageArrayForSequence(pC, querySequenceName);
                     assert(coverageArray != NULL);
-                    char *targetSequence = maf_mafLine_getSequence(tML);
+                    char *targetSequenceFragment = maf_mafLine_getSequence(tML);
                     int64_t position = maf_mafLine_getPositiveCoord(qML);
                     assert(maf_mafLine_getSequenceFieldLength(qML) == maf_mafLine_getSequenceFieldLength(tML));
-                    assert(strlen(querySequence) == strlen(targetSequence));
-                    assert(strlen(querySequence) == maf_mafLine_getSequenceFieldLength(qML));
+                    assert(strlen(targetSequenceFragment) == maf_mafLine_getSequenceFieldLength(tML));
+                    assert(strlen(querySequenceFragment) == maf_mafLine_getSequenceFieldLength(qML));
                     for (int64_t k = 0; k < maf_mafLine_getSequenceFieldLength(qML); k++) {
-                        if (querySequence[k] != '-') {
+                        if (querySequenceFragment[k] != '-') {
                             assert(position >= 0);
-                            assert(position < stIntTuple_get(stHash_search(nGC->sequenceNamesToSequenceSizeForGivenSpeciesOrChr, querySequenceName), 0));
-                            if(targetSequence[k] != '-' && (!requireIdentityForMatch || (toupper(querySequence[k]) != 'N' && toupper(querySequence[k]) == toupper(targetSequence[k])))) {
+                            assert(position < querySequenceLength);
+                            if(targetSequenceFragment[k] != '-' && (!requireIdentityForMatch || (toupper(querySequenceFragment[k]) != 'N' && toupper(querySequenceFragment[k]) == toupper(targetSequenceFragment[k])))) {
                                 pairwiseCoverageArray_increase(coverageArray, position);
                             }
                             position += maf_mafLine_getStrand(qML) ? 1 : -1;

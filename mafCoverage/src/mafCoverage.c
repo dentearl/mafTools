@@ -50,7 +50,7 @@ void version(void) {
 
 void usage(void) {
     version();
-    fprintf(stderr, "Usage: mafCoverage --maf [maf file] \n\n"
+    fprintf(stderr, "Usage: mafCoverage [maf file] \n\n"
         "Reports the pairwise (n-)coverage between a specified genome and all other genomes in the given maf, using a tab delimited format.\n"
         "Output table format has fields: querySpecies\ttargetSpecies\tlengthOfQueryGenome\tcoverage\tn-coverages (if specified)\n"
         "For a pair of genomes A and B, the coverage of B on A is the proportion of sites in A that align to a base in B.\n"
