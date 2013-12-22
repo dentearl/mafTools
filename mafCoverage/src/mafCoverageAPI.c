@@ -271,6 +271,7 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
             mafLine_t *qML = stList_get(querySpeciesLines, i);
             char *querySequenceFragment = maf_mafLine_getSequence(qML);
             char *querySequenceName = maf_mafLine_getSpecies(qML);
+            //Asserts on coordinates
             int64_t querySequenceLength = stIntTuple_get(stHash_search(nGC->sequenceNamesToSequenceSizeForGivenSpeciesOrChr, querySequenceName), 0);
             (void)querySequenceLength;
             assert(querySequenceLength == maf_mafLine_getSourceLength(qML));
@@ -282,6 +283,7 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
             else {
                 assert(maf_mafLine_getPositiveCoord(qML) - maf_mafLine_getLength(qML) >= -1);
             }
+            assert(strlen(querySequenceFragment) == maf_mafLine_getSequenceFieldLength(qML));
             for (int64_t j = 0; j < stList_length(targetSpeciesLines); j++) {
                 mafLine_t *tML = stList_get(targetSpeciesLines, j);
                 if(qML != tML) { //To allow self alignments we must ignore identity alignments
@@ -293,8 +295,10 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
                     int64_t position = maf_mafLine_getPositiveCoord(qML);
                     assert(maf_mafLine_getSequenceFieldLength(qML) == maf_mafLine_getSequenceFieldLength(tML));
                     assert(strlen(targetSequenceFragment) == maf_mafLine_getSequenceFieldLength(tML));
-                    assert(strlen(querySequenceFragment) == maf_mafLine_getSequenceFieldLength(qML));
                     for (int64_t k = 0; k < maf_mafLine_getSequenceFieldLength(qML); k++) {
+                        assert(querySequenceFragment[k] != '\0');
+                        assert(querySequenceFragment[k] != ' ');
+                        assert(querySequenceFragment[k] != '\n');
                         if (querySequenceFragment[k] != '-') {
                             assert(position >= 0);
                             assert(position < querySequenceLength);
