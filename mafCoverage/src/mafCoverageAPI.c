@@ -276,7 +276,7 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
             (void)querySequenceLength;
             assert(querySequenceLength == maf_mafLine_getSourceLength(qML));
             assert(maf_mafLine_getPositiveCoord(qML) >= 0);
-            assert(maf_mafLine_getPositiveCoord(qML) < querySequenceLength);
+            assert(maf_mafLine_getPositiveCoord(qML) <= querySequenceLength);
             if(maf_mafLine_getStrand(qML) == '+') {
                 assert(maf_mafLine_getPositiveCoord(qML) + maf_mafLine_getLength(qML) <= maf_mafLine_getSourceLength(qML));
             }
