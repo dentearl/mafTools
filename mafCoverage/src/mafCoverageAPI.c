@@ -275,14 +275,16 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
             int64_t querySequenceLength = stIntTuple_get(stHash_search(nGC->sequenceNamesToSequenceSizeForGivenSpeciesOrChr, querySequenceName), 0);
             (void)querySequenceLength;
             assert(querySequenceLength == maf_mafLine_getSourceLength(qML));
-            assert(maf_mafLine_getPositiveCoord(qML) >= 0);
-            assert(maf_mafLine_getPositiveCoord(qML) <= querySequenceLength);
-            if(maf_mafLine_getStrand(qML) == '+') {
-                assert(maf_mafLine_getPositiveCoord(qML) + maf_mafLine_getLength(qML) <= maf_mafLine_getSourceLength(qML));
-            }
-            else {
-                assert(maf_mafLine_getStrand(qML) == '-');
-                assert((int64_t)(maf_mafLine_getPositiveCoord(qML) - maf_mafLine_getLength(qML)) >= -1);
+            if(maf_mafLine_getLength(qML) > 0) { //This if is because mafs produced by hal2maf sometimes break these assumptions for all gap lines.
+                assert(maf_mafLine_getPositiveCoord(qML) >= 0);
+                assert(maf_mafLine_getPositiveCoord(qML) <= querySequenceLength);
+                if(maf_mafLine_getStrand(qML) == '+') {
+                    assert(maf_mafLine_getPositiveCoord(qML) + maf_mafLine_getLength(qML) <= maf_mafLine_getSourceLength(qML));
+                }
+                else {
+                    assert(maf_mafLine_getStrand(qML) == '-');
+                    assert((int64_t)(maf_mafLine_getPositiveCoord(qML) - maf_mafLine_getLength(qML)) >= -1);
+                }
             }
             assert(strlen(querySequenceFragment) == maf_mafLine_getSequenceFieldLength(qML));
             for (int64_t j = 0; j < stList_length(targetSpeciesLines); j++) {
