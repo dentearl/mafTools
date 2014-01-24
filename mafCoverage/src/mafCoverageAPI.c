@@ -177,11 +177,13 @@ char *pairwiseCoverage_getCoverageArrayForSequence(PairwiseCoverage *pC, char *s
     return sequenceCoverageArray;
 }
 
-void pairwiseCoverageArray_increase(char *sequenceCoverageArray, int64_t position) {
+bool pairwiseCoverageArray_increase(char *sequenceCoverageArray, int64_t position) {
     assert(position >= 0);
     if ((int64_t) sequenceCoverageArray[position] < SCHAR_MAX) {
         sequenceCoverageArray[position]++;
+        return 0;
     }
+    return 1;
 }
 
 double *pairwiseCoverage_calculateNCoverages(PairwiseCoverage *pC) {
@@ -298,6 +300,7 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
                     int64_t position = maf_mafLine_getPositiveCoord(qML);
                     assert(maf_mafLine_getSequenceFieldLength(qML) == maf_mafLine_getSequenceFieldLength(tML));
                     assert(strlen(targetSequenceFragment) == maf_mafLine_getSequenceFieldLength(tML));
+                    bool saturated = 1;
                     for (int64_t k = 0; k < maf_mafLine_getSequenceFieldLength(qML); k++) {
                         assert(querySequenceFragment[k] != '\0');
                         assert(querySequenceFragment[k] != ' ');
@@ -306,10 +309,18 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
                             assert(position >= 0);
                             assert(position < querySequenceLength);
                             if(targetSequenceFragment[k] != '-' && (!requireIdentityForMatch || (toupper(querySequenceFragment[k]) != 'N' && toupper(querySequenceFragment[k]) == toupper(targetSequenceFragment[k])))) {
-                                pairwiseCoverageArray_increase(coverageArray, position);
+                                if(pairwiseCoverageArray_increase(coverageArray, position)) {
+                                    saturated = 0;
+                                }
+                            }
+                            else {
+                                saturated = 0;
                             }
                             position += maf_mafLine_getStrand(qML) == '+' ? 1 : -1;
                         }
+                    }
+                    if(saturated) {
+                        break;
                     }
                 }
             }
