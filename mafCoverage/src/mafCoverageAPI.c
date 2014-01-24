@@ -181,9 +181,9 @@ bool pairwiseCoverageArray_increase(char *sequenceCoverageArray, int64_t positio
     assert(position >= 0);
     if ((int64_t) sequenceCoverageArray[position] < SCHAR_MAX) {
         sequenceCoverageArray[position]++;
-        return 0;
+        return 1;
     }
-    return 1;
+    return 0;
 }
 
 double *pairwiseCoverage_calculateNCoverages(PairwiseCoverage *pC) {
@@ -308,11 +308,11 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
                         if (querySequenceFragment[k] != '-') {
                             assert(position >= 0);
                             assert(position < querySequenceLength);
-                            if(!(targetSequenceFragment[k] != '-' &&
-                                    (!requireIdentityForMatch ||
-                                            (toupper(querySequenceFragment[k]) != 'N' &&
-                                             toupper(querySequenceFragment[k]) == toupper(targetSequenceFragment[k]))))
-                                    || pairwiseCoverageArray_increase(coverageArray, position)) {
+                            if(targetSequenceFragment[k] == '-' ||
+                               (requireIdentityForMatch &&
+                                       (toupper(querySequenceFragment[k]) == 'N' ||
+                                        toupper(querySequenceFragment[k]) != toupper(targetSequenceFragment[k]))) ||
+                               pairwiseCoverageArray_increase(coverageArray, position)) {
                                 saturated = 0;
                             }
                             position += maf_mafLine_getStrand(qML) == '+' ? 1 : -1;
