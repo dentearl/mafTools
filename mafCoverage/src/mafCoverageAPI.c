@@ -177,11 +177,13 @@ char *pairwiseCoverage_getCoverageArrayForSequence(PairwiseCoverage *pC, char *s
     return sequenceCoverageArray;
 }
 
-void pairwiseCoverageArray_increase(char *sequenceCoverageArray, int64_t position) {
+bool pairwiseCoverageArray_increase(char *sequenceCoverageArray, int64_t position) {
     assert(position >= 0);
     if ((int64_t) sequenceCoverageArray[position] < SCHAR_MAX) {
         sequenceCoverageArray[position]++;
+        return 1;
     }
+    return 0;
 }
 
 double *pairwiseCoverage_calculateNCoverages(PairwiseCoverage *pC) {
@@ -275,14 +277,16 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
             int64_t querySequenceLength = stIntTuple_get(stHash_search(nGC->sequenceNamesToSequenceSizeForGivenSpeciesOrChr, querySequenceName), 0);
             (void)querySequenceLength;
             assert(querySequenceLength == maf_mafLine_getSourceLength(qML));
-            assert(maf_mafLine_getPositiveCoord(qML) >= 0);
-            assert(maf_mafLine_getPositiveCoord(qML) < querySequenceLength);
-            if(maf_mafLine_getStrand(qML) == '+') {
-                assert(maf_mafLine_getPositiveCoord(qML) + maf_mafLine_getLength(qML) <= maf_mafLine_getSourceLength(qML));
-            }
-            else {
-                assert(maf_mafLine_getStrand(qML) == '-');
-                assert((int64_t)(maf_mafLine_getPositiveCoord(qML) - maf_mafLine_getLength(qML)) >= -1);
+            if(maf_mafLine_getLength(qML) > 0) { //This if is because mafs produced by hal2maf sometimes break these assumptions for all gap lines.
+                assert(maf_mafLine_getPositiveCoord(qML) >= 0);
+                assert(maf_mafLine_getPositiveCoord(qML) <= querySequenceLength);
+                if(maf_mafLine_getStrand(qML) == '+') {
+                    assert(maf_mafLine_getPositiveCoord(qML) + maf_mafLine_getLength(qML) <= maf_mafLine_getSourceLength(qML));
+                }
+                else {
+                    assert(maf_mafLine_getStrand(qML) == '-');
+                    assert((int64_t)(maf_mafLine_getPositiveCoord(qML) - maf_mafLine_getLength(qML)) >= -1);
+                }
             }
             assert(strlen(querySequenceFragment) == maf_mafLine_getSequenceFieldLength(qML));
             for (int64_t j = 0; j < stList_length(targetSpeciesLines); j++) {
@@ -296,6 +300,7 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
                     int64_t position = maf_mafLine_getPositiveCoord(qML);
                     assert(maf_mafLine_getSequenceFieldLength(qML) == maf_mafLine_getSequenceFieldLength(tML));
                     assert(strlen(targetSequenceFragment) == maf_mafLine_getSequenceFieldLength(tML));
+                    bool saturated = 1;
                     for (int64_t k = 0; k < maf_mafLine_getSequenceFieldLength(qML); k++) {
                         assert(querySequenceFragment[k] != '\0');
                         assert(querySequenceFragment[k] != ' ');
@@ -303,11 +308,18 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
                         if (querySequenceFragment[k] != '-') {
                             assert(position >= 0);
                             assert(position < querySequenceLength);
-                            if(targetSequenceFragment[k] != '-' && (!requireIdentityForMatch || (toupper(querySequenceFragment[k]) != 'N' && toupper(querySequenceFragment[k]) == toupper(targetSequenceFragment[k])))) {
-                                pairwiseCoverageArray_increase(coverageArray, position);
+                            if(targetSequenceFragment[k] == '-' ||
+                               (requireIdentityForMatch &&
+                                       (toupper(querySequenceFragment[k]) == 'N' ||
+                                        toupper(querySequenceFragment[k]) != toupper(targetSequenceFragment[k]))) ||
+                               pairwiseCoverageArray_increase(coverageArray, position)) {
+                                saturated = 0;
                             }
                             position += maf_mafLine_getStrand(qML) == '+' ? 1 : -1;
                         }
+                    }
+                    if(saturated) {
+                        break;
                     }
                 }
             }
@@ -329,7 +341,7 @@ void nGenomeCoverage_destruct(NGenomeCoverage *nGC) {
 }
 
 void nGenomeCoverage_reportHeader(FILE *out, bool includeNCoverage) {
-    fprintf(out, "# targetSpecies/Chr\tquerySpecies/Chr\tlengthOfQueryGenome\tcoverage\t");
+    fprintf(out, "# referenceSpecies/Chr\tquerySpecies/Chr\tlengthOfReferenceGenome\tcoverage\t");
     if (includeNCoverage) {
         for (int i = 2; i < SCHAR_MAX; i++) {
             fprintf(out, "\t%i-coverage", i);

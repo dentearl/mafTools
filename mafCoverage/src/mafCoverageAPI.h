@@ -86,7 +86,10 @@ double *pairwiseCoverage_calculateNCoverages(PairwiseCoverage *pC);
  */
 char *pairwiseCoverage_getCoverageArrayForSequence(PairwiseCoverage *pC, char *sequenceName);
 
-void pairwiseCoverageArray_increase(char *sequenceCoverageArray, int64_t position);
+/*
+ * Returns non-zero if successful, if maximum coverage achieved (so can't be increased) returns 0.
+ */
+bool pairwiseCoverageArray_increase(char *sequenceCoverageArray, int64_t position);
 
 /*
  * An all-against-a-given-species object.
