@@ -42,13 +42,13 @@ src/buildVersion.c: ${sources} ${dependencies}
 
 ${bin}/mafCoverage: src/mafCoverage.c ${dependencies} ${extraAPI}
 	mkdir -p $(dir $@)
-	${cxx} $< ${extraAPI} -o $@.tmp ${cflags} ${lm}
+	${cxx} $< ${extraAPI} -o $@.tmp -DNDEBUG ${cflags} ${lm}
 	mv $@.tmp $@
 %.o: %.c %.h
-	${cxx} -c $< -o $@.tmp ${cflags}
+	${cxx} -c $< -o $@.tmp -DNDEBUG ${cflags}
 	mv $@.tmp $@
 %/mafCoverageAPI.o: src/mafCoverageAPI.c src/mafCoverageAPI.h
-	${cxx} -c $< -o $@.tmp ${cflags}
+	${cxx} -c $< -o $@.tmp -DNDEBUG ${cflags}
 	mv $@.tmp $@
 
 test: buildVersion test/allTests test/mafCoverage
