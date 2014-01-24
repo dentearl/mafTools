@@ -308,12 +308,11 @@ void nGenomeCoverage_populate(NGenomeCoverage *nGC, char *mafFileName, bool requ
                         if (querySequenceFragment[k] != '-') {
                             assert(position >= 0);
                             assert(position < querySequenceLength);
-                            if(targetSequenceFragment[k] != '-' && (!requireIdentityForMatch || (toupper(querySequenceFragment[k]) != 'N' && toupper(querySequenceFragment[k]) == toupper(targetSequenceFragment[k])))) {
-                                if(pairwiseCoverageArray_increase(coverageArray, position)) {
-                                    saturated = 0;
-                                }
-                            }
-                            else {
+                            if(!(targetSequenceFragment[k] != '-' &&
+                                    (!requireIdentityForMatch ||
+                                            (toupper(querySequenceFragment[k]) != 'N' &&
+                                             toupper(querySequenceFragment[k]) == toupper(targetSequenceFragment[k]))))
+                                    || pairwiseCoverageArray_increase(coverageArray, position)) {
                                 saturated = 0;
                             }
                             position += maf_mafLine_getStrand(qML) == '+' ? 1 : -1;
