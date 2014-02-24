@@ -36,7 +36,7 @@ test/%.o: src/%.c src/%.h
 	mv $@.tmp $@
 
 clean:
-	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
+	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/ src/buildVersion.c src/buildVersion.h
 
 test: buildVersion test/allTests
 	test/allTests && rm -rf ./test/

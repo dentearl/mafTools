@@ -94,4 +94,4 @@ test/testRand: src/testRand.c ${testAPI} ${sonLibPath}/sonLib.a
 	mv $@.tmp $@
 
 clean:
-	rm -f *.o ${progs} src/*.o && rm -rf ./test/
+	rm -f *.o ${progs} src/*.o && rm -rf ./test/ src/buildVersion.c src/buildVersion.h

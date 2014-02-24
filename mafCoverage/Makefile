@@ -75,7 +75,7 @@ test/%.o: src/%.c src/%.h ${sonLibPath}/sonLib.a
 	mv $@.tmp $@
 
 clean:
-	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
+	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/ src/buildVersion.c src/buildVersion.h
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
 	${cxx} -c $< ${cflags}
 	ar rc CuTest.a CuTest.o

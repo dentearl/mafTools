@@ -38,7 +38,7 @@ test/%.o: src/%.c src/%.h
 	mv $@.tmp $@
 
 clean:
-	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
+	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/ src/buildVersion.c src/buildVersion.h
 
 test: buildVersion test/mafSorter
 	python2.7 src/test.mafSorter.py --verbose && rm -rf test/ && rmdir ./tempTestDir

@@ -32,13 +32,13 @@ test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
 	${cc} -g -O0 -c ${args} $< -o $@.tmp -lm
 	mv $@.tmp $@
-test/%.o: src/%.c src/%.h 
+test/%.o: src/%.c src/%.h
 	mkdir -p $(dir $@)
 	${cc} -c $< -o $@.tmp ${args} -g -O0 -lm
 	mv $@.tmp $@
 
 clean:
-	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/
+	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/ src/buildVersion.c src/buildVersion.h
 
 test: buildVersion test/mafPositionFinder
 	python2.7 src/test.mafPositionFinder.py --verbose && rm -rf test/ && rmdir ./tempTestDir

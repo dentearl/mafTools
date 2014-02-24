@@ -34,13 +34,13 @@ test/%.o: ../include/%.c ../include/%.h
 	mkdir -p $(dir $@)
 	${cc} -c $< -o $@.tmp ${args} -g -O0 -lm
 	mv $@.tmp $@
-test/%.o: src/%.c src/%.h 
+test/%.o: src/%.c src/%.h
 	mkdir -p $(dir $@)
 	${cc} -c $< -o $@.tmp ${args} -g -O0 -lm
 	mv $@.tmp $@
 
 clean:
-	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/ temTestDir/
+	rm -rf $(foreach f,${PROGS}, ${bin}/$f) src/*.o test/ temTestDir/ src/buildVersion.c src/buildVersion.h
 
 test: buildVersion test/allTests test/mafExtractor
 	./test/allTests && python2.7 src/test.mafExtractor.py --verbose && rmdir ./tempTestDir && rm -rf ./test/
