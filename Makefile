@@ -51,6 +51,7 @@ clean: ${modules:%=%.clean}
 	cd $* && make clean
 
 test : ${modules:%=%.test} ${Warnings:%=%.warn}
+	@mafTools tests complete.
 
 %.test:
 	cd $* && make test
