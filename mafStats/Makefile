@@ -16,21 +16,23 @@ src/buildVersion.c: ${sources} ${dependencies}
 
 ${bin}/mafStats: src/mafStats.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
-	${cxx} $< ${objects} -o $@.tmp ${cflags} -lm
+	${cxx} $< ${objects} -o $@.tmp ${cflags} ${lm}
 	mv $@.tmp $@
 
 test/mafStats: src/mafStats.c ${dependencies} ${testObjects}
 	mkdir -p $(dir $@)
-	${cxx} $< src/allTests.c ${testObjects} -o $@.tmp ${testFlags} -lm
+	${cxx} $< src/allTests.c ${testObjects} -o $@.tmp ${testFlags} ${lm}
 	mv $@.tmp $@
 %.o: %.c %.h
 	${cxx} -c $< -o $@.tmp ${cflags}
 	mv $@.tmp $@
 test/%.o: ../include/%.c ../include/%.h
+	@echo apple
 	mkdir -p $(dir $@)
-	${cxx} -c $< -o $@.tmp ${testFlags}
+	${cxx} -c $< -o $@.tmp ${testFlags} ${lm}
 	mv $@.tmp $@
 test/%.o: src/%.c src/%.h
+	@echo orange
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags}
 	mv $@.tmp $@
@@ -43,7 +45,7 @@ test: buildVersion test/allTests
 
 test/allTests: src/allTests.c ${testObjects}
 	mkdir -p $(dir $@)
-	${cxx} $^ -o $@.tmp ${testFlags}
+	${cxx} $^ -o $@.tmp ${testFlags} ${lm}
 	mv $@.tmp $@
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
