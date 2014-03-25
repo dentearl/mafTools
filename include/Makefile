@@ -38,7 +38,7 @@ test/sharedMaf.o: sharedMaf.c sharedMaf.h
 	mv $@.tmp $@
 
 test: allTests
-	./allTests && python2.7 test.sharedMaf.py --verbose && rm -rf ./allTests ./test ./tempTestDir ./test_tmp
+	./allTests && python2.7 test.sharedMaf.py --verbose && rm -rf ./allTests ./test ./test_tmp
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
 	${cc} -c ${args} $<

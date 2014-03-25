@@ -467,8 +467,11 @@ char** maf_mafBlock_getSequenceMatrix(mafBlock_t *mb, unsigned n, unsigned m) {
   mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
   i = 0;
   while (ml != NULL) {
-    while (maf_mafLine_getType(ml) != 's') {
+    while (ml != NULL && maf_mafLine_getType(ml) != 's') {
       ml = maf_mafLine_getNext(ml);
+    }
+    if (ml == NULL) {
+      break;
     }
     strncpy(matrix[i], maf_mafLine_getSequence(ml), m);
     matrix[i++][m] = '\0';

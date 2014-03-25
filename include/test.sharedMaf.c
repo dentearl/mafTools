@@ -630,6 +630,32 @@ static void test_copyChromosomeName_0(CuTest *testCase) {
   performTest_copyName(testCase, 'c', "dasNov1.scaffold_179265",
                        "scaffold_179265");
 }
+static void test_getSequenceMatrix_0(CuTest *testCase) {
+  assert(testCase != NULL);
+  createTmpFolder();
+  char *input = de_strdup("##maf version=1 scoring=tba.v8 \n\
+      \n\
+\n\
+a score=3428.000000\n\
+s hg19.chr1     10917 56 + 249250621 gagaggcgcaccgcgccggcgcaggcgcagagacacatgctagcgcgtccaggggt\n\
+s panTro4.chr15 13606 49 -  99548318 gagaggcgcaccgcgccggcgcag------agacacatactagcgcgtcctgggg-\n\
+i panTro4.chr15 N 0 C 0\n\
+\n\\n\
+");
+  writeStringToTmpFile(input);
+  mafFileApi_t *mapi = maf_newMfa("test_tmp/test.maf", "r");
+  mafBlock_t *mb = maf_readBlock(mapi);
+  char **matrix = maf_mafBlock_getSequenceMatrix(mb, 2, 56);
+  CuAssertTrue(testCase, 1);
+  for (int i=0; i < 2; ++i)
+    free(matrix[i]);
+  free(matrix);
+  maf_destroyMafBlockList(mb);
+  unlink("test_tmp/test.maf");
+  rmdir("test_tmp");
+  maf_destroyMfa(mapi);
+  free(input);
+}
 CuSuite* mafShared_TestSuite(void) {
   CuSuite* suite = CuSuiteNew();
   SUITE_ADD_TEST(suite, test_newMafLineFromString);
@@ -642,5 +668,6 @@ CuSuite* mafShared_TestSuite(void) {
   SUITE_ADD_TEST(suite, test_flipBlockStrand_1);
   SUITE_ADD_TEST(suite, test_copySpeciesName_0);
   SUITE_ADD_TEST(suite, test_copyChromosomeName_0);
+  SUITE_ADD_TEST(suite, test_getSequenceMatrix_0);
   return suite;
 }
