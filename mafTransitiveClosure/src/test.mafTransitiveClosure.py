@@ -1,32 +1,34 @@
 ##################################################
-# Copyright (C) 2013 by 
+# Copyright (C) 2013-2014 by
 # Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
-# ... and other members of the Reconstruction Team of David Haussler's 
+# ... and other members of the Reconstruction Team of David Haussler's
 # lab (BME Dept. UCSC).
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE. 
+# THE SOFTWARE.
 ##################################################
 import os
 import random
 import sys
 import unittest
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '../../include/')))
+sys.path.append(
+    os.path.abspath(
+        os.path.join(os.path.dirname(sys.argv[0]), '../../lib/')))
 import mafToolsTest as mtt
 
 g_headers = ['''##maf version=1 scoring=tba.v8
@@ -59,24 +61,24 @@ def mafIsClosed(maf, outList):
         block = mtt.extractBlockStr(f, lastLine)
     f.close()
     return True
-    
+
 class TransitiveClosureTest(unittest.TestCase):
-    knownResults = [('''a score=23262.0     
+    knownResults = [('''a score=23262.0
 s hg18.chr7      0 16 + 100 ATTGTCTCTTACGGTG
 s panTro1.chr6   0 16 + 100 ATTGTCTCTTACGGTG
 
-a score=23262.0     
+a score=23262.0
 s hg18.chr7      0 16 + 100 ATTGTCTCTTACGGTG
 s baboon         0 16 + 100 GTTGTCTCTTATGGTG
 
-a score=23262.0       
+a score=23262.0
 s hg18.chr7      0 16 + 100 ATTGTCTCTTACGGTG
 s mm4.chr6       0 16 + 100 ATTGTCTCTCAGTGTG
 
-a score=23262.0     
+a score=23262.0
 s hg18.chr7      0 16 + 100 ATTGTCTCTTACGGTG
 s rn3.chr4       1 16 + 100 GTTGTCTCTCAATGTG
-                   
+
 ''',
                      ['a degree=5',
                       's hg18.chr7      0 16 + 100 ATTGTCTCTTACGGTG',
@@ -84,11 +86,11 @@ s rn3.chr4       1 16 + 100 GTTGTCTCTCAATGTG
                       's baboon         0 16 + 100 GTTGTCTCTTATGGTG',
                       's mm4.chr6       0 16 + 100 ATTGTCTCTCAGTGTG',
                       's rn3.chr4       1 16 + 100 GTTGTCTCTCAATGTG']),
-                    ('''a score=23262.0       
+                    ('''a score=23262.0
 s hg18.chr7      0 10 - 10 AAAAAGGGGG
 s mm4.chr6       1 10 - 11 GATTGTCTCC
 
-a score=23262.0     
+a score=23262.0
 s hg18.chr7      4 6 + 10 CTTTTT
 s rn3.chr4       4 6 - 12 GGGGGT
 
@@ -102,39 +104,39 @@ s rn3.chr4       4 6 - 12 GGGGGT
                       's mm4.chr6    4 6 + 11 ACAATC',
                       's rn3.chr4    4 6 - 12 GGGGGT',
                       ]),
-                    ('''a score=23262.0     
+                    ('''a score=23262.0
 s hg18.chr7      0 10 + 20 AATTGTCTCT
 s panTro1.chr6   0 10 + 20 AATTGTCTCT
 
-a score=23262.0     
+a score=23262.0
 s hg18.chr7      10 10 + 20 CCCCCTTTTT
 s panTro1.chr6   10 10 + 20 GGCCTTAATT
 
-a score=23262.0     
+a score=23262.0
 s hg18.chr7      5 10 - 20 GGGGGAGAGA
 s baboon         5 10 - 20 GGTTGTCTCT
 
-a score=23262.0     
+a score=23262.0
 s hg18.chr7      0 10 - 20 AAAAAGGGGG
 s baboon         0 10 - 20 AATTAGGTTG
 
-a score=23262.0     
+a score=23262.0
 s hg18.chr7      10 10 - 20 AGAGACAATT
 s baboon         10 10 - 20 TCTCTCCGGG
 
-a score=23262.0       
+a score=23262.0
 s hg18.chr7      0 20 - 20 AAAAAGGGGGAGAGACAATT
 s mm4.chr6       0 20 - 20 GATTGTCTCTAAATTTAAAT
 
-a score=23262.0     
+a score=23262.0
 s hg18.chr7      10 10 + 20 CCCCCTTTTT
 s rn3.chr4       10 10 - 20 GGTTGTCTCT
 
-a score=23262.0     
+a score=23262.0
 s hg18.chr7      0 10 + 20 AATTGTCTCT
 s rn3.chr4       0 10 - 20 CCGGCGGTTG
 
-                   
+
 ''',
                      ['a degree=5',
                       's hg18.chr7      0 20 + 20 AATTGTCTCTCCCCCTTTTT',
@@ -148,10 +150,10 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('knownInOut_1'))
         for inMaf, outList in self.knownResults:
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    inMaf, g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), 
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')),
                    '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf'))]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'transitiveClosure.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
@@ -165,10 +167,10 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
         mtt.makeTempDirParent()
         tmpDir = os.path.abspath(mtt.makeTempDir('knownInOut_2'))
         for inMaf, outList in self.knownResults:
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    inMaf, g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), 
+            cmd = [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')),
                    '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')), '--sort']
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'transitiveClosure.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
@@ -185,11 +187,11 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
             return
         tmpDir = os.path.abspath(mtt.makeTempDir('memory_1'))
         for inMaf, outList in self.knownResults:
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    inMaf, g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = mtt.genericValgrind(tmpDir)
-            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), 
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')),
                     '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')) ]
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'transitiveClosure.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)
@@ -222,11 +224,11 @@ s rn3.chr4       0 10 - 20 CCGGCGGTTG
             return
         tmpDir = os.path.abspath(mtt.makeTempDir('memory_3'))
         for inMaf, outList in self.knownResults:
-            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')), 
+            testMaf = mtt.testFile(os.path.abspath(os.path.join(tmpDir, 'test.maf')),
                                    inMaf, g_headers)
             parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cmd = mtt.genericValgrind(tmpDir)
-            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')), 
+            cmd += [os.path.abspath(os.path.join(parent, 'test', 'mafTransitiveClosure')),
                     '--maf', os.path.abspath(os.path.join(tmpDir, 'test.maf')), '--sort']
             outpipes = [os.path.abspath(os.path.join(tmpDir, 'transitiveClosure.maf'))]
             mtt.recordCommands([cmd], tmpDir, outPipes=outpipes)

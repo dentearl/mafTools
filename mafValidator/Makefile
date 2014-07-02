@@ -1,4 +1,4 @@
-include ../include.mk
+include ../inc/common.mk
 binPath = ../bin
 
 progs =  $(foreach f,mafValidator.py, ${binPath}/$f)

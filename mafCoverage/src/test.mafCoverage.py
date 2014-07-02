@@ -29,7 +29,7 @@ import random
 import sys
 import unittest
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]),
-                                             '../../include/')))
+                                             '../../lib/')))
 import mafToolsTest as mtt
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]),
                                              '../../mafValidator/src/')))

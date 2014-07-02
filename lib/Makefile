@@ -1,10 +1,11 @@
 SHELL=/bin/bash
-include ../include.mk
+include ../inc/common.mk
 .SECONDARY:
 .PHONY: all clean test
 
 cc = gcc
-args = -std=c99 -O3 -Wextra -Wall -Werror -pedantic -I ../external/
+args = -std=c99 -O3 -Wextra -Wall -Werror -pedantic -I ../external/ -I ../inc/
+inc = ../inc
 
 objects = common.o sharedMaf.o ../external/CuTest.a
 testObjects := test/sharedMaf.o test/common.o ../external/CuTest.a
@@ -14,25 +15,25 @@ all: ${objects}
 clean:
 	rm -f allTests *.o *.pyc
 
-allTests: allTests.c test.sharedMaf.h test.sharedMaf.c ${testObjects}
+allTests: allTests.c ${inc}/test.sharedMaf.h test.sharedMaf.c ${testObjects}
 	mkdir -p test
 	${cc} -g -O0 ${args} allTests.c test.sharedMaf.c ${testObjects} -o $@.tmp ${lm}
 	mv $@.tmp $@
 
-%.o: %.c %.h
+%.o: %.c ${inc}/%.h
 	${cc} -O3 -c ${args} $< -o $@.tmp
 	mv $@.tmp $@
 
-sharedMaf.o: sharedMaf.c sharedMaf.h
+sharedMaf.o: sharedMaf.c ${inc}/sharedMaf.h
 	${cc} -O3 -c ${args} sharedMaf.c -o $@.tmp ${lm}
 	mv $@.tmp $@
 
-test/%.o: %.c %.h
+test/%.o: %.c ${inc}/%.h
 	mkdir -p $(dir $@)
 	${cc} -g -O0 -c ${args} $< -o $*.tmp ${lm}
 	mv $*.tmp $@
 
-test/sharedMaf.o: sharedMaf.c sharedMaf.h
+test/sharedMaf.o: sharedMaf.c ${inc}/sharedMaf.h
 	mkdir -p $(dir $@)
 	${cc} -g -O0 -c ${args} sharedMaf.c -o $@.tmp ${lm}
 	mv $@.tmp $@

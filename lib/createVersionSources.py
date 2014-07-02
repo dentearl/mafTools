@@ -5,7 +5,7 @@ import sys
 import time
 sys.path.append(
   os.path.abspath(
-    os.path.join(os.path.dirname(sys.argv[0]), '../../include/')))
+    os.path.join(os.path.dirname(sys.argv[0]), '../../inc/')))
 import mafToolsTest as mtt
 
 BOILERPLATE = '''/*
@@ -82,7 +82,7 @@ def main():
   if GIT is None:
     raise RuntimeError('Error, unable to locate git, is it installed?')
   location = os.path.join(os.curdir, 'src')
-  buildDate = time.strftime('%Y-%m-%dT%H:%M%Z', time.localtime()) # gmtime()
+  buildDate = time.strftime('%Y-%m-%dT%H:%M%Z', time.localtime())  # gmtime()
   buildBranch = getBranch()
   buildSha = getSha()
   writeHeader(location)

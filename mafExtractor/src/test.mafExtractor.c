@@ -1,26 +1,26 @@
-/* 
- * Copyright (C) 2013 by 
+/*
+ * Copyright (C) 2014 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
- * ... and other members of the Reconstruction Team of David Haussler's 
+ * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE. 
+ * THE SOFTWARE.
  */
 #include <assert.h>
 #include <inttypes.h>
@@ -34,6 +34,7 @@
 #include "common.h"
 #include "sharedMaf.h"
 #include "mafExtractorAPI.h"
+#include "test.mafExtractor.h"
 
 static bool boolArraysAreEqual(bool *b1, bool *b2, uint64_t n) {
     for (uint64_t i = 0; i < n; ++i) {
@@ -68,7 +69,7 @@ static bool mafLinesAreEqual(mafLine_t* ml1, mafLine_t *ml2) {
     if (maf_mafLine_getLineNumber(ml1) != maf_mafLine_getLineNumber(ml2)) {
         fprintf(stderr, "mafLines differ in lineNumber:\n %3"PRIu64" %s\n %3"PRIu64" %s\n",
                 maf_mafLine_getLineNumber(ml1),
-                maf_mafLine_getLine(ml1), 
+                maf_mafLine_getLine(ml1),
                 maf_mafLine_getLineNumber(ml2),
                 maf_mafLine_getLine(ml2));
         return false;
@@ -79,8 +80,8 @@ static bool mafLinesAreEqual(mafLine_t* ml1, mafLine_t *ml2) {
     }
     if (maf_mafLine_getStart(ml1) != maf_mafLine_getStart(ml2)) {
         fprintf(stderr, "mafLines differ in start:\n %3" PRIu64 ":%s\n %3" PRIu64 ":%s\n",
-                maf_mafLine_getStart(ml1), 
-                maf_mafLine_getLine(ml1), 
+                maf_mafLine_getStart(ml1),
+                maf_mafLine_getLine(ml1),
                 maf_mafLine_getStart(ml2),
                 maf_mafLine_getLine(ml2));
         return false;
@@ -133,8 +134,8 @@ static bool mafLinesAreEqual(mafLine_t* ml1, mafLine_t *ml2) {
     } else {
         if (maf_mafLine_getSequence(ml1) != maf_mafLine_getSequence(ml2)) {
             // if true, one is NULL the other is not
-            fprintf(stderr, "ml1 seq:%p ml2 seq:%p\n", 
-                    (void*) maf_mafLine_getSequence(ml1), 
+            fprintf(stderr, "ml1 seq:%p ml2 seq:%p\n",
+                    (void*) maf_mafLine_getSequence(ml1),
                     (void*) maf_mafLine_getSequence(ml2));
             return false;
         }
@@ -215,7 +216,7 @@ static bool mafBlockListsAreEqual(mafBlock_t *head1, mafBlock_t *head2) {
         ++count2;
     }
     if (count1 != count2) {
-        fprintf(stderr, "mafBlock lists have different lengths!, mb1:%"PRIu64" mb2:%"PRIu64"\n", 
+        fprintf(stderr, "mafBlock lists have different lengths!, mb1:%"PRIu64" mb2:%"PRIu64"\n",
                 count1, count2);
         printf("block list1:\n");
         maf_mafBlock_printList(head1);
@@ -234,7 +235,7 @@ static bool mafBlockListsAreEqual(mafBlock_t *head1, mafBlock_t *head2) {
     }
     return true;
 }
-static void targetColumnTest(CuTest *testCase, const char *mafString, uint64_t start, 
+static void targetColumnTest(CuTest *testCase, const char *mafString, uint64_t start,
                              uint64_t stop, uint64_t expectedLen, bool expected[]) {
     mafBlock_t *ib = maf_newMafBlockFromString(mafString, 3);
     bool *targetColumns = NULL;
@@ -248,7 +249,7 @@ static void targetColumnTest(CuTest *testCase, const char *mafString, uint64_t s
 static void test_getTargetColumn_0(CuTest *testCase) {
     // test 0
     bool test0[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-    targetColumnTest(testCase, 
+    targetColumnTest(testCase,
                      "a score=0\n"
                      "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                      "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
@@ -256,7 +257,7 @@ static void test_getTargetColumn_0(CuTest *testCase) {
                      0, 20, 13, test0);
     // test 1
     bool test1[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    targetColumnTest(testCase, 
+    targetColumnTest(testCase,
                      "a score=0\n"
                      "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                      "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
@@ -264,7 +265,7 @@ static void test_getTargetColumn_0(CuTest *testCase) {
                      100, 200, 13, test1);
     // test 2
     bool test2[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-    targetColumnTest(testCase, 
+    targetColumnTest(testCase,
                      "a score=0\n"
                      "s theTarget.chr0 0 13 - 158545518 gcagctgaaaaca\n"
                      "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
@@ -288,16 +289,16 @@ static void test_getTargetColumn_0(CuTest *testCase) {
                      "s theTarget.chr0 0 12 +       100 ATGT---ATGCC--GGT\n"
                      "s name3.chr1     0 14 +       100 ATGTAGCATGCCGAGGT\n",
                      0, 20, 17, test4);
-    // test 5 
+    // test 5
     bool test5[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0};
-    targetColumnTest(testCase, 
+    targetColumnTest(testCase,
                      "a score=0\n"
                      "s theTarget.chr0 0 13 - 158545518 gcagctgaaaaca\n"
                      "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
                      "s name2.chr1     0 10 -       100 ATGT---ATGCCG\n",
                      158545507, 158545517, 13, test5);
 }
-static void spliceTest(CuTest *testCase, const char *input, const char *expected, uint64_t l, 
+static void spliceTest(CuTest *testCase, const char *input, const char *expected, uint64_t l,
                        uint64_t r, int64_t **offs) {
     mafBlock_t *ib = maf_newMafBlockFromString(input, 3);
     mafBlock_t *eb = maf_newMafBlockFromString(expected, 3);
@@ -330,7 +331,7 @@ static void test_splice_0(CuTest *testCase) {
     /*     printf("offs[%"PRIu64"][0] = %"PRIu64"\n", i, offs[i][0]); */
     /*     printf("offs[%"PRIu64"][1] = %"PRIu64"\n", i, offs[i][1]); */
     /* } */
-    spliceTest(testCase, 
+    spliceTest(testCase,
                "a score=0\n"
                "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
@@ -366,7 +367,7 @@ static void test_splice_0(CuTest *testCase) {
                4, 12, NULL);
     // test 2
     // printf("test %d\n", testcount++);
-    spliceTest(testCase, 
+    spliceTest(testCase,
                "a score=0\n"
                "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                "s name.chr1      0  3 +       100 ATG----------\n"
@@ -445,7 +446,7 @@ static void test_splice_0(CuTest *testCase) {
     destroyOffsets(offs, 3);
     // test 8
     // printf("test %d\n", testcount++);
-    spliceTest(testCase, 
+    spliceTest(testCase,
                "a score=0\n"
                "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                "s name.chr1      0 13 +       100 ATGTATTATGCCG\n"
@@ -458,7 +459,7 @@ static void test_splice_0(CuTest *testCase) {
     // test 9
     // printf("test %d\n", testcount++);
     offs = createOffsets(3);
-    spliceTest(testCase, 
+    spliceTest(testCase,
                "a score=0\n"
                "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                "s name.chr1      0 13 +       100 ATGTATTATGCCG\n"
@@ -469,9 +470,9 @@ static void test_splice_0(CuTest *testCase) {
                "s name2.chr1     0 13 +       100 ATGTATAATGCCG\n",
                0, 12, offs);
     for (uint64_t i = 0; i < 3; ++i) {
-        // SPECIAL CASE! 
+        // SPECIAL CASE!
         // since the block is passed back directly, since no splice is performed,
-        // there is no update made to the offset array. This makes sense because 
+        // there is no update made to the offset array. This makes sense because
         // the array will not be used again.
         CuAssertTrue(testCase, offs[i][0] == 0);
         CuAssertTrue(testCase, offs[i][1] == -1);
@@ -485,7 +486,7 @@ struct blockRecord {
     struct blockRecord *next;
 };
 typedef struct blockRecord blockRecord_t;
-static void processSpliceTest(CuTest *testCase, const char *seq, uint64_t start, uint64_t stop, 
+static void processSpliceTest(CuTest *testCase, const char *seq, uint64_t start, uint64_t stop,
                               const char *input, int numExpectedBlocks, ...) {
     // varargs that come in are a variable number of const char * items that should be built
     // into a mafBlock_t list.
@@ -566,7 +567,7 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
                       "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
-                      1, 
+                      1,
                       "a score=0\n"
                       "s theTarget.chr0 2 11 + 158545518 agctgaaaaca\n"
                       "s name.chr1      2  8 +       100 GT---ATGCCG\n"
@@ -578,7 +579,7 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0 10 +       100 ATGT---ATGCCG\n"
                       "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
-                      1, 
+                      1,
                       "a score=0\n"
                       "s theTarget.chr0 4 9 + 158545518 ctgaaaaca\n"
                       "s name.chr1      4 6 +       100 ---ATGCCG\n"
@@ -590,7 +591,7 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0  3 +       100 ATG----------\n"
                       "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
-                      1, 
+                      1,
                       "a score=0\n"
                       "s theTarget.chr0 4 9 + 158545518 ctgaaaaca\n"
                       "s name2.chr1     4 6 +       100 ---ATGCCG\n");
@@ -601,7 +602,7 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
                       "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
-                      1, 
+                      1,
                       "a score=0\n"
                       "s theTarget.chr0 6 7 + 158545518 gaaaaca\n"
                       "s name.chr1      4 6 +       100 -ATGCCG\n"
@@ -613,7 +614,7 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
                       "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
-                      1, 
+                      1,
                       "a score=0\n"
                       "s theTarget.chr0 12 1 + 158545518 a\n"
                       "s name.chr1       9 1 +       100 G\n"
@@ -625,7 +626,7 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
                       "s name2.chr1     0 10 +       100 ATGT---ATGCCG\n",
-                      1, 
+                      1,
                       "a score=0\n"
                       "s theTarget.chr0 0 13 + 158545518 gcagctgaaaaca\n"
                       "s name.chr1      0 10 +       100 ATGG---ATGCCG\n"
@@ -672,7 +673,7 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0 0 13 + 158545518 gcagct---gaaaaca\n"
                       "s name.chr1      0 13 +       100 ATGG---TTTATGCCG\n"
                       "s name2.chr1     0 13 +       100 ATGT---TTTATGCCG\n",
-                      2, 
+                      2,
                       "a score=0\n"
                       "s theTarget.chr0 0 6 + 158545518 gcagct\n"
                       "s name.chr1      0 4 +       100 ATGG--\n"
@@ -689,7 +690,7 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0 0 13 + 158545518 gcagct---gaaa---aca\n"
                       "s name.chr1      0 16 +       100 ATGG---TTTATGCCGGGG\n"
                       "s name2.chr1     0 16 +       100 ATGT---TTTATGCCGGGG\n",
-                      3, 
+                      3,
                       "a score=0\n"
                       "s theTarget.chr0 2 4 + 158545518 agct\n"
                       "s name.chr1      2 2 +       100 GG--\n"
@@ -710,7 +711,7 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0 0  2 + 158545518 g--------------a\n"
                       "s name.chr1      0 13 +       100 ATGG---TTTATGCCG\n"
                       "s name2.chr1     0 13 +       100 ATGT---TTTATGCCG\n",
-                      2, 
+                      2,
                       "a score=0\n"
                       "s theTarget.chr0 0 1 + 158545518 g\n"
                       "s name.chr1      0 1 +       100 A\n"
@@ -912,7 +913,7 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0 0 13 + 158545518 -gcagctgaaaaca\n"
                       "s name.chr1      0 10 +       100 -ATGT---ATGCCG\n"
                       "s name2.chr1     0 10 +       100 -ATGT---ATGCCG\n",
-                      1, 
+                      1,
                       "a score=0\n"
                       "s theTarget.chr0 2 11 + 158545518 agctgaaaaca\n"
                       "s name.chr1      2  8 +       100 GT---ATGCCG\n"
@@ -924,7 +925,7 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s theTarget.chr0 0 13 + 158545518 -gcagctgaa--aaca\n"
                       "s name.chr1      0 11 +       100 -ATGT---ATG-TCCG\n"
                       "s name2.chr1     0 12 +       100 -ATGT---ATGTTCCA\n",
-                      2, 
+                      2,
                       "a score=0\n"
                       "s theTarget.chr0 2 7 + 158545518 agctgaa\n"
                       "s name.chr1      2 4 +       100 GT---AT\n"
@@ -941,7 +942,7 @@ static void test_processSplice_0(CuTest *testCase) {
                       "s simCow.chrB      60357748   16 +  86443571 -------------G------------TGGGGACAAGGTTTA--\n"
                       "s simHuman.chrJ     6786835   15 -  88398963 -GAGTAATGTTCAGTG---------------------------\n"
                       "s simHuman.chrJ     6786872   21 -  88398963 ----------------------TGTACAGCAGCCCTGCTTAGT\n",
-                      2, 
+                      2,
                       "a score=0\n"
                       "s simCow.chrB      60357748    1 +  86443571 ------------G--\n"
                       "s simHuman.chrJ     6786835   15 -  88398963 GAGTAATGTTCAGTG\n",

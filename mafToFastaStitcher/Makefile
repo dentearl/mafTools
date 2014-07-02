@@ -23,12 +23,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-include ../include.mk
+include ../inc/common.mk
 SHELL:=/bin/bash
 bin = ../bin
+inc = ../inc
+lib = ../lib
 PROGS = mafToFastaStitcher
-dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*) $(wildcard ${sonLibPath}/*) ${sonLibPath}/sonLib.a src/allTests.c
-extraAPI := ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/mafToFastaStitcherAPI.o ${sonLibPath}/sonLib.a src/buildVersion.o
+dependencies = ${inc}/common.h ${inc}/sharedMaf.h ${lib}/common.c ${lib}/sharedMaf.c $(wildcard ${sonLibPath}/*) ${sonLibPath}/sonLib.a src/allTests.c
+extraAPI := ${lib}/common.o ${lib}/sharedMaf.o ../external/CuTest.a src/mafToFastaStitcherAPI.o ${sonLibPath}/sonLib.a src/buildVersion.o
 testAPI := test/sharedMaf.o test/common.o ../external/CuTest.a test/mafToFastaStitcherAPI.o ${sonLibPath}/sonLib.a test/buildVersion.o
 testObjects := test/test.mafToFastaStitcherAPI.o
 sources := src/mafToFastaStitcher.c src/mafToFastaStitcher.h
@@ -38,7 +40,7 @@ sources := src/mafToFastaStitcher.c src/mafToFastaStitcher.h
 all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
 buildVersion: src/buildVersion.c
 src/buildVersion.c: ${sources} ${dependencies}
-	@python ../include/createVersionSources.py
+	@python ../lib/createVersionSources.py
 
 ${bin}/mafToFastaStitcher: src/mafToFastaStitcher.c ${dependencies} ${extraAPI}
 	mkdir -p $(dir $@)
@@ -61,7 +63,7 @@ test/mafToFastaStitcher: src/mafToFastaStitcher.c ${dependencies} ${testAPI}
 	mkdir -p $(dir $@)
 	${cxx} $< ${testAPI} -o $@.tmp ${testFlags} ${lm}
 	mv $@.tmp $@
-test/%.o: ../include/%.c ../include/%.h
+test/%.o: ${lib}/%.c ${inc}/%.h
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags}
 	mv $@.tmp $@

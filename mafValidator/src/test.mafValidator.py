@@ -3,7 +3,7 @@ import os
 import unittest
 import shutil
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '../../include/')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '../../lib/')))
 import mafToolsTest as mtt
 
 class GenericObject:

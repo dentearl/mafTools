@@ -1,26 +1,26 @@
-/* 
- * Copyright (C) 2011-2013 by 
+/*
+ * Copyright (C) 2011-2014 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
- * ... and other members of the Reconstruction Team of David Haussler's 
+ * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE. 
+ * THE SOFTWARE.
  */
 #include <assert.h>
 #include <getopt.h>
@@ -34,7 +34,7 @@
 #include "sharedMaf.h"
 #include "mafExtractorAPI.h"
 
-bool checkRegion(uint64_t targetStart, uint64_t targetStop, uint64_t lineStart, 
+bool checkRegion(uint64_t targetStart, uint64_t targetStop, uint64_t lineStart,
                  uint64_t length, uint64_t sourceLength, char strand) {
     // check to see if pos is in this block
     uint64_t absStart, absEnd;
@@ -63,7 +63,7 @@ bool searchMatched(mafLine_t *ml, const char *seq, uint64_t start, uint64_t stop
         return false;
     if (!(strcmp(maf_mafLine_getSpecies(ml), seq) == 0))
         return false;
-    if (checkRegion(start, stop, maf_mafLine_getStart(ml), maf_mafLine_getLength(ml), 
+    if (checkRegion(start, stop, maf_mafLine_getStart(ml), maf_mafLine_getLength(ml),
                     maf_mafLine_getSourceLength(ml), maf_mafLine_getStrand(ml)))
         return true;
     return false;
@@ -75,7 +75,7 @@ void printTargetColumns(bool *targetColumns, uint64_t n) {
     for (uint64_t i = 0; i < n; ++i) {
         if (targetColumns[i])
             printf("*");
-        else 
+        else
             printf(".");
         // if (!((i + 1) % 5))
         //     printf(" ");
@@ -179,7 +179,7 @@ void destroyOffsets(int64_t **offs, uint64_t n) {
     free(offs);
     offs = NULL;
 }
-mafBlock_t *processBlockForSplice(mafBlock_t *b, uint64_t blockNumber, const char *seq, 
+mafBlock_t *processBlockForSplice(mafBlock_t *b, uint64_t blockNumber, const char *seq,
                                   uint64_t start, uint64_t stop, bool store) {
     // walks mafBlock_t b, returns a mafBlock_t (using the linked list feature) of all spliced out bits.
     // if store is true, will return a mafBlock_t linked list of all sub-blocks. If store is false,
@@ -206,7 +206,7 @@ mafBlock_t *processBlockForSplice(mafBlock_t *b, uint64_t blockNumber, const cha
             continue;
         }
         while (targetColumns[r] && r < len) {
-            // find the end of the right 
+            // find the end of the right
             ++r;
         }
         // set ri equal to the index of the last element
@@ -240,7 +240,7 @@ mafBlock_t *processBlockForSplice(mafBlock_t *b, uint64_t blockNumber, const cha
             ++spliceNumber;
         }
         l = r;
-        if (l == len - 1) { 
+        if (l == len - 1) {
             break;
         }
     }
@@ -314,7 +314,7 @@ mafBlock_t *spliceBlock(mafBlock_t *b, uint64_t l, uint64_t r, int64_t **offsetA
         }
         // printf(" [%2"PRIi64", %2"PRIi64"] pre: %s\n", offsetArray[si][0], offsetArray[si][1], maf_mafLine_getSpecies(ml1));
         // find first non-gap position OR the left edge, update offset
-        while (seq[offsetArray[si][0]] == '-' && 
+        while (seq[offsetArray[si][0]] == '-' &&
                offsetArray[si][0] <= (int64_t)l) {
             ++offsetArray[si][0];
             if (seq[offsetArray[si][0]] != '-' && offsetArray[si][1] >= 0) {
@@ -415,7 +415,7 @@ mafBlock_t *spliceBlock(mafBlock_t *b, uint64_t l, uint64_t r, int64_t **offsetA
         return NULL;
     }
 }
-void checkBlock(mafBlock_t *b, uint64_t blockNumber, const char *seq, uint64_t start, 
+void checkBlock(mafBlock_t *b, uint64_t blockNumber, const char *seq, uint64_t start,
                 uint64_t stop, bool *printedHeader, bool isSoft) {
     // read through each line of a mafBlock and if the sequence matches the region
     // we're looking for, report the block.
@@ -435,7 +435,7 @@ void checkBlock(mafBlock_t *b, uint64_t blockNumber, const char *seq, uint64_t s
                 assert(dummy == NULL);
                 break;
             }
-        } 
+        }
         ml = maf_mafLine_getNext(ml);
     }
 }

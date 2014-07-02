@@ -28,7 +28,7 @@ import os
 import random
 import sys
 import unittest
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '../../include/')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '../../lib/')))
 import mafToolsTest as mtt
 
 g_targetSeq1 = 'target.chr0'

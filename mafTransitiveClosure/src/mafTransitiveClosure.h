@@ -1,26 +1,26 @@
-/* 
- * Copyright (C) 2013 by 
+/*
+ * Copyright (C) 2013 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
- * ... and other members of the Reconstruction Team of David Haussler's 
+ * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE. 
+ * THE SOFTWARE.
  */
 #ifndef MAFTRANSITIVECLOSURE_H_
 #define MAFTRANSITIVECLOSURE_H_
@@ -54,11 +54,11 @@ typedef struct mafTcComparisonOrder {
        {1: [8, 8]}, {1: [2, 2]}, {0: [9, 9]}, {0: [5, 7]}, {0: [0, 1]}
        [note that the ordering of these values is arbitrary, though consistent with the
        output of the algo in the code which appends new structs to the head of the list]
-       e.g. the first block to process uses 0 as its reference and it starts at column 1 
+       e.g. the first block to process uses 0 as its reference and it starts at column 1
        and ends at column 1. The second block to process uses 1 as its reference and it
        starts at column 2 and ends at column 2 (it is only one column), etc.
      */
-    uint64_t ref; // 
+    uint64_t ref; //
     mafTcRegion_t *region;
     struct mafTcComparisonOrder *next;
 } mafTcComparisonOrder_t;
@@ -94,20 +94,20 @@ stPinchThreadSet* buildThreadSet(stHash *hash);
 void walkBlockAddingAlignments(mafBlock_t *mb, stPinchThreadSet *threadSet);
 void addAlignmentsToThreadSet(mafFileApi_t *mfa, stPinchThreadSet *threadSet);
 void createSequenceHash(mafFileApi_t *mfa, stHash **hash, stHash **nameHash);
-mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint64_t row, mafTcComparisonOrder_t **done, 
+mafTcRegion_t* getComparisonOrderFromRow(char **mat, uint64_t row, mafTcComparisonOrder_t **done,
                                          mafTcRegion_t *todo, int containsGaps);
-mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint64_t rowLength, uint64_t colLength, 
+mafTcComparisonOrder_t *getComparisonOrderFromMatrix(char **mat, uint64_t rowLength, uint64_t colLength,
                                                      uint64_t *lengths, int **vizMat);
-void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint64_t aGlobalStart, 
-                            uint64_t aGlobalLength, int aStrand, 
+void processPairForPinching(stPinchThreadSet *threadSet, stPinchThread *a, uint64_t aGlobalStart,
+                            uint64_t aGlobalLength, int aStrand,
                             char *aSeq, stPinchThread *b, uint64_t bGlobalStart, uint64_t bGlobalLength,
                             int bStrand, char *bSeq, uint64_t regionStart, uint64_t regionEnd,
-                            mafCoordinatePair_t aBookmark, mafCoordinatePair_t bBookmark, 
+                            mafCoordinatePair_t aBookmark, mafCoordinatePair_t bBookmark,
                             int aContainsGaps, int bContainsGaps,
                             void (*pinchFunction)(stPinchThread *, stPinchThread *, int64_t, int64_t, int64_t, bool));
 int64_t localSeqCoords(uint64_t p, char *s, mafCoordinatePair_t *bookmark, int containsGaps);
 int64_t localSeqCoordsToGlobalPositiveCoords(int64_t c, uint64_t start, uint64_t sourceLength, char strand);
-int64_t localSeqCoordsToGlobalPositiveStartCoords(int64_t c, uint64_t start, uint64_t sourceLength, 
+int64_t localSeqCoordsToGlobalPositiveStartCoords(int64_t c, uint64_t start, uint64_t sourceLength,
                                                   char strand, uint64_t length);
 void mafBlock_sortBlockByIncreasingGap(mafBlock_t *mb);
 void walkBlockAddingSequence(mafBlock_t *mb, stHash *hash, stHash *nameHash);
@@ -115,7 +115,7 @@ void reportSequenceHash(stHash *hash, stHash *nameHash);
 void destroyVizMatrix(int **mat, unsigned n);
 int cmp_by_gaps(const void *a, const void *b);
 uint64_t getMaxNameLength(stHash *hash);
-void getMaxFieldLengths(stHash *hash, stHash *nameHash, stPinchBlock *block, uint64_t *maxStart, 
+void getMaxFieldLengths(stHash *hash, stHash *nameHash, stPinchBlock *block, uint64_t *maxStart,
                         uint64_t *maxLength, uint64_t *maxSource);
 char* getSequenceSubset(char *seq, int64_t start, char strand, int64_t length);
 void reportTransitiveClosure(stPinchThreadSet *threadSet, stHash *hash, stHash *nameHash);

@@ -1,26 +1,26 @@
-/* 
- * Copyright (C) 2011-2013 by 
+/*
+ * Copyright (C) 2011-2014 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
- * ... and other members of the Reconstruction Team of David Haussler's 
+ * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE. 
+ * THE SOFTWARE.
  */
 
 #include <assert.h>
@@ -44,12 +44,16 @@ const char *g_version = "version 0.2 May 2013";
 void version(void);
 void usage(void);
 void parseOptions(int argc, char **argv, char *filename, char *seqName, uint64_t *position);
-void checkRegion(unsigned lineno, char *fullname, uint64_t pos, uint64_t start, 
+void checkRegion(unsigned lineno, char *fullname, uint64_t pos, uint64_t start,
                  uint64_t length, uint64_t sourceLength, char strand);
+void getAbsStartEnd(mafLine_t *ml, uint64_t *absStart, uint64_t *absEnd);
+bool insideLine(mafLine_t *ml, uint64_t pos);
+char* extractVignette(mafLine_t *ml, uint64_t targetPos);
+void checkBlock(mafBlock_t *mb, char *fullname, uint64_t pos);
 void searchInput(mafFileApi_t *mfa, char *fullname, unsigned long pos);
 
 void version(void) {
-    fprintf(stderr, "mafBlockDuplicateFilter, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+    fprintf(stderr, "mafBlockDuplicateFilter, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date,
             g_build_git_branch, g_build_git_sha);
 }
 void usage(void) {
@@ -134,7 +138,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName, uint64_t
         fprintf(stderr, "specify --maf --seq --position\n");
         usage();
     }
-    // Check there's nothing left over on the command line 
+    // Check there's nothing left over on the command line
     if (optind < argc) {
         char errorString[30] = "Unexpected arguments:";
         while (optind < argc) {
@@ -201,7 +205,7 @@ char* extractVignette(mafLine_t *ml, uint64_t targetPos) {
                     right[rightIndex++] = seq[i];
                 }
             } else {
-                // negative strand, 
+                // negative strand,
                 if (pos <= targetPos + 5 && pos > targetPos) {
                     left[leftIndex++] = seq[i];
                 }
@@ -210,7 +214,7 @@ char* extractVignette(mafLine_t *ml, uint64_t targetPos) {
                 }
             }
         }
-        
+
     }
     vig = (char*) de_malloc(kMaxStringLength);
     vig[0] = '\0';
@@ -244,9 +248,9 @@ void checkBlock(mafBlock_t *mb, char *fullname, uint64_t pos) {
         }
         if (insideLine(ml, pos)) {
             vignette = extractVignette(ml, pos);
-            printf("block %" PRIu64 ", line %" PRIu64 ": s %s %" PRIu64 " %" PRIu64 " %c %" PRIu64 
-                   " %s\n", maf_mafBlock_getLineNumber(mb), maf_mafLine_getLineNumber(ml), fullname, 
-                   maf_mafLine_getStart(ml), maf_mafLine_getLength(ml), maf_mafLine_getStrand(ml), 
+            printf("block %" PRIu64 ", line %" PRIu64 ": s %s %" PRIu64 " %" PRIu64 " %c %" PRIu64
+                   " %s\n", maf_mafBlock_getLineNumber(mb), maf_mafLine_getLineNumber(ml), fullname,
+                   maf_mafLine_getStart(ml), maf_mafLine_getLength(ml), maf_mafLine_getStrand(ml),
                    maf_mafLine_getSourceLength(ml), vignette);
             free(vignette);
         }
@@ -270,6 +274,6 @@ int main(int argc, char **argv) {
 
     searchInput(mfa, targetName, targetPos);
     maf_destroyMfa(mfa);
-   
+
     return EXIT_SUCCESS;
 }

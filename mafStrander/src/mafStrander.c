@@ -1,26 +1,26 @@
-/* 
- * Copyright (C) 2013 by 
+/*
+ * Copyright (C) 2013-2014 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
- * ... and other members of the Reconstruction Team of David Haussler's 
+ * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE. 
+ * THE SOFTWARE.
  */
 #include <ctype.h>
 #include <getopt.h>
@@ -51,6 +51,7 @@ typedef struct duplicate {
     uint64_t numSequences; // number of elements in the headScoredMaf ll
 } duplicate_t;
 
+void parseOptions(int argc, char **argv, char *filename, char *seq, char *strand);
 void usage(void);
 void version(void);
 void printHeader(void);
@@ -65,6 +66,8 @@ unsigned longestLine(mafBlock_t *mb);
 unsigned numberOfSequencesScoredMafLineList(scoredMafLine_t *m);
 void reportBlockWithDuplicates(mafBlock_t *mb, duplicate_t *dupHead);
 int cmp_by_score(const void *a, const void *b);
+duplicate_t* newDuplicate(void);
+
 
 void parseOptions(int argc, char **argv, char *filename, char *seq, char *strand) {
     int c;
@@ -132,7 +135,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seq, char *strand
         fprintf(stderr, "specify --seq\n");
         usage();
     }
-    // Check there's nothing left over on the command line 
+    // Check there's nothing left over on the command line
     if (optind < argc) {
         char *errorString = de_malloc(kMaxStringLength);
         strcpy(errorString, "Unexpected arguments:");
@@ -146,7 +149,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seq, char *strand
     }
 }
 void version(void) {
-    fprintf(stderr, "mafStrander, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+    fprintf(stderr, "mafStrander, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date,
             g_build_git_branch, g_build_git_sha);
 }
 void usage(void) {
@@ -189,8 +192,8 @@ void checkBlock(mafBlock_t *block, char *seq, char strand) {
     // read through each line of a mafBlock and check to see if a block needs to be reverse complemented.
     mafLine_t *ml = maf_mafBlock_getHeadLine(block);
     bool flipStrand = false;
-    bool obsSeqPos = false; 
-    bool obsSeqNeg = false; 
+    bool obsSeqPos = false;
+    bool obsSeqNeg = false;
     size_t len = strlen(seq);
     while (ml != NULL) {
         if (maf_mafLine_getType(ml) != 's') {

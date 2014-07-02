@@ -1,26 +1,26 @@
-/* 
- * Copyright (C) 2011-2013 by 
+/*
+ * Copyright (C) 2011-2014 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
- * ... and other members of the Reconstruction Team of David Haussler's 
+ * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE. 
+ * THE SOFTWARE.
  */
 #include <assert.h>
 #include <errno.h> // file existence via ENOENT
@@ -43,12 +43,15 @@ const char *g_version = "version 0.1 October 2012";
 void version(void);
 void usage(void);
 void parseOptions(int argc, char **argv, char *filename, char *orderlist);
-void checkRegion(unsigned lineno, char *fullname, uint64_t pos, uint64_t start, 
+void checkRegion(unsigned lineno, char *fullname, uint64_t pos, uint64_t start,
                  uint64_t length, uint64_t sourceLength, char strand);
 void printHeader(void);
+void checkBlock(mafBlock_t *mb, char **order, unsigned n);
+void orderInput(mafFileApi_t *mfa, char **order, unsigned n);
+void destroyNameList(char **names, unsigned n);
 
 void version(void) {
-    fprintf(stderr, "mafRowOrderer, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+    fprintf(stderr, "mafRowOrderer, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date,
             g_build_git_branch, g_build_git_sha);
 }
 void usage(void) {
@@ -122,7 +125,7 @@ void parseOptions(int argc, char **argv, char *filename, char *orderlist) {
         fprintf(stderr, "specify --order\n");
         usage();
     }
-    // Check there's nothing left over on the command line 
+    // Check there's nothing left over on the command line
     if (optind < argc) {
         char errorString[30] = "Unexpected arguments:";
         while (optind < argc) {
@@ -140,7 +143,7 @@ void checkBlock(mafBlock_t *mb, char **order, unsigned n) {
     // the plan:
     // create an array of mafLine_t linked lists, of length n
     // walk the block, *copying* mafLines into the linked list at the coresponding array element
-    // then attach all existing array elements head to tail to form a single, ordered, 
+    // then attach all existing array elements head to tail to form a single, ordered,
     // linked list. Report this. Free everything.
     mafLine_t **lineArrayHeads = (mafLine_t**) de_malloc(sizeof(mafLine_t*) * n);
     mafLine_t **lineArrayTails = (mafLine_t**) de_malloc(sizeof(mafLine_t*) * n);

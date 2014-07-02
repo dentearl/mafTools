@@ -1,9 +1,11 @@
-include ../include.mk
+include ../inc/common.mk
 SHELL:=/bin/bash
 bin = ../bin
+inc = ../inc
+lib = ../lib
 PROGS = mafTransitiveClosure
-dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*) $(wildcard ${sonLibPath}/*) ${sonLibPath}/stPinchesAndCacti.a ${sonLibPath}/sonLib.a src/allTests.c
-objects := ../include/common.o ../include/sharedMaf.o ${sonLibPath}/stPinchesAndCacti.a  ${sonLibPath}/sonLib.a ../external/CuTest.a src/test.mafTransitiveClosure.o src/buildVersion.o
+dependencies = ${inc}/common.h ${inc}/sharedMaf.h ${lib}/common.c ${lib}/sharedMaf.c $(wildcard ${sonLibPath}/*) ${sonLibPath}/stPinchesAndCacti.a ${sonLibPath}/sonLib.a src/allTests.c
+objects := ${lib}/common.o ${lib}/sharedMaf.o ${sonLibPath}/stPinchesAndCacti.a  ${sonLibPath}/sonLib.a ../external/CuTest.a src/test.mafTransitiveClosure.o src/buildVersion.o
 testObjects := test/sharedMaf.o test/common.o ${sonLibPath}/stPinchesAndCacti.a  ${sonLibPath}/sonLib.a ../external/CuTest.a src/test.mafTransitiveClosure.o test/buildVersion.o
 sources := src/mafTransitiveClosure.c src/mafTransitiveClosure.h
 
@@ -12,7 +14,7 @@ sources := src/mafTransitiveClosure.c src/mafTransitiveClosure.h
 all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
 buildVersion: src/buildVersion.c
 src/buildVersion.c: ${sources} ${dependencies}
-	@python ../include/createVersionSources.py
+	@python ${lib}/createVersionSources.py
 
 ${bin}/mafTransitiveClosure: src/mafTransitiveClosure.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
@@ -23,16 +25,23 @@ test/mafTransitiveClosure: src/mafTransitiveClosure.c ${dependencies} ${testObje
 	mkdir -p $(dir $@)
 	${cxx} $< src/allTests.c ${testObjects} -o $@.tmp ${testFlags} -lm
 	mv $@.tmp $@
+%.o: %.c ${inc}/%.h
+	${cxx} -c $< -o $@.tmp ${cflags}
+	mv $@.tmp $@
 %.o: %.c %.h
 	${cxx} -c $< -o $@.tmp ${cflags}
 	mv $@.tmp $@
-test/%.o: ../include/%.c ../include/%.h
+test/%.o: ${lib}/%.c ${inc}/%.h
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags}
 	mv $@.tmp $@
 test/%.o: src/%.c src/%.h
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags}
+	mv $@.tmp $@
+test/allTests: src/allTests.c ${testObjects} ${sonLibPath}/sonLib.a
+	mkdir -p $(dir $@)
+	${cxx} $^ -o $@.tmp ${testFlags} ${lm}
 	mv $@.tmp $@
 
 clean:

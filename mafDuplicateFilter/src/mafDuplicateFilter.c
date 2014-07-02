@@ -1,26 +1,26 @@
-/* 
- * Copyright (C) 2013 by 
+/*
+ * Copyright (C) 2014 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
- * ... and other members of the Reconstruction Team of David Haussler's 
+ * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE. 
+ * THE SOFTWARE.
  */
 #include <ctype.h>
 #include <getopt.h>
@@ -51,20 +51,34 @@ typedef struct duplicate {
     uint64_t numSequences; // number of elements in the headScoredMaf ll
 } duplicate_t;
 
-void usage(void);
+void parseOptions(int argc, char **argv, char *filename);
 void version(void);
-void printHeader(void);
-void processBody(mafFileApi_t *mfa);
-void checkBlock(mafBlock_t *block);
-// void destroyBlock(mafLine_t *m);
-void destroyScoredMafLineList(scoredMafLine_t *sml);
-void destroyDuplicates(duplicate_t *d);
-void destroyStringArray(char **sArray, int n);
+void usage(void);
 scoredMafLine_t* newScoredMafLine(void);
+duplicate_t* newDuplicate(void);
+void printHeader(void);
 unsigned longestLine(mafBlock_t *mb);
 unsigned numberOfSequencesScoredMafLineList(scoredMafLine_t *m);
+void printResidues(unsigned *r);
+unsigned maxRes(unsigned residues[]);
+char consensusResidue(unsigned residues[]);
+void buildConsensus(char *consensus, char **sequences, int numSeqs, unsigned lineno);
+bool checkForDupes(char **species, int index, mafLine_t *m);
+void reportBlock(mafBlock_t *b);
 void reportBlockWithDuplicates(mafBlock_t *mb, duplicate_t *dupHead);
+void reportDuplicates(duplicate_t *dup);
+duplicate_t* findDuplicate(duplicate_t *dup, char *species);
+double bitScore(char a, char b);
+double scoreSequence(char *consensus, char *seq);
+void populateMafLineArray(scoredMafLine_t *head, scoredMafLine_t **array);
+void findBestDupes(duplicate_t *head, char *consensus);
 int cmp_by_score(const void *a, const void *b);
+void correctSpeciesNames(mafBlock_t *block);
+void checkBlock(mafBlock_t *block);
+void destroyDuplicates(duplicate_t *d);
+void destroyScoredMafLineList(scoredMafLine_t *sml);
+void destroyStringArray(char **sArray, int n);
+void processBody(mafFileApi_t *mfa);
 
 void parseOptions(int argc, char **argv, char *filename) {
     int c;
@@ -75,7 +89,7 @@ void parseOptions(int argc, char **argv, char *filename) {
             {"verbose", no_argument, 0, 'v'},
             {"help", no_argument, 0, 'h'},
             {"version", no_argument, 0, 0},
-            {"maf",  required_argument, 0, 'm'},            
+            {"maf",  required_argument, 0, 'm'},
             {0, 0, 0, 0}
         };
         int longIndex = 0;
@@ -112,7 +126,7 @@ void parseOptions(int argc, char **argv, char *filename) {
         fprintf(stderr, "specify --maf\n");
         usage();
     }
-    // Check there's nothing left over on the command line 
+    // Check there's nothing left over on the command line
     if (optind < argc) {
         char *errorString = de_malloc(kMaxStringLength);
         strcpy(errorString, "Unexpected arguments:");
@@ -126,7 +140,7 @@ void parseOptions(int argc, char **argv, char *filename) {
     }
 }
 void version(void) {
-    fprintf(stderr, "mafDuplicateFilter, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+    fprintf(stderr, "mafDuplicateFilter, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date,
             g_build_git_branch, g_build_git_sha);
 }
 void usage(void) {
@@ -292,7 +306,7 @@ void buildConsensus(char *consensus, char **sequences, int numSeqs, unsigned lin
                 break;
             default:
                 fprintf(stderr, "Error, unanticipated character within sequence (%d,%d) "
-                        "contained in block near line number %u: %c\n", 
+                        "contained in block near line number %u: %c\n",
                         j, i, lineno, sequences[j][i]);
                 exit(EXIT_FAILURE);
             }
@@ -440,7 +454,7 @@ void populateMafLineArray(scoredMafLine_t *head, scoredMafLine_t **array) {
 }
 void findBestDupes(duplicate_t *head, char *consensus) {
     // For each duplicate list, go through its mafline list and find the best line and move it
-    // to the head of the list. 
+    // to the head of the list.
     duplicate_t *d = head;
     scoredMafLine_t *sml = NULL;
     while (d != NULL) {
@@ -559,7 +573,7 @@ void checkBlock(mafBlock_t *block) {
     // this block contains duplicates
     char *consensus = (char *) de_malloc(longestLine(block) + 1);
     consensus[0] = '\0';
-    buildConsensus(consensus, sequences, n, 
+    buildConsensus(consensus, sequences, n,
                    maf_mafLine_getLineNumber(maf_mafBlock_getHeadLine(block))); // lineno used for error reporting
     findBestDupes(dupSpeciesHead, consensus);
     reportBlockWithDuplicates(block, dupSpeciesHead);

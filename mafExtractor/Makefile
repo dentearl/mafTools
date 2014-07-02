@@ -1,10 +1,11 @@
+include ../inc/common.mk
 SHELL:=/bin/bash
-cc = gcc
-args = -Wall -Wextra -std=c99 -pedantic -I ../external -I ../include
 bin = ../bin
+inc = ../inc
+lib = ../lib
 PROGS = mafExtractor
-dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*) src/mafExtractor.h
-API = ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/mafExtractorAPI.o src/buildVersion.o
+dependencies = ${inc}/common.h ${inc}/sharedMaf.h ${lib}/common.c ${lib}/sharedMaf.c  src/mafExtractor.h
+API = ${lib}/common.o ${lib}/sharedMaf.o ../external/CuTest.a src/mafExtractorAPI.o src/buildVersion.o
 testAPI = test/sharedMaf.o ../external/CuTest.a test/common.o test/mafExtractorAPI.o test/buildVersion.o
 testObjects := test/test.mafExtractor.o
 sources = src/mafExtractor.c src/mafExtractor.h
@@ -14,29 +15,29 @@ sources = src/mafExtractor.c src/mafExtractor.h
 all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
 buildVersion: src/buildVersion.c
 src/buildVersion.c: ${sources} ${dependencies}
-	@python ../include/createVersionSources.py
+	@python ../lib/createVersionSources.py
 
 ${bin}/mafExtractor: src/mafExtractor.c ${dependencies} ${API}
 	mkdir -p $(dir $@)
-	${cc} ${args} -O3 $< ${API} -o $@.tmp -lm
+	${cxx} ${cflags} -O3 $< ${API} -o $@.tmp -lm
 	mv $@.tmp $@
 
 test/mafExtractor: src/mafExtractor.c ${dependencies} ${testAPI}
 	mkdir -p $(dir $@)
-	${cc} ${args} -g -O0 $< ${testAPI} -o $@.tmp -lm
+	${cxx} ${cflags} -g -O0 $< ${testAPI} -o $@.tmp -lm
 	mv $@.tmp $@
 
 %.o: %.c %.h
-	${cc} -O3 -c ${args} $< -o $@.tmp -lm
+	${cxx} -O3 -c ${cflags} $< -o $@.tmp -lm
 	mv $@.tmp $@
 
-test/%.o: ../include/%.c ../include/%.h
+test/%.o: ${lib}/%.c ${inc}/%.h
 	mkdir -p $(dir $@)
-	${cc} -c $< -o $@.tmp ${args} -g -O0 -lm
+	${cxx} -c $< -o $@.tmp ${cflags} -g -O0 -lm
 	mv $@.tmp $@
 test/%.o: src/%.c src/%.h
 	mkdir -p $(dir $@)
-	${cc} -c $< -o $@.tmp ${args} -g -O0 -lm
+	${cxx} -c $< -o $@.tmp ${cflags} -g -O0 -lm
 	mv $@.tmp $@
 
 clean:
@@ -47,16 +48,16 @@ test: buildVersion test/allTests test/mafExtractor
 
 test/allTests: src/allTests.c ${testObjects} ${testAPI}
 	mkdir -p $(dir $@)
-	${cc} $^ -o $@.tmp ${args} -g -O0 -lm
+	${cxx} $^ -o $@.tmp ${cflags} -g -O0 -lm
 	mv $@.tmp $@
 
 test/test.mafExtractor.o: src/test.mafExtractor.c src/test.mafExtractor.h ${testAPI}
 	mkdir -p $(dir $@)
-	${cc} -c $< -o $@.tmp ${args} -g -O0 -lm
+	${cxx} -c $< -o $@.tmp ${cflags} -I src/ -g -O0 -lm
 	mv $@.tmp $@
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
-	${cc} -c ${args} $<
+	${cxx} -c ${cflags} $<
 	ar rc CuTest.a CuTest.o
 	ranlib CuTest.a
 	rm -f CuTest.o

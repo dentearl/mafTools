@@ -1,9 +1,11 @@
-include ../include.mk
+include ../inc/common.mk
 SHELL:=/bin/bash
 bin = ../bin
+inc = ../inc
+lib = ../lib
 PROGS = mafStats
-dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*)
-objects := ../include/common.o ../include/sharedMaf.o ../external/CuTest.a src/test.mafStats.o ${sonLibPath}/sonLib.a src/buildVersion.o
+dependencies = ${inc}/common.h ${inc}/sharedMaf.h ${lib}/common.c ${lib}/sharedMaf.c
+objects := ${lib}/common.o ${lib}/sharedMaf.o ../external/CuTest.a src/test.mafStats.o ${sonLibPath}/sonLib.a src/buildVersion.o
 testObjects := test/sharedMaf.o test/common.o ../external/CuTest.a src/test.mafStats.o ${sonLibPath}/sonLib.a test/buildVersion.o
 sources = src/mafStats.c src/mafStats.h
 
@@ -12,7 +14,7 @@ sources = src/mafStats.c src/mafStats.h
 all: buildVersion $(foreach f,${PROGS}, ${bin}/$f)
 buildVersion: src/buildVersion.c
 src/buildVersion.c: ${sources} ${dependencies}
-	@python ../include/createVersionSources.py
+	@python ../lib/createVersionSources.py
 
 ${bin}/mafStats: src/mafStats.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
@@ -26,7 +28,7 @@ test/mafStats: src/mafStats.c ${dependencies} ${testObjects}
 %.o: %.c %.h
 	${cxx} -c $< -o $@.tmp ${cflags}
 	mv $@.tmp $@
-test/%.o: ../include/%.c ../include/%.h
+test/%.o: ${lib}/%.c ${inc}/%.h
 	@echo apple
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags} ${lm}

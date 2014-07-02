@@ -1,26 +1,26 @@
-/* 
- * Copyright (C) 2011-2013 by 
+/*
+ * Copyright (C) 2011-2014 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
- * ... and other members of the Reconstruction Team of David Haussler's 
+ * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE. 
+ * THE SOFTWARE.
  */
 #include <assert.h>
 #include <ctype.h>
@@ -42,8 +42,22 @@ typedef struct sortingMafBlock {
     mafBlock_t *mafBlock; // pointer to actual mafBlock_t
     int64_t targetStart; // value to sort on, position in target sequence
 } sortingMafBlock_t;
+
+void version(void);
+void usage(void);
+void parseOptions(int argc, char **argv, char *filename, char *seqName);
+int64_t max(int64_t a, int64_t b);
+int64_t getTargetStartLine(mafLine_t *ml, char *targetSeq);
+int64_t getTargetStartBlock(mafBlock_t *mb, char *targetSeq);
+unsigned processBody(mafFileApi_t *mfa, mafBlock_t **head);
+void populateArray(mafBlock_t *mb, sortingMafBlock_t **array, char *targetSequence);
+int cmp_by_targetStart(const void *a, const void *b);
+void reportBlock(sortingMafBlock_t *smb);
+void reportBlocks(sortingMafBlock_t **array, unsigned numBlocks);
+void destroyArray(sortingMafBlock_t **array, unsigned numBlocks);
+
 void version(void) {
-    fprintf(stderr, "mafSorter, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+    fprintf(stderr, "mafSorter, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date,
             g_build_git_branch, g_build_git_sha);
 }
 void usage(void) {
@@ -116,7 +130,7 @@ void parseOptions(int argc, char **argv, char *filename, char *seqName) {
         fprintf(stderr, "Error, specify --maf --seq\n");
         usage();
     }
-    // Check there's nothing left over on the command line 
+    // Check there's nothing left over on the command line
     if (optind < argc) {
         char *errorString = de_malloc(kMaxSeqName);
         strcpy(errorString, "Unexpected arguments:");
@@ -200,7 +214,7 @@ int main(int argc, char **argv) {
     char targetSequence[kMaxSeqName];
     char filename[kMaxStringLength];
     parseOptions(argc, argv, filename, targetSequence);
-    
+
     mafFileApi_t *mfa = maf_newMfa(filename, "r");
     mafBlock_t *mb = NULL;
     unsigned numBlocks = processBody(mfa, &mb);
@@ -212,6 +226,6 @@ int main(int argc, char **argv) {
     destroyArray(blockArray, numBlocks);
     maf_destroyMfa(mfa);
     maf_destroyMafBlockList(mb);
-    
+
     return(EXIT_SUCCESS);
 }

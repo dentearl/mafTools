@@ -1,26 +1,26 @@
-/* 
- * Copyright (C) 2011-2013 by 
+/*
+ * Copyright (C) 2011-2014 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
- * ... and other members of the Reconstruction Team of David Haussler's 
+ * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE. 
+ * THE SOFTWARE.
  */
 #include <assert.h>
 #include <errno.h> // file existence via ENOENT
@@ -42,12 +42,24 @@ const char *g_version = "version 0.1 September 2012";
 
 void version(void);
 void usage(void);
-void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *isInclude, int64_t *blockDegLT, int64_t *blockDegGT);
-void checkRegion(unsigned lineno, char *fullname, uint64_t pos, uint64_t start, 
+void parseOptions(int argc, char **argv, char *filename, char *nameList,
+                  bool *isInclude, int64_t *blockDegLT, int64_t *blockDegGT);
+void checkRegion(unsigned lineno, char *fullname, uint64_t pos, uint64_t start,
                  uint64_t length, uint64_t sourceLength, char strand);
+bool nameOnList(char *name, char **namelist, unsigned n);
+void reportBlock(mafBlock_t *mb, char **names, unsigned n, bool isInclude);
+void checkBlock(mafBlock_t *mb, char **names, unsigned n, bool isInclude,
+                int64_t excludeBlockDegreeGT, int64_t excludeBlockDegreeLT);
+void filterInput(mafFileApi_t *mfa, char **names, unsigned n,
+                 bool isInclude, int64_t excludeBlockDegreeGT,
+                 int64_t excludeBlockDegreeLT);
+unsigned countNames(char *s);
+char** extractNames(char *nameList, unsigned n);
+void destroyNameList(char **names, unsigned n);
+void reportNames(char **names, unsigned n);
 
 void version(void) {
-    fprintf(stderr, "mafFilter, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date, 
+    fprintf(stderr, "mafFilter, %s\nbuild: %s, %s, %s\n\n", g_version, g_build_date,
             g_build_git_branch, g_build_git_sha);
 }
 void usage(void) {
@@ -143,7 +155,7 @@ void parseOptions(int argc, char **argv, char *filename, char *nameList, bool *i
         fprintf(stderr, "specify *one* from [--includeSeq or --excludeSeq] or [--noDegreeGT or --noDegreeLT]\n");
         usage();
     }
-    // Check there's nothing left over on the command line 
+    // Check there's nothing left over on the command line
     if (optind < argc) {
         char errorString[30] = "Unexpected arguments:";
         while (optind < argc) {
@@ -194,8 +206,8 @@ void reportBlock(mafBlock_t *mb, char **names, unsigned n, bool isInclude) {
     }
     printf("\n");
 }
-void checkBlock(mafBlock_t *mb, char **names, unsigned n, bool isInclude, int64_t excludeBlockDegreeGT,
-                 int64_t excludeBlockDegreeLT) {
+void checkBlock(mafBlock_t *mb, char **names, unsigned n, bool isInclude,
+                int64_t excludeBlockDegreeGT, int64_t excludeBlockDegreeLT) {
     // walk through the maf lines and see if this block should be reported
     mafLine_t *ml = maf_mafBlock_getHeadLine(mb);
     while (ml != NULL) {
@@ -309,11 +321,11 @@ int main(int argc, char **argv) {
     unsigned n = countNames(nameList);
     char **names = extractNames(nameList, n);
     mafFileApi_t *mfa = maf_newMfa(filename, "r");
-    
+
     filterInput(mfa, names, n, isInclude, excludeBlockDegreeGT, excludeBlockDegreeLT);
-    
+
     maf_destroyMfa(mfa);
     destroyNameList(names, n);
-    
+
     return EXIT_SUCCESS;
 }

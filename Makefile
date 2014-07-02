@@ -1,4 +1,4 @@
-include include.mk
+include inc/common.mk
 
 python_version_full := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
 python_version_major := $(word 1,${python_version_full})
@@ -30,7 +30,7 @@ endif # pinches
 ##############################
 dependentModules= ${Comparator} ${TransitiveClosure} ${Stats} ${ToFasta} ${PairCoverage} ${Coverage}
 
-modules = include ${dependentModules} mafValidator mafPositionFinder mafExtractor mafSorter mafDuplicateFilter mafFilter mafStrander mafRowOrderer
+modules = lib ${dependentModules} mafValidator mafPositionFinder mafExtractor mafSorter mafDuplicateFilter mafFilter mafStrander mafRowOrderer
 
 .PHONY: all %.all clean %.clean test %.test
 .SECONDARY:
@@ -50,8 +50,8 @@ clean: ${modules:%=%.clean}
 %.clean:
 	cd $* && make clean
 
-test : ${modules:%=%.test} ${Warnings:%=%.warn}
-	@mafTools tests complete.
+test: ${modules:%=%.test} ${Warnings:%=%.warn}
+	@echo 'mafTools tests complete.'
 
 %.test:
 	cd $* && make test

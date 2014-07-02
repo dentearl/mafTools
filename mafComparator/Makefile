@@ -23,10 +23,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-include ../include.mk
+include ../inc/common.mk
 binPath = ../bin
-dependencies = $(wildcard ../include/common.*) $(wildcard ../include/sharedMaf.*) $(wildcard ${sonLibPath}/*) ${sonLibPath}/sonLib.a ${sonLibPath}/stPinchesAndCacti.a src/allTests.c
-extraAPI = src/cString.c ../include/sharedMaf.o ../external/CuTest.a ../include/common.o src/comparatorRandom.o src/comparatorAPI.o ${sonLibPath}/sonLib.a src/buildVersion.o
+dependencies = $(wildcard ../inc/common.*) $(wildcard ../lib/common.*) $(wildcard ../inc/sharedMaf.*) $(wildcard ../lib/sharedMaf.*) $(wildcard ${sonLibPath}/*) ${sonLibPath}/sonLib.a ${sonLibPath}/stPinchesAndCacti.a src/allTests.c
+extraAPI = src/cString.c ../lib/sharedMaf.o ../external/CuTest.a ../lib/common.o src/comparatorRandom.o src/comparatorAPI.o ${sonLibPath}/sonLib.a src/buildVersion.o
 testAPI = src/cString.c test/sharedMaf.o ../external/CuTest.a test/common.o test/comparatorRandom.o test/comparatorAPI.o ${sonLibPath}/sonLib.a test/buildVersion.o
 progs =  $(foreach f, mafComparator mafPairCounter, ${binPath}/$f)
 testObjects = test/test.comparatorAPI.o test/test.comparatorRandom.o
@@ -37,7 +37,7 @@ sources = $(foreach f, comparatorAPI cString comparatorRandom test.comparatorAPI
 all: buildVersion ${progs}
 buildVersion: src/buildVersion.c
 src/buildVersion.c: ${sources} ${dependecies}
-	@python ../include/createVersionSources.py
+	@python ../lib/createVersionSources.py
 
 ${binPath}/%: src/%.c ${extraAPI}
 	@mkdir -p $(dir $@)
@@ -58,7 +58,7 @@ ${binPath}/%.py: src/%.py
 %.o: %.c %.h
 	${cxx} -c $< -o $@.tmp ${cflags}
 	mv $@.tmp $@
-test/%.o: ../include/%.c ../include/%.h
+test/%.o: ../lib/%.c ../inc/%.h
 	mkdir -p $(dir $@)
 	${cxx} -c $< -o $@.tmp ${testFlags} ${lm}
 	mv $@.tmp $@
