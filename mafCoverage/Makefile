@@ -42,6 +42,9 @@ buildVersion: src/buildVersion.c
 src/buildVersion.c: ${sources} ${dependencies}
 	@python ../lib/createVersionSources.py
 
+../lib/%.o: ../lib/%.c ../inc/%.h
+	cd ../lib/ && make
+
 ${bin}/mafCoverage: src/mafCoverage.c ${dependencies} ${extraAPI}
 	mkdir -p $(dir $@)
 	${cxx} $< ${extraAPI} -o $@.tmp ${cflags} ${lm}

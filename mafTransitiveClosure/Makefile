@@ -16,6 +16,9 @@ buildVersion: src/buildVersion.c
 src/buildVersion.c: ${sources} ${dependencies}
 	@python ${lib}/createVersionSources.py
 
+../lib/%.o: ../lib/%.c ../inc/%.h
+	cd ../lib/ && make
+
 ${bin}/mafTransitiveClosure: src/mafTransitiveClosure.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
 	${cxx} $< src/allTests.c ${objects} -o $@.tmp ${cflags} -lm

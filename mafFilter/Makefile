@@ -16,6 +16,9 @@ buildVersion: src/buildVersion.c
 src/buildVersion.c: ${sources} ${dependencies}
 	@python ../lib/createVersionSources.py
 
+../lib/%.o: ../lib/%.c ../inc/%.h
+	cd ../lib/ && make
+
 ${bin}/mafFilter: src/mafFilter.c ${dependencies} ${objects}
 	mkdir -p $(dir $@)
 	${cxx} ${cflags} -O3 $< ${objects} -o $@.tmp -lm

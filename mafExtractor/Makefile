@@ -17,6 +17,9 @@ buildVersion: src/buildVersion.c
 src/buildVersion.c: ${sources} ${dependencies}
 	@python ../lib/createVersionSources.py
 
+../lib/%.o: ../lib/%.c ../inc/%.h
+	cd ../lib/ && make
+
 ${bin}/mafExtractor: src/mafExtractor.c ${dependencies} ${API}
 	mkdir -p $(dir $@)
 	${cxx} ${cflags} -O3 $< ${API} -o $@.tmp -lm

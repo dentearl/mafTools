@@ -39,6 +39,9 @@ buildVersion: src/buildVersion.c
 src/buildVersion.c: ${sources} ${dependecies}
 	@python ../lib/createVersionSources.py
 
+../lib/%.o: ../lib/%.c ../inc/%.h
+	cd ../lib/ && make
+
 ${binPath}/%: src/%.c ${extraAPI}
 	@mkdir -p $(dir $@)
 	${cxx} -o $@.tmp $^ ${cflags} ${lm}
