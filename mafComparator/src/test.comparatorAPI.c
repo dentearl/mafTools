@@ -1,26 +1,26 @@
-/* 
- * Copyright (C) 2013 by 
+/*
+ * Copyright (C) 2013 by
  * Dent Earl (dearl@soe.ucsc.edu, dentearl@gmail.com)
- * ... and other members of the Reconstruction Team of David Haussler's 
+ * ... and other members of the Reconstruction Team of David Haussler's
  * lab (BME Dept. UCSC).
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE. 
+ * THE SOFTWARE.
  */
 #include <assert.h>
 #include <stdbool.h>
@@ -125,7 +125,7 @@ static void test_pairCounting_0(CuTest *testCase) {
     stSet_insert(legitPairs, stString_copy("panTro1.chr6"));
     stSet_insert(legitPairs, stString_copy("baboon"));
     stSet_insert(legitPairs, stString_copy("mm4.chr6"));
-    pairTest(testCase, 
+    pairTest(testCase,
              "a score=0.0\n"
              "s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca\n"
              "s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca\n"
@@ -139,7 +139,7 @@ static void test_pairCounting_0(CuTest *testCase) {
     stSet_insert(legitPairs, stString_copy("hg16.chr7"));
     stSet_insert(legitPairs, stString_copy("panTro1.chr6"));
     stSet_insert(legitPairs, stString_copy("mm4.chr6"));
-    pairTest(testCase, 
+    pairTest(testCase,
              "a score=0.0\n"
              "s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca\n"
              "s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca\n"
@@ -154,7 +154,7 @@ static void test_pairCounting_0(CuTest *testCase) {
     stSet_insert(legitPairs, stString_copy("panTro1.chr6"));
     stSet_insert(legitPairs, stString_copy("baboon"));
     stSet_insert(legitPairs, stString_copy("rn3.chr4"));
-    pairTest(testCase, 
+    pairTest(testCase,
              "a score=23262.0\n"
              "s hg18.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG\n"
              "s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG\n"
@@ -199,7 +199,7 @@ static char* randomName(uint64_t n) {
             // upper case
             s[i] = st_randomInt(65, 91);
         } else {
-            // lower case 
+            // lower case
             s[i] = st_randomInt(97, 123);
         }
     }
@@ -247,7 +247,7 @@ static void test_columnSampling_timing_0(CuTest *testCase) {
     char **nameArray = NULL;
     printf("#Rows        p      n*p clever naive\n");
     for (uint64_t i = 0; i < 9; ++i) {
-        pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction, 
+        pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction,
                                        (void(*)(void *)) aPair_destruct);
         n = 2 << i;
         p = 2.0 / (n * (n - 1));
@@ -271,11 +271,11 @@ static void test_columnSampling_timing_0(CuTest *testCase) {
         stSortedSet_destruct(pairs);
         positions = (uint64_t*) st_malloc(sizeof(*positions) * n);
         memset(positions, 0, sizeof(*positions) * n);
-        pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction, 
+        pairs = stSortedSet_construct3((int(*)(const void *, const void *)) aPair_cmpFunction,
                                        (void(*)(void *)) aPair_destruct);
         t1 = time(NULL);
         for (uint64_t c = 0; c < colLength; ++c) {
-            samplePairsFromColumnNaive(mat, c, legitRows, 0.01, pairs, chooseTwoArray, 
+            samplePairsFromColumnNaive(mat, c, legitRows, 0.01, pairs, chooseTwoArray,
                                        nameArray, positions, n, chooseTwo(n));
             updatePositions(mat, c, positions, strandInts, n);
         }
@@ -401,9 +401,9 @@ static void test_pairSortComparison_0(CuTest *testCase) {
     CuAssertTrue(testCase, p == NULL);
     aPair_destruct(q);
     // clean up
-    
+
     stSortedSet_destruct(pairs);
-    
+
 }
 CuSuite* comparatorAPI_TestSuite(void) {
     // listing the tests as void allows us to quickly comment out certain tests

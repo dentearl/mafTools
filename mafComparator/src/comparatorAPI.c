@@ -1636,8 +1636,7 @@ void buildSeqNamesSet(Options *options, stSet *seqNamesSet, stHash *sequenceLeng
                 ++i;
                 if (i % 2) {
                     // odd, sequence length
-                    int j = sscanf(currentWord2, "%" PRIu64, &length);
-                    assert(j == 1);
+                    assert(1 == sscanf(currentWord2, "%" PRIu64, &length));
                     stHash_insert(sequenceLengthHash, stString_copy(seqName), buildInt64(length));
                     free(seqName);
                     seqName = NULL;

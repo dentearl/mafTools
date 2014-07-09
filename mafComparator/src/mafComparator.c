@@ -114,10 +114,9 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
     int64_t bytesRead = benLine(&cA2, &nBytes, fileHandle);
     while (bytesRead != -1) {
         if (bytesRead > 0) {
-            int64_t start, stop;
+            int64_t start = 0, stop = 0;
             char *cA3 = stString_copy(cA2);
-            int64_t i = sscanf(cA2, "%s %" PRIi64 " %" PRIi64 "", cA3, &start, &stop);
-            assert(i == 3);
+            assert(3 == sscanf(cA2, "%s %" PRIi64 " %" PRIi64 "", cA3, &start, &stop));
             stSortedSet *intervals = stHash_search(intervalsHash, cA3);
             if (intervals == NULL) {
                 intervals = stSortedSet_construct3(
@@ -125,7 +124,7 @@ void parseBedFile(const char *filepath, stHash *intervalsHash) {
                         (void(*)(void *)) stIntTuple_destruct);
                 stHash_insert(intervalsHash, stString_copy(cA3), intervals);
             }
-            stIntTuple *j = stIntTuple_construct2( start, stop);
+            stIntTuple *j = stIntTuple_construct2(start, stop);
             stIntTuple *k = stSortedSet_searchLessThanOrEqual(intervals,
                     j);
             if (k != NULL) {

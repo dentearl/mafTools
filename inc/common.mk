@@ -24,7 +24,7 @@ endif
 jpl_flags = -Wshadow -Wpointer-arith -Wstrict-prototypes -Wmissing-prototypes
 
 #Release compiler flags
-cflags_opt = -O3 -Wall -Werror --pedantic -funroll-loops ${jpl_flags}
+cflags_opt = -O3 -Wall -Werror --pedantic -funroll-loops -DNDEBUG ${jpl_flags}
 
 #Debug flags (slow)
 cflags_dbg = -Wall -Werror --pedantic -g -fno-inline -DBEN_DEBUG ${jpl_flags}
