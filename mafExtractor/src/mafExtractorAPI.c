@@ -190,9 +190,9 @@ mafBlock_t *processBlockForSplice(mafBlock_t *b, uint64_t blockNumber, const cha
     maf_mafBlock_print(b);
     */
     bool *targetColumns = NULL;
-    uint64_t len = 0, sum = 0;
+    uint64_t len = 0;
     mafBlock_t *head = NULL, *mb = NULL;
-    sum = getTargetColumns(&targetColumns, &len, b, seq, start, stop);
+    getTargetColumns(&targetColumns, &len, b, seq, start, stop);
     // printTargetColumns(targetColumns, len);
     int64_t **offsets = createOffsets(maf_mafBlock_getNumberOfSequences(b));
     uint64_t l = 0, r = 0, ri = 0;
