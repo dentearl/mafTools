@@ -38,3 +38,7 @@ With the exception of the python dependencies, when a component is missing a dep
 ## External tools
 * mafTools internal tests use Asim Jalis' [CuTest](http://cutest.sourceforge.net/) C unit testing framework (included in <code>external/</code>). The license for CuTest is spelled out in external/license.txt.
 * mafTools internal tests will use [valgrind](http://www.valgrind.org/) __if__ installed on your system.
+
+## How to Cite:
+Genome Res. 2014 Dec;24(12):2077-89. doi: 10.1101/gr.174920.114. Epub 2014 Oct 1.
+Alignathon: a competitive assessment of whole-genome alignment methods.
