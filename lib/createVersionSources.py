@@ -39,7 +39,7 @@ GIT = mtt.which('git')
 
 
 def runCommand(cmd):
-  p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+  p = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
   pout, perr = p.communicate()
   mtt.handleReturnCode(p.returncode, cmd)
   return pout
