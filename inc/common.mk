@@ -15,7 +15,7 @@ else ifeq (${SYS},Darwin) # This is to deal with the Mavericks replacing gcc wit
   cpp = clang++ -stdlib=libstdc++
 	lm =
 else
-	cxx = gcc -std=c99
+	cxx = gcc -std=c99 -Wno-unused-but-set-variable
 	cpp = g++
 	lm = -lm
 endif
