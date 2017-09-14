@@ -22,25 +22,25 @@ src/buildVersion.c: ${sources} ${dependencies}
 
 ${bin}/mafExtractor: src/mafExtractor.c ${dependencies} ${API}
 	mkdir -p $(dir $@)
-	${cxx} ${cflags} -O3 $< ${API} -o $@.tmp -lm
+	${cxx} ${cflags} -O3 $< ${API} -o $@.tmp
 	mv $@.tmp $@
 
 test/mafExtractor: src/mafExtractor.c ${dependencies} ${testAPI}
 	mkdir -p $(dir $@)
-	${cxx} ${cflags} -g -O0 $< ${testAPI} -o $@.tmp -lm
+	${cxx} ${cflags} -g -O0 $< ${testAPI} -o $@.tmp
 	mv $@.tmp $@
 
 %.o: %.c %.h
-	${cxx} -O3 -c ${cflags} $< -o $@.tmp -lm
+	${cxx} -O3 -c ${cflags} $< -o $@.tmp
 	mv $@.tmp $@
 
 test/%.o: ${lib}/%.c ${inc}/%.h
 	mkdir -p $(dir $@)
-	${cxx} -c $< -o $@.tmp ${cflags} -g -O0 -lm
+	${cxx} -c $< -o $@.tmp ${cflags} -g -O0
 	mv $@.tmp $@
 test/%.o: src/%.c src/%.h
 	mkdir -p $(dir $@)
-	${cxx} -c $< -o $@.tmp ${cflags} -g -O0 -lm
+	${cxx} -c $< -o $@.tmp ${cflags} -g -O0
 	mv $@.tmp $@
 
 clean:
@@ -51,12 +51,12 @@ test: buildVersion test/allTests test/mafExtractor
 
 test/allTests: src/allTests.c ${testObjects} ${testAPI}
 	mkdir -p $(dir $@)
-	${cxx} $^ -o $@.tmp ${cflags} -g -O0 -lm
+	${cxx} $^ -o $@.tmp ${cflags} -g -O0
 	mv $@.tmp $@
 
 test/test.mafExtractor.o: src/test.mafExtractor.c src/test.mafExtractor.h ${testAPI}
 	mkdir -p $(dir $@)
-	${cxx} -c $< -o $@.tmp ${cflags} -I src/ -g -O0 -lm
+	${cxx} -c $< -o $@.tmp ${cflags} -I src/ -g -O0
 	mv $@.tmp $@
 
 ../external/CuTest.a: ../external/CuTest.c ../external/CuTest.h
