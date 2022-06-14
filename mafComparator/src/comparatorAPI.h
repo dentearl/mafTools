@@ -102,7 +102,7 @@ typedef struct _wiggleContainer {
     uint64_t *absentAtoB;
     uint64_t *absentBtoA;
 } WiggleContainer;
-bool g_isVerboseFailures;
+extern bool g_isVerboseFailures;
 
 Options* options_construct(void);
 void options_destruct(Options* o);
