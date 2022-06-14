@@ -1008,7 +1008,7 @@ void maf_mafBlock_print(mafBlock_t *m) {
   mafLine_t* ml = maf_mafBlock_getHeadLine(m);
   char *line = NULL;
   uint64_t maxName = 1, maxStart = 1, maxLen = 1, maxSource = 1;
-  char fmtName[10] = "\0", fmtStart[32] = "\0", fmtLen[32] = "\0", fmtSource[32] = "\0", fmtLine[256] = "\0";
+  char fmtName[32] = "\0", fmtStart[32] = "\0", fmtLen[32] = "\0", fmtSource[32] = "\0", fmtLine[256] = "\0";
   while (ml != NULL) {
     line = maf_mafLine_getLine(ml);
     if (line == NULL) {
