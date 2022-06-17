@@ -43,7 +43,6 @@
 #include "buildVersion.h"
 
 const char *g_version = "version 0.9 May 2013";
-bool g_isVerboseFailures = false;
 
 /*
  * The script takes two MAF files and for each ordered pair of sequences

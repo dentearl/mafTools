@@ -33,6 +33,7 @@
 #include "comparatorRandom.h"
 
 const unsigned kChooseTwoCacheLength = 101;
+bool g_isVerboseFailures = false;
 
 void aPair_fillOut(APair *aPair, char *seq1, char *seq2, uint64_t pos1, uint64_t pos2) {
     int i = strcmp(seq1, seq2);

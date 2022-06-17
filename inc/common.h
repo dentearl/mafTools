@@ -27,11 +27,11 @@
 #include <stdio.h>
 #include <stdint.h>
 
-int g_verbose_flag;
-int g_debug_flag;
-const int kMaxStringLength;
-const int kMaxMessageLength;
-const int kMaxSeqName;
+extern int g_verbose_flag;
+extern int g_debug_flag;
+extern const int kMaxStringLength;
+extern const int kMaxMessageLength;
+extern const int kMaxSeqName;
 
 void de_verbose(char const *fmt, ...);
 void de_debug(char const *fmt, ...);
