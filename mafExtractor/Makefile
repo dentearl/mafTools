@@ -22,12 +22,12 @@ src/buildVersion.c: ${sources} ${dependencies}
 
 ${bin}/mafExtractor: src/mafExtractor.c ${dependencies} ${API}
 	mkdir -p $(dir $@)
-	${cxx} ${cflags} -O3 $< ${API} -o $@.tmp
+	${cxx} ${cflags} -O3 $< ${API} -o $@.tmp -lm
 	mv $@.tmp $@
 
 test/mafExtractor: src/mafExtractor.c ${dependencies} ${testAPI}
 	mkdir -p $(dir $@)
-	${cxx} ${cflags} -g -O0 $< ${testAPI} -o $@.tmp
+	${cxx} ${cflags} -g -O0 $< ${testAPI} -o $@.tmp -lm
 	mv $@.tmp $@
 
 %.o: %.c %.h
